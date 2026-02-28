@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/transport/httphandler"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/httphandler"
 )
 
 func main() {
