@@ -6,6 +6,8 @@ import (
 	"os"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/handler"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/memory"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
 )
 
 func main() {
@@ -14,7 +16,13 @@ func main() {
 		port = "8080"
 	}
 
-	http.HandleFunc("/api/register", handler.RegisterHandler)
+	userRepo := memory.NewUserRepo()
+
+	authUC := usecase.NewAuthUseCase(userRepo)
+
+	authHandler := handler.NewAuthHandler(authUC)
+
+	http.HandleFunc("/api/register", authHandler.Register)
 
 	// добавить роут api/login
 
