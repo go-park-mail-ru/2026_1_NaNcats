@@ -46,6 +46,54 @@ func TestCreateUser(t *testing.T) {
 			expectedID:  0,
 			expectedErr: domain.ErrUserAlreadyExists,
 		},
+		{
+			name: "Ошибка: создание существующего пользователя (проверка на регистронезависимость @)",
+			prepare: func(r *userRepo) {
+				r.users["exists@mail.ru"] = domain.User{Email: "exists@mail.ru", ID: 1}
+				r.nextID = 2
+			},
+			input:       domain.User{Email: "EXISTS@mail.ru", Name: "Ivan"},
+			expectedID:  0,
+			expectedErr: domain.ErrUserAlreadyExists,
+		},
+		{
+			name: "Ошибка: создание существующего пользователя (проверка на регистронезависимость после @)",
+			prepare: func(r *userRepo) {
+				r.users["exists@mail.ru"] = domain.User{Email: "exists@mail.ru", ID: 1}
+				r.nextID = 2
+			},
+			input:       domain.User{Email: "exists@MAIL.ru", Name: "Ivan"},
+			expectedID:  0,
+			expectedErr: domain.ErrUserAlreadyExists,
+		},
+		{
+			name:        "Ошибка: спецсимволы в почте",
+			prepare:     func(r *userRepo) {},
+			input:       domain.User{Email: "()<>[]:;\\.,@mail.ru", Name: "Ivan"},
+			expectedID:  0,
+			expectedErr: domain.ErrWrongEmailSyntax,
+		},
+		{
+			name:        "Ошибка: точка в начале и конце",
+			prepare:     func(r *userRepo) {},
+			input:       domain.User{Email: ".mail.@mail.ru.", Name: "Ivan"},
+			expectedID:  0,
+			expectedErr: domain.ErrWrongEmailSyntax,
+		},
+		{
+			name:        "Ошибка: две точки подряд",
+			prepare:     func(r *userRepo) {},
+			input:       domain.User{Email: "ma..il@mail.ru", Name: "Ivan"},
+			expectedID:  0,
+			expectedErr: domain.ErrWrongEmailSyntax,
+		},
+		{
+			name:        "Допускается использование одинарной точки в названии почты",
+			prepare:     func(r *userRepo) {},
+			input:       domain.User{Email: "m.a.i.l@mail.ru", Name: "Ivan"},
+			expectedID:  1,
+			expectedErr: nil,
+		},
 	}
 
 	for _, tc := range tests {
