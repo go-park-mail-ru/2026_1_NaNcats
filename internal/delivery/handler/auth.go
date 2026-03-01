@@ -8,6 +8,7 @@ import (
 )
 
 type RegisterRequest struct {
+	// DTO запроса на регистрацию
 	Phone    string `json:"phone"`
 	Name     string `json:"name"`
 	Email    string `json:"email"`
@@ -15,6 +16,7 @@ type RegisterRequest struct {
 }
 
 type UserResponse struct {
+	// DTO отправки сведений о пользователе
 	ID        int       `json:"id"`
 	Phone     string    `json:"phone"`
 	Name      string    `json:"name"`

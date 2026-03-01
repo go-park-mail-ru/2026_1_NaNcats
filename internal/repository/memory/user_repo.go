@@ -13,7 +13,8 @@ type userRepo struct {
 	nextID int                    // счетчик для автоинкремента id
 }
 
-func newUserRepo() repository.UserRepository {
+func NewUserRepo() repository.UserRepository {
+	// функция-конструктор userRepo
 	return &userRepo{
 		users:  make(map[string]domain.User),
 		nextID: 1,
