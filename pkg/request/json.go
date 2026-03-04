@@ -8,7 +8,16 @@ import (
 	"net/http"
 )
 
+var (
+	ErrBodyTooLarge   = errors.New("request body is too large")
+	ErrInvalidJSON    = errors.New("request body contains badly-formed JSON")
+	ErrEmptyBody      = errors.New("request body is empty")
+	ErrNotOnlyJSONVal = errors.New("body must only contain a single JSON value")
+)
+
 func JSON(r *http.Request, v any) error {
+	// функция декодирования JSON запроса в любой объект
+
 	const maxBodySize = 1024 * 1024
 	r.Body = http.MaxBytesReader(nil, r.Body, maxBodySize)
 

@@ -4,7 +4,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 )
 
@@ -36,10 +38,48 @@ func NewAuthHandler(auc usecase.AuthUseCase) *authHandler {
 }
 
 func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
+	// метод хендлера authHandler, нужен для обработки регистрации по запросу /register
 	if r.Method != http.MethodPost {
 		response.Error(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	// здесь должна быть дальнейшая бизнес-логика
+	// объект DTO запроса
+	curRequest := RegisterRequest{}
+
+	// заполняем объект DTO запроса данными из запроса
+	err := request.JSON(r, &curRequest)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	userToCreate := domain.User{
+		Phone:        curRequest.Phone,
+		Name:         curRequest.Name,
+		Email:        curRequest.Email,
+		PasswordHash: curRequest.Password,
+	}
+
+	// контекст нынешнего запроса, позволяет досрочно завершить бизнес-логику
+	// если пользователь отключится/отменит загрузку запроса
+	ctx := r.Context()
+
+	// созданный юзер
+	createdUser, err := h.authUC.Register(ctx, userToCreate)
+	if err != nil {
+		// добавить больше бизнес-ошибок (не только bad request)
+		response.Error(w, http.StatusBadRequest, err.Error())
+	}
+
+	// ответ, который отдаем юзеру
+	resp := UserResponse{
+		ID:        createdUser.ID,
+		Phone:     createdUser.Phone,
+		Name:      createdUser.Name,
+		Email:     createdUser.Email,
+		CreatedAt: createdUser.CreatedAt,
+	}
+
+	response.JSON(w, http.StatusCreated, resp)
 }
