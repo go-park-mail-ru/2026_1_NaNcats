@@ -54,6 +54,7 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// структура, в которую кладем данные создаваемого юзера из запроса
 	userToCreate := domain.User{
 		Phone:        curRequest.Phone,
 		Name:         curRequest.Name,
@@ -65,12 +66,22 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 	// если пользователь отключится/отменит загрузку запроса
 	ctx := r.Context()
 
-	// созданный юзер
-	createdUser, err := h.authUC.Register(ctx, userToCreate)
+	// созданный юзер, id сессии
+	createdUser, sessionID, expiresAt, err := h.authUC.Register(ctx, userToCreate)
 	if err != nil {
 		// добавить больше бизнес-ошибок (не только bad request)
 		response.Error(w, http.StatusBadRequest, err.Error())
 	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_id",         // имя куки
+		Value:    sessionID,            // значение - случайный идентификатор из usecase
+		Expires:  expiresAt,            // срок жизни
+		HttpOnly: true,                 // защита: JavaScript(фронт) не сможет прочитать эту куку
+		Path:     "/",                  // кука будет отправляться на все эндпоинты сайта
+		SameSite: http.SameSiteLaxMode, // защита от CSRF атак
+		// Secure: true,				// если будем на https
+	})
 
 	// ответ, который отдаем юзеру
 	resp := UserResponse{

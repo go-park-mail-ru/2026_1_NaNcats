@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/handler"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/memory"
@@ -18,7 +19,14 @@ func main() {
 
 	userRepo := memory.NewUserRepo()
 
-	authUC := usecase.NewAuthUseCase(userRepo)
+	sessionRepo := memory.NewSessionRepo()
+
+	// ttl сессии - 30 дней
+	sessionTTL := 30 * 24 * time.Hour
+
+	sessionUC := usecase.NewSessionUseCase(sessionRepo, sessionTTL)
+
+	authUC := usecase.NewAuthUseCase(userRepo, sessionUC)
 
 	authHandler := handler.NewAuthHandler(authUC)
 

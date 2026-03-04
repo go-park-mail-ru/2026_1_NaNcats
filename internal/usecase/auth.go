@@ -10,23 +10,25 @@ import (
 )
 
 type AuthUseCase interface {
-	Register(ctx context.Context, user domain.User) (domain.User, error)
+	Register(ctx context.Context, user domain.User) (domain.User, string, time.Time, error)
 }
 
 type authUseCase struct {
-	userRepo repository.UserRepository
+	userRepo  repository.UserRepository
+	sessionUC SessionUseCase
 }
 
-func NewAuthUseCase(ur repository.UserRepository) AuthUseCase {
+func NewAuthUseCase(ur repository.UserRepository, suc SessionUseCase) AuthUseCase {
 	return &authUseCase{
-		userRepo: ur,
+		userRepo:  ur,
+		sessionUC: suc,
 	}
 }
 
-func (u *authUseCase) Register(ctx context.Context, user domain.User) (domain.User, error) {
+func (u *authUseCase) Register(ctx context.Context, user domain.User) (domain.User, string, time.Time, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.PasswordHash), bcrypt.DefaultCost)
 	if err != nil {
-		return domain.User{}, err
+		return domain.User{}, "", time.Time{}, err
 	}
 
 	user.PasswordHash = string(hashedPassword)
@@ -36,9 +38,15 @@ func (u *authUseCase) Register(ctx context.Context, user domain.User) (domain.Us
 
 	id, err := u.userRepo.CreateUser(user)
 	if err != nil {
-		return domain.User{}, err
+		return domain.User{}, "", time.Time{}, err
 	}
 
 	user.ID = id
-	return user, nil
+
+	sessionID, expiresAt, err := u.sessionUC.Create(ctx, user.ID)
+	if err != nil {
+		return domain.User{}, "", time.Time{}, err
+	}
+
+	return user, sessionID, expiresAt, nil
 }

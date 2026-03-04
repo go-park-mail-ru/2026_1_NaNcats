@@ -3,6 +3,7 @@ module github.com/go-park-mail-ru/2026_1_NaNcats
 go 1.24.4
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/crypto v0.48.0
 )
