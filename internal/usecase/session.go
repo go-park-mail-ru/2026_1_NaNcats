@@ -42,12 +42,14 @@ func (u *sessionUseCase) Create(ctx context.Context, userID int) (string, time.T
 	// сессия живет sessionTTL времени
 	expiresAt := time.Now().Add(u.sessionTTL)
 
+	// создаем новый объект сессии
 	session := domain.Session{
 		ID:        sessionID,
 		UserID:    userID,
 		ExpiresAt: expiresAt,
 	}
 
+	// вызов создания сессии в репо
 	err := u.sessionRepo.Create(ctx, session)
 	if err != nil {
 		return "", time.Time{}, err

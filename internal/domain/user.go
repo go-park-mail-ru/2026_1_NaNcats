@@ -2,6 +2,7 @@ package domain
 
 import "time"
 
+// сущность юзера
 type User struct {
 	ID           int
 	Phone        string

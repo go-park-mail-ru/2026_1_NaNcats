@@ -14,6 +14,7 @@ type sessionRepo struct {
 	sessions map[string]domain.Session // мапа сессий, ключ - sessionID
 }
 
+// функция-конструктор репозитория сессий
 func NewSessionRepo() repository.SessionRepository {
 	return &sessionRepo{
 		sessions: make(map[string]domain.Session),

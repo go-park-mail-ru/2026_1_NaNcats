@@ -10,16 +10,16 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 )
 
+// DTO запроса на регистрацию
 type RegisterRequest struct {
-	// DTO запроса на регистрацию
 	Phone    string `json:"phone"`
 	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
+// DTO отправки сведений о пользователе
 type UserResponse struct {
-	// DTO отправки сведений о пользователе
 	ID        int       `json:"id"`
 	Phone     string    `json:"phone"`
 	Name      string    `json:"name"`
@@ -27,18 +27,20 @@ type UserResponse struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+// структура хендлера авторизации
 type authHandler struct {
 	authUC usecase.AuthUseCase
 }
 
+// функция-конструтор хендлера
 func NewAuthHandler(auc usecase.AuthUseCase) *authHandler {
 	return &authHandler{
 		authUC: auc,
 	}
 }
 
+// метод хендлера authHandler, нужен для обработки регистрации по запросу /register
 func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
-	// метод хендлера authHandler, нужен для обработки регистрации по запросу /register
 	if r.Method != http.MethodPost {
 		response.Error(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
