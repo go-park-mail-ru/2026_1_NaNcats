@@ -1,0 +1,160 @@
+basePath: /api
+definitions:
+  github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse:
+    properties:
+      error:
+        example: текст ошибки
+        type: string
+    type: object
+  internal_delivery_handler.LoginRequest:
+    properties:
+      login:
+        description: Email пользователя
+        example: user@mail.ru
+        type: string
+      password:
+        description: Пароль в открытом виде
+        example: qwerty12345
+        type: string
+    type: object
+  internal_delivery_handler.LoginResponse:
+    properties:
+      id:
+        description: Уникальный ID пользователя в системе
+        example: 1
+        type: integer
+      name:
+        description: Имя для отображения в интерфейсе
+        example: Иван
+        type: string
+    type: object
+  internal_delivery_handler.RegisterRequest:
+    properties:
+      email:
+        description: Email пользователя
+        example: user@mail.ru
+        type: string
+      name:
+        description: Имя пользователя
+        example: Иван
+        type: string
+      password:
+        description: Пароль в открытом виде
+        example: qwerty12345
+        type: string
+    type: object
+  internal_delivery_handler.RegisterResponse:
+    properties:
+      created_at:
+        description: Время создания аккаунта по стандарту RFC 3339
+        example: 2006-01-02T15:04:05Z07:00
+        type: string
+      email:
+        description: Email пользователя
+        example: user@mail.ru
+        type: string
+      id:
+        description: Уникальный ID пользователя в системе
+        example: 1
+        type: integer
+      name:
+        description: Имя для отображения в интерфейсе
+        example: Иван
+        type: string
+    type: object
+info:
+  contact: {}
+  description: API бэкенда для проекта "Delivery Club" от команды NaNcats
+  title: NaNcats Delivery API
+  version: "1.0"
+paths:
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Проверяет учетные данные (логин и пароль) и создает сессионную
+        куку
+      parameters:
+      - description: Данные для входа
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal_delivery_handler.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный вход и создание сессии
+          schema:
+            $ref: '#/definitions/internal_delivery_handler.LoginResponse'
+        "400":
+          description: Неверный формат JSON
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+        "405":
+          description: Неверный метод
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+      summary: Авторизация пользователя
+      tags:
+      - auth
+  /me:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает данные профиля пользователя, если сессионная кука валидна
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный вход и создание сессии
+          schema:
+            $ref: '#/definitions/internal_delivery_handler.LoginResponse'
+        "401":
+          description: Сессия не найдена
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+        "404":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+        "405":
+          description: Неверный метод
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+      summary: Проверка текущей сессии
+      tags:
+      - auth
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Проверяет, существует ли пользователь с указанными данными или
+        нет, регистрирует его и создает сессионную куку
+      parameters:
+      - description: Данные для регистрации
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal_delivery_handler.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Успешная регистрация и создание сессии
+          schema:
+            $ref: '#/definitions/internal_delivery_handler.RegisterResponse'
+        "400":
+          description: Неверный формат JSON
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+        "405":
+          description: Неверный метод
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+      summary: Регистрация пользователя
+      tags:
+      - auth
+swagger: "2.0"

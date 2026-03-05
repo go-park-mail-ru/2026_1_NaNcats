@@ -12,19 +12,40 @@ import (
 
 // DTO запроса на регистрацию
 type RegisterRequest struct {
-	Phone    string `json:"phone"`
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	// Имя пользователя
+	Name string `json:"name" example:"Иван"`
+	// Email пользователя
+	Email string `json:"email" example:"user@mail.ru"`
+	// Пароль в открытом виде
+	Password string `json:"password" example:"qwerty12345"`
 }
 
-// DTO отправки сведений о пользователе
-type UserResponse struct {
-	ID        int       `json:"id"`
-	Phone     string    `json:"phone"`
-	Name      string    `json:"name"`
-	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"created_at"`
+// DTO отправки сведений о пользователе при регистрации
+type RegisterResponse struct {
+	// Уникальный ID пользователя в системе
+	ID int `json:"id" example:"1"`
+	// Имя для отображения в интерфейсе
+	Name string `json:"name" example:"Иван"`
+	// Email пользователя
+	Email string `json:"email" example:"user@mail.ru"`
+	// Время создания аккаунта по стандарту RFC 3339
+	CreatedAt time.Time `json:"created_at" example:"2006-01-02T15:04:05Z07:00"`
+}
+
+// LoginRequest - DTO для входящего запроса на авторизацию
+type LoginRequest struct {
+	// Email пользователя
+	Login string `json:"login" example:"user@mail.ru"`
+	// Пароль в открытом виде
+	Password string `json:"password" example:"qwerty12345"`
+}
+
+// LoginResponse - DTO для ответа при успешном входе
+type LoginResponse struct {
+	// Уникальный ID пользователя в системе
+	ID int `json:"id" example:"1"`
+	// Имя для отображения в интерфейсе
+	Name string `json:"name" example:"Иван"`
 }
 
 // структура хендлера авторизации
@@ -39,7 +60,17 @@ func NewAuthHandler(auc usecase.AuthUseCase) *authHandler {
 	}
 }
 
-// метод хендлера authHandler, нужен для обработки регистрации по запросу /register
+// Register godoc
+// @Summary 		Регистрация пользователя
+// @Description		Проверяет, существует ли пользователь с указанными данными или нет, регистрирует его и создает сессионную куку
+// @Tags			auth
+// @Accept			json
+// @Produce			json
+// @Param			input	body	  RegisterRequest	true	"Данные для регистрации"
+// @Success			201		{object}  RegisterResponse			"Успешная регистрация и создание сессии"
+// @Failure			400		{object}  response.ErrorResponse	"Неверный формат JSON"
+// @Failure			405		{object}  response.ErrorResponse	"Неверный метод"
+// @Router			/register [post]
 func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		response.Error(w, http.StatusMethodNotAllowed, "Method not allowed")
@@ -58,7 +89,6 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	// структура, в которую кладем данные создаваемого юзера из запроса
 	userToCreate := domain.User{
-		Phone:        curRequest.Phone,
 		Name:         curRequest.Name,
 		Email:        curRequest.Email,
 		PasswordHash: curRequest.Password,
@@ -86,13 +116,107 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// ответ, который отдаем юзеру
-	resp := UserResponse{
+	resp := RegisterResponse{
 		ID:        createdUser.ID,
-		Phone:     createdUser.Phone,
 		Name:      createdUser.Name,
 		Email:     createdUser.Email,
 		CreatedAt: createdUser.CreatedAt,
 	}
 
 	response.JSON(w, http.StatusCreated, resp)
+}
+
+// Login godoc
+// @Summary 		Авторизация пользователя
+// @Description		Проверяет учетные данные (логин и пароль) и создает сессионную куку
+// @Tags			auth
+// @Accept			json
+// @Produce			json
+// @Param			input	body	  LoginRequest	true	"Данные для входа"
+// @Success			200		{object}  LoginResponse			"Успешный вход и создание сессии"
+// @Failure			400		{object}  response.ErrorResponse	"Неверный формат JSON"
+// @Failure			405		{object}  response.ErrorResponse	"Неверный метод"
+// @Router			/login [post]
+func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		response.Error(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	curRequest := LoginRequest{}
+
+	err := request.JSON(r, &curRequest)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	userToLogin := domain.User{
+		Email:        curRequest.Login,
+		PasswordHash: curRequest.Password,
+	}
+
+	ctx := r.Context()
+
+	loggedUser, sessionID, expiresAt, err := h.authUC.Login(ctx, userToLogin)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_id",
+		Value:    sessionID,
+		Expires:  expiresAt,
+		HttpOnly: true,
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	resp := LoginResponse{
+		ID:   loggedUser.ID,
+		Name: loggedUser.Name,
+	}
+
+	response.JSON(w, http.StatusOK, resp)
+}
+
+// GetMe godoc
+// @Summary 		Проверка текущей сессии
+// @Description		Возвращает данные профиля пользователя, если сессионная кука валидна
+// @Tags			auth
+// @Accept			json
+// @Produce			json
+// @Success			200		{object}  LoginResponse				"Успешный вход и создание сессии"
+// @Failure			401		{object}  response.ErrorResponse	"Сессия не найдена"
+// @Failure			404		{object}  response.ErrorResponse	"Пользователь не найден"
+// @Failure			405		{object}  response.ErrorResponse	"Неверный метод"
+// @Router			/me [get]
+func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		response.Error(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		response.Error(w, http.StatusUnauthorized, "Session not found")
+		return
+	}
+
+	sessionID := cookie.Value
+
+	ctx := r.Context()
+
+	loggedUser, err := h.authUC.Check(ctx, sessionID)
+	if err != nil {
+		response.Error(w, http.StatusNotFound, err.Error())
+	}
+
+	resp := LoginResponse{
+		ID:   loggedUser.ID,
+		Name: loggedUser.Name,
+	}
+
+	response.JSON(w, http.StatusOK, resp)
 }

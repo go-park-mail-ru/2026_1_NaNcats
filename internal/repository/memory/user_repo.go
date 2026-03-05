@@ -52,3 +52,16 @@ func (r *userRepo) GetUserByEmail(email string) (domain.User, error) {
 
 	return user, nil
 }
+
+func (r *userRepo) GetUserByID(id int) (domain.User, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	for _, user := range r.users {
+		if user.ID == id {
+			return user, nil
+		}
+	}
+
+	return domain.User{}, domain.ErrUserNotFound
+}

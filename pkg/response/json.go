@@ -5,6 +5,11 @@ import (
 	"net/http"
 )
 
+// ErrorResponse описывает структуру ответа с ошибкой для Swagger
+type ErrorResponse struct {
+	Error string `json:"error" example:"текст ошибки"`
+}
+
 // функция кодирования в JSON
 func JSON(w http.ResponseWriter, statusCode int, data any) {
 	// установка заголовка Content-Type

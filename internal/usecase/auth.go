@@ -12,6 +12,8 @@ import (
 // контракт бизнес-логики авторизации
 type AuthUseCase interface {
 	Register(ctx context.Context, user domain.User) (domain.User, string, time.Time, error)
+	Login(ctx context.Context, user domain.User) (domain.User, string, time.Time, error)
+	Check(ctx context.Context, sessionID string) (domain.User, error)
 }
 
 // реализация контракта
@@ -56,4 +58,37 @@ func (u *authUseCase) Register(ctx context.Context, user domain.User) (domain.Us
 	}
 
 	return user, sessionID, expiresAt, nil
+}
+
+func (u *authUseCase) Login(ctx context.Context, user domain.User) (domain.User, string, time.Time, error) {
+	currUser, err := u.userRepo.GetUserByEmail(user.Email)
+	if err != nil {
+		return domain.User{}, "", time.Time{}, err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(currUser.PasswordHash))
+	if err != nil {
+		return domain.User{}, "", time.Time{}, err
+	}
+
+	sessionID, expiresAt, err := u.sessionUC.Create(ctx, currUser.ID)
+	if err != nil {
+		return domain.User{}, "", time.Time{}, err
+	}
+
+	return currUser, sessionID, expiresAt, nil
+}
+
+func (u *authUseCase) Check(ctx context.Context, sessionID string) (domain.User, error) {
+	userID, err := u.sessionUC.Check(ctx, sessionID)
+	if err != nil {
+		return domain.User{}, err
+	}
+
+	user, err := u.userRepo.GetUserByID(userID)
+	if err != nil {
+		return domain.User{}, err
+	}
+
+	return user, nil
 }

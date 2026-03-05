@@ -8,4 +8,6 @@ type UserRepository interface {
 	CreateUser(user domain.User) (int, error)
 	// метод нахождения пользователя по email'у
 	GetUserByEmail(email string) (domain.User, error)
+	// метод нахождения пользователей по id
+	GetUserByID(id int) (domain.User, error)
 }
