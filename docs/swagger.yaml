@@ -1,12 +1,6 @@
 basePath: /api
 definitions:
-  github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse:
-    properties:
-      error:
-        example: текст ошибки
-        type: string
-    type: object
-  internal_delivery_handler.LoginRequest:
+  handler.LoginRequest:
     properties:
       login:
         description: Email пользователя
@@ -17,7 +11,7 @@ definitions:
         example: qwerty12345
         type: string
     type: object
-  internal_delivery_handler.LoginResponse:
+  handler.LoginResponse:
     properties:
       id:
         description: Уникальный ID пользователя в системе
@@ -28,7 +22,7 @@ definitions:
         example: Иван
         type: string
     type: object
-  internal_delivery_handler.RegisterRequest:
+  handler.RegisterRequest:
     properties:
       email:
         description: Email пользователя
@@ -43,7 +37,7 @@ definitions:
         example: qwerty12345
         type: string
     type: object
-  internal_delivery_handler.RegisterResponse:
+  handler.RegisterResponse:
     properties:
       created_at:
         description: Время создания аккаунта по стандарту RFC 3339
@@ -62,6 +56,13 @@ definitions:
         example: Иван
         type: string
     type: object
+  response.ErrorResponse:
+    properties:
+      error:
+        example: текст ошибки
+        type: string
+    type: object
+host: localhost:8080
 info:
   contact: {}
   description: API бэкенда для проекта "Delivery Club" от команды NaNcats
@@ -80,22 +81,22 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/internal_delivery_handler.LoginRequest'
+          $ref: '#/definitions/handler.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Успешный вход и создание сессии
           schema:
-            $ref: '#/definitions/internal_delivery_handler.LoginResponse'
+            $ref: '#/definitions/handler.LoginResponse'
         "400":
           description: Неверный формат JSON
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/response.ErrorResponse'
         "405":
           description: Неверный метод
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/response.ErrorResponse'
       summary: Авторизация пользователя
       tags:
       - auth
@@ -110,19 +111,19 @@ paths:
         "200":
           description: Успешный вход и создание сессии
           schema:
-            $ref: '#/definitions/internal_delivery_handler.LoginResponse'
+            $ref: '#/definitions/handler.LoginResponse'
         "401":
           description: Сессия не найдена
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/response.ErrorResponse'
         "404":
           description: Пользователь не найден
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/response.ErrorResponse'
         "405":
           description: Неверный метод
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/response.ErrorResponse'
       summary: Проверка текущей сессии
       tags:
       - auth
@@ -138,22 +139,22 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/internal_delivery_handler.RegisterRequest'
+          $ref: '#/definitions/handler.RegisterRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Успешная регистрация и создание сессии
           schema:
-            $ref: '#/definitions/internal_delivery_handler.RegisterResponse'
+            $ref: '#/definitions/handler.RegisterResponse'
         "400":
           description: Неверный формат JSON
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/response.ErrorResponse'
         "405":
           description: Неверный метод
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/response.ErrorResponse'
       summary: Регистрация пользователя
       tags:
       - auth

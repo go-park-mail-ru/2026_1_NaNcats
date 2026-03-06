@@ -6,6 +6,7 @@
         "contact": {},
         "version": "1.0"
     },
+    "host": "localhost:8080",
     "basePath": "/api",
     "paths": {
         "/login": {
@@ -28,7 +29,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.LoginRequest"
+                            "$ref": "#/definitions/handler.LoginRequest"
                         }
                     }
                 ],
@@ -36,19 +37,19 @@
                     "200": {
                         "description": "Успешный вход и создание сессии",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.LoginResponse"
+                            "$ref": "#/definitions/handler.LoginResponse"
                         }
                     },
                     "400": {
                         "description": "Неверный формат JSON",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "405": {
                         "description": "Неверный метод",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -71,25 +72,25 @@
                     "200": {
                         "description": "Успешный вход и создание сессии",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.LoginResponse"
+                            "$ref": "#/definitions/handler.LoginResponse"
                         }
                     },
                     "401": {
                         "description": "Сессия не найдена",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Пользователь не найден",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "405": {
                         "description": "Неверный метод",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -115,7 +116,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.RegisterRequest"
+                            "$ref": "#/definitions/handler.RegisterRequest"
                         }
                     }
                 ],
@@ -123,19 +124,19 @@
                     "201": {
                         "description": "Успешная регистрация и создание сессии",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.RegisterResponse"
+                            "$ref": "#/definitions/handler.RegisterResponse"
                         }
                     },
                     "400": {
                         "description": "Неверный формат JSON",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "405": {
                         "description": "Неверный метод",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -143,16 +144,7 @@
         }
     },
     "definitions": {
-        "github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string",
-                    "example": "текст ошибки"
-                }
-            }
-        },
-        "internal_delivery_handler.LoginRequest": {
+        "handler.LoginRequest": {
             "type": "object",
             "properties": {
                 "login": {
@@ -167,7 +159,7 @@
                 }
             }
         },
-        "internal_delivery_handler.LoginResponse": {
+        "handler.LoginResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -182,7 +174,7 @@
                 }
             }
         },
-        "internal_delivery_handler.RegisterRequest": {
+        "handler.RegisterRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -202,7 +194,7 @@
                 }
             }
         },
-        "internal_delivery_handler.RegisterResponse": {
+        "handler.RegisterResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -224,6 +216,15 @@
                     "description": "Имя для отображения в интерфейсе",
                     "type": "string",
                     "example": "Иван"
+                }
+            }
+        },
+        "response.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "текст ошибки"
                 }
             }
         }

@@ -35,7 +35,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.LoginRequest"
+                            "$ref": "#/definitions/handler.LoginRequest"
                         }
                     }
                 ],
@@ -43,19 +43,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешный вход и создание сессии",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.LoginResponse"
+                            "$ref": "#/definitions/handler.LoginResponse"
                         }
                     },
                     "400": {
                         "description": "Неверный формат JSON",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "405": {
                         "description": "Неверный метод",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -78,25 +78,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешный вход и создание сессии",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.LoginResponse"
+                            "$ref": "#/definitions/handler.LoginResponse"
                         }
                     },
                     "401": {
                         "description": "Сессия не найдена",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Пользователь не найден",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "405": {
                         "description": "Неверный метод",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -122,7 +122,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.RegisterRequest"
+                            "$ref": "#/definitions/handler.RegisterRequest"
                         }
                     }
                 ],
@@ -130,19 +130,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Успешная регистрация и создание сессии",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.RegisterResponse"
+                            "$ref": "#/definitions/handler.RegisterResponse"
                         }
                     },
                     "400": {
                         "description": "Неверный формат JSON",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "405": {
                         "description": "Неверный метод",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -150,16 +150,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string",
-                    "example": "текст ошибки"
-                }
-            }
-        },
-        "internal_delivery_handler.LoginRequest": {
+        "handler.LoginRequest": {
             "type": "object",
             "properties": {
                 "login": {
@@ -174,7 +165,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler.LoginResponse": {
+        "handler.LoginResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -189,7 +180,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler.RegisterRequest": {
+        "handler.RegisterRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -209,7 +200,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler.RegisterResponse": {
+        "handler.RegisterResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -233,6 +224,15 @@ const docTemplate = `{
                     "example": "Иван"
                 }
             }
+        },
+        "response.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "текст ошибки"
+                }
+            }
         }
     }
 }`
@@ -240,7 +240,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "",
+	Host:             "localhost:8080",
 	BasePath:         "/api",
 	Schemes:          []string{},
 	Title:            "NaNcats Delivery API",

@@ -72,11 +72,6 @@ func NewAuthHandler(auc usecase.AuthUseCase) *authHandler {
 // @Failure			405		{object}  response.ErrorResponse	"Неверный метод"
 // @Router			/register [post]
 func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		response.Error(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	// объект DTO запроса
 	curRequest := RegisterRequest{}
 
@@ -138,11 +133,6 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 // @Failure			405		{object}  response.ErrorResponse	"Неверный метод"
 // @Router			/login [post]
 func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		response.Error(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	curRequest := LoginRequest{}
 
 	err := request.JSON(r, &curRequest)
@@ -193,11 +183,6 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 // @Failure			405		{object}  response.ErrorResponse	"Неверный метод"
 // @Router			/me [get]
 func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		response.Error(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		response.Error(w, http.StatusUnauthorized, "Session not found")

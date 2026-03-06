@@ -38,9 +38,9 @@ func main() {
 
 	authHandler := handler.NewAuthHandler(authUC)
 
-	http.HandleFunc("/api/register", authHandler.Register)
-	http.HandleFunc("/api/login", authHandler.Login)
-	http.HandleFunc("/api/me", authHandler.GetMe) // ручка, которую дергаем для проверки авторизации по куки
+	http.HandleFunc("POST /api/auth/register", authHandler.Register)
+	http.HandleFunc("POST /api/auth/login", authHandler.Login)
+	http.HandleFunc("GET /api/auth/me", authHandler.GetMe) // ручка, которую дергаем для проверки авторизации по куки
 
 	http.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
