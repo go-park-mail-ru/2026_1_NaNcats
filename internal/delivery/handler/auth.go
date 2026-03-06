@@ -100,15 +100,7 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, http.StatusBadRequest, err.Error())
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "session_id",         // имя куки
-		Value:    sessionID,            // значение - случайный идентификатор из usecase
-		Expires:  expiresAt,            // срок жизни
-		HttpOnly: true,                 // защита: JavaScript(фронт) не сможет прочитать эту куку
-		Path:     "/",                  // кука будет отправляться на все эндпоинты сайта
-		SameSite: http.SameSiteLaxMode, // защита от CSRF атак
-		// Secure: true,				// если будем на https
-	})
+	response.SetCookie(w, "session_id", sessionID, expiresAt)
 
 	// ответ, который отдаем юзеру
 	resp := RegisterResponse{
@@ -154,14 +146,7 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "session_id",
-		Value:    sessionID,
-		Expires:  expiresAt,
-		HttpOnly: true,
-		Path:     "/",
-		SameSite: http.SameSiteLaxMode,
-	})
+	response.SetCookie(w, "session_id", sessionID, expiresAt)
 
 	resp := LoginResponse{
 		ID:   loggedUser.ID,
