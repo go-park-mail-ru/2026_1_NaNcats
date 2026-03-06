@@ -4,7 +4,7 @@
 
 ### 👤 Отношение `user`
 **Зависимости:**
-`{id} -> phone, name, email, password_hash, role, created_at, updated_at`
+`{id} -> phone, name, email, password_hash, role, avatar_url, created_at, updated_at`
 
 **Обоснование:**
 * **1НФ:** Все атрибуты атомарны.
@@ -48,7 +48,7 @@
 
 ### 🏢 Отношение `restaurant_brand`
 **Зависимости:**
-`{id} -> name, description, promotion_tier, created_at, updated_at`
+`{id} -> name, description, promotion_tier, logo_url, banner_url, created_at, updated_at`
 
 **Обоснование:**
 * **1НФ:** Все атрибуты атомарны.
@@ -107,7 +107,7 @@
 
 ### 🍕 Отношение `dish`
 **Зависимости:**
-`{id} -> restaurant_brand_id, name, description, price, created_at, updated_at`
+`{id} -> restaurant_brand_id, name, description, image_url, price, created_at, updated_at`
 
 **Обоснование:**
 * **1НФ:** Все атрибуты атомарны.
@@ -220,6 +220,7 @@ erDiagram
         text email UK "NOT NULL, UNIQUE"
         text password_hash "NOT NULL"
         enum role "NOT NULL"
+        text avatar_url
         datetime created_at "DEFAULT NOW(), NOT NULL"
         datetime updated_at "DEFAULT NOW(), NOT NULL"
     }
@@ -250,6 +251,8 @@ erDiagram
         text name "NOT NULL"
         text description
         int promotion_tier
+        text logo_url
+        text banner_url
         datetime created_at "DEFAULT NOW()"
         datetime updated_at "DEFAULT NOW()"
     }
@@ -297,6 +300,7 @@ erDiagram
         int restaurant_brand_id FK "NOT NULL"
         text name "NOT NULL"
         text description
+        text image_url
         int price "NOT NULL"
         datetime created_at "DEFAULT NOW()"
         datetime updated_at "DEFAULT NOW()"
