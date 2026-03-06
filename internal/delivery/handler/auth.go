@@ -156,6 +156,38 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, resp)
 }
 
+// Logout godoc
+// @Summary 		Выход из текущей
+// @Description		Удаляет информацию о текущей сессии и принудительно протухает куку с сессией
+// @Tags			auth
+// @Accept			json
+// @Produce			json
+// @Success			200		"Успешный выход"
+// @Failure			401		{object}  response.ErrorResponse	"Сессия не найдена"
+// @Failure			404		{object}  response.ErrorResponse	"Сессия не найдена в базе данных"
+// @Router			/me [get]
+func (h *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		response.Error(w, http.StatusUnauthorized, "Session not found")
+		return
+	}
+
+	sessionID := cookie.Value
+
+	ctx := r.Context()
+
+	err = h.authUC.Logout(ctx, sessionID)
+	if err != nil {
+		response.Error(w, http.StatusNotFound, "Session not found")
+		return
+	}
+
+	// нулевое время в эпохе Unix
+	response.SetCookie(w, "session_id", sessionID, time.Unix(0, 0))
+	response.JSON(w, http.StatusOK, nil)
+}
+
 // GetMe godoc
 // @Summary 		Проверка текущей сессии
 // @Description		Возвращает данные профиля пользователя, если сессионная кука валидна

@@ -7,7 +7,8 @@ import (
 
 // ErrorResponse описывает структуру ответа с ошибкой для Swagger
 type ErrorResponse struct {
-	Error string `json:"error" example:"текст ошибки"`
+	Code    int    `json:"code" example:"400"`
+	Message string `json:"message" example:"Неверный формат запроса"`
 }
 
 // функция кодирования в JSON
@@ -31,5 +32,10 @@ func JSON(w http.ResponseWriter, statusCode int, data any) {
 
 // обертка над JSON для стандартизации сообщений об ошибках
 func Error(w http.ResponseWriter, statusCode int, message string) {
-	JSON(w, statusCode, map[string]string{"error": message})
+	resp := ErrorResponse{
+		Code:    statusCode,
+		Message: message,
+	}
+
+	JSON(w, statusCode, resp)
 }

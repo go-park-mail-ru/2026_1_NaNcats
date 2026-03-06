@@ -13,6 +13,7 @@ import (
 type AuthUseCase interface {
 	Register(ctx context.Context, user domain.User) (domain.User, domain.Session, error)
 	Login(ctx context.Context, user domain.User) (domain.User, domain.Session, error)
+	Logout(ctx context.Context, sessionID string) error
 	Check(ctx context.Context, sessionID string) (domain.User, error)
 }
 
@@ -77,6 +78,15 @@ func (u *authUseCase) Login(ctx context.Context, user domain.User) (domain.User,
 	}
 
 	return currUser, createdSession, nil
+}
+
+func (u *authUseCase) Logout(ctx context.Context, sessionID string) error {
+	err := u.sessionUC.Destroy(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (u *authUseCase) Check(ctx context.Context, sessionID string) (domain.User, error) {

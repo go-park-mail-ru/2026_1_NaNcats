@@ -40,6 +40,7 @@ func main() {
 
 	http.HandleFunc("POST /api/auth/register", authHandler.Register)
 	http.HandleFunc("POST /api/auth/login", authHandler.Login)
+	http.HandleFunc("POST /api/auth/logout", authHandler.Logout)
 	http.HandleFunc("GET /api/auth/me", authHandler.GetMe) // ручка, которую дергаем для проверки авторизации по куки
 
 	http.HandleFunc("/swagger/", httpSwagger.WrapHandler)
