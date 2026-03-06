@@ -52,15 +52,9 @@ func (u *authUseCase) Register(ctx context.Context, user domain.User) (domain.Us
 	user.ID = id
 
 	// вызов бизнес-логики по созданию сессии
-	sessionID, expiresAt, err := u.sessionUC.Create(ctx, user.ID)
+	createdSession, err := u.sessionUC.Create(ctx, user.ID)
 	if err != nil {
 		return domain.User{}, domain.Session{}, err
-	}
-
-	createdSession := domain.Session{
-		ID:        sessionID,
-		UserID:    user.ID,
-		ExpiresAt: expiresAt,
 	}
 
 	return user, createdSession, nil
@@ -77,18 +71,12 @@ func (u *authUseCase) Login(ctx context.Context, user domain.User) (domain.User,
 		return domain.User{}, domain.Session{}, err
 	}
 
-	sessionID, expiresAt, err := u.sessionUC.Create(ctx, currUser.ID)
+	createdSession, err := u.sessionUC.Create(ctx, currUser.ID)
 	if err != nil {
 		return domain.User{}, domain.Session{}, err
 	}
 
-	createdSession := domain.Session{
-		ID:        sessionID,
-		UserID:    user.ID,
-		ExpiresAt: expiresAt,
-	}
-
-	return user, createdSession, nil
+	return currUser, createdSession, nil
 }
 
 func (u *authUseCase) Check(ctx context.Context, sessionID string) (domain.User, error) {

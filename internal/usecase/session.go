@@ -12,7 +12,7 @@ import (
 
 type SessionUseCase interface {
 	// бизнес-логика создания сессии для пользователя, вовзращает sessionID
-	Create(ctx context.Context, userID int) (string, time.Time, error)
+	Create(ctx context.Context, userID int) (domain.Session, error)
 	// проверяет, существует и не истек ли sessionID, возвращает айди юзера при успехе
 	Check(ctx context.Context, sessionID string) (int, error)
 	// бизнес-логика для удаления сессии, просто вызывает удаление из repository.session
@@ -32,7 +32,7 @@ func NewSessionUseCase(sr repository.SessionRepository, ttl time.Duration) Sessi
 	}
 }
 
-func (u *sessionUseCase) Create(ctx context.Context, userID int) (string, time.Time, error) {
+func (u *sessionUseCase) Create(ctx context.Context, userID int) (domain.Session, error) {
 	// бизнес-логика создания сессии
 	// возвращает sessionID созданной сессии и момент времени, когда истекает
 
@@ -52,12 +52,19 @@ func (u *sessionUseCase) Create(ctx context.Context, userID int) (string, time.T
 	// вызов создания сессии в репо
 	err := u.sessionRepo.Create(ctx, session)
 	if err != nil {
-		return "", time.Time{}, err
+		return domain.Session{}, err
 	}
 
-	return sessionID, time.Time{}, nil
+	createdSession := domain.Session{
+		ID:        sessionID,
+		UserID:    userID,
+		ExpiresAt: expiresAt,
+	}
+
+	return createdSession, nil
 }
 
+// проверяет, существует ли сессия, если да - возвращаем id пользователя сессии
 func (u *sessionUseCase) Check(ctx context.Context, sessionID string) (int, error) {
 	// просим репозиторий найти сессию
 	session, err := u.sessionRepo.GetByID(ctx, sessionID)
