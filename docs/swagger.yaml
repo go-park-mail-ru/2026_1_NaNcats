@@ -58,8 +58,11 @@ definitions:
     type: object
   response.ErrorResponse:
     properties:
-      error:
-        example: текст ошибки
+      code:
+        example: 400
+        type: integer
+      message:
+        example: Неверный формат запроса
         type: string
     type: object
 host: localhost:8080
@@ -93,11 +96,29 @@ paths:
           description: Неверный формат JSON
           schema:
             $ref: '#/definitions/response.ErrorResponse'
-        "405":
-          description: Неверный метод
+      summary: Авторизация пользователя
+      tags:
+      - auth
+  /logout:
+    post:
+      consumes:
+      - application/json
+      description: Удаляет информацию о текущей сессии и принудительно протухает куку
+        с сессией
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный выход
+        "401":
+          description: Сессия не найдена
           schema:
             $ref: '#/definitions/response.ErrorResponse'
-      summary: Авторизация пользователя
+        "404":
+          description: Сессия не найдена в базе данных
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Выход из текущей
       tags:
       - auth
   /me:
@@ -118,10 +139,6 @@ paths:
             $ref: '#/definitions/response.ErrorResponse'
         "404":
           description: Пользователь не найден
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "405":
-          description: Неверный метод
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Проверка текущей сессии
@@ -149,10 +166,6 @@ paths:
             $ref: '#/definitions/handler.RegisterResponse'
         "400":
           description: Неверный формат JSON
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "405":
-          description: Неверный метод
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Регистрация пользователя

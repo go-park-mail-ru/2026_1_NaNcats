@@ -69,7 +69,6 @@ func NewAuthHandler(auc usecase.AuthUseCase) *authHandler {
 // @Param			input	body	  RegisterRequest	true	"Данные для регистрации"
 // @Success			201		{object}  RegisterResponse			"Успешная регистрация и создание сессии"
 // @Failure			400		{object}  response.ErrorResponse	"Неверный формат JSON"
-// @Failure			405		{object}  response.ErrorResponse	"Неверный метод"
 // @Router			/register [post]
 func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 	// объект DTO запроса
@@ -123,7 +122,6 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 // @Param			input	body	  LoginRequest	true	"Данные для входа"
 // @Success			200		{object}  LoginResponse			"Успешный вход и создание сессии"
 // @Failure			400		{object}  response.ErrorResponse	"Неверный формат JSON"
-// @Failure			405		{object}  response.ErrorResponse	"Неверный метод"
 // @Router			/login [post]
 func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 	curRequest := LoginRequest{}
@@ -166,7 +164,7 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 // @Success			200		"Успешный выход"
 // @Failure			401		{object}  response.ErrorResponse	"Сессия не найдена"
 // @Failure			404		{object}  response.ErrorResponse	"Сессия не найдена в базе данных"
-// @Router			/me [get]
+// @Router			/logout [post]
 func (h *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
@@ -185,7 +183,7 @@ func (h *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// нулевое время в эпохе Unix
-	response.SetCookie(w, "session_id", sessionID, time.Unix(0, 0))
+	response.SetCookie(w, "session_id", "", time.Unix(0, 0))
 	response.JSON(w, http.StatusOK, nil)
 }
 
@@ -198,7 +196,6 @@ func (h *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 // @Success			200		{object}  LoginResponse				"Успешный вход и создание сессии"
 // @Failure			401		{object}  response.ErrorResponse	"Сессия не найдена"
 // @Failure			404		{object}  response.ErrorResponse	"Пользователь не найден"
-// @Failure			405		{object}  response.ErrorResponse	"Неверный метод"
 // @Router			/me [get]
 func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session_id")

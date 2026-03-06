@@ -51,9 +51,35 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
+                    }
+                }
+            }
+        },
+        "/logout": {
+            "post": {
+                "description": "Удаляет информацию о текущей сессии и принудительно протухает куку с сессией",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Выход из текущей",
+                "responses": {
+                    "200": {
+                        "description": "Успешный выход"
                     },
-                    "405": {
-                        "description": "Неверный метод",
+                    "401": {
+                        "description": "Сессия не найдена",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Сессия не найдена в базе данных",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -89,12 +115,6 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Пользователь не найден",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "405": {
-                        "description": "Неверный метод",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -135,12 +155,6 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Неверный формат JSON",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "405": {
-                        "description": "Неверный метод",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -228,9 +242,13 @@ const docTemplate = `{
         "response.ErrorResponse": {
             "type": "object",
             "properties": {
-                "error": {
+                "code": {
+                    "type": "integer",
+                    "example": 400
+                },
+                "message": {
                     "type": "string",
-                    "example": "текст ошибки"
+                    "example": "Неверный формат запроса"
                 }
             }
         }
