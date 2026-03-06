@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"testing"
@@ -108,8 +109,10 @@ func TestCreateUser(t *testing.T) {
 			// Подготавливаем состояние
 			tc.prepare(repo)
 
+			ctx := context.Background()
+
 			// Выполняем метод
-			id, err := repo.CreateUser(tc.input)
+			id, err := repo.CreateUser(ctx, tc.input)
 
 			if tc.expectedErr != nil {
 				require.ErrorIs(t, err, tc.expectedErr)
@@ -146,7 +149,9 @@ func TestCreateUser_concurrency(t *testing.T) {
 				Name:  "Ivan",
 			}
 
-			_, err := repo.CreateUser(user)
+			ctx := context.Background()
+
+			_, err := repo.CreateUser(ctx, user)
 
 			require.NoError(t, err)
 		}(i)

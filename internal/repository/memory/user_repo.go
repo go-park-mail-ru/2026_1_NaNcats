@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"sync"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
@@ -23,7 +24,7 @@ func NewUserRepo() repository.UserRepository {
 }
 
 // метод создания юзера в репозитории
-func (r *userRepo) CreateUser(user domain.User) (int, error) {
+func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (int, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -40,7 +41,7 @@ func (r *userRepo) CreateUser(user domain.User) (int, error) {
 }
 
 // метод нахождения пользователя по email'у
-func (r *userRepo) GetUserByEmail(email string) (domain.User, error) {
+func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.User, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -53,7 +54,7 @@ func (r *userRepo) GetUserByEmail(email string) (domain.User, error) {
 	return user, nil
 }
 
-func (r *userRepo) GetUserByID(id int) (domain.User, error) {
+func (r *userRepo) GetUserByID(ctx context.Context, id int) (domain.User, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 

@@ -44,7 +44,7 @@ func (u *authUseCase) Register(ctx context.Context, user domain.User) (domain.Us
 	user.UpdatedAt = time.Now()
 
 	// вызов создания пользователя из репо
-	id, err := u.userRepo.CreateUser(user)
+	id, err := u.userRepo.CreateUser(ctx, user)
 	if err != nil {
 		return domain.User{}, domain.Session{}, err
 	}
@@ -61,7 +61,7 @@ func (u *authUseCase) Register(ctx context.Context, user domain.User) (domain.Us
 }
 
 func (u *authUseCase) Login(ctx context.Context, user domain.User) (domain.User, domain.Session, error) {
-	currUser, err := u.userRepo.GetUserByEmail(user.Email)
+	currUser, err := u.userRepo.GetUserByEmail(ctx, user.Email)
 	if err != nil {
 		return domain.User{}, domain.Session{}, err
 	}
@@ -85,7 +85,7 @@ func (u *authUseCase) Check(ctx context.Context, sessionID string) (domain.User,
 		return domain.User{}, err
 	}
 
-	user, err := u.userRepo.GetUserByID(userID)
+	user, err := u.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
 		return domain.User{}, err
 	}

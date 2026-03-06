@@ -1,13 +1,17 @@
 package repository
 
-import "github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+import (
+	"context"
+
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+)
 
 // контракт репозитория пользователей
 type UserRepository interface {
 	// метод создания юзера в репозитории
-	CreateUser(user domain.User) (int, error)
+	CreateUser(ctx context.Context, user domain.User) (int, error)
 	// метод нахождения пользователя по email'у
-	GetUserByEmail(email string) (domain.User, error)
+	GetUserByEmail(ctx context.Context, email string) (domain.User, error)
 	// метод нахождения пользователей по id
-	GetUserByID(id int) (domain.User, error)
+	GetUserByID(ctx context.Context, id int) (domain.User, error)
 }
