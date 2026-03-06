@@ -94,13 +94,13 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// созданный юзер, id сессии
-	createdUser, sessionID, expiresAt, err := h.authUC.Register(ctx, userToCreate)
+	createdUser, createdSession, err := h.authUC.Register(ctx, userToCreate)
 	if err != nil {
 		// добавить больше бизнес-ошибок (не только bad request)
 		response.Error(w, http.StatusBadRequest, err.Error())
 	}
 
-	response.SetCookie(w, "session_id", sessionID, expiresAt)
+	response.SetCookie(w, "session_id", createdSession.ID, createdSession.ExpiresAt)
 
 	// ответ, который отдаем юзеру
 	resp := RegisterResponse{
@@ -140,13 +140,13 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	loggedUser, sessionID, expiresAt, err := h.authUC.Login(ctx, userToLogin)
+	loggedUser, createdSession, err := h.authUC.Login(ctx, userToLogin)
 	if err != nil {
 		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	response.SetCookie(w, "session_id", sessionID, expiresAt)
+	response.SetCookie(w, "session_id", createdSession.ID, createdSession.ExpiresAt)
 
 	resp := LoginResponse{
 		ID:   loggedUser.ID,

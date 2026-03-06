@@ -11,8 +11,8 @@ import (
 
 // контракт бизнес-логики авторизации
 type AuthUseCase interface {
-	Register(ctx context.Context, user domain.User) (domain.User, string, time.Time, error)
-	Login(ctx context.Context, user domain.User) (domain.User, string, time.Time, error)
+	Register(ctx context.Context, user domain.User) (domain.User, domain.Session, error)
+	Login(ctx context.Context, user domain.User) (domain.User, domain.Session, error)
 	Check(ctx context.Context, sessionID string) (domain.User, error)
 }
 
@@ -31,11 +31,11 @@ func NewAuthUseCase(ur repository.UserRepository, suc SessionUseCase) AuthUseCas
 }
 
 // бизнес-логика регистрации
-func (u *authUseCase) Register(ctx context.Context, user domain.User) (domain.User, string, time.Time, error) {
+func (u *authUseCase) Register(ctx context.Context, user domain.User) (domain.User, domain.Session, error) {
 	// генерируем хешированный пароль
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.PasswordHash), bcrypt.DefaultCost)
 	if err != nil {
-		return domain.User{}, "", time.Time{}, err
+		return domain.User{}, domain.Session{}, err
 	}
 
 	user.PasswordHash = string(hashedPassword)
@@ -46,7 +46,7 @@ func (u *authUseCase) Register(ctx context.Context, user domain.User) (domain.Us
 	// вызов создания пользователя из репо
 	id, err := u.userRepo.CreateUser(user)
 	if err != nil {
-		return domain.User{}, "", time.Time{}, err
+		return domain.User{}, domain.Session{}, err
 	}
 
 	user.ID = id
@@ -54,29 +54,41 @@ func (u *authUseCase) Register(ctx context.Context, user domain.User) (domain.Us
 	// вызов бизнес-логики по созданию сессии
 	sessionID, expiresAt, err := u.sessionUC.Create(ctx, user.ID)
 	if err != nil {
-		return domain.User{}, "", time.Time{}, err
+		return domain.User{}, domain.Session{}, err
 	}
 
-	return user, sessionID, expiresAt, nil
+	createdSession := domain.Session{
+		ID:        sessionID,
+		UserID:    user.ID,
+		ExpiresAt: expiresAt,
+	}
+
+	return user, createdSession, nil
 }
 
-func (u *authUseCase) Login(ctx context.Context, user domain.User) (domain.User, string, time.Time, error) {
+func (u *authUseCase) Login(ctx context.Context, user domain.User) (domain.User, domain.Session, error) {
 	currUser, err := u.userRepo.GetUserByEmail(user.Email)
 	if err != nil {
-		return domain.User{}, "", time.Time{}, err
+		return domain.User{}, domain.Session{}, err
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(currUser.PasswordHash))
 	if err != nil {
-		return domain.User{}, "", time.Time{}, err
+		return domain.User{}, domain.Session{}, err
 	}
 
 	sessionID, expiresAt, err := u.sessionUC.Create(ctx, currUser.ID)
 	if err != nil {
-		return domain.User{}, "", time.Time{}, err
+		return domain.User{}, domain.Session{}, err
 	}
 
-	return currUser, sessionID, expiresAt, nil
+	createdSession := domain.Session{
+		ID:        sessionID,
+		UserID:    user.ID,
+		ExpiresAt: expiresAt,
+	}
+
+	return user, createdSession, nil
 }
 
 func (u *authUseCase) Check(ctx context.Context, sessionID string) (domain.User, error) {
