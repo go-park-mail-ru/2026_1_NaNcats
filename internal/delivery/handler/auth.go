@@ -98,6 +98,7 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// добавить больше бизнес-ошибок (не только bad request)
 		response.Error(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
 	response.SetCookie(w, "session_id", createdSession.ID, createdSession.ExpiresAt)
@@ -213,6 +214,7 @@ func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	loggedUser, err := h.authUC.Check(ctx, sessionID)
 	if err != nil {
 		response.Error(w, http.StatusNotFound, err.Error())
+		return
 	}
 
 	resp := LoginResponse{
