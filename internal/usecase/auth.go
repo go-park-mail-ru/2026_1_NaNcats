@@ -15,6 +15,7 @@ type AuthUseCase interface {
 	Login(ctx context.Context, user domain.User) (domain.User, domain.Session, error)
 	Logout(ctx context.Context, sessionID string) error
 	Check(ctx context.Context, sessionID string) (domain.User, error)
+	GetProfile(ctx context.Context, userID int) (domain.User, error)
 }
 
 // реализация контракта
@@ -89,12 +90,23 @@ func (u *authUseCase) Logout(ctx context.Context, sessionID string) error {
 	return nil
 }
 
+// возвращает пользователя сессии, проверяя, существует ли сессия и пользователь сессии
 func (u *authUseCase) Check(ctx context.Context, sessionID string) (domain.User, error) {
 	userID, err := u.sessionUC.Check(ctx, sessionID)
 	if err != nil {
 		return domain.User{}, err
 	}
 
+	user, err := u.userRepo.GetUserByID(ctx, userID)
+	if err != nil {
+		return domain.User{}, err
+	}
+
+	return user, nil
+}
+
+// возвращает юзера по переданному userID
+func (u *authUseCase) GetProfile(ctx context.Context, userID int) (domain.User, error) {
 	user, err := u.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
 		return domain.User{}, err

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/handler"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/memory"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
 
@@ -37,11 +38,13 @@ func main() {
 	authUC := usecase.NewAuthUseCase(userRepo, sessionUC)
 
 	authHandler := handler.NewAuthHandler(authUC)
+	authMW := middleware.NewAuthMiddleware(sessionUC)
 
 	http.HandleFunc("POST /api/auth/register", authHandler.Register)
 	http.HandleFunc("POST /api/auth/login", authHandler.Login)
 	http.HandleFunc("POST /api/auth/logout", authHandler.Logout)
-	http.HandleFunc("GET /api/auth/me", authHandler.GetMe) // ручка, которую дергаем для проверки авторизации по куки
+	// ручка, которую дергаем для проверки авторизации по куки с миддлваром на авторизацию
+	http.Handle("GET /api/auth/me", authMW.RequireAuth(http.HandlerFunc(authHandler.GetMe)))
 
 	http.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 

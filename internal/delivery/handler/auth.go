@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/request"
@@ -198,19 +199,21 @@ func (h *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 // @Failure			404		{object}  response.ErrorResponse	"Пользователь не найден"
 // @Router			/me [get]
 func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session_id")
-	if err != nil {
-		response.Error(w, http.StatusUnauthorized, "Session not found")
+	ctx := r.Context()
+
+	// берем userID из контекста, который нам пришел из мидлвара AuthMiddleware
+	// Value возвращает any. Используем утверждение типа, чтобы Go знал что это int
+	userID, ok := ctx.Value(middleware.UserIDKey).(int)
+
+	// если там не int или nil
+	if !ok {
+		response.Error(w, http.StatusInternalServerError, "failed to identify user")
 		return
 	}
 
-	sessionID := cookie.Value
-
-	ctx := r.Context()
-
-	loggedUser, err := h.authUC.Check(ctx, sessionID)
+	loggedUser, err := h.authUC.GetProfile(ctx, userID)
 	if err != nil {
-		response.Error(w, http.StatusNotFound, err.Error())
+		response.Error(w, http.StatusInternalServerError, "failed to fetch user profile")
 		return
 	}
 

@@ -55,13 +55,7 @@ func (u *sessionUseCase) Create(ctx context.Context, userID int) (domain.Session
 		return domain.Session{}, err
 	}
 
-	createdSession := domain.Session{
-		ID:        sessionID,
-		UserID:    userID,
-		ExpiresAt: expiresAt,
-	}
-
-	return createdSession, nil
+	return session, nil
 }
 
 // проверяет, существует ли сессия, если да - возвращаем id пользователя сессии
