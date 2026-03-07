@@ -27,30 +27,45 @@ func main() {
 	}
 
 	userRepo := memory.NewUserRepo()
-
 	sessionRepo := memory.NewSessionRepo()
 
 	// ttl сессии - 24 часа
 	sessionTTL := 24 * time.Hour
 
 	sessionUC := usecase.NewSessionUseCase(sessionRepo, sessionTTL)
-
 	authUC := usecase.NewAuthUseCase(userRepo, sessionUC)
 
 	authHandler := handler.NewAuthHandler(authUC)
+
 	authMW := middleware.NewAuthMiddleware(sessionUC)
+	corsMW := middleware.NewCORSMiddleware([]string{
+		"http://localhost:2033",
+	})
 
-	http.HandleFunc("POST /api/auth/register", authHandler.Register)
-	http.HandleFunc("POST /api/auth/login", authHandler.Login)
-	http.HandleFunc("POST /api/auth/logout", authHandler.Logout)
+	// создание собственного роутера
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("POST /api/auth/register", authHandler.Register)
+	mux.HandleFunc("POST /api/auth/login", authHandler.Login)
+	mux.HandleFunc("POST /api/auth/logout", authHandler.Logout)
 	// ручка, которую дергаем для проверки авторизации по куки с миддлваром на авторизацию
-	http.Handle("GET /api/auth/me", authMW.RequireAuth(http.HandlerFunc(authHandler.GetMe)))
+	mux.Handle("GET /api/auth/me", authMW.RequireAuth(http.HandlerFunc(authHandler.GetMe)))
 
-	http.HandleFunc("/swagger/", httpSwagger.WrapHandler)
+	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
+
+	// применение глобальных мидлваров
+	siteHandler := corsMW.Handler(mux)
 
 	log.Printf("Server is starting on port %s...", port)
 
-	err := http.ListenAndServe(":"+port, nil)
+	server := &http.Server{
+		Addr:         ":" + port,
+		Handler:      siteHandler, // передаем обернутый роутер
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+
+	err := server.ListenAndServe()
 	if err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
