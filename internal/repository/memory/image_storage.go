@@ -9,12 +9,12 @@ import (
 	"github.com/google/uuid"
 )
 
-type localStorage struct {
+type imageStorage struct {
 	basePath string
 }
 
-func NewLocalStorage() repository.ImageStorage {
-	return &localStorage{
+func NewImageStorage() repository.ImageStorage {
+	return &imageStorage{
 		basePath: "./uploads",
 	}
 }
@@ -30,7 +30,7 @@ func generateFileName(originalName string) string {
 	return newID + ext
 }
 
-func (s *localStorage) Upload(ctx context.Context, fileBytes []byte, originalName, folder string) (string, error) {
+func (s *imageStorage) Upload(ctx context.Context, fileBytes []byte, originalName, folder string) (string, error) {
 	// Определяем путь до папки
 	dirPath := filepath.Join(s.basePath, folder)
 
@@ -53,13 +53,13 @@ func (s *localStorage) Upload(ctx context.Context, fileBytes []byte, originalNam
 	return filepath.Join(folder, fileName), nil
 }
 
-func (s *localStorage) Download(ctx context.Context, filePath string) ([]byte, error) {
+func (s *imageStorage) Download(ctx context.Context, filePath string) ([]byte, error) {
 	fullFilePath := filepath.Join(s.basePath, filePath)
 	cleanPath := filepath.Clean(fullFilePath)
 
 	photo, err := os.ReadFile(cleanPath)
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 
 	return photo, nil

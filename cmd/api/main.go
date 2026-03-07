@@ -28,14 +28,17 @@ func main() {
 
 	userRepo := memory.NewUserRepo()
 	sessionRepo := memory.NewSessionRepo()
+	imageStorage := memory.NewImageStorage()
 
 	// ttl сессии - 24 часа
 	sessionTTL := 24 * time.Hour
 
 	sessionUC := usecase.NewSessionUseCase(sessionRepo, sessionTTL)
 	authUC := usecase.NewAuthUseCase(userRepo, sessionUC)
+	imageUC := usecase.NewImageUseCase(imageStorage)
 
 	authHandler := handler.NewAuthHandler(authUC)
+	imageHandler := handler.NewImageHandler(imageUC)
 
 	authMW := middleware.NewAuthMiddleware(sessionUC)
 	corsMW := middleware.NewCORSMiddleware([]string{
@@ -50,6 +53,12 @@ func main() {
 	mux.HandleFunc("POST /api/auth/logout", authHandler.Logout)
 	// ручка, которую дергаем для проверки авторизации по куки с миддлваром на авторизацию
 	mux.Handle("GET /api/auth/me", authMW.RequireAuth(http.HandlerFunc(authHandler.GetMe)))
+
+	mux.HandleFunc("POST /api/images/users/avatars", imageHandler.UploadAvatar)
+	mux.HandleFunc("POST /api/images/restaurants/banners", imageHandler.UploadBanner)
+	mux.HandleFunc("POST /api/images/restaurants/logos", imageHandler.UploadLogo)
+	mux.HandleFunc("POST /api/images/dishes", imageHandler.UploadDishes)
+	mux.HandleFunc("GET /api/images/{filepath...}", imageHandler.Download)
 
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
