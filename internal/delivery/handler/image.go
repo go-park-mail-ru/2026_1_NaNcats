@@ -19,9 +19,9 @@ func NewImageHandler(iuc usecase.ImageUseCase) *imageHandler {
 	}
 }
 
-func (h *imageHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
-	// Ограничиваем размер аватара в 4Мб
-	err := r.ParseMultipartForm(4 << 20)
+func (h *imageHandler) imageUpload(w http.ResponseWriter, r *http.Request, maxMemory int64, path string) {
+	// Ограничиваем размер
+	err := r.ParseMultipartForm(maxMemory)
 	if err != nil {
 		response.Error(w, http.StatusBadRequest, "File is too big")
 		return
@@ -42,7 +42,7 @@ func (h *imageHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	savedPath, err := h.imageUC.UploadImage(ctx, fileBytes, header.Filename, "users/avatars")
+	savedPath, err := h.imageUC.UploadImage(ctx, fileBytes, header.Filename, path)
 	if err != nil {
 		response.Error(w, http.StatusBadRequest, err.Error())
 		return
@@ -53,114 +53,22 @@ func (h *imageHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.JSON(w, http.StatusOK, resp)
+}
+
+func (h *imageHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
+	h.imageUpload(w, r, 4<<20, "users/avatars")
 }
 
 func (h *imageHandler) UploadLogo(w http.ResponseWriter, r *http.Request) {
-	// Ограничиваем размер логотипа в 6Мб
-	err := r.ParseMultipartForm(6 << 20)
-	if err != nil {
-		response.Error(w, http.StatusBadRequest, "File is too big")
-		return
-	}
-
-	file, header, err := r.FormFile("photo")
-	if err != nil {
-		response.Error(w, http.StatusBadRequest, "Not found file in 'photo'")
-		return
-	}
-	defer file.Close()
-
-	fileBytes, err := io.ReadAll(file)
-	if err != nil {
-		response.Error(w, http.StatusInternalServerError, "File reading error")
-		return
-	}
-
-	ctx := r.Context()
-
-	savedPath, err := h.imageUC.UploadImage(ctx, fileBytes, header.Filename, "restaurants/logos")
-	if err != nil {
-		response.Error(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	resp := map[string]string{
-		"url": "/api/images/" + savedPath,
-	}
-
-	response.JSON(w, http.StatusOK, resp)
+	h.imageUpload(w, r, 6<<20, "restaurants/logos")
 }
 
 func (h *imageHandler) UploadBanner(w http.ResponseWriter, r *http.Request) {
-	// Ограничиваем размер баннера в 10Мб
-	err := r.ParseMultipartForm(10 << 20)
-	if err != nil {
-		response.Error(w, http.StatusBadRequest, "File is too big")
-		return
-	}
-
-	file, header, err := r.FormFile("photo")
-	if err != nil {
-		response.Error(w, http.StatusBadRequest, "Not found file in 'photo'")
-		return
-	}
-	defer file.Close()
-
-	fileBytes, err := io.ReadAll(file)
-	if err != nil {
-		response.Error(w, http.StatusInternalServerError, "File reading error")
-		return
-	}
-
-	ctx := r.Context()
-
-	savedPath, err := h.imageUC.UploadImage(ctx, fileBytes, header.Filename, "restaurants/banners")
-	if err != nil {
-		response.Error(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	resp := map[string]string{
-		"url": "/api/images/" + savedPath,
-	}
-
-	response.JSON(w, http.StatusOK, resp)
+	h.imageUpload(w, r, 10<<20, "restaurants/banners")
 }
 
 func (h *imageHandler) UploadDishes(w http.ResponseWriter, r *http.Request) {
-	// Ограничиваем размер логотипа в 6Мб
-	err := r.ParseMultipartForm(6 << 20)
-	if err != nil {
-		response.Error(w, http.StatusBadRequest, "File is too big")
-		return
-	}
-
-	file, header, err := r.FormFile("photo")
-	if err != nil {
-		response.Error(w, http.StatusBadRequest, "Not found file in 'photo'")
-		return
-	}
-	defer file.Close()
-
-	fileBytes, err := io.ReadAll(file)
-	if err != nil {
-		response.Error(w, http.StatusInternalServerError, "File reading error")
-		return
-	}
-
-	ctx := r.Context()
-
-	savedPath, err := h.imageUC.UploadImage(ctx, fileBytes, header.Filename, "dishes")
-	if err != nil {
-		response.Error(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	resp := map[string]string{
-		"url": "/api/images/" + savedPath,
-	}
-
-	response.JSON(w, http.StatusOK, resp)
+	h.imageUpload(w, r, 6<<20, "dishes")
 }
 
 func (h *imageHandler) Download(w http.ResponseWriter, r *http.Request) {
