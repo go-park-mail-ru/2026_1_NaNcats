@@ -12,6 +12,8 @@ func NewCORSMiddleware(origins []string) *CORSMiddleware {
 	}
 }
 
+// Разрешает браузеру делать запросы с разрешенных доменов, открывает доступ для них к заголовкам.
+// После выполнения CORS-логики передает запрос в следующий хендлер
 func (m *CORSMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")

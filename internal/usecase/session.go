@@ -10,6 +10,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
 )
 
+//go:generate mockgen -destination=mocks/session_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase SessionUseCase
 type SessionUseCase interface {
 	// бизнес-логика создания сессии для пользователя, вовзращает sessionID
 	Create(ctx context.Context, userID int) (domain.Session, error)
