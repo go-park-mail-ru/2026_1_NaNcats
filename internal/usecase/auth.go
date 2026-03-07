@@ -68,7 +68,7 @@ func (u *authUseCase) Login(ctx context.Context, user domain.User) (domain.User,
 		return domain.User{}, domain.Session{}, err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(currUser.PasswordHash))
+	err = bcrypt.CompareHashAndPassword([]byte(currUser.PasswordHash), []byte(user.PasswordHash))
 	if err != nil {
 		return domain.User{}, domain.Session{}, err
 	}
