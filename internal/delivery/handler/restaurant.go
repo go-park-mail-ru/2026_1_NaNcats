@@ -39,14 +39,14 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 	// Считываем параметры
 	// читаем limit
 	if qLimit := query.Get("limit"); qLimit != "" {
-		if val, err := strconv.Atoi(qLimit); err == nil {
+		if val, err := strconv.Atoi(qLimit); err == nil && val > 0 {
 			limit = val
 		}
 	}
 
 	// читаем offset
 	if qOffset := query.Get("offset"); qOffset != "" {
-		if val, err := strconv.Atoi(qOffset); err == nil {
+		if val, err := strconv.Atoi(qOffset); err == nil && val > 0 {
 			offset = val
 		}
 	}
@@ -58,7 +58,7 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 
 	for _, currRestaurantBrand := range restaurantBrandsList {
 		restResp := RestaurantBrandResponse{
-			ID:            currRestaurantBrand.ID.URN(),
+			ID:            currRestaurantBrand.ID.String(),
 			Name:          currRestaurantBrand.Name,
 			Description:   currRestaurantBrand.Description,
 			PromotionTier: currRestaurantBrand.PromotionTier,

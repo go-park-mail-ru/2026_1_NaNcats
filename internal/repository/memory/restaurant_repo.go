@@ -24,8 +24,8 @@ func NewRestaurantBrandRepo() repository.RestaurantBrandRepository {
 }
 
 func (r *restaurantBrandRepo) GetRestaurantBrandsList(ctx context.Context, limit, offset int) []domain.RestaurantBrand {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
 	// Создаем слайс для ресторанных брендов той же длины, что и сама мапа
 	restaurantBrandsSlice := make([]domain.RestaurantBrand, 0, len(r.restaurantBrands))
@@ -45,5 +45,16 @@ func (r *restaurantBrandRepo) GetRestaurantBrandsList(ctx context.Context, limit
 		return restaurantBrandsSlice[i].Name < restaurantBrandsSlice[j].Name
 	})
 
-	return restaurantBrandsSlice[offset : offset+limit]
+	total := len(restaurantBrandsSlice)
+
+	if offset >= total {
+		return []domain.RestaurantBrand{}
+	}
+
+	end := offset + limit
+	if end > total {
+		end = total
+	}
+
+	return restaurantBrandsSlice[offset:end]
 }
