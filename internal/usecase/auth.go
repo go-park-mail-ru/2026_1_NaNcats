@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"context"
+	"net/mail"
+	"strings"
 	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
@@ -32,8 +34,34 @@ func NewAuthUseCase(ur repository.UserRepository, suc SessionUseCase) AuthUseCas
 	}
 }
 
+func isValidEmail(email string) bool {
+	if len(email) < 3 || len(email) > 254 {
+		return false
+	}
+
+	// Парсинг RFC 5322
+	addr, err := mail.ParseAddress(email)
+	if err != nil {
+		return false
+	}
+
+	// mail.ParseAddress позволяет вводить "Name <test@test.com>"
+	// Нам же нужно, чтобы введенная строка была только email-ом
+	if addr.Address != email {
+		return false
+	}
+
+	return true
+}
+
 // бизнес-логика регистрации
 func (u *authUseCase) Register(ctx context.Context, user domain.User) (domain.User, domain.Session, error) {
+	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
+
+	if !isValidEmail(user.Email) {
+		return domain.User{}, domain.Session{}, domain.ErrInvalidEmail
+	}
+
 	// генерируем хешированный пароль
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.PasswordHash), bcrypt.DefaultCost)
 	if err != nil {

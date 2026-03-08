@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
@@ -28,8 +29,10 @@ func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (int, error
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	emailLower := strings.ToLower(user.Email)
+
 	// проверяем на существование email'а
-	if _, exists := r.users[user.Email]; exists {
+	if _, exists := r.users[emailLower]; exists {
 		return 0, domain.ErrUserAlreadyExists
 	}
 
@@ -46,7 +49,8 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 	defer r.mu.RUnlock()
 
 	// проверяем на существование email'а
-	user, exists := r.users[email]
+	user, exists := r.users[strings.ToLower(email)]
+
 	if !exists {
 		return domain.User{}, domain.ErrUserNotFound
 	}

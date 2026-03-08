@@ -26,16 +26,16 @@ gen:
 
 # Тестирование с правильным подсчетом покрытия
 test:
-	@echo "Запуск тестов..."
+	@echo "Запуск тестов...\n"
 # Прогоняем тесты и записываем сырой результат в файл покрытия
 	-go test -coverprofile=$(COVERAGE_FILE) ./...
 
-	@echo "Очистка покрытия от моков..."
+	@echo "\nОчистка покрытия от моков...\n"
 # Удаляем все строчки, где есть слово "mock", из файла покрытия
 	grep -v "mock" $(COVERAGE_FILE) > coverage_clean.out
 	mv coverage_clean.out $(COVERAGE_FILE)
 
-	@echo "Итоговое покрытие кода:"
+	@echo "\nИтоговое покрытие кода:\n"
 # Выводим финальную таблицу и итоговый процент (total)
 	go tool cover -func=$(COVERAGE_FILE) | grep total
 

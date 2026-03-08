@@ -3,6 +3,7 @@ package memory
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 
@@ -67,34 +68,6 @@ func TestCreateUser(t *testing.T) {
 			expectedID:  0,
 			expectedErr: domain.ErrUserAlreadyExists,
 		},
-		{
-			name:        "Ошибка: спецсимволы в почте",
-			prepare:     func(r *userRepo) {},
-			input:       domain.User{Email: "()<>[]:;\\.,@mail.ru", Name: "Ivan"},
-			expectedID:  0,
-			expectedErr: domain.ErrWrongEmailSyntax,
-		},
-		{
-			name:        "Ошибка: точка в начале и конце",
-			prepare:     func(r *userRepo) {},
-			input:       domain.User{Email: ".mail.@mail.ru.", Name: "Ivan"},
-			expectedID:  0,
-			expectedErr: domain.ErrWrongEmailSyntax,
-		},
-		{
-			name:        "Ошибка: две точки подряд",
-			prepare:     func(r *userRepo) {},
-			input:       domain.User{Email: "ma..il@mail.ru", Name: "Ivan"},
-			expectedID:  0,
-			expectedErr: domain.ErrWrongEmailSyntax,
-		},
-		{
-			name:        "Допускается использование одинарной точки в названии почты",
-			prepare:     func(r *userRepo) {},
-			input:       domain.User{Email: "m.a.i.l@mail.ru", Name: "Ivan"},
-			expectedID:  1,
-			expectedErr: nil,
-		},
 	}
 
 	for _, tc := range tests {
@@ -120,11 +93,13 @@ func TestCreateUser(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tc.expectedID, id)
 
+				mapKey := strings.ToLower(tc.input.Email)
+
 				// Отдельно проверяем корректность записи некоторых полей пользователя
-				require.Equal(t, tc.input.Email, repo.users[tc.input.Email].Email)
-				require.Equal(t, tc.input.Name, repo.users[tc.input.Email].Name)
-				require.Equal(t, tc.input.Phone, repo.users[tc.input.Email].Phone)
-				require.Equal(t, tc.input.PasswordHash, repo.users[tc.input.Email].PasswordHash)
+				require.Equal(t, tc.input.Email, repo.users[mapKey].Email)
+				require.Equal(t, tc.input.Name, repo.users[mapKey].Name)
+				require.Equal(t, tc.input.Phone, repo.users[mapKey].Phone)
+				require.Equal(t, tc.input.PasswordHash, repo.users[mapKey].PasswordHash)
 			}
 		})
 	}
