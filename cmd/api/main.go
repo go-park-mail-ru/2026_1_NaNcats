@@ -29,6 +29,7 @@ func main() {
 	userRepo := memory.NewUserRepo()
 	sessionRepo := memory.NewSessionRepo()
 	imageStorage := memory.NewImageStorage()
+	restaurantBrandRepo := memory.NewRestaurantBrandRepo()
 
 	// ttl сессии - 24 часа
 	sessionTTL := 24 * time.Hour
@@ -36,9 +37,11 @@ func main() {
 	sessionUC := usecase.NewSessionUseCase(sessionRepo, sessionTTL)
 	authUC := usecase.NewAuthUseCase(userRepo, sessionUC)
 	imageUC := usecase.NewImageUseCase(imageStorage)
+	restaurantBrandUC := usecase.NewRestaurantBrandUseCase(restaurantBrandRepo)
 
 	authHandler := handler.NewAuthHandler(authUC)
 	imageHandler := handler.NewImageHandler(imageUC)
+	restaurantBrandHandler := handler.NewRestaurantBrandHandler(restaurantBrandUC)
 
 	authMW := middleware.NewAuthMiddleware(sessionUC)
 	corsMW := middleware.NewCORSMiddleware([]string{
@@ -59,6 +62,8 @@ func main() {
 	mux.HandleFunc("POST /api/images/restaurants/logos", imageHandler.UploadLogo)
 	mux.HandleFunc("POST /api/images/dishes", imageHandler.UploadDishes)
 	mux.HandleFunc("GET /api/images/{filepath...}", imageHandler.Download)
+
+	mux.HandleFunc("GET /api/restaurants/brands", restaurantBrandHandler.GetRestaurantBrandsList)
 
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
