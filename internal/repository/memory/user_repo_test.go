@@ -43,18 +43,6 @@ func TestCreateUser(t *testing.T) {
 			input:       domain.User{Email: "EXISTS@mail.ru"},
 			expectedErr: domain.ErrEmailAlreadyExists,
 		},
-		{
-			name:        "Ошибка: спецсимволы в почте",
-			prepare:     func(r *userRepo) {},
-			input:       domain.User{Email: "()<>[]:;\\.,@mail.ru"},
-			expectedErr: domain.ErrInvalidEmail,
-		},
-		{
-			name:        "Ошибка: две точки подряд",
-			prepare:     func(r *userRepo) {},
-			input:       domain.User{Email: "ma..il@mail.ru"},
-			expectedErr: domain.ErrInvalidEmail,
-		},
 	}
 
 	for _, tc := range tests {

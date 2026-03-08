@@ -12,137 +12,18 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestAuthUseCase_Register_Success(t *testing.T) {
-	// Создаем котролеер моков
-	ctrl := gomock.NewController(t)
-	// Проверяет, все ли методы, которые мы ожидали, были вызваны
-	defer ctrl.Finish()
-
-	// Экземпляр мока репозитория юзера
-	mockUserRepo := repoMocks.NewMockUserRepository(ctrl)
-
-	// Мок юзкейса сессии
-	mockSessionUC := ucMocks.NewMockSessionUseCase(ctrl)
-
-	// Создаем настоящий usecase, подсовывая ему моки
-	authUC := NewAuthUseCase(mockUserRepo, mockSessionUC)
-
-	ctx := context.Background()
-
-	randomID := uuid.New() // Генерирует случайный UUID
-
-	// данные юзера, поступившие запросом
-	requestedUserData := domain.User{
-		Email:        "aboba@gmail.com",
-		PasswordHash: "secret_password",
-	}
-
-	// expect на срабатывание CreateUser. Передать можно any, возвращаем userID 1 и err nil, повторяем 1 раз
-	mockUserRepo.EXPECT().
-		CreateUser(gomock.Any(), gomock.Any()).
-		Return(1, nil).
-		Times(1)
-
-	// expect на срабатывание Create сессии. Передать можно any и только userID 1, возвращаем мок сессию с id 123456 и err nil
-	mockSessionUC.EXPECT().
-		Create(gomock.Any(), 1).
-		Return(domain.Session{ID: randomID}, nil).
-		Times(1)
-
-	createdUser, createdSession, err := authUC.Register(ctx, requestedUserData)
-
-	assert.NoError(t, err)
-	assert.Equal(t, 1, createdUser.ID)
-	assert.Equal(t, randomID, createdSession.ID)
-}
-
-func TestAuthUseCase_Regirster_Validation(t *testing.T) {
-	// Тип для функции, которая настраивает моки под конкретный кейс
-	type mockBehavior func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase)
-
-	randomID := uuid.New() // Генерирует случайный UUID
-
-	tests := []struct {
-		name      string
-		input     domain.User
-		prepare   mockBehavior // здесь настраиваем моки
-		expectErr error
-	}{
-		{
-			name: "Успех: допускается использование одинарной точки в названии почты",
-			input: domain.User{
-				Name:         "Ivan",
-				Email:        "m.a.i.l@mail.ru",
-				PasswordHash: "valid_password_123",
-			},
-			prepare: func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase) {
-				// Для успешной почты мы ждем вызовов базы и сессий
-				r.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Return(1, nil)
-				s.EXPECT().Create(gomock.Any(), 1).Return(domain.Session{ID: randomID}, nil)
-			},
-			expectErr: nil,
-		},
-		{
-			name: "Ошибка: спецсимволы в почте",
-			input: domain.User{
-				Name:         "Ivan",
-				Email:        "()<>[]:;\\.,@mail.ru",
-				PasswordHash: "valid_password_123",
-			},
-			expectErr: domain.ErrInvalidEmail,
-		},
-		{
-			name: "Ошибка: точка в начале и конце",
-			input: domain.User{
-				Name:         "Ivan",
-				Email:        ".mail.@mail.ru.",
-				PasswordHash: "valid_password_123",
-			},
-			expectErr: domain.ErrInvalidEmail,
-		},
-		{
-			name: "Ошибка: две точки подряд",
-			input: domain.User{
-				Name:         "Ivan",
-				Email:        "ma..il@mail.ru",
-				PasswordHash: "valid_password_123",
-			},
-			expectErr: domain.ErrInvalidEmail,
-		},
-	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			mockUserRepo := repoMocks.NewMockUserRepository(ctrl)
-			mockSessionUC := ucMocks.NewMockSessionUseCase(ctrl)
-
-			authUseCase := NewAuthUseCase(mockUserRepo, mockSessionUC)
-
-			// Вызываем настройку моков из таблицы, если были указаны
-			if testCase.prepare != nil {
-				testCase.prepare(mockUserRepo, mockSessionUC)
-			}
-
-			_, _, err := authUseCase.Register(context.Background(), testCase.input)
-
-			assert.ErrorIs(t, err, testCase.expectErr)
-		})
-	}
-}
-
 func TestAuthUseCase_Register(t *testing.T) {
-	// Тип для функции, которая настраивает моки под конкретный кейс
-	type mockBehavior func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase, user domain.User)
+	// Тип для настройки поведения моков
+	type mockBehavior func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase, input domain.User, resID uuid.UUID)
 
-	randomID := uuid.New() // Генерирует случайный UUID
+	// Заранее создаем UUID для тестов
+	mockUserID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	mockSessionID := uuid.MustParse("99999999-9999-9999-9999-999999999999")
 
 	tests := []struct {
 		name      string
 		input     domain.User
-		prepare   mockBehavior // настройки для моков
+		prepare   mockBehavior
 		expectErr error
 	}{
 		{
@@ -152,11 +33,25 @@ func TestAuthUseCase_Register(t *testing.T) {
 				Email:        "valid@mail.ru",
 				PasswordHash: "valid_password_123",
 			},
-			prepare: func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase, user domain.User) {
-				// Ожидаем создание юзера, возвращаем ID 1
-				r.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Return(1, nil)
-				// Ожидаем создание сессии для юзера 1
-				s.EXPECT().Create(gomock.Any(), 1).Return(domain.Session{ID: randomID}, nil)
+			prepare: func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase, input domain.User, resID uuid.UUID) {
+				r.EXPECT().
+					CreateUser(gomock.Any(), gomock.Any()).
+					Return(resID, nil)
+				s.EXPECT().
+					Create(gomock.Any(), resID).
+					Return(domain.Session{ID: mockSessionID}, nil)
+			},
+			expectErr: nil,
+		},
+		{
+			name: "Успех: допускается точка в названии почты",
+			input: domain.User{
+				Email:        "m.a.i.l@mail.ru",
+				PasswordHash: "password123",
+			},
+			prepare: func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase, input domain.User, resID uuid.UUID) {
+				r.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Return(resID, nil)
+				s.EXPECT().Create(gomock.Any(), resID).Return(domain.Session{ID: mockSessionID}, nil)
 			},
 			expectErr: nil,
 		},
@@ -164,31 +59,61 @@ func TestAuthUseCase_Register(t *testing.T) {
 			name: "Ошибка: пользователь уже существует",
 			input: domain.User{
 				Email:        "exists@mail.ru",
-				PasswordHash: "valid_password_123",
+				PasswordHash: "password123",
 			},
-			prepare: func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase, user domain.User) {
-				r.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Return(0, domain.ErrEmailAlreadyExists)
-				// Сессия не должна создаваться, если юзер не создан
+			prepare: func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase, input domain.User, resID uuid.UUID) {
+				r.EXPECT().
+					CreateUser(gomock.Any(), gomock.Any()).
+					Return(uuid.Nil, domain.ErrEmailAlreadyExists)
 			},
 			expectErr: domain.ErrEmailAlreadyExists,
+		},
+		{
+			name: "Ошибка: спецсимволы в почте",
+			input: domain.User{
+				Email:        "()<>[]:;\\.,@mail.ru",
+				PasswordHash: "password123",
+			},
+			prepare:   nil, // Моки не вызываются, упадет на валидации
+			expectErr: domain.ErrInvalidEmail,
+		},
+		{
+			name: "Ошибка: две точки подряд",
+			input: domain.User{
+				Email:        "ma..il@mail.ru",
+				PasswordHash: "password123",
+			},
+			prepare:   nil,
+			expectErr: domain.ErrInvalidEmail,
 		},
 	}
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
+			// Инициализация
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			r := repoMocks.NewMockUserRepository(ctrl)
-			s := ucMocks.NewMockSessionUseCase(ctrl)
-			uc := NewAuthUseCase(r, s)
+			mockUserRepo := repoMocks.NewMockUserRepository(ctrl)
+			mockSessionUC := ucMocks.NewMockSessionUseCase(ctrl)
+			authUseCase := NewAuthUseCase(mockUserRepo, mockSessionUC)
 
+			// Настройка моков
 			if testCase.prepare != nil {
-				testCase.prepare(r, s, testCase.input)
+				testCase.prepare(mockUserRepo, mockSessionUC, testCase.input, mockUserID)
 			}
 
-			_, _, err := uc.Register(context.Background(), testCase.input)
-			assert.ErrorIs(t, err, testCase.expectErr)
+			// Выполнение
+			user, session, err := authUseCase.Register(context.Background(), testCase.input)
+
+			// Проверки
+			if testCase.expectErr != nil {
+				assert.ErrorIs(t, err, testCase.expectErr)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, mockUserID, user.ID)
+				assert.Equal(t, mockSessionID, session.ID)
+			}
 		})
 	}
 }

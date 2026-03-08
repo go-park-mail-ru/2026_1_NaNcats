@@ -36,13 +36,17 @@ func NewAuthUseCase(ur repository.UserRepository, suc SessionUseCase) AuthUseCas
 }
 
 func isValidEmail(email string) bool {
-	if len(email) < 3 || len(email) > 254 {
+	if len(email) < 4 || len(email) > 254 {
 		return false
 	}
 
 	// Парсинг RFC 5322
 	addr, err := mail.ParseAddress(email)
 	if err != nil {
+		return false
+	}
+
+	if strings.Contains(email, "..") {
 		return false
 	}
 
