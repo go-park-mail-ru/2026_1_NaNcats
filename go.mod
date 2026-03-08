@@ -1,6 +1,6 @@
 module github.com/go-park-mail-ru/2026_1_NaNcats
 
-go 1.24.4
+go 1.26.1
 
 require (
 	github.com/google/uuid v1.6.0
