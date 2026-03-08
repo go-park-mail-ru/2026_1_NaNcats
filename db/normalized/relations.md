@@ -198,13 +198,32 @@
 
 ---
 
+### 🔗 Отношение `cart`
+**Зависимости:**
+`{client_account_id, restaurant_brand_id} -> updated_at`
+
+**Обоснование:**
+* **Высшие НФ:** Автоматически находится в высшей НФ, поскольку состоит только из составного PK.
+
+---
+
+### 🔗 Отношение `cart_dish`
+**Зависимости:**
+`{client_account_id, dish_id} -> quantity, created_at, updated_at`
+
+**Обоснование:**
+* **Высшие НФ:** Автоматически находится в высшей НФ, поскольку состоит только из составного PK.
+
+---
+
+
 ### 🔴 Хранилище `Redis_Session_Store` (Key-Value)
 **Зависимости (концептуально):**
-`{key (например, user_id:session_token)} -> info (токены, сессии, корзина)`
+`{key (например, user_id:session_token)} -> info (токены, сессии)`
 
 **Обоснование:**
 * Является in-memory NoSQL хранилищем. Строгие правила классической реляционной нормализации (1НФ–3НФ) здесь не применяются. 
-* Используется для обеспечения сверхбыстрого доступа к временно живущим данным. Данные (состояние корзины покупок, токены авторизации) могут храниться в денормализованном виде (например, целой JSON-строкой или Hash-структурой).
+* Используется для обеспечения сверхбыстрого доступа к временно живущим данным. Данные (состояние сессии, токены авторизации) могут храниться в денормализованном виде (например, целой JSON-строкой или Hash-структурой).
 
 <br>
 
@@ -367,9 +386,23 @@ erDiagram
         datetime updated_at "DEFAULT NOW()"
     }
 
+    cart {
+        int client_account_id PK, FK
+        int restaurant_brand_id PK, FK
+        datetime updated_at "DEFAULT NOW()"
+    }
+
+    cart_dish {
+        int client_account_id PK, FK
+        int dish_id PK, FK
+        int quantity "NOT NULL"
+        datetime created_at "DEFAULT NOW()"
+        datetime updated_at "DEFAULT NOW()"
+    }
+
     %% Фейковая табличка редиса
     Redis_Session_Store {
-        text info "Токены, сессии, корзина"
+        text info "Токены, сессии"
     }
 
     %% Описание связей
@@ -385,6 +418,7 @@ erDiagram
     restaurant_brand ||--o{ restaurant_brand_category: ""
     restaurant_brand ||--o{ promocode_restaurant_brand: ""
     restaurant_brand ||--|| owner_profile: ""
+    restaurant_brand ||--o{ cart: ""
 
     restaurant_branch ||--o{ order: ""
 
@@ -402,12 +436,16 @@ erDiagram
 
     dish ||--o{ order_dish: ""
     dish ||--|{ dish_category: ""
+    dish ||--o{ cart_dish: ""
+
+    cart ||--o{ cart_dish: ""
 
     location ||--o{ client_address: ""
     location ||--o{ restaurant_branch: ""
 
     client_profile ||--o{ client_address: ""
     client_profile ||--o{ order: ""
+    client_profile ||--|| cart: ""
 
     client_address ||--o{ order: ""
 ```
