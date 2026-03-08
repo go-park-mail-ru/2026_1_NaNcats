@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -15,9 +16,9 @@ import (
 type AuthUseCase interface {
 	Register(ctx context.Context, user domain.User) (domain.User, domain.Session, error)
 	Login(ctx context.Context, user domain.User) (domain.User, domain.Session, error)
-	Logout(ctx context.Context, sessionID string) error
-	Check(ctx context.Context, sessionID string) (domain.User, error)
-	GetProfile(ctx context.Context, userID int) (domain.User, error)
+	Logout(ctx context.Context, sessionID uuid.UUID) error
+	Check(ctx context.Context, sessionID uuid.UUID) (domain.User, error)
+	GetProfile(ctx context.Context, userID uuid.UUID) (domain.User, error)
 }
 
 // реализация контракта
@@ -109,7 +110,7 @@ func (u *authUseCase) Login(ctx context.Context, user domain.User) (domain.User,
 	return currUser, createdSession, nil
 }
 
-func (u *authUseCase) Logout(ctx context.Context, sessionID string) error {
+func (u *authUseCase) Logout(ctx context.Context, sessionID uuid.UUID) error {
 	err := u.sessionUC.Destroy(ctx, sessionID)
 	if err != nil {
 		return err
@@ -119,7 +120,7 @@ func (u *authUseCase) Logout(ctx context.Context, sessionID string) error {
 }
 
 // возвращает пользователя сессии, проверяя, существует ли сессия и пользователь сессии
-func (u *authUseCase) Check(ctx context.Context, sessionID string) (domain.User, error) {
+func (u *authUseCase) Check(ctx context.Context, sessionID uuid.UUID) (domain.User, error) {
 	userID, err := u.sessionUC.Check(ctx, sessionID)
 	if err != nil {
 		return domain.User{}, err
@@ -134,7 +135,7 @@ func (u *authUseCase) Check(ctx context.Context, sessionID string) (domain.User,
 }
 
 // возвращает юзера по переданному userID
-func (u *authUseCase) GetProfile(ctx context.Context, userID int) (domain.User, error) {
+func (u *authUseCase) GetProfile(ctx context.Context, userID uuid.UUID) (domain.User, error) {
 	user, err := u.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
 		return domain.User{}, err

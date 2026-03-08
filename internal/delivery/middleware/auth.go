@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
+	"github.com/google/uuid"
 )
 
 // уникальный тип ключа контекста:
@@ -38,7 +39,11 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		sessionID := cookie.Value
+		sessionID, err := uuid.Parse(cookie.Value)
+		if err != nil {
+			response.Error(w, http.StatusUnauthorized, "Invalid session")
+		}
+
 		ctx := r.Context()
 
 		userID, err := m.sessionUC.Check(ctx, sessionID)

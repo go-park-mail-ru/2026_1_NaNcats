@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	domain "github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+	uuid "github.com/google/uuid"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -56,7 +57,7 @@ func (mr *MockSessionRepositoryMockRecorder) Create(ctx, session any) *gomock.Ca
 }
 
 // Delete mocks base method.
-func (m *MockSessionRepository) Delete(ctx context.Context, sessionId string) error {
+func (m *MockSessionRepository) Delete(ctx context.Context, sessionId uuid.UUID) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, sessionId)
 	ret0, _ := ret[0].(error)
@@ -70,7 +71,7 @@ func (mr *MockSessionRepositoryMockRecorder) Delete(ctx, sessionId any) *gomock.
 }
 
 // GetByID mocks base method.
-func (m *MockSessionRepository) GetByID(ctx context.Context, sessionId string) (domain.Session, error) {
+func (m *MockSessionRepository) GetByID(ctx context.Context, sessionId uuid.UUID) (domain.Session, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByID", ctx, sessionId)
 	ret0, _ := ret[0].(domain.Session)

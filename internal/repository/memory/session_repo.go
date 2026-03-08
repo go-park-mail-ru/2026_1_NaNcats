@@ -6,18 +6,19 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+	"github.com/google/uuid"
 )
 
 // структура репозитория сессий на основе мап
 type sessionRepo struct {
-	mu       sync.RWMutex              // защита от одновременного чтения из мапы
-	sessions map[string]domain.Session // мапа сессий, ключ - sessionID
+	mu       sync.RWMutex                 // защита от одновременного чтения из мапы
+	sessions map[uuid.UUID]domain.Session // мапа сессий, ключ - sessionID
 }
 
 // функция-конструктор репозитория сессий
 func NewSessionRepo() repository.SessionRepository {
 	return &sessionRepo{
-		sessions: make(map[string]domain.Session),
+		sessions: make(map[uuid.UUID]domain.Session),
 	}
 }
 
@@ -29,7 +30,7 @@ func (r *sessionRepo) Create(ctx context.Context, session domain.Session) error 
 	return nil
 }
 
-func (r *sessionRepo) GetByID(ctx context.Context, sessionID string) (domain.Session, error) {
+func (r *sessionRepo) GetByID(ctx context.Context, sessionID uuid.UUID) (domain.Session, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -41,7 +42,7 @@ func (r *sessionRepo) GetByID(ctx context.Context, sessionID string) (domain.Ses
 	return session, nil
 }
 
-func (r *sessionRepo) Delete(ctx context.Context, sessionID string) error {
+func (r *sessionRepo) Delete(ctx context.Context, sessionID uuid.UUID) error {
 	// добавить обработку ошибок
 	r.mu.Lock()
 	defer r.mu.Unlock()

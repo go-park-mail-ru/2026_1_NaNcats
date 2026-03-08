@@ -9,6 +9,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
+	"github.com/google/uuid"
 )
 
 // DTO запроса на регистрацию
@@ -24,7 +25,7 @@ type RegisterRequest struct {
 // DTO отправки сведений о пользователе при регистрации
 type RegisterResponse struct {
 	// Уникальный ID пользователя в системе
-	ID int `json:"id" example:"1"`
+	ID uuid.UUID `json:"id" example:"1"`
 	// Имя для отображения в интерфейсе
 	Name string `json:"name" example:"Иван"`
 	// Email пользователя
@@ -44,7 +45,7 @@ type LoginRequest struct {
 // LoginResponse - DTO для ответа при успешном входе
 type LoginResponse struct {
 	// Уникальный ID пользователя в системе
-	ID int `json:"id" example:"1"`
+	ID uuid.UUID `json:"id" example:"1"`
 	// Имя для отображения в интерфейсе
 	Name string `json:"name" example:"Иван"`
 }
@@ -101,7 +102,7 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.SetCookie(w, "session_id", createdSession.ID, createdSession.ExpiresAt)
+	response.SetCookie(w, "session_id", createdSession.ID.String(), createdSession.ExpiresAt)
 
 	// ответ, который отдаем юзеру
 	resp := RegisterResponse{
@@ -146,7 +147,7 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.SetCookie(w, "session_id", createdSession.ID, createdSession.ExpiresAt)
+	response.SetCookie(w, "session_id", createdSession.ID.String(), createdSession.ExpiresAt)
 
 	resp := LoginResponse{
 		ID:   loggedUser.ID,
@@ -173,7 +174,10 @@ func (h *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessionID := cookie.Value
+	sessionID, err := uuid.Parse(cookie.Value)
+	if err != nil {
+		response.Error(w, http.StatusUnauthorized, "InvalidSession")
+	}
 
 	ctx := r.Context()
 
@@ -203,7 +207,7 @@ func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 
 	// берем userID из контекста, который нам пришел из мидлвара AuthMiddleware
 	// Value возвращает any. Используем утверждение типа, чтобы Go знал что это int
-	userID, ok := ctx.Value(middleware.UserIDKey).(int)
+	userID, ok := ctx.Value(middleware.UserIDKey).(uuid.UUID)
 
 	// если там не int или nil
 	if !ok {

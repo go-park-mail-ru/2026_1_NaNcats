@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	domain "github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+	uuid "github.com/google/uuid"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -42,10 +43,10 @@ func (m *MockSessionUseCase) EXPECT() *MockSessionUseCaseMockRecorder {
 }
 
 // Check mocks base method.
-func (m *MockSessionUseCase) Check(ctx context.Context, sessionID string) (int, error) {
+func (m *MockSessionUseCase) Check(ctx context.Context, sessionID uuid.UUID) (uuid.UUID, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Check", ctx, sessionID)
-	ret0, _ := ret[0].(int)
+	ret0, _ := ret[0].(uuid.UUID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -57,7 +58,7 @@ func (mr *MockSessionUseCaseMockRecorder) Check(ctx, sessionID any) *gomock.Call
 }
 
 // Create mocks base method.
-func (m *MockSessionUseCase) Create(ctx context.Context, userID int) (domain.Session, error) {
+func (m *MockSessionUseCase) Create(ctx context.Context, userID uuid.UUID) (domain.Session, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, userID)
 	ret0, _ := ret[0].(domain.Session)
@@ -72,7 +73,7 @@ func (mr *MockSessionUseCaseMockRecorder) Create(ctx, userID any) *gomock.Call {
 }
 
 // Destroy mocks base method.
-func (m *MockSessionUseCase) Destroy(ctx context.Context, sessionId string) error {
+func (m *MockSessionUseCase) Destroy(ctx context.Context, sessionId uuid.UUID) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Destroy", ctx, sessionId)
 	ret0, _ := ret[0].(error)

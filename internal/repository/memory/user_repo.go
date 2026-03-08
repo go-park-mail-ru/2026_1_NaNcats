@@ -7,38 +7,38 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+	"github.com/google/uuid"
 )
 
 // реализация контракта репозитория юзера на мапах (in-memory)
 type userRepo struct {
-	mu     sync.RWMutex           // защита от одновременного чтения из мапы
-	users  map[string]domain.User // мапа юзеров, ключ - email
-	nextID int                    // счетчик для автоинкремента id
+	mu    sync.RWMutex              // защита от одновременного чтения из мапы
+	users map[uuid.UUID]domain.User // мапа юзеров, ключ - id
 }
 
 // функция-конструктор userRepo
 func NewUserRepo() repository.UserRepository {
 	return &userRepo{
-		users:  make(map[string]domain.User),
-		nextID: 1,
+		users: make(map[uuid.UUID]domain.User),
 	}
 }
 
 // метод создания юзера в репозитории
-func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (int, error) {
+func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (uuid.UUID, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	emailLower := strings.ToLower(user.Email)
+	user.Email = strings.ToLower(user.Email)
 
 	// проверяем на существование email'а
-	if _, exists := r.users[emailLower]; exists {
-		return 0, domain.ErrUserAlreadyExists
+	for _, curUser := range r.users {
+		if curUser.Email == user.Email {
+			return uuid.UUID{}, domain.ErrEmailAlreadyExists
+		}
 	}
 
-	user.ID = r.nextID
-	r.users[user.Email] = user
-	r.nextID++
+	user.ID = uuid.New()
+	r.users[user.ID] = user
 
 	return user.ID, nil
 }
@@ -48,25 +48,26 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
+	emailLower := strings.ToLower(email)
+
 	// проверяем на существование email'а
-	user, exists := r.users[strings.ToLower(email)]
-
-	if !exists {
-		return domain.User{}, domain.ErrUserNotFound
-	}
-
-	return user, nil
-}
-
-func (r *userRepo) GetUserByID(ctx context.Context, id int) (domain.User, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
 	for _, user := range r.users {
-		if user.ID == id {
+		if user.Email == emailLower {
 			return user, nil
 		}
 	}
 
 	return domain.User{}, domain.ErrUserNotFound
+}
+
+func (r *userRepo) GetUserByID(ctx context.Context, id uuid.UUID) (domain.User, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	user, exists := r.users[id]
+	if !exists {
+		return domain.User{}, domain.ErrUserNotFound
+	}
+
+	return user, nil
 }

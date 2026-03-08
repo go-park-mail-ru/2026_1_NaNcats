@@ -13,11 +13,11 @@ import (
 //go:generate mockgen -destination=mocks/session_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase SessionUseCase
 type SessionUseCase interface {
 	// бизнес-логика создания сессии для пользователя, вовзращает sessionID
-	Create(ctx context.Context, userID int) (domain.Session, error)
+	Create(ctx context.Context, userID uuid.UUID) (domain.Session, error)
 	// проверяет, существует и не истек ли sessionID, возвращает айди юзера при успехе
-	Check(ctx context.Context, sessionID string) (int, error)
+	Check(ctx context.Context, sessionID uuid.UUID) (uuid.UUID, error)
 	// бизнес-логика для удаления сессии, просто вызывает удаление из repository.session
-	Destroy(ctx context.Context, sessionId string) error
+	Destroy(ctx context.Context, sessionId uuid.UUID) error
 }
 
 // структура usecase сессий на основе мап
@@ -33,12 +33,12 @@ func NewSessionUseCase(sr repository.SessionRepository, ttl time.Duration) Sessi
 	}
 }
 
-func (u *sessionUseCase) Create(ctx context.Context, userID int) (domain.Session, error) {
+func (u *sessionUseCase) Create(ctx context.Context, userID uuid.UUID) (domain.Session, error) {
 	// бизнес-логика создания сессии
 	// возвращает sessionID созданной сессии и момент времени, когда истекает
 
 	// генерация уникальной криптостойкой строки
-	sessionID := uuid.New().String()
+	sessionID := uuid.New()
 
 	// сессия живет sessionTTL времени
 	expiresAt := time.Now().Add(u.sessionTTL)
@@ -60,12 +60,12 @@ func (u *sessionUseCase) Create(ctx context.Context, userID int) (domain.Session
 }
 
 // проверяет, существует ли сессия, если да - возвращаем id пользователя сессии
-func (u *sessionUseCase) Check(ctx context.Context, sessionID string) (int, error) {
+func (u *sessionUseCase) Check(ctx context.Context, sessionID uuid.UUID) (uuid.UUID, error) {
 	// просим репозиторий найти сессию
 	session, err := u.sessionRepo.GetByID(ctx, sessionID)
 	if err != nil {
 		// сессия не найдена
-		return 0, err
+		return uuid.UUID{}, err
 	}
 
 	// проверяем срок годности сессии
@@ -74,14 +74,14 @@ func (u *sessionUseCase) Check(ctx context.Context, sessionID string) (int, erro
 		// игнорируем ошибку удаления, так как для пользователя главное получить ответ, что сессия невалидна
 		_ = u.sessionRepo.Delete(ctx, sessionID)
 
-		return 0, domain.ErrSessionExpired
+		return uuid.UUID{}, domain.ErrSessionExpired
 	}
 
 	// возвращаем id юзера в случае успеха
 	return session.UserID, nil
 }
 
-func (u *sessionUseCase) Destroy(ctx context.Context, sessionID string) error {
+func (u *sessionUseCase) Destroy(ctx context.Context, sessionID uuid.UUID) error {
 	// просто передаем команду удаления куки в репо
 	return u.sessionRepo.Delete(ctx, sessionID)
 }

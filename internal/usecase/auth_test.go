@@ -7,6 +7,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	repoMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/mocks"
 	ucMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/mocks"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
@@ -28,6 +29,8 @@ func TestAuthUseCase_Register_Success(t *testing.T) {
 
 	ctx := context.Background()
 
+	randomID := uuid.New() // Генерирует случайный UUID
+
 	// данные юзера, поступившие запросом
 	requestedUserData := domain.User{
 		Email:        "aboba@gmail.com",
@@ -43,19 +46,21 @@ func TestAuthUseCase_Register_Success(t *testing.T) {
 	// expect на срабатывание Create сессии. Передать можно any и только userID 1, возвращаем мок сессию с id 123456 и err nil
 	mockSessionUC.EXPECT().
 		Create(gomock.Any(), 1).
-		Return(domain.Session{ID: "123456"}, nil).
+		Return(domain.Session{ID: randomID}, nil).
 		Times(1)
 
 	createdUser, createdSession, err := authUC.Register(ctx, requestedUserData)
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, createdUser.ID)
-	assert.Equal(t, "123456", createdSession.ID)
+	assert.Equal(t, randomID, createdSession.ID)
 }
 
 func TestAuthUseCase_Regirster_Validation(t *testing.T) {
 	// Тип для функции, которая настраивает моки под конкретный кейс
 	type mockBehavior func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase)
+
+	randomID := uuid.New() // Генерирует случайный UUID
 
 	tests := []struct {
 		name      string
@@ -73,7 +78,7 @@ func TestAuthUseCase_Regirster_Validation(t *testing.T) {
 			prepare: func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase) {
 				// Для успешной почты мы ждем вызовов базы и сессий
 				r.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Return(1, nil)
-				s.EXPECT().Create(gomock.Any(), 1).Return(domain.Session{ID: "ok"}, nil)
+				s.EXPECT().Create(gomock.Any(), 1).Return(domain.Session{ID: randomID}, nil)
 			},
 			expectErr: nil,
 		},
@@ -132,6 +137,8 @@ func TestAuthUseCase_Register(t *testing.T) {
 	// Тип для функции, которая настраивает моки под конкретный кейс
 	type mockBehavior func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase, user domain.User)
 
+	randomID := uuid.New() // Генерирует случайный UUID
+
 	tests := []struct {
 		name      string
 		input     domain.User
@@ -149,7 +156,7 @@ func TestAuthUseCase_Register(t *testing.T) {
 				// Ожидаем создание юзера, возвращаем ID 1
 				r.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Return(1, nil)
 				// Ожидаем создание сессии для юзера 1
-				s.EXPECT().Create(gomock.Any(), 1).Return(domain.Session{ID: "session_id"}, nil)
+				s.EXPECT().Create(gomock.Any(), 1).Return(domain.Session{ID: randomID}, nil)
 			},
 			expectErr: nil,
 		},
@@ -160,10 +167,10 @@ func TestAuthUseCase_Register(t *testing.T) {
 				PasswordHash: "valid_password_123",
 			},
 			prepare: func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase, user domain.User) {
-				r.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Return(0, domain.ErrUserAlreadyExists)
+				r.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Return(0, domain.ErrEmailAlreadyExists)
 				// Сессия не должна создаваться, если юзер не создан
 			},
-			expectErr: domain.ErrUserAlreadyExists,
+			expectErr: domain.ErrEmailAlreadyExists,
 		},
 	}
 
