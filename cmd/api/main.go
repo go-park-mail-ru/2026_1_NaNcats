@@ -57,10 +57,6 @@ func main() {
 	// ручка, которую дергаем для проверки авторизации по куки с миддлваром на авторизацию
 	mux.Handle("GET /api/auth/me", authMW.RequireAuth(http.HandlerFunc(authHandler.GetMe)))
 
-	mux.HandleFunc("POST /api/images/users/avatars", imageHandler.UploadAvatar)
-	mux.HandleFunc("POST /api/images/restaurants/banners", imageHandler.UploadBanner)
-	mux.HandleFunc("POST /api/images/restaurants/logos", imageHandler.UploadLogo)
-	mux.HandleFunc("POST /api/images/dishes", imageHandler.UploadDishes)
 	mux.HandleFunc("GET /api/images/{filepath...}", imageHandler.Download)
 
 	mux.HandleFunc("GET /api/restaurants/brands", restaurantBrandHandler.GetRestaurantBrandsList)
