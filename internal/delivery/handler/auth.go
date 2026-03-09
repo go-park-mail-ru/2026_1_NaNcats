@@ -96,10 +96,8 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 	// если пользователь отключится/отменит загрузку запроса
 	ctx := r.Context()
 
-	// созданный юзер, id сессии
 	createdUser, createdSession, err := h.authUC.Register(ctx, userToCreate)
 	if err != nil {
-		// добавить больше бизнес-ошибок (не только bad request)
 		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}

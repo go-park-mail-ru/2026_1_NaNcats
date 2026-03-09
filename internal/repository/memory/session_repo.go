@@ -23,7 +23,10 @@ func NewSessionRepo() repository.SessionRepository {
 }
 
 func (r *sessionRepo) Create(ctx context.Context, session domain.Session) error {
-	// добавить обработку ошибок
+	if session.ID == uuid.Nil {
+		return domain.ErrSessionNotFound // или можно создать ErrInvalidData
+	}
+
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.sessions[session.ID] = session
@@ -43,7 +46,10 @@ func (r *sessionRepo) GetByID(ctx context.Context, sessionID uuid.UUID) (domain.
 }
 
 func (r *sessionRepo) Delete(ctx context.Context, sessionID uuid.UUID) error {
-	// добавить обработку ошибок
+	if sessionID == uuid.Nil {
+		return nil // Удаление "ничего" не считается ошибкой
+	}
+
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	delete(r.sessions, sessionID)
