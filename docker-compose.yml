@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  backend:
+    build: .
+    container_name: go_backend
+    ports:
+      - "8080:8080"
+    restart: always
