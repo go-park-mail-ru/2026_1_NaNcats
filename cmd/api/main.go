@@ -28,7 +28,7 @@ func main() {
 
 	userRepo := memory.NewUserRepo()
 	sessionRepo := memory.NewSessionRepo()
-	imageStorage := memory.NewImageStorage()
+	//imageStorage := memory.NewImageStorage()
 	restaurantBrandRepo := memory.NewRestaurantBrandRepo()
 
 	// ttl сессии - 24 часа
@@ -36,12 +36,14 @@ func main() {
 
 	sessionUC := usecase.NewSessionUseCase(sessionRepo, sessionTTL)
 	authUC := usecase.NewAuthUseCase(userRepo, sessionUC)
-	imageUC := usecase.NewImageUseCase(imageStorage)
+	//imageUC := usecase.NewImageUseCase(imageStorage)
 	restaurantBrandUC := usecase.NewRestaurantBrandUseCase(restaurantBrandRepo)
 
 	authHandler := handler.NewAuthHandler(authUC)
-	imageHandler := handler.NewImageHandler(imageUC)
+	//imageHandler := handler.NewImageHandler(imageUC)
 	restaurantBrandHandler := handler.NewRestaurantBrandHandler(restaurantBrandUC)
+
+	fileServer := http.FileServer(http.Dir("./uploads"))
 
 	authMW := middleware.NewAuthMiddleware(sessionUC)
 	corsMW := middleware.NewCORSMiddleware([]string{
@@ -57,7 +59,7 @@ func main() {
 	// ручка, которую дергаем для проверки авторизации по куки с миддлваром на авторизацию
 	mux.Handle("GET /api/auth/me", authMW.RequireAuth(http.HandlerFunc(authHandler.GetMe)))
 
-	mux.HandleFunc("GET /api/images/{filepath...}", imageHandler.Download)
+	mux.Handle("GET /api/images/", http.StripPrefix("/api/images", fileServer))
 
 	mux.HandleFunc("GET /api/restaurants/brands", restaurantBrandHandler.GetRestaurantBrandsList)
 

@@ -48,6 +48,8 @@ type LoginResponse struct {
 	ID uuid.UUID `json:"id" example:"1"`
 	// Имя для отображения в интерфейсе
 	Name string `json:"name" example:"Иван"`
+	// URL аватарки пользователя
+	AvatarURL string `json:"avatar_url" example:"users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"`
 }
 
 // структура хендлера авторизации

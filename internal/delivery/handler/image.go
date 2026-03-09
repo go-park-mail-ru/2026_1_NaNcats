@@ -18,6 +18,19 @@ func NewImageHandler(iuc usecase.ImageUseCase) *imageHandler {
 	}
 }
 
+// Download godoc
+// @Summary 		Получение фото по URL
+// @Description		Возвращает фотографию, которая храниться по указанному в GET-запросе URL
+// @Tags			images
+// @Produce				image/png
+// @Produce				image/jpg
+// @Produce				image/jpeg
+// @Produce				image/webp
+// @Param				filepath string true "Относительный путь до файла (например: restaurants/logos/123.png)"
+// @Success				200		{file}  file				"Сырые байты изображения"
+// @Failure				404		{object}  response.ErrorResponse	"Изображение не найдено"
+// @Failure				500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
+// @Router			/images/{filepath} [get]
 func (h *imageHandler) Download(w http.ResponseWriter, r *http.Request) {
 	filePath := r.PathValue("filepath")
 
