@@ -5,4 +5,6 @@ services:
     container_name: go_backend
     ports:
       - "8080:8080"
+    volumes:
+      - ./uploads:/root/uploads
     restart: always
