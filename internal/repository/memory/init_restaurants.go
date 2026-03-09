@@ -86,7 +86,7 @@ func seedRestaurants() map[uuid.UUID]domain.RestaurantBrand {
 			BannerURL:     "",
 		},
 		{
-			Name:          "Ketch_up",
+			Name:          "Ketch up",
 			Description:   "Описание 11",
 			PromotionTier: 2,
 			LogoURL:       "restaurants/logos/ketch_up.png",

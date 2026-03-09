@@ -13,10 +13,14 @@ definitions:
     type: object
   handler.LoginResponse:
     properties:
+      avatar_url:
+        description: URL аватарки пользователя
+        example: users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
+        type: string
       id:
         description: Уникальный ID пользователя в системе
-        example: 1
-        type: integer
+        example: "1"
+        type: string
       name:
         description: Имя для отображения в интерфейсе
         example: Иван
@@ -49,12 +53,40 @@ definitions:
         type: string
       id:
         description: Уникальный ID пользователя в системе
-        example: 1
-        type: integer
+        example: "1"
+        type: string
       name:
         description: Имя для отображения в интерфейсе
         example: Иван
         type: string
+    type: object
+  handler.RestaurantBrandResponse:
+    properties:
+      banner_url:
+        example: restaurangs/banners/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
+        type: string
+      description:
+        example: Острые крылошки
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      logo_url:
+        example: restaurants/logos/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
+        type: string
+      name:
+        example: KFC
+        type: string
+      promotion_tier:
+        example: 2
+        type: integer
+    type: object
+  handler.RestaurantBrandsResponse:
+    properties:
+      restaurants:
+        items:
+          $ref: '#/definitions/handler.RestaurantBrandResponse'
+        type: array
     type: object
   response.ErrorResponse:
     properties:
@@ -171,4 +203,29 @@ paths:
       summary: Регистрация пользователя
       tags:
       - auth
+  /restaurants/brands:
+    get:
+      description: Возвращает список брендов ресторанов с поддержкой пагинации (limit
+        и offset)
+      parameters:
+      - default: 20
+        description: Количество получаемых ресторанов
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Смещение от начала списка
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное получение списка ресторанов
+          schema:
+            $ref: '#/definitions/handler.RestaurantBrandsResponse'
+      summary: Получение списка ресторанов
+      tags:
+      - restaurants
 swagger: "2.0"
