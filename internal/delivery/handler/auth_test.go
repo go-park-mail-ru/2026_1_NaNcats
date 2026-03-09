@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -9,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/mocks"
 	"github.com/google/uuid"
@@ -64,5 +66,43 @@ func TestAuthHandler_Register(t *testing.T) {
 		authHandler.Register(rec, req)
 
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
+	})
+}
+
+func TestAuthHandler_GetMe(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockAuthUC := mocks.NewMockAuthUseCase(ctrl)
+
+	authHandler := NewAuthHandler(mockAuthUC)
+
+	t.Run("Успешный запуск", func(t *testing.T) {
+		userID := uuid.New()
+
+		req := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
+		ctx := context.WithValue(req.Context(), middleware.UserIDKey, userID)
+		req = req.WithContext(ctx)
+
+		rec := httptest.NewRecorder()
+
+		mockAuthUC.EXPECT().
+			GetProfile(gomock.Any(), userID).
+			Return(domain.User{ID: userID, Name: "Ivan"}, nil)
+
+		authHandler.GetMe(rec, req)
+
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.Contains(t, rec.Body.String(), "Ivan")
+	})
+
+	t.Run("No User in Context", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
+		rec := httptest.NewRecorder()
+
+		authHandler.GetMe(rec, req)
+
+		// код в GetMe при !ok возвращает StatusInternalServerError
+		assert.Equal(t, http.StatusInternalServerError, rec.Code)
 	})
 }
