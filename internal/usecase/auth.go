@@ -13,6 +13,8 @@ import (
 )
 
 // контракт бизнес-логики авторизации
+//
+//go:generate mockgen -destination=mocks/auth_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase AuthUseCase
 type AuthUseCase interface {
 	Register(ctx context.Context, user domain.User) (domain.User, domain.Session, error)
 	Login(ctx context.Context, user domain.User) (domain.User, domain.Session, error)
