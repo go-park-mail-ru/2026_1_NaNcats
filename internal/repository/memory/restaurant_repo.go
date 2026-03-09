@@ -19,7 +19,8 @@ type restaurantBrandRepo struct {
 // функция-конструктор репозитория сессий
 func NewRestaurantBrandRepo() repository.RestaurantBrandRepository {
 	return &restaurantBrandRepo{
-		restaurantBrands: make(map[uuid.UUID]domain.RestaurantBrand),
+		restaurantBrands: seedRestaurants(),
+		// restaurantBrands: make(map[uuid.UUID]domain.RestaurantBrand),
 	}
 }
 
