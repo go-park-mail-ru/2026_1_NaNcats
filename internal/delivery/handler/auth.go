@@ -177,6 +177,7 @@ func (h *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	sessionID, err := uuid.Parse(cookie.Value)
 	if err != nil {
 		response.Error(w, http.StatusUnauthorized, "InvalidSession")
+		return
 	}
 
 	ctx := r.Context()

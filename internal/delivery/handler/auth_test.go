@@ -169,3 +169,91 @@ func TestAuthHandler_Login(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 	})
 }
+
+func TestAuthHandler_Logout(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockAuthUC := mocks.NewMockAuthUseCase(ctrl)
+	authHandler := NewAuthHandler(mockAuthUC)
+
+	t.Run("Успешный выход", func(t *testing.T) {
+		sessionID := uuid.New()
+		req := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
+
+		// Добавляем куку в запрос
+		req.AddCookie(&http.Cookie{
+			Name:  "session_id",
+			Value: sessionID.String(),
+		})
+
+		rec := httptest.NewRecorder()
+
+		// Ожидаем вызов Logout в UseCase
+		mockAuthUC.EXPECT().
+			Logout(gomock.Any(), sessionID).
+			Return(nil)
+
+		authHandler.Logout(rec, req)
+
+		// 1. Проверяем статус
+		assert.Equal(t, http.StatusOK, rec.Code)
+
+		// 2. Проверяем, что пришла инструкция на удаление куки
+		// Мы ищем куку с тем же именем, но пустую и протухшую
+		resp := rec.Result()
+		cookies := resp.Cookies()
+		var logoutCookie *http.Cookie
+		for _, c := range cookies {
+			if c.Name == "session_id" {
+				logoutCookie = c
+			}
+		}
+
+		assert.NotNil(t, logoutCookie)
+		assert.Equal(t, "", logoutCookie.Value)
+		// Проверяем, что время истечения - эпоха Unix (0)
+		assert.True(t, logoutCookie.Expires.Before(time.Now()))
+	})
+
+	t.Run("Ошибка: кука отсутствует", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
+		rec := httptest.NewRecorder()
+
+		authHandler.Logout(rec, req)
+
+		assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	})
+
+	t.Run("Ошибка: невалидный UUID в куке", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
+		req.AddCookie(&http.Cookie{
+			Name:  "session_id",
+			Value: "not-a-uuid",
+		})
+		rec := httptest.NewRecorder()
+
+		authHandler.Logout(rec, req)
+
+		assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	})
+
+	t.Run("Ошибка: сессия не найдена в базе", func(t *testing.T) {
+		sessionID := uuid.New()
+		req := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
+		req.AddCookie(&http.Cookie{
+			Name:  "session_id",
+			Value: sessionID.String(),
+		})
+		rec := httptest.NewRecorder()
+
+		// Программируем мок вернуть ошибку (например, сессия уже удалена)
+		mockAuthUC.EXPECT().
+			Logout(gomock.Any(), sessionID).
+			Return(domain.ErrSessionNotFound)
+
+		authHandler.Logout(rec, req)
+
+		assert.Equal(t, http.StatusNotFound, rec.Code)
+	})
+}
