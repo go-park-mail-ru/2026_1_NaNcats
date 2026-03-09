@@ -42,6 +42,7 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 		sessionID, err := uuid.Parse(cookie.Value)
 		if err != nil {
 			response.Error(w, http.StatusUnauthorized, "Invalid session")
+			return
 		}
 
 		ctx := r.Context()
