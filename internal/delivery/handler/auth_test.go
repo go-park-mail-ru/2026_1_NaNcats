@@ -166,6 +166,6 @@ func TestAuthHandler_Login(t *testing.T) {
 
 		authHandler.Login(rec, req)
 
-		assert.Equal(t, http.StatusBadRequest, rec.Code) // Или StatusUnauthorized, смотря что в хендлере
+		assert.Equal(t, http.StatusBadRequest, rec.Code)
 	})
 }
