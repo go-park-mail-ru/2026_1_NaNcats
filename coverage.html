@@ -1,0 +1,1617 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>api: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/go-park-mail-ru/2026_1_NaNcats/cmd/api/main.go (0.0%)</option>
+				
+				<option value="file1">github.com/go-park-mail-ru/2026_1_NaNcats/docs/docs.go (0.0%)</option>
+				
+				<option value="file2">github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/handler/auth.go (0.0%)</option>
+				
+				<option value="file3">github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/handler/image.go (0.0%)</option>
+				
+				<option value="file4">github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/handler/restaurant.go (0.0%)</option>
+				
+				<option value="file5">github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware/auth.go (0.0%)</option>
+				
+				<option value="file6">github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware/cors.go (0.0%)</option>
+				
+				<option value="file7">github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/memory/image_storage.go (0.0%)</option>
+				
+				<option value="file8">github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/memory/restaurant_repo.go (0.0%)</option>
+				
+				<option value="file9">github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/memory/session_repo.go (0.0%)</option>
+				
+				<option value="file10">github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/memory/user_repo.go (43.5%)</option>
+				
+				<option value="file11">github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/auth.go (43.4%)</option>
+				
+				<option value="file12">github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/image.go (0.0%)</option>
+				
+				<option value="file13">github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/restaurant.go (0.0%)</option>
+				
+				<option value="file14">github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/session.go (0.0%)</option>
+				
+				<option value="file15">github.com/go-park-mail-ru/2026_1_NaNcats/pkg/request/json.go (0.0%)</option>
+				
+				<option value="file16">github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response/cookie.go (0.0%)</option>
+				
+				<option value="file17">github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response/json.go (0.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "log"
+        "net/http"
+        "os"
+        "time"
+
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/handler"
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/memory"
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
+
+        _ "github.com/go-park-mail-ru/2026_1_NaNcats/docs"
+        httpSwagger "github.com/swaggo/http-swagger"
+)
+
+// @title                 NaNcats Delivery API
+// @version         1.0
+// @description API бэкенда для проекта "Delivery Club" от команды NaNcats
+// @host                localhost:8080
+// @BasePath        /api
+func main() <span class="cov0" title="0">{
+        port := os.Getenv("PORT") // выделенный под сервер порт из окружения
+        if port == "" </span><span class="cov0" title="0">{
+                port = "8080"
+        }</span>
+
+        <span class="cov0" title="0">userRepo := memory.NewUserRepo()
+        sessionRepo := memory.NewSessionRepo()
+        imageStorage := memory.NewImageStorage()
+        restaurantBrandRepo := memory.NewRestaurantBrandRepo()
+
+        // ttl сессии - 24 часа
+        sessionTTL := 24 * time.Hour
+
+        sessionUC := usecase.NewSessionUseCase(sessionRepo, sessionTTL)
+        authUC := usecase.NewAuthUseCase(userRepo, sessionUC)
+        imageUC := usecase.NewImageUseCase(imageStorage)
+        restaurantBrandUC := usecase.NewRestaurantBrandUseCase(restaurantBrandRepo)
+
+        authHandler := handler.NewAuthHandler(authUC)
+        imageHandler := handler.NewImageHandler(imageUC)
+        restaurantBrandHandler := handler.NewRestaurantBrandHandler(restaurantBrandUC)
+
+        authMW := middleware.NewAuthMiddleware(sessionUC)
+        corsMW := middleware.NewCORSMiddleware([]string{
+                "http://localhost:2033",
+        })
+
+        // создание собственного роутера
+        mux := http.NewServeMux()
+
+        mux.HandleFunc("POST /api/auth/register", authHandler.Register)
+        mux.HandleFunc("POST /api/auth/login", authHandler.Login)
+        mux.HandleFunc("POST /api/auth/logout", authHandler.Logout)
+        // ручка, которую дергаем для проверки авторизации по куки с миддлваром на авторизацию
+        mux.Handle("GET /api/auth/me", authMW.RequireAuth(http.HandlerFunc(authHandler.GetMe)))
+
+        mux.HandleFunc("GET /api/images/{filepath...}", imageHandler.Download)
+
+        mux.HandleFunc("GET /api/restaurants/brands", restaurantBrandHandler.GetRestaurantBrandsList)
+
+        mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
+
+        // применение глобальных мидлваров
+        siteHandler := corsMW.Handler(mux)
+
+        log.Printf("Server is starting on port %s...", port)
+
+        server := &amp;http.Server{
+                Addr:         ":" + port,
+                Handler:      siteHandler, // передаем обернутый роутер
+                ReadTimeout:  10 * time.Second,
+                WriteTimeout: 10 * time.Second,
+        }
+
+        err := server.ListenAndServe()
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Server failed to start: %v", err)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">// Package docs Code generated by swaggo/swag. DO NOT EDIT
+package docs
+
+import "github.com/swaggo/swag"
+
+const docTemplate = `{
+    "schemes": {{ marshal .Schemes }},
+    "swagger": "2.0",
+    "info": {
+        "description": "{{escape .Description}}",
+        "title": "{{.Title}}",
+        "contact": {},
+        "version": "{{.Version}}"
+    },
+    "host": "{{.Host}}",
+    "basePath": "{{.BasePath}}",
+    "paths": {
+        "/login": {
+            "post": {
+                "description": "Проверяет учетные данные (логин и пароль) и создает сессионную куку",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Авторизация пользователя",
+                "parameters": [
+                    {
+                        "description": "Данные для входа",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешный вход и создание сессии",
+                        "schema": {
+                            "$ref": "#/definitions/handler.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат JSON",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/logout": {
+            "post": {
+                "description": "Удаляет информацию о текущей сессии и принудительно протухает куку с сессией",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Выход из текущей",
+                "responses": {
+                    "200": {
+                        "description": "Успешный выход"
+                    },
+                    "401": {
+                        "description": "Сессия не найдена",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Сессия не найдена в базе данных",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me": {
+            "get": {
+                "description": "Возвращает данные профиля пользователя, если сессионная кука валидна",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Проверка текущей сессии",
+                "responses": {
+                    "200": {
+                        "description": "Успешный вход и создание сессии",
+                        "schema": {
+                            "$ref": "#/definitions/handler.LoginResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Сессия не найдена",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/register": {
+            "post": {
+                "description": "Проверяет, существует ли пользователь с указанными данными или нет, регистрирует его и создает сессионную куку",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Регистрация пользователя",
+                "parameters": [
+                    {
+                        "description": "Данные для регистрации",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.RegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Успешная регистрация и создание сессии",
+                        "schema": {
+                            "$ref": "#/definitions/handler.RegisterResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат JSON",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handler.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "login": {
+                    "description": "Email пользователя",
+                    "type": "string",
+                    "example": "user@mail.ru"
+                },
+                "password": {
+                    "description": "Пароль в открытом виде",
+                    "type": "string",
+                    "example": "qwerty12345"
+                }
+            }
+        },
+        "handler.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "Уникальный ID пользователя в системе",
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "description": "Имя для отображения в интерфейсе",
+                    "type": "string",
+                    "example": "Иван"
+                }
+            }
+        },
+        "handler.RegisterRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "Email пользователя",
+                    "type": "string",
+                    "example": "user@mail.ru"
+                },
+                "name": {
+                    "description": "Имя пользователя",
+                    "type": "string",
+                    "example": "Иван"
+                },
+                "password": {
+                    "description": "Пароль в открытом виде",
+                    "type": "string",
+                    "example": "qwerty12345"
+                }
+            }
+        },
+        "handler.RegisterResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Время создания аккаунта по стандарту RFC 3339",
+                    "type": "string",
+                    "example": "2006-01-02T15:04:05Z07:00"
+                },
+                "email": {
+                    "description": "Email пользователя",
+                    "type": "string",
+                    "example": "user@mail.ru"
+                },
+                "id": {
+                    "description": "Уникальный ID пользователя в системе",
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "description": "Имя для отображения в интерфейсе",
+                    "type": "string",
+                    "example": "Иван"
+                }
+            }
+        },
+        "response.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 400
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Неверный формат запроса"
+                }
+            }
+        }
+    }
+}`
+
+// SwaggerInfo holds exported Swagger Info so clients can modify it
+var SwaggerInfo = &amp;swag.Spec{
+        Version:          "1.0",
+        Host:             "localhost:8080",
+        BasePath:         "/api",
+        Schemes:          []string{},
+        Title:            "NaNcats Delivery API",
+        Description:      "API бэкенда для проекта \"Delivery Club\" от команды NaNcats",
+        InfoInstanceName: "swagger",
+        SwaggerTemplate:  docTemplate,
+        LeftDelim:        "{{",
+        RightDelim:       "}}",
+}
+
+func init() <span class="cov0" title="0">{
+        swag.Register(SwaggerInfo.InstanceName(), SwaggerInfo)
+}</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package handler
+
+import (
+        "net/http"
+        "time"
+
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
+        "github.com/go-park-mail-ru/2026_1_NaNcats/pkg/request"
+        "github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
+        "github.com/google/uuid"
+)
+
+// DTO запроса на регистрацию
+type RegisterRequest struct {
+        // Имя пользователя
+        Name string `json:"name" example:"Иван"`
+        // Email пользователя
+        Email string `json:"email" example:"user@mail.ru"`
+        // Пароль в открытом виде
+        Password string `json:"password" example:"qwerty12345"`
+}
+
+// DTO отправки сведений о пользователе при регистрации
+type RegisterResponse struct {
+        // Уникальный ID пользователя в системе
+        ID uuid.UUID `json:"id" example:"1"`
+        // Имя для отображения в интерфейсе
+        Name string `json:"name" example:"Иван"`
+        // Email пользователя
+        Email string `json:"email" example:"user@mail.ru"`
+        // Время создания аккаунта по стандарту RFC 3339
+        CreatedAt time.Time `json:"created_at" example:"2006-01-02T15:04:05Z07:00"`
+}
+
+// LoginRequest - DTO для входящего запроса на авторизацию
+type LoginRequest struct {
+        // Email пользователя
+        Login string `json:"login" example:"user@mail.ru"`
+        // Пароль в открытом виде
+        Password string `json:"password" example:"qwerty12345"`
+}
+
+// LoginResponse - DTO для ответа при успешном входе
+type LoginResponse struct {
+        // Уникальный ID пользователя в системе
+        ID uuid.UUID `json:"id" example:"1"`
+        // Имя для отображения в интерфейсе
+        Name string `json:"name" example:"Иван"`
+}
+
+// структура хендлера авторизации
+type authHandler struct {
+        authUC usecase.AuthUseCase
+}
+
+// функция-конструтор хендлера
+func NewAuthHandler(auc usecase.AuthUseCase) *authHandler <span class="cov0" title="0">{
+        return &amp;authHandler{
+                authUC: auc,
+        }
+}</span>
+
+// Register godoc
+// @Summary                 Регистрация пользователя
+// @Description                Проверяет, существует ли пользователь с указанными данными или нет, регистрирует его и создает сессионную куку
+// @Tags                        auth
+// @Accept                        json
+// @Produce                        json
+// @Param                        input        body          RegisterRequest        true        "Данные для регистрации"
+// @Success                        201                {object}  RegisterResponse                        "Успешная регистрация и создание сессии"
+// @Failure                        400                {object}  response.ErrorResponse        "Неверный формат JSON"
+// @Router                        /register [post]
+func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        // объект DTO запроса
+        curRequest := RegisterRequest{}
+
+        // заполняем объект DTO запроса данными из запроса
+        err := request.JSON(r, &amp;curRequest)
+        if err != nil </span><span class="cov0" title="0">{
+                response.Error(w, http.StatusBadRequest, err.Error())
+                return
+        }</span>
+
+        // структура, в которую кладем данные создаваемого юзера из запроса
+        <span class="cov0" title="0">userToCreate := domain.User{
+                Name:         curRequest.Name,
+                Email:        curRequest.Email,
+                PasswordHash: curRequest.Password,
+        }
+
+        // контекст нынешнего запроса, позволяет досрочно завершить бизнес-логику
+        // если пользователь отключится/отменит загрузку запроса
+        ctx := r.Context()
+
+        // созданный юзер, id сессии
+        createdUser, createdSession, err := h.authUC.Register(ctx, userToCreate)
+        if err != nil </span><span class="cov0" title="0">{
+                // добавить больше бизнес-ошибок (не только bad request)
+                response.Error(w, http.StatusBadRequest, err.Error())
+                return
+        }</span>
+
+        <span class="cov0" title="0">response.SetCookie(w, "session_id", createdSession.ID.String(), createdSession.ExpiresAt)
+
+        // ответ, который отдаем юзеру
+        resp := RegisterResponse{
+                ID:        createdUser.ID,
+                Name:      createdUser.Name,
+                Email:     createdUser.Email,
+                CreatedAt: createdUser.CreatedAt,
+        }
+
+        response.JSON(w, http.StatusCreated, resp)</span>
+}
+
+// Login godoc
+// @Summary                 Авторизация пользователя
+// @Description                Проверяет учетные данные (логин и пароль) и создает сессионную куку
+// @Tags                        auth
+// @Accept                        json
+// @Produce                        json
+// @Param                        input        body          LoginRequest        true        "Данные для входа"
+// @Success                        200                {object}  LoginResponse                        "Успешный вход и создание сессии"
+// @Failure                        400                {object}  response.ErrorResponse        "Неверный формат JSON"
+// @Router                        /login [post]
+func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        curRequest := LoginRequest{}
+
+        err := request.JSON(r, &amp;curRequest)
+        if err != nil </span><span class="cov0" title="0">{
+                response.Error(w, http.StatusBadRequest, err.Error())
+                return
+        }</span>
+
+        <span class="cov0" title="0">userToLogin := domain.User{
+                Email:        curRequest.Login,
+                PasswordHash: curRequest.Password,
+        }
+
+        ctx := r.Context()
+
+        loggedUser, createdSession, err := h.authUC.Login(ctx, userToLogin)
+        if err != nil </span><span class="cov0" title="0">{
+                response.Error(w, http.StatusBadRequest, err.Error())
+                return
+        }</span>
+
+        <span class="cov0" title="0">response.SetCookie(w, "session_id", createdSession.ID.String(), createdSession.ExpiresAt)
+
+        resp := LoginResponse{
+                ID:   loggedUser.ID,
+                Name: loggedUser.Name,
+        }
+
+        response.JSON(w, http.StatusOK, resp)</span>
+}
+
+// Logout godoc
+// @Summary                 Выход из текущей
+// @Description                Удаляет информацию о текущей сессии и принудительно протухает куку с сессией
+// @Tags                        auth
+// @Accept                        json
+// @Produce                        json
+// @Success                        200                "Успешный выход"
+// @Failure                        401                {object}  response.ErrorResponse        "Сессия не найдена"
+// @Failure                        404                {object}  response.ErrorResponse        "Сессия не найдена в базе данных"
+// @Router                        /logout [post]
+func (h *authHandler) Logout(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        cookie, err := r.Cookie("session_id")
+        if err != nil </span><span class="cov0" title="0">{
+                response.Error(w, http.StatusUnauthorized, "Session not found")
+                return
+        }</span>
+
+        <span class="cov0" title="0">sessionID, err := uuid.Parse(cookie.Value)
+        if err != nil </span><span class="cov0" title="0">{
+                response.Error(w, http.StatusUnauthorized, "InvalidSession")
+        }</span>
+
+        <span class="cov0" title="0">ctx := r.Context()
+
+        err = h.authUC.Logout(ctx, sessionID)
+        if err != nil </span><span class="cov0" title="0">{
+                response.Error(w, http.StatusNotFound, "Session not found")
+                return
+        }</span>
+
+        // нулевое время в эпохе Unix
+        <span class="cov0" title="0">response.SetCookie(w, "session_id", "", time.Unix(0, 0))
+        response.JSON(w, http.StatusOK, nil)</span>
+}
+
+// GetMe godoc
+// @Summary                 Проверка текущей сессии
+// @Description                Возвращает данные профиля пользователя, если сессионная кука валидна
+// @Tags                        auth
+// @Accept                        json
+// @Produce                        json
+// @Success                        200                {object}  LoginResponse                                "Успешный вход и создание сессии"
+// @Failure                        401                {object}  response.ErrorResponse        "Сессия не найдена"
+// @Failure                        404                {object}  response.ErrorResponse        "Пользователь не найден"
+// @Router                        /me [get]
+func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        ctx := r.Context()
+
+        // берем userID из контекста, который нам пришел из мидлвара AuthMiddleware
+        // Value возвращает any. Используем утверждение типа, чтобы Go знал что это int
+        userID, ok := ctx.Value(middleware.UserIDKey).(uuid.UUID)
+
+        // если там не int или nil
+        if !ok </span><span class="cov0" title="0">{
+                response.Error(w, http.StatusInternalServerError, "failed to identify user")
+                return
+        }</span>
+
+        <span class="cov0" title="0">loggedUser, err := h.authUC.GetProfile(ctx, userID)
+        if err != nil </span><span class="cov0" title="0">{
+                response.Error(w, http.StatusInternalServerError, "failed to fetch user profile")
+                return
+        }</span>
+
+        <span class="cov0" title="0">resp := LoginResponse{
+                ID:   loggedUser.ID,
+                Name: loggedUser.Name,
+        }
+
+        response.JSON(w, http.StatusOK, resp)</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package handler
+
+import (
+        "net/http"
+
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
+        "github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
+)
+
+type imageHandler struct {
+        imageUC usecase.ImageUseCase
+}
+
+// функция-конструтор хендлера
+func NewImageHandler(iuc usecase.ImageUseCase) *imageHandler <span class="cov0" title="0">{
+        return &amp;imageHandler{
+                imageUC: iuc,
+        }
+}</span>
+
+func (h *imageHandler) Download(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        filePath := r.PathValue("filepath")
+
+        ctx := r.Context()
+
+        imageBytes, err := h.imageUC.GetImage(ctx, filePath)
+        if err != nil </span><span class="cov0" title="0">{
+                response.Error(w, http.StatusInternalServerError, "Server can not read file")
+                return
+        }</span>
+
+        <span class="cov0" title="0">contentType := http.DetectContentType(imageBytes)
+        w.Header().Set("Content-Type", contentType)
+        w.Write(imageBytes)</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package handler
+
+import (
+        "net/http"
+        "strconv"
+
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
+        "github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
+)
+
+type RestaurantBrandResponse struct {
+        ID            string `json:"id" example:"550e8400-e29b-41d4-a716-446655440000"`
+        Name          string `json:"name" example:"KFC"`
+        Description   string `json:"description" example:"Острые крылошки"`
+        PromotionTier int    `json:"promotion_tier" example:"2"`
+}
+
+type RestaurantBrandsResponse struct {
+        RestaurantBrands []RestaurantBrandResponse `json:"restaurants"`
+}
+
+type restaurantBrandHandler struct {
+        restaurantBrandUC usecase.RestaurantBrandUseCase
+}
+
+func NewRestaurantBrandHandler(rbuc usecase.RestaurantBrandUseCase) *restaurantBrandHandler <span class="cov0" title="0">{
+        return &amp;restaurantBrandHandler{
+                restaurantBrandUC: rbuc,
+        }
+}</span>
+
+func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        query := r.URL.Query()
+
+        // Значения по дефолту
+        limit := 20
+        offset := 0
+
+        // Считываем параметры
+        // читаем limit
+        if qLimit := query.Get("limit"); qLimit != "" </span><span class="cov0" title="0">{
+                if val, err := strconv.Atoi(qLimit); err == nil &amp;&amp; val &gt; 0 </span><span class="cov0" title="0">{
+                        limit = val
+                }</span>
+        }
+
+        // читаем offset
+        <span class="cov0" title="0">if qOffset := query.Get("offset"); qOffset != "" </span><span class="cov0" title="0">{
+                if val, err := strconv.Atoi(qOffset); err == nil &amp;&amp; val &gt; 0 </span><span class="cov0" title="0">{
+                        offset = val
+                }</span>
+        }
+
+        <span class="cov0" title="0">ctx := r.Context()
+        restaurantBrandsList := h.restaurantBrandUC.GetRestaurantBrandsList(ctx, limit, offset)
+
+        dtoList := make([]RestaurantBrandResponse, 0, len(restaurantBrandsList))
+
+        for _, currRestaurantBrand := range restaurantBrandsList </span><span class="cov0" title="0">{
+                restResp := RestaurantBrandResponse{
+                        ID:            currRestaurantBrand.ID.String(),
+                        Name:          currRestaurantBrand.Name,
+                        Description:   currRestaurantBrand.Description,
+                        PromotionTier: currRestaurantBrand.PromotionTier,
+                }
+
+                dtoList = append(dtoList, restResp)
+        }</span>
+
+        <span class="cov0" title="0">resp := RestaurantBrandsResponse{
+                RestaurantBrands: dtoList,
+        }
+
+        response.JSON(w, http.StatusOK, resp)</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package middleware
+
+import (
+        "context"
+        "net/http"
+
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
+        "github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
+        "github.com/google/uuid"
+)
+
+// уникальный тип ключа контекста:
+// нужен, чтобы предотвратить коллизии с другими пакетами в контексте
+type contextKey string
+
+const (
+        // ключ ID пользователя для контекста
+        UserIDKey contextKey = "userID"
+)
+
+// мидлвар авторизации:
+// нужен для защиты приватных эндпоинтов от forbidden/unauthorized сессий
+type AuthMiddleware struct {
+        sessionUC usecase.SessionUseCase
+}
+
+func NewAuthMiddleware(suc usecase.SessionUseCase) *AuthMiddleware <span class="cov0" title="0">{
+        return &amp;AuthMiddleware{
+                sessionUC: suc,
+        }
+}</span>
+
+// защита от unauthorized сессий
+func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler <span class="cov0" title="0">{
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov0" title="0">{
+                cookie, err := r.Cookie("session_id")
+                if err != nil </span><span class="cov0" title="0">{
+                        response.Error(w, http.StatusUnauthorized, "Session not found")
+                        return
+                }</span>
+
+                <span class="cov0" title="0">sessionID, err := uuid.Parse(cookie.Value)
+                if err != nil </span><span class="cov0" title="0">{
+                        response.Error(w, http.StatusUnauthorized, "Invalid session")
+                }</span>
+
+                <span class="cov0" title="0">ctx := r.Context()
+
+                userID, err := m.sessionUC.Check(ctx, sessionID)
+                if err != nil </span><span class="cov0" title="0">{
+                        response.Error(w, http.StatusUnauthorized, "Invalid or expired session")
+                        return
+                }</span>
+
+                // добавляем к контексту ctx ключ UserIDKey со значение userID
+                <span class="cov0" title="0">ctxWithUser := context.WithValue(ctx, UserIDKey, userID)
+
+                // отдаем обработать запрос дальше
+                next.ServeHTTP(w, r.WithContext(ctxWithUser))</span>
+        })
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package middleware
+
+import "net/http"
+
+type CORSMiddleware struct {
+        allowedOrigins []string // мапа разрешенных источников
+}
+
+func NewCORSMiddleware(origins []string) *CORSMiddleware <span class="cov0" title="0">{
+        return &amp;CORSMiddleware{
+                allowedOrigins: origins,
+        }
+}</span>
+
+// Разрешает браузеру делать запросы с разрешенных доменов, открывает доступ для них к заголовкам.
+// После выполнения CORS-логики передает запрос в следующий хендлер
+func (m *CORSMiddleware) Handler(next http.Handler) http.Handler <span class="cov0" title="0">{
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov0" title="0">{
+                origin := r.Header.Get("Origin")
+
+                isAllowed := false // флаг, есть ли origin среди разрешенных
+                for _, o := range m.allowedOrigins </span><span class="cov0" title="0">{
+                        if origin == o </span><span class="cov0" title="0">{
+                                isAllowed = true
+                                break</span>
+                        }
+                }
+
+                <span class="cov0" title="0">if isAllowed </span><span class="cov0" title="0">{
+                        // сам источник
+                        w.Header().Set("Access-Control-Allow-Origin", origin)
+                        // разрешаем браузеру отправлять и получать куки
+                        w.Header().Set("Access-Control-Allow-Credentials", "true")
+                        // заголовки, которые фронтенду разрешено присылать
+                        w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+                        // методы, которые разрешаем присылать фронтенду
+                        w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+                }</span>
+
+                // обработка preflight запросов - т.е. проверки браузера на cors
+                <span class="cov0" title="0">if r.Method == http.MethodOptions </span><span class="cov0" title="0">{
+                        // принято отвечать на preflight запросы 204 No Content
+                        w.WriteHeader(http.StatusNoContent)
+                        return
+                }</span>
+
+                // передаем запрос дальше
+                <span class="cov0" title="0">next.ServeHTTP(w, r)</span>
+        })
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package memory
+
+import (
+        "context"
+        "os"
+        "path/filepath"
+
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+)
+
+type imageStorage struct {
+        basePath string
+}
+
+func NewImageStorage() repository.ImageStorage <span class="cov0" title="0">{
+        return &amp;imageStorage{
+                basePath: "./uploads",
+        }
+}</span>
+
+func (s *imageStorage) Download(ctx context.Context, filePath string) ([]byte, error) <span class="cov0" title="0">{
+        fullFilePath := filepath.Join(s.basePath, filePath)
+        cleanPath := filepath.Clean(fullFilePath)
+
+        photo, err := os.ReadFile(cleanPath)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return photo, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package memory
+
+import (
+        "context"
+        "sort"
+        "sync"
+
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+        "github.com/google/uuid"
+)
+
+// структура брендов ресторанов на основе мап
+type restaurantBrandRepo struct {
+        mu               sync.RWMutex                         // защита от одновременного чтения из мапы
+        restaurantBrands map[uuid.UUID]domain.RestaurantBrand // мапа сессий, ключ - sessionID
+}
+
+// функция-конструктор репозитория сессий
+func NewRestaurantBrandRepo() repository.RestaurantBrandRepository <span class="cov0" title="0">{
+        return &amp;restaurantBrandRepo{
+                restaurantBrands: make(map[uuid.UUID]domain.RestaurantBrand),
+        }
+}</span>
+
+func (r *restaurantBrandRepo) GetRestaurantBrandsList(ctx context.Context, limit, offset int) []domain.RestaurantBrand <span class="cov0" title="0">{
+        r.mu.RLock()
+        defer r.mu.RUnlock()
+
+        // Создаем слайс для ресторанных брендов той же длины, что и сама мапа
+        restaurantBrandsSlice := make([]domain.RestaurantBrand, 0, len(r.restaurantBrands))
+
+        // Переносим в слайс данные из мапы
+        for _, currRestaurantBrand := range r.restaurantBrands </span><span class="cov0" title="0">{
+                restaurantBrandsSlice = append(restaurantBrandsSlice, currRestaurantBrand)
+        }</span>
+
+        <span class="cov0" title="0">sort.Slice(restaurantBrandsSlice, func(i, j int) bool </span><span class="cov0" title="0">{
+                if restaurantBrandsSlice[i].PromotionTier != restaurantBrandsSlice[j].PromotionTier </span><span class="cov0" title="0">{
+                        // Сортируем по убыванию (от большего к меньшему) по уровню продвижения
+                        return restaurantBrandsSlice[i].PromotionTier &gt; restaurantBrandsSlice[j].PromotionTier
+                }</span>
+
+                // Второй параметр сортировки - название ресторана (по возрастанию)
+                <span class="cov0" title="0">return restaurantBrandsSlice[i].Name &lt; restaurantBrandsSlice[j].Name</span>
+        })
+
+        <span class="cov0" title="0">total := len(restaurantBrandsSlice)
+
+        if offset &gt;= total </span><span class="cov0" title="0">{
+                return []domain.RestaurantBrand{}
+        }</span>
+
+        <span class="cov0" title="0">end := offset + limit
+        if end &gt; total </span><span class="cov0" title="0">{
+                end = total
+        }</span>
+
+        <span class="cov0" title="0">return restaurantBrandsSlice[offset:end]</span>
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package memory
+
+import (
+        "context"
+        "sync"
+
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+        "github.com/google/uuid"
+)
+
+// структура репозитория сессий на основе мап
+type sessionRepo struct {
+        mu       sync.RWMutex                 // защита от одновременного чтения из мапы
+        sessions map[uuid.UUID]domain.Session // мапа сессий, ключ - sessionID
+}
+
+// функция-конструктор репозитория сессий
+func NewSessionRepo() repository.SessionRepository <span class="cov0" title="0">{
+        return &amp;sessionRepo{
+                sessions: make(map[uuid.UUID]domain.Session),
+        }
+}</span>
+
+func (r *sessionRepo) Create(ctx context.Context, session domain.Session) error <span class="cov0" title="0">{
+        // добавить обработку ошибок
+        r.mu.Lock()
+        defer r.mu.Unlock()
+        r.sessions[session.ID] = session
+        return nil
+}</span>
+
+func (r *sessionRepo) GetByID(ctx context.Context, sessionID uuid.UUID) (domain.Session, error) <span class="cov0" title="0">{
+        r.mu.RLock()
+        defer r.mu.RUnlock()
+
+        session, exists := r.sessions[sessionID]
+        if !exists </span><span class="cov0" title="0">{
+                return domain.Session{}, domain.ErrSessionNotFound
+        }</span>
+
+        <span class="cov0" title="0">return session, nil</span>
+}
+
+func (r *sessionRepo) Delete(ctx context.Context, sessionID uuid.UUID) error <span class="cov0" title="0">{
+        // добавить обработку ошибок
+        r.mu.Lock()
+        defer r.mu.Unlock()
+        delete(r.sessions, sessionID)
+        return nil
+}</span>
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package memory
+
+import (
+        "context"
+        "strings"
+        "sync"
+
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+        "github.com/google/uuid"
+)
+
+// реализация контракта репозитория юзера на мапах (in-memory)
+type userRepo struct {
+        mu    sync.RWMutex              // защита от одновременного чтения из мапы
+        users map[uuid.UUID]domain.User // мапа юзеров, ключ - id
+}
+
+// функция-конструктор userRepo
+func NewUserRepo() repository.UserRepository <span class="cov8" title="1">{
+        return &amp;userRepo{
+                users: make(map[uuid.UUID]domain.User),
+        }
+}</span>
+
+// метод создания юзера в репозитории
+func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (uuid.UUID, error) <span class="cov8" title="1">{
+        r.mu.Lock()
+        defer r.mu.Unlock()
+
+        user.Email = strings.ToLower(user.Email)
+
+        // проверяем на существование email'а
+        for _, curUser := range r.users </span><span class="cov8" title="1">{
+                if curUser.Email == user.Email </span><span class="cov8" title="1">{
+                        return uuid.UUID{}, domain.ErrEmailAlreadyExists
+                }</span>
+        }
+
+        <span class="cov8" title="1">user.ID = uuid.New()
+        r.users[user.ID] = user
+
+        return user.ID, nil</span>
+}
+
+// метод нахождения пользователя по email'у
+func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.User, error) <span class="cov0" title="0">{
+        r.mu.RLock()
+        defer r.mu.RUnlock()
+
+        emailLower := strings.ToLower(email)
+
+        // проверяем на существование email'а
+        for _, user := range r.users </span><span class="cov0" title="0">{
+                if user.Email == emailLower </span><span class="cov0" title="0">{
+                        return user, nil
+                }</span>
+        }
+
+        <span class="cov0" title="0">return domain.User{}, domain.ErrUserNotFound</span>
+}
+
+func (r *userRepo) GetUserByID(ctx context.Context, id uuid.UUID) (domain.User, error) <span class="cov0" title="0">{
+        r.mu.RLock()
+        defer r.mu.RUnlock()
+
+        user, exists := r.users[id]
+        if !exists </span><span class="cov0" title="0">{
+                return domain.User{}, domain.ErrUserNotFound
+        }</span>
+
+        <span class="cov0" title="0">return user, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">package usecase
+
+import (
+        "context"
+        "net/mail"
+        "strings"
+        "time"
+
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+        "github.com/google/uuid"
+        "golang.org/x/crypto/bcrypt"
+)
+
+// контракт бизнес-логики авторизации
+type AuthUseCase interface {
+        Register(ctx context.Context, user domain.User) (domain.User, domain.Session, error)
+        Login(ctx context.Context, user domain.User) (domain.User, domain.Session, error)
+        Logout(ctx context.Context, sessionID uuid.UUID) error
+        Check(ctx context.Context, sessionID uuid.UUID) (domain.User, error)
+        GetProfile(ctx context.Context, userID uuid.UUID) (domain.User, error)
+}
+
+// реализация контракта
+type authUseCase struct {
+        userRepo  repository.UserRepository
+        sessionUC SessionUseCase
+}
+
+// функция-конструктор бизнес-логики авторизации
+func NewAuthUseCase(ur repository.UserRepository, suc SessionUseCase) AuthUseCase <span class="cov8" title="1">{
+        return &amp;authUseCase{
+                userRepo:  ur,
+                sessionUC: suc,
+        }
+}</span>
+
+func isValidEmail(email string) bool <span class="cov8" title="1">{
+        if len(email) &lt; 4 || len(email) &gt; 254 </span><span class="cov0" title="0">{
+                return false
+        }</span>
+
+        // Парсинг RFC 5322
+        <span class="cov8" title="1">addr, err := mail.ParseAddress(email)
+        if err != nil </span><span class="cov8" title="1">{
+                return false
+        }</span>
+
+        <span class="cov8" title="1">if strings.Contains(email, "..") </span><span class="cov0" title="0">{
+                return false
+        }</span>
+
+        // mail.ParseAddress позволяет вводить "Name &lt;test@test.com&gt;"
+        // Нам же нужно, чтобы введенная строка была только email-ом
+        <span class="cov8" title="1">if addr.Address != email </span><span class="cov0" title="0">{
+                return false
+        }</span>
+
+        <span class="cov8" title="1">return true</span>
+}
+
+// бизнес-логика регистрации
+func (u *authUseCase) Register(ctx context.Context, user domain.User) (domain.User, domain.Session, error) <span class="cov8" title="1">{
+        user.Email = strings.ToLower(strings.TrimSpace(user.Email))
+
+        if !isValidEmail(user.Email) </span><span class="cov8" title="1">{
+                return domain.User{}, domain.Session{}, domain.ErrInvalidEmail
+        }</span>
+
+        // генерируем хешированный пароль
+        <span class="cov8" title="1">hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.PasswordHash), bcrypt.DefaultCost)
+        if err != nil </span><span class="cov0" title="0">{
+                return domain.User{}, domain.Session{}, err
+        }</span>
+
+        <span class="cov8" title="1">user.PasswordHash = string(hashedPassword)
+
+        user.CreatedAt = time.Now()
+        user.UpdatedAt = time.Now()
+
+        // вызов создания пользователя из репо
+        id, err := u.userRepo.CreateUser(ctx, user)
+        if err != nil </span><span class="cov8" title="1">{
+                return domain.User{}, domain.Session{}, err
+        }</span>
+
+        <span class="cov8" title="1">user.ID = id
+
+        // вызов бизнес-логики по созданию сессии
+        createdSession, err := u.sessionUC.Create(ctx, user.ID)
+        if err != nil </span><span class="cov0" title="0">{
+                return domain.User{}, domain.Session{}, err
+        }</span>
+
+        <span class="cov8" title="1">return user, createdSession, nil</span>
+}
+
+func (u *authUseCase) Login(ctx context.Context, user domain.User) (domain.User, domain.Session, error) <span class="cov0" title="0">{
+        currUser, err := u.userRepo.GetUserByEmail(ctx, user.Email)
+        if err != nil </span><span class="cov0" title="0">{
+                return domain.User{}, domain.Session{}, err
+        }</span>
+
+        <span class="cov0" title="0">err = bcrypt.CompareHashAndPassword([]byte(currUser.PasswordHash), []byte(user.PasswordHash))
+        if err != nil </span><span class="cov0" title="0">{
+                return domain.User{}, domain.Session{}, err
+        }</span>
+
+        <span class="cov0" title="0">createdSession, err := u.sessionUC.Create(ctx, currUser.ID)
+        if err != nil </span><span class="cov0" title="0">{
+                return domain.User{}, domain.Session{}, err
+        }</span>
+
+        <span class="cov0" title="0">return currUser, createdSession, nil</span>
+}
+
+func (u *authUseCase) Logout(ctx context.Context, sessionID uuid.UUID) error <span class="cov0" title="0">{
+        err := u.sessionUC.Destroy(ctx, sessionID)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// возвращает пользователя сессии, проверяя, существует ли сессия и пользователь сессии
+func (u *authUseCase) Check(ctx context.Context, sessionID uuid.UUID) (domain.User, error) <span class="cov0" title="0">{
+        userID, err := u.sessionUC.Check(ctx, sessionID)
+        if err != nil </span><span class="cov0" title="0">{
+                return domain.User{}, err
+        }</span>
+
+        <span class="cov0" title="0">user, err := u.userRepo.GetUserByID(ctx, userID)
+        if err != nil </span><span class="cov0" title="0">{
+                return domain.User{}, err
+        }</span>
+
+        <span class="cov0" title="0">return user, nil</span>
+}
+
+// возвращает юзера по переданному userID
+func (u *authUseCase) GetProfile(ctx context.Context, userID uuid.UUID) (domain.User, error) <span class="cov0" title="0">{
+        user, err := u.userRepo.GetUserByID(ctx, userID)
+        if err != nil </span><span class="cov0" title="0">{
+                return domain.User{}, err
+        }</span>
+
+        <span class="cov0" title="0">return user, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">package usecase
+
+import (
+        "context"
+
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+)
+
+type ImageUseCase interface {
+        GetImage(ctx context.Context, filePath string) ([]byte, error)
+}
+
+type imageUseCase struct {
+        imageStorage repository.ImageStorage
+}
+
+func NewImageUseCase(is repository.ImageStorage) ImageUseCase <span class="cov0" title="0">{
+        return &amp;imageUseCase{
+                imageStorage: is,
+        }
+}</span>
+
+func (u *imageUseCase) GetImage(ctx context.Context, filepath string) ([]byte, error) <span class="cov0" title="0">{
+        photo, err := u.imageStorage.Download(ctx, filepath)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return photo, err</span>
+}
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">package usecase
+
+import (
+        "context"
+
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+)
+
+type RestaurantBrandUseCase interface {
+        GetRestaurantBrandsList(ctx context.Context, limit, offset int) []domain.RestaurantBrand
+}
+
+type restaurantBrandUseCase struct {
+        restaurantBrandRepo repository.RestaurantBrandRepository
+}
+
+func NewRestaurantBrandUseCase(rbr repository.RestaurantBrandRepository) RestaurantBrandUseCase <span class="cov0" title="0">{
+        return &amp;restaurantBrandUseCase{
+                restaurantBrandRepo: rbr,
+        }
+}</span>
+
+func (rb *restaurantBrandUseCase) GetRestaurantBrandsList(ctx context.Context, limit, offset int) []domain.RestaurantBrand <span class="cov0" title="0">{
+        return rb.restaurantBrandRepo.GetRestaurantBrandsList(ctx, limit, offset)
+}</span>
+</pre>
+		
+		<pre class="file" id="file14" style="display: none">package usecase
+
+import (
+        "context"
+        "time"
+
+        "github.com/google/uuid"
+
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+        "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+)
+
+//go:generate mockgen -destination=mocks/session_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase SessionUseCase
+type SessionUseCase interface {
+        // бизнес-логика создания сессии для пользователя, вовзращает sessionID
+        Create(ctx context.Context, userID uuid.UUID) (domain.Session, error)
+        // проверяет, существует и не истек ли sessionID, возвращает айди юзера при успехе
+        Check(ctx context.Context, sessionID uuid.UUID) (uuid.UUID, error)
+        // бизнес-логика для удаления сессии, просто вызывает удаление из repository.session
+        Destroy(ctx context.Context, sessionId uuid.UUID) error
+}
+
+// структура usecase сессий на основе мап
+type sessionUseCase struct {
+        sessionRepo repository.SessionRepository
+        sessionTTL  time.Duration
+}
+
+func NewSessionUseCase(sr repository.SessionRepository, ttl time.Duration) SessionUseCase <span class="cov0" title="0">{
+        return &amp;sessionUseCase{
+                sessionRepo: sr,
+                sessionTTL:  ttl,
+        }
+}</span>
+
+func (u *sessionUseCase) Create(ctx context.Context, userID uuid.UUID) (domain.Session, error) <span class="cov0" title="0">{
+        // бизнес-логика создания сессии
+        // возвращает sessionID созданной сессии и момент времени, когда истекает
+
+        // генерация уникальной криптостойкой строки
+        sessionID := uuid.New()
+
+        // сессия живет sessionTTL времени
+        expiresAt := time.Now().Add(u.sessionTTL)
+
+        // создаем новый объект сессии
+        session := domain.Session{
+                ID:        sessionID,
+                UserID:    userID,
+                ExpiresAt: expiresAt,
+        }
+
+        // вызов создания сессии в репо
+        err := u.sessionRepo.Create(ctx, session)
+        if err != nil </span><span class="cov0" title="0">{
+                return domain.Session{}, err
+        }</span>
+
+        <span class="cov0" title="0">return session, nil</span>
+}
+
+// проверяет, существует ли сессия, если да - возвращаем id пользователя сессии
+func (u *sessionUseCase) Check(ctx context.Context, sessionID uuid.UUID) (uuid.UUID, error) <span class="cov0" title="0">{
+        // просим репозиторий найти сессию
+        session, err := u.sessionRepo.GetByID(ctx, sessionID)
+        if err != nil </span><span class="cov0" title="0">{
+                // сессия не найдена
+                return uuid.UUID{}, err
+        }</span>
+
+        // проверяем срок годности сессии
+        <span class="cov0" title="0">if time.Now().After(session.ExpiresAt) </span><span class="cov0" title="0">{
+                // если сессия протухла, удаляем ее из БД
+                // игнорируем ошибку удаления, так как для пользователя главное получить ответ, что сессия невалидна
+                _ = u.sessionRepo.Delete(ctx, sessionID)
+
+                return uuid.UUID{}, domain.ErrSessionExpired
+        }</span>
+
+        // возвращаем id юзера в случае успеха
+        <span class="cov0" title="0">return session.UserID, nil</span>
+}
+
+func (u *sessionUseCase) Destroy(ctx context.Context, sessionID uuid.UUID) error <span class="cov0" title="0">{
+        // просто передаем команду удаления куки в репо
+        return u.sessionRepo.Delete(ctx, sessionID)
+}</span>
+</pre>
+		
+		<pre class="file" id="file15" style="display: none">package request
+
+import (
+        "encoding/json"
+        "errors"
+        "fmt"
+        "io"
+        "net/http"
+)
+
+// ошибки для данного файла
+var (
+        ErrBodyTooLarge   = errors.New("request body is too large")
+        ErrInvalidJSON    = errors.New("request body contains badly-formed JSON")
+        ErrEmptyBody      = errors.New("request body is empty")
+        ErrNotOnlyJSONVal = errors.New("body must only contain a single JSON value")
+)
+
+// функция декодирования JSON запроса в переданный объект v
+func JSON(r *http.Request, v any) error <span class="cov0" title="0">{
+        // ограничиваем размер тела запроса - 1 Мб
+        const maxBodySize = 1024 * 1024
+        // обертка над телом запроса, ограничивает количество байт, которые можно прочитать
+        r.Body = http.MaxBytesReader(nil, r.Body, maxBodySize)
+
+        // создает объект-декодер, который читает данные напрямую из потока (r.Body) по частям
+        decoder := json.NewDecoder(r.Body)
+
+        // читает поток JSON, сопоставляет ключи
+        // с тегами структур DTO и выполняет преобразование типов
+        if err := decoder.Decode(v); err != nil </span><span class="cov0" title="0">{
+                // Подготавливаем переменные для динамических типов ошибок
+                var syntaxError *json.SyntaxError
+                var unmarshalTypeError *json.UnmarshalTypeError
+                var maxBytesError *http.MaxBytesError
+
+                switch </span>{
+                // json.SyntaxError возникает, если JSON поврежден
+                case errors.As(err, &amp;syntaxError):<span class="cov0" title="0">
+                        return fmt.Errorf("%w: at character %d", ErrInvalidJSON, syntaxError.Offset)</span>
+
+                // данные закончились раньше, чем закрылся JSON-объект
+                case errors.Is(err, io.ErrUnexpectedEOF):<span class="cov0" title="0">
+                        return ErrInvalidJSON</span>
+
+                // тип данных в JSON не совпадает с полем структуры
+                case errors.As(err, &amp;unmarshalTypeError):<span class="cov0" title="0">
+                        // проверяем поле .Field, чтобы сообщить фронтенду имя сломанного поля
+                        if unmarshalTypeError.Field != "" </span><span class="cov0" title="0">{
+                                return fmt.Errorf("body contains incorrect JSON type for field %q", unmarshalTypeError.Field)
+                        }</span>
+                        <span class="cov0" title="0">return err</span>
+
+                // если Decode возвращает EOF сразу, значит тело было пустым
+                case errors.Is(err, io.EOF):<span class="cov0" title="0">
+                        return ErrEmptyBody</span>
+
+                // размер прочитанных данных превысил установленный лимит в 1МБ
+                case errors.As(err, &amp;maxBytesError):<span class="cov0" title="0">
+                        return ErrBodyTooLarge</span>
+
+                default:<span class="cov0" title="0">
+                        return err</span>
+                }
+        }
+
+        // Пробуем прочитать что-то еще. Если там не EOF - в теле мусор.
+        <span class="cov0" title="0">err := decoder.Decode(&amp;struct{}{})
+        if err != io.EOF </span><span class="cov0" title="0">{
+                return ErrNotOnlyJSONVal
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file16" style="display: none">package response
+
+import (
+        "net/http"
+        "time"
+)
+
+func SetCookie(w http.ResponseWriter, name, value string, expiresAt time.Time) <span class="cov0" title="0">{
+        http.SetCookie(w, &amp;http.Cookie{
+                Name:     name,                 // имя куки
+                Value:    value,                // значение - случайный идентификатор из usecase
+                Expires:  expiresAt,            // срок жизни
+                HttpOnly: true,                 // защита: JavaScript(фронт) не сможет прочитать эту куку
+                Path:     "/",                  // кука будет отправляться на все эндпоинты сайта
+                SameSite: http.SameSiteLaxMode, // защита от CSRF атак
+                // Secure: true,                                // если будем на https
+        })
+}</span>
+</pre>
+		
+		<pre class="file" id="file17" style="display: none">package response
+
+import (
+        "encoding/json"
+        "net/http"
+)
+
+// ErrorResponse описывает структуру ответа с ошибкой для Swagger
+type ErrorResponse struct {
+        Code    int    `json:"code" example:"400"`
+        Message string `json:"message" example:"Неверный формат запроса"`
+}
+
+// функция кодирования в JSON
+func JSON(w http.ResponseWriter, statusCode int, data any) <span class="cov0" title="0">{
+        // установка заголовка Content-Type
+        // сообщаем клиенту, что в теле ответа JSON, чтобы он мог правильно его распарсить
+        w.Header().Set("Content-Type", "application/json")
+        // отправляем HTTP-статус
+        w.WriteHeader(statusCode)
+
+        // защита от отправки пустого тела
+        if data == nil </span><span class="cov0" title="0">{
+                data = map[string]string{}
+        }</span>
+
+        // кодирование JSON
+        <span class="cov0" title="0">if err := json.NewEncoder(w).Encode(data); err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+        }</span>
+}
+
+// обертка над JSON для стандартизации сообщений об ошибках
+func Error(w http.ResponseWriter, statusCode int, message string) <span class="cov0" title="0">{
+        resp := ErrorResponse{
+                Code:    statusCode,
+                Message: message,
+        }
+
+        JSON(w, statusCode, resp)
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

@@ -1,6 +1,7 @@
 APP_NAME = foodcourt
 MAIN_PKG = ./cmd/api/main.go
 COVERAGE_FILE = coverage.out
+COVERAGE_HTML = coverage.html
 
 .PHONY: all run build clean test gen cover
 
@@ -41,7 +42,11 @@ test:
 
 # Позволяет увидеть в браузере, какие именно строчки кода зеленые, а какие красные
 cover: test
-	go tool cover -html=$(COVERAGE_FILE)
+# Генерируем статический HTML файл
+	go tool cover -html=$(COVERAGE_FILE) -o coverage.html
+	@echo "HTML отчет создан: $(COVERAGE_HTML)"
+# Пытаемся открыть его (команда xdg-open для Linux, open для Mac)
+	xdg-open $(COVERAGE_HTML) || open $(COVERAGE_HTML) || echo "Открой $(COVERAGE_HTML) в браузере вручную"
 
 # Команда для быстрой проверки, которая сама за собой уберет файл покрытия
 test-once: test
