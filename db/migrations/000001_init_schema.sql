@@ -164,7 +164,7 @@ CREATE TABLE "dish" (
 	
 	restaurant_brand_id INTEGER NOT NULL,
 	
-	name TEXT NOT NULL,
+	name TEXT NOT NULL
 		CHECK(char_length(name) <= 50),
 	description TEXT
 		CHECK(char_length(description) <= 1000),
@@ -372,7 +372,7 @@ CREATE TABLE "cart" (
 	CONSTRAINT fk_cart_client_profile
 		FOREIGN KEY (client_account_id)
 		REFERENCES "client_profile"(account_id)
-		ON DELETE RESTRICT,
+		ON DELETE CASCADE,
 	
 	CONSTRAINT fk_cart_restaurant_brand
 		FOREIGN KEY (restaurant_brand_id)
@@ -388,14 +388,17 @@ CREATE TABLE "cart_dish" (
 	quantity INTEGER NOT NULL
 		CHECK (quantity > 0),
 	
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	
 	CONSTRAINT fk_cart_dish_client_profile
 		FOREIGN KEY (client_account_id)
 		REFERENCES "client_profile"(account_id)
-		ON DELETE RESTRICT,
+		ON DELETE CASCADE,
 	
 	CONSTRAINT fk_cart_dish_dish
 		FOREIGN KEY (dish_id)
 		REFERENCES "dish"(id)
-		ON DELETE RESTRICT
+		ON DELETE CASCADE
 );
 
