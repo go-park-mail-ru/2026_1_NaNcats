@@ -107,7 +107,7 @@ CREATE TABLE "client_profile" (
 		FOREIGN KEY (account_id)
 		REFERENCES "user"(id)
 		ON DELETE CASCADE --тут каскадное удаление, чтобы при удалении юзера удалялся и клиент
-)
+);
 
 CREATE TABLE "courier_profile" (
 	account_id INTEGER PRIMARY KEY,
@@ -156,7 +156,7 @@ CREATE TABLE "restaurant_branch" (
 	CONSTRAINT fk_restaurant_branch_location
 		FOREIGN KEY (location_id)
 		REFERENCES "location"(id)
-		ON DELETE RESTRICT,
+		ON DELETE RESTRICT
 );
 
 CREATE TABLE "dish" (
@@ -172,8 +172,8 @@ CREATE TABLE "dish" (
 	image_url TEXT 	
 		CHECK (char_length(image_url) <= 2048),
 	
-	price INTEGER NOT NULL,
-		CHECK (price > 0)
+	price INTEGER NOT NULL
+		CHECK (price > 0),
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -201,7 +201,7 @@ CREATE TABLE "client_address" (
 	courier_comment TEXT
 		CHECK (char_length(courier_comment) <= 255),
 	label TEXT
-		CHECK (check_length(label) <= 60),
+		CHECK (char_length(label) <= 60),
 		
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -266,7 +266,7 @@ CREATE TABLE "order_review" (
 		CHECK (courier_rating >= 0 AND courier_rating <= 5), -- NULL означает, что отзыв не выставлен
 	
 	client_comment TEXT
-		CHECK (char_length(cleint_comment) <= 255),
+		CHECK (char_length(client_comment) <= 255),
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	
@@ -277,8 +277,9 @@ CREATE TABLE "order_review" (
 );
 
 CREATE TABLE "order_dish" (
-	order_id INTEGER PRIMARY KEY,
-	dish_id INTEGER PRIMARY KEY,
+	order_id INTEGER,
+	dish_id INTEGER,
+	PRIMARY KEY (order_id, dish_id),
 	
 	quantity INTEGER NOT NULL
 		CHECK (quantity > 0),
@@ -299,8 +300,9 @@ CREATE TABLE "order_dish" (
 );
 
 CREATE TABLE "promocode_restaurant_brand" (
-	promocode_id INTEGER PRIMARY KEY,
-	restaurant_brand_id INTEGER PRIMARY KEY,
+	promocode_id INTEGER,
+	restaurant_brand_id INTEGER,
+	PRIMARY KEY (promocode_id, restaurant_brand_id),
 	
 	CONSTRAINT fk_promocode_restaurant_brand_promocode
 		FOREIGN KEY (promocode_id)
@@ -314,23 +316,9 @@ CREATE TABLE "promocode_restaurant_brand" (
 );
 
 CREATE TABLE "promocode_category" (
-	promocode_id INTEGER PRIMARY KEY,
-	category_id INTEGER PRIMARY KEY,
-	
-	CONSTRAINT fk_promocode_category_promocode
-		FOREIGN KEY (promocode_id)
-		REFERENCES "promocode"(id)
-		ON DELETE RESTRICT,
-	
-	CONSTRAINT fk_promocode_category_category
-		FOREIGN KEY (category_id)
-		REFERENCES "category"(id)
-		ON DELETE RESTRICT
-);
-
-CREATE TABLE "promocode_category" (
-	promocode_id INTEGER PRIMARY KEY,
-	category_id INTEGER PRIMARY KEY,
+	promocode_id INTEGER,
+	category_id INTEGER,
+	PRIMARY KEY (promocode_id, category_id),
 	
 	CONSTRAINT fk_promocode_category_promocode
 		FOREIGN KEY (promocode_id)
@@ -344,8 +332,9 @@ CREATE TABLE "promocode_category" (
 );
 
 CREATE TABLE "restaurant_brand_category" (
-	restaurant_brand_id INTEGER PRIMARY KEY,
-	category_id INTEGER PRIMARY KEY,
+	restaurant_brand_id INTEGER,
+	category_id INTEGER,
+	PRIMARY KEY (restaurant_brand_id, category_id),
 	
 	CONSTRAINT fk_restaurant_brand_category_restaurant_brand
 		FOREIGN KEY (restaurant_brand_id)
@@ -359,8 +348,9 @@ CREATE TABLE "restaurant_brand_category" (
 );
 
 CREATE TABLE "dish_category" (
-	dish_id INTEGER PRIMARY KEY,
-	category_id INTEGER PRIMARY KEY,
+	dish_id INTEGER,
+	category_id INTEGER,
+	PRIMARY KEY (dish_id, category_id),
 	
 	CONSTRAINT fk_dish_category_dish
 		FOREIGN KEY (dish_id)
@@ -391,8 +381,9 @@ CREATE TABLE "cart" (
 );
 
 CREATE TABLE "cart_dish" (
-	client_account_id INTEGER PRIMARY KEY,
-	dish_id INTEGER PRIMARY KEY,
+	client_account_id INTEGER,
+	dish_id INTEGER,
+	PRIMARY KEY (client_account_id, dish_id),
 	
 	quantity INTEGER NOT NULL
 		CHECK (quantity > 0),
