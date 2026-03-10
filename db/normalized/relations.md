@@ -200,10 +200,12 @@
 
 ### 🔗 Отношение `cart`
 **Зависимости:**
-`{client_account_id, restaurant_brand_id} -> updated_at`
+`{client_account_id} -> restaurant_brand_id, updated_at`
 
 **Обоснование:**
-* **Высшие НФ:** Автоматически находится в высшей НФ, поскольку состоит только из составного PK.
+* **1НФ:** Все атрибуты атомарны.
+* **2НФ:** Первичный ключ `{client_account_id}` состоит из одного атрибута, поэтому частичных зависимостей неключевых атрибутов от PK быть не может.
+* **3НФ и НФБК:** В таблице есть 1 потенциальный ключ (`client_account_id`). Все остальные атрибуты напрямую зависят от конкретного адреса и не зависят друг от друга. Транзитивных зависимостей нет.
 
 ---
 
@@ -388,7 +390,7 @@ erDiagram
 
     cart {
         int client_account_id PK, FK
-        int restaurant_brand_id PK, FK
+        int restaurant_brand_id FK
         datetime updated_at "DEFAULT NOW()"
     }
 
