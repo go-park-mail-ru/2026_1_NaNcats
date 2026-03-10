@@ -4,7 +4,7 @@
 
 ### 👤 Отношение `user`
 **Зависимости:**
-`{id} -> phone, name, email, password_hash, role, avatar_url, created_at, updated_at`
+`{id} -> phone, name, email, password_hash, user_role, avatar_url, created_at, updated_at`
 
 **Обоснование:**
 * **1НФ:** Все атрибуты атомарны.
@@ -59,7 +59,7 @@
 
 ### 🏪 Отношение `restaurant_branch`
 **Зависимости:**
-`{id} -> brand_id, location_id, open_time, close_time, created_at, updated_at`
+`{id} -> restaurant_brand_id, location_id, open_time, close_time, created_at, updated_at`
 
 **Обоснование:**
 * **1НФ:** Все атрибуты атомарны.
@@ -189,7 +189,7 @@
 
 ### 🏠 Отношение `client_address`
 **Зависимости:**
-`{id} -> location_id, client_account_id, apartment, entrance, floor, door_code, courier_comment, label, created_at, updated_at`
+`{id} -> location_id, client_account_id, apartment, entrance, floor_level, door_code, courier_comment, label, created_at, updated_at`
 
 **Обоснование:**
 * **1НФ:** Все атрибуты атомарны.
@@ -234,11 +234,11 @@ erDiagram
     %% Описание сущностей
     user {
         int id PK
-        text phone UK "NOT NULL, UNIQUE"
+        text phone UK "UNIQUE"
         text name "NOT NULL"
         text email UK "NOT NULL, UNIQUE"
         text password_hash "NOT NULL"
-        enum role "NOT NULL"
+        enum user_role "NOT NULL"
         text avatar_url
         datetime created_at "DEFAULT NOW(), NOT NULL"
         datetime updated_at "DEFAULT NOW(), NOT NULL"
@@ -278,7 +278,7 @@ erDiagram
 
     restaurant_branch {
         int id PK
-        int brand_id FK
+        int restaurant_brand_id FK
         int location_id FK
         time open_time
         time close_time
@@ -378,7 +378,7 @@ erDiagram
         int client_account_id FK
         text apartment
         text entrance
-        text floor
+        text floor_level
         text door_code
         text courier_comment
         text label "House, work, etc"
