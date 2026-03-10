@@ -52,7 +52,7 @@ CREATE TABLE "promocode" (
 	discount_percent INTEGER
 		CHECK (discount_percent > 0 AND discount_percent <= 100),
 	discount_amount INTEGER
-		CHECK (discount_amount < 0),
+		CHECK (discount_amount > 0),
 	
 	is_global BOOLEAN DEFAULT FALSE NOT NULL,
 	
@@ -214,14 +214,14 @@ CREATE TABLE "client_address" (
 	CONSTRAINT fk_client_address_client_profile
 		FOREIGN KEY (client_account_id)
 		REFERENCES "client_profile"(account_id)
-		ON DELETE RESTRICT
+		ON DELETE CASCADE
 );
 
 CREATE TABLE "order" (
 	id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
 	client_account_id INTEGER NOT NULL,
-	courier_account_id INTEGER NOT NULL,
+	courier_account_id INTEGER,
 	restaurant_branch_id INTEGER NOT NULL,
 	client_address_id INTEGER NOT NULL,
 	promocode_id INTEGER,
@@ -240,7 +240,7 @@ CREATE TABLE "order" (
 	CONSTRAINT fk_order_courier_profile
 		FOREIGN KEY (courier_account_id)
 		REFERENCES "courier_profile"(account_id)
-		ON DELETE RESTRICT,
+		ON DELETE SET NULL,
 	
 	CONSTRAINT fk_order_restaurant_branch
 		FOREIGN KEY (restaurant_branch_id)
@@ -291,7 +291,7 @@ CREATE TABLE "order_dish" (
 	CONSTRAINT fk_order_dish_order
 		FOREIGN KEY (order_id)
 		REFERENCES "order"(id)
-		ON DELETE RESTRICT,
+		ON DELETE CASCADE,
 		
 	CONSTRAINT fk_order_dish_dish
 		FOREIGN KEY (dish_id)
@@ -377,7 +377,7 @@ CREATE TABLE "cart" (
 	CONSTRAINT fk_cart_restaurant_brand
 		FOREIGN KEY (restaurant_brand_id)
 		REFERENCES "restaurant_brand"(id)
-		ON DELETE RESTRICT
+		ON DELETE CASCADE
 );
 
 CREATE TABLE "cart_dish" (
