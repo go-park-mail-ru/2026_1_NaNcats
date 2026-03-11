@@ -1,0 +1,242 @@
+basePath: /api
+definitions:
+  handler.LoginRequest:
+    properties:
+      login:
+        description: Email пользователя
+        example: user@mail.ru
+        type: string
+      password:
+        description: Пароль в открытом виде
+        example: qwerty12345
+        type: string
+    type: object
+  handler.LoginResponse:
+    properties:
+      avatar_url:
+        description: URL аватарки пользователя
+        example: users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
+        type: string
+      id:
+        description: Уникальный ID пользователя в системе
+        example: "1"
+        type: string
+      name:
+        description: Имя для отображения в интерфейсе
+        example: Иван
+        type: string
+    type: object
+  handler.RegisterRequest:
+    properties:
+      email:
+        description: Email пользователя
+        example: user@mail.ru
+        type: string
+      name:
+        description: Имя пользователя
+        example: Иван
+        type: string
+      password:
+        description: Пароль в открытом виде
+        example: qwerty12345
+        type: string
+    type: object
+  handler.RegisterResponse:
+    properties:
+      created_at:
+        description: Время создания аккаунта по стандарту RFC 3339
+        example: 2006-01-02T15:04:05Z07:00
+        type: string
+      email:
+        description: Email пользователя
+        example: user@mail.ru
+        type: string
+      id:
+        description: Уникальный ID пользователя в системе
+        example: "1"
+        type: string
+      name:
+        description: Имя для отображения в интерфейсе
+        example: Иван
+        type: string
+    type: object
+  handler.RestaurantBrandResponse:
+    properties:
+      banner_url:
+        example: restaurangs/banners/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
+        type: string
+      description:
+        example: Острые крылошки
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      logo_url:
+        example: restaurants/logos/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
+        type: string
+      name:
+        example: KFC
+        type: string
+      promotion_tier:
+        example: 2
+        type: integer
+    type: object
+  handler.RestaurantBrandsResponse:
+    properties:
+      restaurants:
+        items:
+          $ref: '#/definitions/handler.RestaurantBrandResponse'
+        type: array
+    type: object
+  response.ErrorResponse:
+    properties:
+      code:
+        example: 400
+        type: integer
+      message:
+        example: Неверный формат запроса
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API бэкенда для проекта "Delivery Club" от команды NaNcats
+  title: NaNcats Delivery API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Проверяет учетные данные и устанавливает сессионную куку
+      parameters:
+      - description: Данные для входа
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handler.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный вход
+          schema:
+            $ref: '#/definitions/handler.LoginResponse'
+        "400":
+          description: Неверный формат JSON
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Неверный логин или пароль
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Авторизация пользователя
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Удаляет информацию о текущей сессии и принудительно протухает куку
+        с сессией
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный выход
+        "401":
+          description: Кука не найдена
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Выход из текущей
+      tags:
+      - auth
+  /auth/me:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает данные профиля пользователя, если сессионная кука валидна
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный вход и создание сессии
+          schema:
+            $ref: '#/definitions/handler.LoginResponse'
+        "401":
+          description: Неавторизован
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Проверка текущей сессии
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Проверяет данные, создает нового пользователя и устанавливает сессионную
+        куку
+      parameters:
+      - description: Данные для регистрации
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handler.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Успешная регистрация
+          schema:
+            $ref: '#/definitions/handler.RegisterResponse'
+        "400":
+          description: Ошибка валидации (email/пароль)
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Пользователь с такой почтой уже существует
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Регистрация пользователя
+      tags:
+      - auth
+  /restaurants/brands:
+    get:
+      description: Возвращает список брендов ресторанов с поддержкой пагинации (limit
+        и offset)
+      parameters:
+      - default: 20
+        description: Количество получаемых ресторанов
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Смещение от начала списка
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное получение списка ресторанов
+          schema:
+            $ref: '#/definitions/handler.RestaurantBrandsResponse'
+      summary: Получение списка ресторанов
+      tags:
+      - restaurants
+swagger: "2.0"
