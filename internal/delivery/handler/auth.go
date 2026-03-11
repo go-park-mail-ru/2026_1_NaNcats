@@ -229,7 +229,7 @@ func (h *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 // @Success			200		{object}  LoginResponse				"Успешный вход и создание сессии"
 // @Failure			401		{object}  response.ErrorResponse	"Неавторизован"
 // @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка"
-// @Router			/me [get]
+// @Router			/auth/me [get]
 func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

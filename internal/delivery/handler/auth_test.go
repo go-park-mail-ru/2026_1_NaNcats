@@ -215,16 +215,17 @@ func TestAuthHandler_Logout(t *testing.T) {
 		assert.True(t, logoutCookie.Expires.Before(time.Now()))
 	})
 
-	t.Run("Ошибка: кука отсутствует", func(t *testing.T) {
+	t.Run("Успех: кука отсутствует", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
 		rec := httptest.NewRecorder()
 
 		authHandler.Logout(rec, req)
 
-		assert.Equal(t, http.StatusUnauthorized, rec.Code)
+		// Мы ожидаем 200, потому что цель достигнута - сессии у клиента нет
+		assert.Equal(t, http.StatusOK, rec.Code)
 	})
 
-	t.Run("Ошибка: невалидный UUID в куке", func(t *testing.T) {
+	t.Run("Успех: невалидный UUID в куке", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
 		req.AddCookie(&http.Cookie{
 			Name:  "session_id",
@@ -234,7 +235,7 @@ func TestAuthHandler_Logout(t *testing.T) {
 
 		authHandler.Logout(rec, req)
 
-		assert.Equal(t, http.StatusUnauthorized, rec.Code)
+		assert.Equal(t, http.StatusOK, rec.Code)
 	})
 
 	t.Run("Ошибка: сессия не найдена в базе", func(t *testing.T) {
