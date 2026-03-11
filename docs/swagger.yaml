@@ -156,6 +156,29 @@ paths:
       summary: Выход из текущей
       tags:
       - auth
+  /auth/me:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает данные профиля пользователя, если сессионная кука валидна
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный вход и создание сессии
+          schema:
+            $ref: '#/definitions/handler.LoginResponse'
+        "401":
+          description: Неавторизован
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Проверка текущей сессии
+      tags:
+      - auth
   /auth/register:
     post:
       consumes:
@@ -189,29 +212,6 @@ paths:
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Регистрация пользователя
-      tags:
-      - auth
-  /me:
-    get:
-      consumes:
-      - application/json
-      description: Возвращает данные профиля пользователя, если сессионная кука валидна
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Успешный вход и создание сессии
-          schema:
-            $ref: '#/definitions/handler.LoginResponse'
-        "401":
-          description: Неавторизован
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Внутренняя ошибка
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Проверка текущей сессии
       tags:
       - auth
   /restaurants/brands:

@@ -93,6 +93,41 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/me": {
+            "get": {
+                "description": "Возвращает данные профиля пользователя, если сессионная кука валидна",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Проверка текущей сессии",
+                "responses": {
+                    "200": {
+                        "description": "Успешный вход и создание сессии",
+                        "schema": {
+                            "$ref": "#/definitions/handler.LoginResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизован",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/register": {
             "post": {
                 "description": "Проверяет данные, создает нового пользователя и устанавливает сессионную куку",
@@ -138,41 +173,6 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/me": {
-            "get": {
-                "description": "Возвращает данные профиля пользователя, если сессионная кука валидна",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Проверка текущей сессии",
-                "responses": {
-                    "200": {
-                        "description": "Успешный вход и создание сессии",
-                        "schema": {
-                            "$ref": "#/definitions/handler.LoginResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Неавторизован",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Внутренняя ошибка",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
