@@ -104,12 +104,11 @@ info:
   title: NaNcats Delivery API
   version: "1.0"
 paths:
-  /login:
+  /auth/login:
     post:
       consumes:
       - application/json
-      description: Проверяет учетные данные (логин и пароль) и создает сессионную
-        куку
+      description: Проверяет учетные данные и устанавливает сессионную куку
       parameters:
       - description: Данные для входа
         in: body
@@ -121,17 +120,25 @@ paths:
       - application/json
       responses:
         "200":
-          description: Успешный вход и создание сессии
+          description: Успешный вход
           schema:
             $ref: '#/definitions/handler.LoginResponse'
         "400":
           description: Неверный формат JSON
           schema:
             $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Неверный логин или пароль
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
       summary: Авторизация пользователя
       tags:
       - auth
-  /logout:
+  /auth/logout:
     post:
       consumes:
       - application/json
@@ -143,14 +150,45 @@ paths:
         "200":
           description: Успешный выход
         "401":
-          description: Сессия не найдена
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "404":
-          description: Сессия не найдена в базе данных
+          description: Кука не найдена
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Выход из текущей
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Проверяет данные, создает нового пользователя и устанавливает сессионную
+        куку
+      parameters:
+      - description: Данные для регистрации
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handler.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Успешная регистрация
+          schema:
+            $ref: '#/definitions/handler.RegisterResponse'
+        "400":
+          description: Ошибка валидации (email/пароль)
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Пользователь с такой почтой уже существует
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Регистрация пользователя
       tags:
       - auth
   /me:
@@ -166,41 +204,14 @@ paths:
           schema:
             $ref: '#/definitions/handler.LoginResponse'
         "401":
-          description: Сессия не найдена
+          description: Неавторизован
           schema:
             $ref: '#/definitions/response.ErrorResponse'
-        "404":
-          description: Пользователь не найден
+        "500":
+          description: Внутренняя ошибка
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Проверка текущей сессии
-      tags:
-      - auth
-  /register:
-    post:
-      consumes:
-      - application/json
-      description: Проверяет, существует ли пользователь с указанными данными или
-        нет, регистрирует его и создает сессионную куку
-      parameters:
-      - description: Данные для регистрации
-        in: body
-        name: input
-        required: true
-        schema:
-          $ref: '#/definitions/handler.RegisterRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Успешная регистрация и создание сессии
-          schema:
-            $ref: '#/definitions/handler.RegisterResponse'
-        "400":
-          description: Неверный формат JSON
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Регистрация пользователя
       tags:
       - auth
   /restaurants/brands:

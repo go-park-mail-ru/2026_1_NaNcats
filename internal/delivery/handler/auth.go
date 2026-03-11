@@ -234,7 +234,7 @@ func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// берем userID из контекста, который нам пришел из мидлвара AuthMiddleware
-	// Value возвращает any. Используем утверждение типа, чтобы Go знал что это int
+	// Value возвращает any. Используем утверждение типа, чтобы Go знал что это uuid
 	userID, ok := ctx.Value(middleware.UserIDKey).(uuid.UUID)
 	// если там не int или nil
 	if !ok {
