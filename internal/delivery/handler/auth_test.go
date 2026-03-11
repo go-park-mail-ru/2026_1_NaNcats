@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -19,241 +18,307 @@ import (
 )
 
 func TestAuthHandler_Register(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	type mockInit func(m *mocks.MockAuthUseCase)
 
-	mockAuthUC := mocks.NewMockAuthUseCase(ctrl)
+	tests := []struct {
+		name           string
+		inputBody      any // interface{} для поддержки и структур, и кривых строк
+		mockInit       mockInit
+		expectedStatus int
+	}{
+		{
+			name: "Успешная регистрация",
+			inputBody: RegisterRequest{
+				Name:     "Ivan",
+				Email:    "test@mail.ru",
+				Password: "password123",
+			},
+			mockInit: func(m *mocks.MockAuthUseCase) {
+				mockUser := domain.User{ID: uuid.New(), Name: "Ivan", Email: "test@mail.ru"}
+				mockSess := domain.Session{ID: uuid.New(), ExpiresAt: time.Now().Add(time.Hour)}
+				m.EXPECT().
+					Register(gomock.Any(), gomock.Any()).
+					Return(mockUser, mockSess, nil)
+			},
+			expectedStatus: http.StatusCreated,
+		},
+		{
+			name:           "Неверный JSON",
+			inputBody:      "invalid-json",
+			mockInit:       func(m *mocks.MockAuthUseCase) {},
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
 
-	authHandler := NewAuthHandler(mockAuthUC)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-	t.Run("Успешная регистрация", func(t *testing.T) {
-		reqBody := RegisterRequest{
-			Name:     "Ivan",
-			Email:    "test@mail.ru",
-			Password: "password123",
-		}
+			mockAuthUC := mocks.NewMockAuthUseCase(ctrl)
+			testCase.mockInit(mockAuthUC)
 
-		var buf bytes.Buffer
-		err := json.NewEncoder(&buf).Encode(reqBody)
-		assert.NoError(t, err)
+			authHandler := NewAuthHandler(mockAuthUC)
 
-		// Создаем виртуальный запрос и рекордер (куда запишется ответ)
-		req := httptest.NewRequest(http.MethodPost, "/api/auth/register", &buf)
-		rec := httptest.NewRecorder()
+			var buf bytes.Buffer
+			if s, ok := testCase.inputBody.(string); ok {
+				buf.WriteString(s)
+			} else {
+				err := json.NewEncoder(&buf).Encode(testCase.inputBody)
+				assert.NoError(t, err)
+			}
 
-		mockUser := domain.User{ID: uuid.New(), Name: "Ivan", Email: "test@mail.ru"}
-		mockSess := domain.Session{ID: uuid.New(), ExpiresAt: time.Now().Add(time.Hour)}
+			req := httptest.NewRequest(http.MethodPost, "/api/auth/register", &buf)
+			rec := httptest.NewRecorder()
 
-		mockAuthUC.EXPECT().
-			Register(gomock.Any(), gomock.Any()).
-			Return(mockUser, mockSess, nil)
+			authHandler.Register(rec, req)
 
-		authHandler.Register(rec, req)
+			assert.Equal(t, testCase.expectedStatus, rec.Code)
 
-		assert.Equal(t, http.StatusCreated, rec.Code)
-		assert.Contains(t, rec.Header().Get("Set-Cookie"), "session_id")
+			if testCase.expectedStatus == http.StatusCreated {
+				assert.Contains(t, rec.Header().Get("Set-Cookie"), "session_id")
 
-		var resp RegisterResponse
-		err = json.NewDecoder(rec.Body).Decode(&resp)
-		assert.NoError(t, err)
-		assert.Equal(t, mockUser.Name, resp.Name)
-	})
-
-	t.Run("Неверный JSON", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPost, "/api/auth/register", strings.NewReader("invalid-json"))
-		rec := httptest.NewRecorder()
-
-		authHandler.Register(rec, req)
-
-		assert.Equal(t, http.StatusBadRequest, rec.Code)
-	})
+				var resp RegisterResponse
+				err := json.NewDecoder(rec.Body).Decode(&resp)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, resp.Name)
+			}
+		})
+	}
 }
 
 func TestAuthHandler_GetMe(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	type mockInit func(m *mocks.MockAuthUseCase)
 
-	mockAuthUC := mocks.NewMockAuthUseCase(ctrl)
+	tests := []struct {
+		name           string
+		userID         any // uuid.UUID или nil
+		mockInit       mockInit
+		expectedStatus int
+	}{
+		{
+			name:   "Успешный запуск",
+			userID: uuid.New(),
+			mockInit: func(m *mocks.MockAuthUseCase) {
+				m.EXPECT().
+					GetProfile(gomock.Any(), gomock.Any()).
+					Return(domain.User{Name: "Ivan"}, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "Нет юзера",
+			userID:         nil,
+			mockInit:       func(m *mocks.MockAuthUseCase) {},
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
 
-	authHandler := NewAuthHandler(mockAuthUC)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-	t.Run("Успешный запуск", func(t *testing.T) {
-		userID := uuid.New()
+			mockAuthUC := mocks.NewMockAuthUseCase(ctrl)
+			tt.mockInit(mockAuthUC)
 
-		req := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
-		ctx := context.WithValue(req.Context(), middleware.UserIDKey, userID)
-		req = req.WithContext(ctx)
+			authHandler := NewAuthHandler(mockAuthUC)
 
-		rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
+			if tt.userID != nil {
+				ctx := context.WithValue(req.Context(), middleware.UserIDKey, tt.userID)
+				req = req.WithContext(ctx)
+			}
 
-		mockAuthUC.EXPECT().
-			GetProfile(gomock.Any(), userID).
-			Return(domain.User{ID: userID, Name: "Ivan"}, nil)
+			rec := httptest.NewRecorder()
 
-		authHandler.GetMe(rec, req)
+			authHandler.GetMe(rec, req)
 
-		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Contains(t, rec.Body.String(), "Ivan")
-	})
-
-	t.Run("No User in Context", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
-		rec := httptest.NewRecorder()
-
-		authHandler.GetMe(rec, req)
-
-		// код в GetMe при !ok возвращает StatusInternalServerError
-		assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	})
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+			if tt.expectedStatus == http.StatusOK {
+				assert.Contains(t, rec.Body.String(), "Ivan")
+			}
+		})
+	}
 }
 
 func TestAuthHandler_Login(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	type mockInit func(m *mocks.MockAuthUseCase)
 
-	mockAuthUC := mocks.NewMockAuthUseCase(ctrl)
+	tests := []struct {
+		name           string
+		inputBody      any
+		mockInit       mockInit
+		expectedStatus int
+	}{
+		{
+			name: "Успешный вход",
+			inputBody: LoginRequest{
+				Login:    "test@gmail.com",
+				Password: "aboba",
+			},
+			mockInit: func(m *mocks.MockAuthUseCase) {
+				mockUser := domain.User{ID: uuid.New(), Name: "Ivan", Email: "test@mail.ru"}
+				mockSess := domain.Session{ID: uuid.New(), ExpiresAt: time.Now().Add(time.Hour)}
 
-	authHandler := NewAuthHandler(mockAuthUC)
+				m.EXPECT().
+					Login(gomock.Any(), gomock.Any()).
+					Return(mockUser, mockSess, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "Неверный JSON",
+			inputBody:      "invalid JSON",
+			mockInit:       func(m *mocks.MockAuthUseCase) {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Неверный пароль",
+			inputBody: LoginRequest{
+				Login:    "test@mail.ru",
+				Password: "wrong",
+			},
+			mockInit: func(m *mocks.MockAuthUseCase) {
+				// Программируем UseCase вернуть ошибку
+				m.EXPECT().
+					Login(gomock.Any(), gomock.Any()).
+					Return(domain.User{}, domain.Session{}, domain.ErrInvalidCredentials)
+			},
+			expectedStatus: http.StatusUnauthorized,
+		},
+	}
 
-	t.Run("Успешный вход", func(t *testing.T) {
-		reqBody := LoginRequest{Login: "test@gmail.com", Password: "aboba"}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-		var buf bytes.Buffer
-		err := json.NewEncoder(&buf).Encode(reqBody)
-		assert.NoError(t, err)
+			mockAuthUC := mocks.NewMockAuthUseCase(ctrl)
+			testCase.mockInit(mockAuthUC)
 
-		req := httptest.NewRequest(http.MethodPost, "/api/auth/login", &buf)
-		rec := httptest.NewRecorder()
+			authHandler := NewAuthHandler(mockAuthUC)
 
-		mockUser := domain.User{ID: uuid.New(), Name: "Ivan", Email: "test@mail.ru"}
-		mockSess := domain.Session{ID: uuid.New(), ExpiresAt: time.Now().Add(time.Hour)}
+			var buf bytes.Buffer
+			if s, ok := testCase.inputBody.(string); ok {
+				buf.WriteString(s)
+			} else {
+				err := json.NewEncoder(&buf).Encode(testCase.inputBody)
+				assert.NoError(t, err)
+			}
 
-		mockAuthUC.EXPECT().Login(gomock.Any(), gomock.Any()).Return(mockUser, mockSess, nil)
+			req := httptest.NewRequest(http.MethodPost, "/api/auth/login", &buf)
+			rec := httptest.NewRecorder()
 
-		authHandler.Login(rec, req)
+			authHandler.Login(rec, req)
 
-		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Contains(t, rec.Header().Get("Set-Cookie"), "session_id")
+			assert.Equal(t, testCase.expectedStatus, rec.Code)
 
-		var resp LoginResponse
-		err = json.NewDecoder(rec.Body).Decode(&resp)
-		assert.NoError(t, err)
-		assert.Equal(t, mockUser.Name, resp.Name)
-	})
+			if testCase.expectedStatus == http.StatusOK {
+				assert.Contains(t, rec.Header().Get("Set-Cookie"), "session_id")
 
-	t.Run("Неверный JSON", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPost, "/api/auth/login", strings.NewReader("invalid JSON"))
-		rec := httptest.NewRecorder()
-
-		authHandler.Login(rec, req)
-
-		assert.Equal(t, http.StatusBadRequest, rec.Code)
-	})
-
-	t.Run("Неверный пароль", func(t *testing.T) {
-		reqBody := LoginRequest{Login: "test@mail.ru", Password: "wrong"}
-		var buf bytes.Buffer
-		json.NewEncoder(&buf).Encode(reqBody)
-
-		req := httptest.NewRequest(http.MethodPost, "/api/auth/login", &buf)
-		rec := httptest.NewRecorder()
-
-		// Программируем UseCase вернуть ошибку
-		mockAuthUC.EXPECT().
-			Login(gomock.Any(), gomock.Any()).
-			Return(domain.User{}, domain.Session{}, domain.ErrInvalidCredentials)
-
-		authHandler.Login(rec, req)
-
-		assert.Equal(t, http.StatusUnauthorized, rec.Code)
-	})
+				var resp LoginResponse
+				err := json.NewDecoder(rec.Body).Decode(&resp)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, resp.Name)
+			}
+		})
+	}
 }
 
 func TestAuthHandler_Logout(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	type mockInit func(m *mocks.MockAuthUseCase)
 
-	mockAuthUC := mocks.NewMockAuthUseCase(ctrl)
-	authHandler := NewAuthHandler(mockAuthUC)
+	tests := []struct {
+		name           string
+		cookieValue    string // Значение куки session_id
+		hasCookie      bool   // Нужно ли вообще добавлять куку в запрос
+		mockInit       mockInit
+		expectedStatus int
+		checkResponse  func(t *testing.T, rec *httptest.ResponseRecorder)
+	}{
+		{
+			name:        "Успешный выход",
+			hasCookie:   true,
+			cookieValue: uuid.New().String(),
+			mockInit: func(m *mocks.MockAuthUseCase) {
+				// Ожидаем вызов Logout в UseCase
+				m.EXPECT().
+					Logout(gomock.Any(), gomock.Any()).
+					Return(nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rec *httptest.ResponseRecorder) {
+				// Проверяем, что пришла инструкция на удаление куки
+				// Мы ищем куку с тем же именем, но пустую и протухшую
+				resp := rec.Result()
+				cookies := resp.Cookies()
+				var logoutCookie *http.Cookie
+				for _, c := range cookies {
+					if c.Name == "session_id" {
+						logoutCookie = c
+					}
+				}
 
-	t.Run("Успешный выход", func(t *testing.T) {
-		sessionID := uuid.New()
-		req := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
+				assert.NotNil(t, logoutCookie)
+				assert.Equal(t, "", logoutCookie.Value)
+				// Проверяем, что время истечения - эпоха Unix (0)
+				assert.True(t, logoutCookie.Expires.Before(time.Now()))
+			},
+		},
+		{
+			name:           "Успех: кука отсутствует",
+			hasCookie:      false,
+			mockInit:       func(m *mocks.MockAuthUseCase) {},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "Успех: невалидный UUID в куке",
+			hasCookie:      true,
+			cookieValue:    "not-a-uuid",
+			mockInit:       func(m *mocks.MockAuthUseCase) {},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:        "Ошибка: сессия не найдена в базе",
+			hasCookie:   true,
+			cookieValue: uuid.New().String(),
+			mockInit: func(m *mocks.MockAuthUseCase) {
+				// Программируем мок вернуть ошибку (например, сессия уже удалена)
+				m.EXPECT().
+					Logout(gomock.Any(), gomock.Any()).
+					Return(domain.ErrSessionNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+	}
 
-		// Добавляем куку в запрос
-		req.AddCookie(&http.Cookie{
-			Name:  "session_id",
-			Value: sessionID.String(),
-		})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-		rec := httptest.NewRecorder()
+			mockAuthUC := mocks.NewMockAuthUseCase(ctrl)
+			tt.mockInit(mockAuthUC)
 
-		// Ожидаем вызов Logout в UseCase
-		mockAuthUC.EXPECT().
-			Logout(gomock.Any(), sessionID).
-			Return(nil)
+			authHandler := NewAuthHandler(mockAuthUC)
 
-		authHandler.Logout(rec, req)
-
-		// 1. Проверяем статус
-		assert.Equal(t, http.StatusOK, rec.Code)
-
-		// 2. Проверяем, что пришла инструкция на удаление куки
-		// Мы ищем куку с тем же именем, но пустую и протухшую
-		resp := rec.Result()
-		cookies := resp.Cookies()
-		var logoutCookie *http.Cookie
-		for _, c := range cookies {
-			if c.Name == "session_id" {
-				logoutCookie = c
+			req := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
+			if tt.hasCookie {
+				req.AddCookie(&http.Cookie{
+					Name:  "session_id",
+					Value: tt.cookieValue,
+				})
 			}
-		}
 
-		assert.NotNil(t, logoutCookie)
-		assert.Equal(t, "", logoutCookie.Value)
-		// Проверяем, что время истечения - эпоха Unix (0)
-		assert.True(t, logoutCookie.Expires.Before(time.Now()))
-	})
+			rec := httptest.NewRecorder()
 
-	t.Run("Успех: кука отсутствует", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
-		rec := httptest.NewRecorder()
+			authHandler.Logout(rec, req)
 
-		authHandler.Logout(rec, req)
-
-		// Мы ожидаем 200, потому что цель достигнута - сессии у клиента нет
-		assert.Equal(t, http.StatusOK, rec.Code)
-	})
-
-	t.Run("Успех: невалидный UUID в куке", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
-		req.AddCookie(&http.Cookie{
-			Name:  "session_id",
-			Value: "not-a-uuid",
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+			if tt.checkResponse != nil {
+				tt.checkResponse(t, rec)
+			}
 		})
-		rec := httptest.NewRecorder()
-
-		authHandler.Logout(rec, req)
-
-		assert.Equal(t, http.StatusOK, rec.Code)
-	})
-
-	t.Run("Ошибка: сессия не найдена в базе", func(t *testing.T) {
-		sessionID := uuid.New()
-		req := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
-		req.AddCookie(&http.Cookie{
-			Name:  "session_id",
-			Value: sessionID.String(),
-		})
-		rec := httptest.NewRecorder()
-
-		// Программируем мок вернуть ошибку (например, сессия уже удалена)
-		mockAuthUC.EXPECT().
-			Logout(gomock.Any(), sessionID).
-			Return(domain.ErrSessionNotFound)
-
-		authHandler.Logout(rec, req)
-
-		assert.Equal(t, http.StatusNotFound, rec.Code)
-	})
+	}
 }

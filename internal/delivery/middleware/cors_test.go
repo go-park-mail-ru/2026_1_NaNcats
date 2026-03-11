@@ -12,66 +12,76 @@ func TestCORSMiddleware(t *testing.T) {
 	allowedOrigins := []string{"http://localhost:2033", "http://foodcourt.fun/"}
 	mw := NewCORSMiddleware(allowedOrigins)
 
-	// Флаг для проверки того, дошел ли запрос до следующего хэндлера
-	nextCalled := false
-	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		nextCalled = true
-		w.WriteHeader(http.StatusOK)
-	})
+	tests := []struct {
+		name              string
+		method            string
+		origin            string
+		expectedStatus    int
+		expectedOrigin    string
+		expectCredentials bool
+		expectNextCalled  bool
+	}{
+		{
+			name:              "Разрешенный Origin",
+			method:            http.MethodPost,
+			origin:            "http://localhost:2033",
+			expectedStatus:    http.StatusOK,
+			expectedOrigin:    "http://localhost:2033",
+			expectCredentials: true,
+			expectNextCalled:  true,
+		},
+		{
+			name:             "Запрещенный Origin",
+			method:           http.MethodPost,
+			origin:           "http://hacker.com",
+			expectedStatus:   http.StatusOK,
+			expectedOrigin:   "",   // Заголовок CORS не должен быть установлен
+			expectNextCalled: true, // Запрос все равно должен пройти дальше (браузер сам заблокирует его)
+		},
+		{
+			name:             "Preflight запрос (OPTIONS)",
+			method:           http.MethodOptions,
+			origin:           "http://foodcourt.fun/",
+			expectedStatus:   http.StatusNoContent,
+			expectedOrigin:   "http://foodcourt.fun/",
+			expectNextCalled: false, // Для метода OPTIONS следующий хэндлер не должен вызываться
+		},
+		{
+			name:             "Отсутствие заголовка Origin",
+			method:           http.MethodGet,
+			origin:           "",
+			expectedStatus:   http.StatusOK,
+			expectedOrigin:   "",
+			expectNextCalled: true,
+		},
+	}
 
-	t.Run("Разрешенный Origin", func(t *testing.T) {
-		nextCalled = false
-		origin := "http://localhost:2033"
-		req := httptest.NewRequest(http.MethodPost, "/api/any", nil)
-		req.Header.Set("Origin", origin)
-		rec := httptest.NewRecorder()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Флаг для проверки того, дошел ли запрос до следующего хэндлера
+			nextCalled := false
+			nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				nextCalled = true
+				w.WriteHeader(http.StatusOK)
+			})
 
-		mw.Handler(nextHandler).ServeHTTP(rec, req)
+			req := httptest.NewRequest(tt.method, "/api/any", nil)
+			if tt.origin != "" {
+				req.Header.Set("Origin", tt.origin)
+			}
+			rec := httptest.NewRecorder()
 
-		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, origin, rec.Header().Get("Access-Control-Allow-Origin"))
-		assert.Equal(t, "true", rec.Header().Get("Access-Control-Allow-Credentials"))
-		assert.True(t, nextCalled, "Запрос должен пройти в следующий хэндлер")
-	})
+			mw.Handler(nextHandler).ServeHTTP(rec, req)
 
-	t.Run("Запрещенный Origin", func(t *testing.T) {
-		nextCalled = false
-		req := httptest.NewRequest(http.MethodPost, "/api/any", nil)
-		req.Header.Set("Origin", "http://hacker.com")
-		rec := httptest.NewRecorder()
+			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-		mw.Handler(nextHandler).ServeHTTP(rec, req)
+			assert.Equal(t, tt.expectedOrigin, rec.Header().Get("Access-Control-Allow-Origin"))
 
-		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Empty(t, rec.Header().Get("Access-Control-Allow-Origin"), "Заголовок CORS не должен быть установлен")
-		assert.True(t, nextCalled, "Запрос все равно должен пройти дальше (браузер сам заблокирует его)")
-	})
+			if tt.expectCredentials {
+				assert.Equal(t, "true", rec.Header().Get("Access-Control-Allow-Credentials"))
+			}
 
-	t.Run("Preflight запрос (OPTIONS)", func(t *testing.T) {
-		nextCalled = false
-		origin := "http://foodcourt.fun/"
-		req := httptest.NewRequest(http.MethodOptions, "/api/any", nil)
-		req.Header.Set("Origin", origin)
-		rec := httptest.NewRecorder()
-
-		mw.Handler(nextHandler).ServeHTTP(rec, req)
-
-		assert.Equal(t, http.StatusNoContent, rec.Code)
-		assert.Equal(t, origin, rec.Header().Get("Access-Control-Allow-Origin"))
-
-		// Проверяем, что запрос прервался и не пошел дальше
-		assert.False(t, nextCalled, "Для метода OPTIONS следующий хэндлер не должен вызываться")
-	})
-
-	t.Run("Отсутствие заголовка Origin", func(t *testing.T) {
-		nextCalled = false
-		req := httptest.NewRequest(http.MethodGet, "/api/any", nil)
-		rec := httptest.NewRecorder()
-
-		mw.Handler(nextHandler).ServeHTTP(rec, req)
-
-		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Empty(t, rec.Header().Get("Access-Control-Allow-Origin"))
-		assert.True(t, nextCalled)
-	})
+			assert.Equal(t, tt.expectNextCalled, nextCalled, "Проверка вызова следующего хэндлера")
+		})
+	}
 }

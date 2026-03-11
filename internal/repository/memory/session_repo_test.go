@@ -6,50 +6,80 @@ import (
 	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
 )
 
 func TestSessionRepo_CRUD(t *testing.T) {
-	repo := NewSessionRepo()
 	ctx := context.Background()
 
-	// Подготовка данных
-	sessID := uuid.New()
-	userID := uuid.New()
-	session := domain.Session{
-		ID:        sessID,
-		UserID:    userID,
-		ExpiresAt: time.Now().Add(time.Hour),
+	tests := []struct {
+		name string
+		run  func(t *testing.T, repo repository.SessionRepository)
+	}{
+		{
+			name: "Успешное создание и получение",
+			run: func(t *testing.T, repo repository.SessionRepository) {
+				// Подготовка данных
+				sessID := uuid.New()
+				userID := uuid.New()
+				session := domain.Session{
+					ID:        sessID,
+					UserID:    userID,
+					ExpiresAt: time.Now().Add(time.Hour),
+				}
+
+				// Create
+				err := repo.Create(ctx, session)
+				require.NoError(t, err)
+
+				// Get
+				savedSess, err := repo.GetByID(ctx, sessID)
+				require.NoError(t, err)
+				require.Equal(t, userID, savedSess.UserID)
+				require.Equal(t, sessID, savedSess.ID)
+			},
+		},
+		{
+			name: "Ошибка: сессия не найдена",
+			run: func(t *testing.T, repo repository.SessionRepository) {
+				_, err := repo.GetByID(ctx, uuid.New()) // Случайный ID
+				require.ErrorIs(t, err, domain.ErrSessionNotFound)
+			},
+		},
+		{
+			name: "Успешное удаление",
+			run: func(t *testing.T, repo repository.SessionRepository) {
+				sessID := uuid.New()
+				session := domain.Session{
+					ID:        sessID,
+					UserID:    uuid.New(),
+					ExpiresAt: time.Now().Add(time.Hour),
+				}
+
+				// Сначала создаем
+				err := repo.Create(ctx, session)
+				require.NoError(t, err)
+
+				// Удаляем
+				err = repo.Delete(ctx, sessID)
+				require.NoError(t, err)
+
+				// Проверяем, что её больше нет
+				_, err = repo.GetByID(ctx, sessID)
+				require.ErrorIs(t, err, domain.ErrSessionNotFound)
+			},
+		},
 	}
 
-	t.Run("Успешное создание и получение", func(t *testing.T) {
-		// Create
-		err := repo.Create(ctx, session)
-		require.NoError(t, err)
-
-		// Get
-		savedSess, err := repo.GetByID(ctx, sessID)
-		require.NoError(t, err)
-		require.Equal(t, userID, savedSess.UserID)
-		require.Equal(t, sessID, savedSess.ID)
-	})
-
-	t.Run("Ошибка: сессия не найдена", func(t *testing.T) {
-		_, err := repo.GetByID(ctx, uuid.New()) // Случайный ID
-		require.ErrorIs(t, err, domain.ErrSessionNotFound)
-	})
-
-	t.Run("Успешное удаление", func(t *testing.T) {
-		// Удаляем созданную ранее сессию
-		err := repo.Delete(ctx, sessID)
-		require.NoError(t, err)
-
-		// Проверяем, что её больше нет
-		_, err = repo.GetByID(ctx, sessID)
-		require.ErrorIs(t, err, domain.ErrSessionNotFound)
-	})
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			repo := NewSessionRepo()
+			testCase.run(t, repo)
+		})
+	}
 }
 
 func TestSessionRepo_Concurrency(t *testing.T) {

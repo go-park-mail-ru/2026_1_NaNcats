@@ -13,11 +13,7 @@ import (
 )
 
 func TestAuthMiddleware_RequireAuth(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockSessionUC := ucMocks.NewMockSessionUseCase(ctrl)
-	mw := NewAuthMiddleware(mockSessionUC)
+	type mockInit func(m *ucMocks.MockSessionUseCase)
 
 	// Вспомогательный хэндлер, который стоит за мидлварью
 	// Если он вызвался — значит мидлварь пропустила запрос дальше
@@ -28,61 +24,80 @@ func TestAuthMiddleware_RequireAuth(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	t.Run("Успешная авторизация", func(t *testing.T) {
-		sessID := uuid.New()
-		userID := uuid.New()
+	tests := []struct {
+		name           string
+		hasCookie      bool
+		cookieValue    string
+		mockInit       mockInit
+		expectedStatus int
+		expectedBody   string // Для проверки текста ошибки
+	}{
+		{
+			name:        "Успешная авторизация",
+			hasCookie:   true,
+			cookieValue: uuid.New().String(),
+			mockInit: func(m *ucMocks.MockSessionUseCase) {
+				// Ожидаем проверку сессии
+				m.EXPECT().
+					Check(gomock.Any(), gomock.Any()).
+					Return(uuid.New(), nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "Ошибка: кука отсутствует",
+			hasCookie:      false,
+			mockInit:       func(m *ucMocks.MockSessionUseCase) {},
+			expectedStatus: http.StatusUnauthorized,
+			expectedBody:   "Session not found",
+		},
+		{
+			name:           "Ошибка: невалидный UUID",
+			hasCookie:      true,
+			cookieValue:    "not-a-uuid",
+			mockInit:       func(m *ucMocks.MockSessionUseCase) {},
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:        "Ошибка: сессия протухла или не найдена",
+			hasCookie:   true,
+			cookieValue: uuid.New().String(),
+			mockInit: func(m *ucMocks.MockSessionUseCase) {
+				// Программируем UseCase вернуть ошибку
+				m.EXPECT().
+					Check(gomock.Any(), gomock.Any()).
+					Return(uuid.Nil, domain.ErrSessionExpired)
+			},
+			expectedStatus: http.StatusUnauthorized,
+		},
+	}
 
-		req := httptest.NewRequest(http.MethodGet, "/api/profile", nil)
-		req.AddCookie(&http.Cookie{Name: "session_id", Value: sessID.String()})
-		rec := httptest.NewRecorder()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-		// Ожидаем проверку сессии
-		mockSessionUC.EXPECT().
-			Check(gomock.Any(), sessID).
-			Return(userID, nil)
+			mockSessionUC := ucMocks.NewMockSessionUseCase(ctrl)
+			tt.mockInit(mockSessionUC)
 
-		// Запускаем цепочку Middleware -> nextHandler
-		// Через ServeHTTP запускаем выполнение хендлера
-		mw.RequireAuth(nextHandler).ServeHTTP(rec, req)
+			mw := NewAuthMiddleware(mockSessionUC)
 
-		assert.Equal(t, http.StatusOK, rec.Code)
-	})
+			req := httptest.NewRequest(http.MethodGet, "/api/profile", nil)
+			if tt.hasCookie {
+				req.AddCookie(&http.Cookie{Name: "session_id", Value: tt.cookieValue})
+			}
 
-	t.Run("Ошибка: кука отсутствует", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/api/profile", nil)
-		rec := httptest.NewRecorder()
+			rec := httptest.NewRecorder()
 
-		// Запускаем
-		mw.RequireAuth(nextHandler).ServeHTTP(rec, req)
+			// Запускаем цепочку Middleware -> nextHandler
+			// Через ServeHTTP запускаем выполнение хендлера
+			mw.RequireAuth(nextHandler).ServeHTTP(rec, req)
 
-		assert.Equal(t, http.StatusUnauthorized, rec.Code)
-		// Проверяем, что в теле ответа есть наше сообщение
-		assert.Contains(t, rec.Body.String(), "Session not found")
-	})
-
-	t.Run("Ошибка: невалидный UUID", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/api/profile", nil)
-		req.AddCookie(&http.Cookie{Name: "session_id", Value: "not-a-uuid"})
-		rec := httptest.NewRecorder()
-
-		mw.RequireAuth(nextHandler).ServeHTTP(rec, req)
-
-		assert.Equal(t, http.StatusUnauthorized, rec.Code)
-	})
-
-	t.Run("Ошибка: сессия протухла или не найдена", func(t *testing.T) {
-		sessID := uuid.New()
-		req := httptest.NewRequest(http.MethodGet, "/api/profile", nil)
-		req.AddCookie(&http.Cookie{Name: "session_id", Value: sessID.String()})
-		rec := httptest.NewRecorder()
-
-		// Программируем UseCase вернуть ошибку
-		mockSessionUC.EXPECT().
-			Check(gomock.Any(), sessID).
-			Return(uuid.Nil, domain.ErrSessionExpired)
-
-		mw.RequireAuth(nextHandler).ServeHTTP(rec, req)
-
-		assert.Equal(t, http.StatusUnauthorized, rec.Code)
-	})
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+			if tt.expectedBody != "" {
+				// Проверяем, что в теле ответа есть наше сообщение
+				assert.Contains(t, rec.Body.String(), tt.expectedBody)
+			}
+		})
+	}
 }
