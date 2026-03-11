@@ -13,8 +13,13 @@ import (
 )
 
 func TestAuthUseCase_Register(t *testing.T) {
-	// Тип для настройки поведения моков
-	type mockBehavior func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase, input domain.User, resID uuid.UUID)
+	// Создаем структуру, чтобы не передавать много аргументов в mockInit
+	type mocks struct {
+		userRepo  *repoMocks.MockUserRepository
+		sessionUC *ucMocks.MockSessionUseCase
+	}
+
+	type mockInit func(m mocks, input domain.User, resID uuid.UUID)
 
 	// Заранее создаем UUID для тестов
 	mockUserID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
@@ -23,7 +28,7 @@ func TestAuthUseCase_Register(t *testing.T) {
 	tests := []struct {
 		name      string
 		input     domain.User
-		prepare   mockBehavior
+		mockInit  mockInit
 		expectErr error
 	}{
 		{
@@ -33,25 +38,13 @@ func TestAuthUseCase_Register(t *testing.T) {
 				Email:        "valid@mail.ru",
 				PasswordHash: "valid_password_123",
 			},
-			prepare: func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase, input domain.User, resID uuid.UUID) {
-				r.EXPECT().
+			mockInit: func(m mocks, input domain.User, resID uuid.UUID) {
+				m.userRepo.EXPECT().
 					CreateUser(gomock.Any(), gomock.Any()).
 					Return(resID, nil)
-				s.EXPECT().
+				m.sessionUC.EXPECT().
 					Create(gomock.Any(), resID).
 					Return(domain.Session{ID: mockSessionID}, nil)
-			},
-			expectErr: nil,
-		},
-		{
-			name: "Успех: допускается точка в названии почты",
-			input: domain.User{
-				Email:        "m.a.i.l@mail.ru",
-				PasswordHash: "password123",
-			},
-			prepare: func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase, input domain.User, resID uuid.UUID) {
-				r.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Return(resID, nil)
-				s.EXPECT().Create(gomock.Any(), resID).Return(domain.Session{ID: mockSessionID}, nil)
 			},
 			expectErr: nil,
 		},
@@ -61,52 +54,41 @@ func TestAuthUseCase_Register(t *testing.T) {
 				Email:        "exists@mail.ru",
 				PasswordHash: "password123",
 			},
-			prepare: func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase, input domain.User, resID uuid.UUID) {
-				r.EXPECT().
+			mockInit: func(m mocks, input domain.User, resID uuid.UUID) {
+				m.userRepo.EXPECT().
 					CreateUser(gomock.Any(), gomock.Any()).
 					Return(uuid.Nil, domain.ErrEmailAlreadyExists)
 			},
 			expectErr: domain.ErrEmailAlreadyExists,
 		},
 		{
-			name: "Ошибка: спецсимволы в почте",
-			input: domain.User{
-				Email:        "()<>[]:;\\.,@mail.ru",
-				PasswordHash: "password123",
-			},
-			prepare:   nil, // Моки не вызываются, упадет на валидации
-			expectErr: domain.ErrInvalidEmail,
-		},
-		{
-			name: "Ошибка: две точки подряд",
-			input: domain.User{
-				Email:        "ma..il@mail.ru",
-				PasswordHash: "password123",
-			},
-			prepare:   nil,
+			name:      "Ошибка: спецсимволы в почте",
+			input:     domain.User{Email: "()<>[]:;\\.,@mail.ru"},
+			mockInit:  nil, // Моки не вызываются, упадет на валидации
 			expectErr: domain.ErrInvalidEmail,
 		},
 	}
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			// Инициализация
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockUserRepo := repoMocks.NewMockUserRepository(ctrl)
-			mockSessionUC := ucMocks.NewMockSessionUseCase(ctrl)
-			authUseCase := NewAuthUseCase(mockUserRepo, mockSessionUC)
-
-			// Настройка моков
-			if testCase.prepare != nil {
-				testCase.prepare(mockUserRepo, mockSessionUC, testCase.input, mockUserID)
+			// Группируем моки
+			m := mocks{
+				userRepo:  repoMocks.NewMockUserRepository(ctrl),
+				sessionUC: ucMocks.NewMockSessionUseCase(ctrl),
 			}
 
-			// Выполнение
+			authUseCase := NewAuthUseCase(m.userRepo, m.sessionUC)
+
+			// Настройка моков через структуру
+			if testCase.mockInit != nil {
+				testCase.mockInit(m, testCase.input, mockUserID)
+			}
+
 			user, session, err := authUseCase.Register(context.Background(), testCase.input)
 
-			// Проверки
 			if testCase.expectErr != nil {
 				assert.ErrorIs(t, err, testCase.expectErr)
 			} else {

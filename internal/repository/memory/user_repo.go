@@ -12,7 +12,7 @@ import (
 
 // реализация контракта репозитория юзера на мапах (in-memory)
 type userRepo struct {
-	mu    sync.RWMutex              // защита от одновременного чтения из мапы
+	mu    sync.RWMutex              // защита от записи во время чтения из мапы
 	users map[uuid.UUID]domain.User // мапа юзеров, ключ - id
 }
 
