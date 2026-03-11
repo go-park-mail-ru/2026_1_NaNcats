@@ -5,7 +5,7 @@ CREATE TABLE "user" (
 		CHECK (phone ~ '^(\+7|8)[\s\-]?\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}$'),
 		
 	name TEXT NOT NULL
-		CHECK (char_length(name) >= 4 AND char_length(name) <= 30),
+		CHECK (char_length(name) >= 1 AND char_length(name) <= 39),
 		
 	email TEXT NOT NULL UNIQUE
 		CHECK (email ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'),
