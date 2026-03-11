@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"net/mail"
 	"strings"
 	"time"
@@ -69,10 +70,14 @@ func (u *authUseCase) Register(ctx context.Context, user domain.User) (domain.Us
 		return domain.User{}, domain.Session{}, domain.ErrInvalidEmail
 	}
 
+	if len(user.PasswordHash) < 8 {
+		return domain.User{}, domain.Session{}, domain.ErrInvalidPassword
+	}
+
 	// генерируем хешированный пароль
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.PasswordHash), bcrypt.DefaultCost)
 	if err != nil {
-		return domain.User{}, domain.Session{}, err
+		return domain.User{}, domain.Session{}, fmt.Errorf("bcrypt failed: %w", err)
 	}
 
 	user.PasswordHash = string(hashedPassword)
@@ -98,19 +103,21 @@ func (u *authUseCase) Register(ctx context.Context, user domain.User) (domain.Us
 }
 
 func (u *authUseCase) Login(ctx context.Context, user domain.User) (domain.User, domain.Session, error) {
+	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
+
 	currUser, err := u.userRepo.GetUserByEmail(ctx, user.Email)
 	if err != nil {
-		return domain.User{}, domain.Session{}, err
+		return domain.User{}, domain.Session{}, domain.ErrInvalidCredentials
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(currUser.PasswordHash), []byte(user.PasswordHash))
 	if err != nil {
-		return domain.User{}, domain.Session{}, err
+		return domain.User{}, domain.Session{}, domain.ErrInvalidCredentials
 	}
 
 	createdSession, err := u.sessionUC.Create(ctx, currUser.ID)
 	if err != nil {
-		return domain.User{}, domain.Session{}, err
+		return domain.User{}, domain.Session{}, fmt.Errorf("failed to create session: %w", err)
 	}
 
 	return currUser, createdSession, nil

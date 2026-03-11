@@ -16,7 +16,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func TestAuthHandler_Register(t *testing.T) {
@@ -162,11 +161,11 @@ func TestAuthHandler_Login(t *testing.T) {
 		// Программируем UseCase вернуть ошибку
 		mockAuthUC.EXPECT().
 			Login(gomock.Any(), gomock.Any()).
-			Return(domain.User{}, domain.Session{}, bcrypt.ErrMismatchedHashAndPassword)
+			Return(domain.User{}, domain.Session{}, domain.ErrInvalidCredentials)
 
 		authHandler.Login(rec, req)
 
-		assert.Equal(t, http.StatusBadRequest, rec.Code)
+		assert.Equal(t, http.StatusUnauthorized, rec.Code)
 	})
 }
 

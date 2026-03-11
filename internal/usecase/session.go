@@ -65,7 +65,7 @@ func (u *sessionUseCase) Check(ctx context.Context, sessionID uuid.UUID) (uuid.U
 	session, err := u.sessionRepo.GetByID(ctx, sessionID)
 	if err != nil {
 		// сессия не найдена
-		return uuid.UUID{}, err
+		return uuid.Nil, err
 	}
 
 	// проверяем срок годности сессии
@@ -74,7 +74,7 @@ func (u *sessionUseCase) Check(ctx context.Context, sessionID uuid.UUID) (uuid.U
 		// игнорируем ошибку удаления, так как для пользователя главное получить ответ, что сессия невалидна
 		_ = u.sessionRepo.Delete(ctx, sessionID)
 
-		return uuid.UUID{}, domain.ErrSessionExpired
+		return uuid.Nil, domain.ErrSessionExpired
 	}
 
 	// возвращаем id юзера в случае успеха

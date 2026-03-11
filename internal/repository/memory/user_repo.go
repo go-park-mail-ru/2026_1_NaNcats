@@ -28,12 +28,12 @@ func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (uuid.UUID,
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	user.Email = strings.ToLower(user.Email)
+	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
 
 	// проверяем на существование email'а
 	for _, curUser := range r.users {
 		if curUser.Email == user.Email {
-			return uuid.UUID{}, domain.ErrEmailAlreadyExists
+			return uuid.Nil, domain.ErrEmailAlreadyExists
 		}
 	}
 
@@ -48,7 +48,7 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	emailLower := strings.ToLower(email)
+	emailLower := strings.ToLower(strings.TrimSpace(email))
 
 	// проверяем на существование email'а
 	for _, user := range r.users {

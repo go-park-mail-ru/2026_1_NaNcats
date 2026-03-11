@@ -24,7 +24,7 @@ func NewSessionRepo() repository.SessionRepository {
 
 func (r *sessionRepo) Create(ctx context.Context, session domain.Session) error {
 	if session.ID == uuid.Nil {
-		return domain.ErrSessionNotFound // или можно создать ErrInvalidData
+		return domain.ErrSessionNotFound
 	}
 
 	r.mu.Lock()
