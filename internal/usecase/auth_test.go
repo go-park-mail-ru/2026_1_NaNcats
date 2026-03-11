@@ -13,12 +13,13 @@ import (
 )
 
 func TestAuthUseCase_Register(t *testing.T) {
-	// Создаем структуру, чтобы не передавать много аргументов в mockInit
+	// Группируем моки в структуру для удобной передачи
 	type mocks struct {
 		userRepo  *repoMocks.MockUserRepository
 		sessionUC *ucMocks.MockSessionUseCase
 	}
 
+	// Тип для инициализации моков (mockInit)
 	type mockInit func(m mocks, input domain.User, resID uuid.UUID)
 
 	// Заранее создаем UUID для тестов
@@ -49,6 +50,22 @@ func TestAuthUseCase_Register(t *testing.T) {
 			expectErr: nil,
 		},
 		{
+			name: "Успех: допускается точка в названии почты",
+			input: domain.User{
+				Email:        "m.a.i.l@mail.ru",
+				PasswordHash: "password123",
+			},
+			mockInit: func(m mocks, input domain.User, resID uuid.UUID) {
+				m.userRepo.EXPECT().
+					CreateUser(gomock.Any(), gomock.Any()).
+					Return(resID, nil)
+				m.sessionUC.EXPECT().
+					Create(gomock.Any(), resID).
+					Return(domain.Session{ID: mockSessionID}, nil)
+			},
+			expectErr: nil,
+		},
+		{
 			name: "Ошибка: пользователь уже существует",
 			input: domain.User{
 				Email:        "exists@mail.ru",
@@ -62,19 +79,31 @@ func TestAuthUseCase_Register(t *testing.T) {
 			expectErr: domain.ErrEmailAlreadyExists,
 		},
 		{
-			name:      "Ошибка: спецсимволы в почте",
-			input:     domain.User{Email: "()<>[]:;\\.,@mail.ru"},
-			mockInit:  nil, // Моки не вызываются, упадет на валидации
+			name: "Ошибка: спецсимволы в почте",
+			input: domain.User{
+				Email:        "()<>[]:;\\.,@mail.ru",
+				PasswordHash: "password123",
+			},
+			mockInit:  nil, // Моки не должны вызываться
+			expectErr: domain.ErrInvalidEmail,
+		},
+		{
+			name: "Ошибка: две точки подряд",
+			input: domain.User{
+				Email:        "ma..il@mail.ru",
+				PasswordHash: "password123",
+			},
+			mockInit:  nil, // Моки не должны вызываться
 			expectErr: domain.ErrInvalidEmail,
 		},
 	}
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
+			// Инициализация контроллера и моков
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			// Группируем моки
 			m := mocks{
 				userRepo:  repoMocks.NewMockUserRepository(ctrl),
 				sessionUC: ucMocks.NewMockSessionUseCase(ctrl),
@@ -82,13 +111,15 @@ func TestAuthUseCase_Register(t *testing.T) {
 
 			authUseCase := NewAuthUseCase(m.userRepo, m.sessionUC)
 
-			// Настройка моков через структуру
+			// Если mockInit задан, настраиваем поведение моков
 			if testCase.mockInit != nil {
 				testCase.mockInit(m, testCase.input, mockUserID)
 			}
 
+			// Выполнение тестируемого метода
 			user, session, err := authUseCase.Register(context.Background(), testCase.input)
 
+			// Проверки результата
 			if testCase.expectErr != nil {
 				assert.ErrorIs(t, err, testCase.expectErr)
 			} else {

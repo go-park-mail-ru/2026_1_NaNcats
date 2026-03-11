@@ -13,7 +13,7 @@ import (
 // структура брендов ресторанов на основе мап
 type restaurantBrandRepo struct {
 	mu               sync.RWMutex                         // защита от записи во время чтения из мапы
-	restaurantBrands map[uuid.UUID]domain.RestaurantBrand // мапа сессий, ключ - sessionID
+	restaurantBrands map[uuid.UUID]domain.RestaurantBrand // мапа ресторанов, ключ - sessionID
 }
 
 // функция-конструктор репозитория сессий
