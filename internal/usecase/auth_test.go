@@ -86,6 +86,15 @@ func TestAuthUseCase_Register(t *testing.T) {
 			prepare:   nil,
 			expectErr: domain.ErrInvalidEmail,
 		},
+		{
+			name: "Ошибка: эмодзи в почте",
+			input: domain.User{
+				Email:        "😂😂😂😂😂😂😂@mail.ru",
+				PasswordHash: "password123",
+			},
+			prepare:   nil,
+			expectErr: domain.ErrInvalidEmail,
+		},
 	}
 
 	for _, testCase := range tests {

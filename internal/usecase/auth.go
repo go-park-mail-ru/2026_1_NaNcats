@@ -53,6 +53,13 @@ func isValidEmail(email string) bool {
 		return false
 	}
 
+	// Проверка всех символов на ASCII
+	for i := 0; i < len(email); i++ {
+		if email[i] > 127 {
+			return false
+		}
+	}
+
 	// mail.ParseAddress позволяет вводить "Name <test@test.com>"
 	// Нам же нужно, чтобы введенная строка была только email-ом
 	if addr.Address != email {
