@@ -19,6 +19,9 @@ DROP TABLE IF EXISTS "location" CASCADE;
 DROP TABLE IF EXISTS "restaurant_brand" CASCADE;
 DROP TABLE IF EXISTS "user" CASCADE;
 
+CREATE TYPE order_status AS ENUM('in_progress', 'waiting', 'delivering', 'finished', 'cancelled');
+CREATE TYPE courier_status AS ENUM('offline', 'waiting', 'delivering');
+
 CREATE TABLE "user" (
 	id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
@@ -29,7 +32,7 @@ CREATE TABLE "user" (
 		CHECK (char_length(name) >= 1 AND char_length(name) <= 39),
 		
 	email TEXT NOT NULL UNIQUE
-		CHECK (email ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'),
+		CHECK (email ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$' AND email = LOWER(email)),
 		
 	password_hash TEXT NOT NULL
 ,
@@ -138,8 +141,7 @@ CREATE TABLE "client_profile" (
 CREATE TABLE "courier_profile" (
 	account_id INTEGER PRIMARY KEY,
 	
-	status TEXT NOT NULL
-		CHECK (status IN ('offline', 'waiting', 'delivering')),
+	status courier_status,
 	
 	CONSTRAINT fk_courier_profile_user
 		FOREIGN KEY (account_id)
@@ -254,8 +256,7 @@ CREATE TABLE "order" (
 		CHECK (total_cost > 0)
 	promocode_id INTEGER,
 	
-	status TEXT NOT NULL
-		CHECK (status IN ('in_progress', 'waiting', 'delivering', 'finished')),
+	status order_status,
 		
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
