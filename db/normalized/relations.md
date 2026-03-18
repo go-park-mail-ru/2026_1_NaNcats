@@ -70,7 +70,7 @@
 
 ### 📦 Отношение `order`
 **Зависимости:**
-`{id} -> client_account_id, courier_account_id, restaurant_branch_id, client_address_id, promocode_id, status, created_at, updated_at`
+`{id} -> client_account_id, courier_account_id, restaurant_branch_id, client_address_id, promocode_id, total_cost, status, created_at, updated_at`
 
 **Обоснование:**
 * **1НФ:** Все атрибуты атомарны.
@@ -211,12 +211,12 @@
 
 ### 🔗 Отношение `cart_dish`
 **Зависимости:**
-`{client_account_id, dish_id} -> quantity, created_at, updated_at`
+`{cart_dish, dish_id} -> quantity, created_at, updated_at`
 
 **Обоснование:**
 * **1НФ:** Все атрибуты атомарны.
-* **2НФ:** PK состоит из двух атрибутов - `{client_account_id}, {dish_id}`, но другие атрибуты зависят от этих двух ключевых атрибутов сразу (они не могут зависеть только от одного).
-* **3НФ и НФБК:** Все зависимости сводятся к зависимости от `{client_account_id}` и `{dish_id}` одновременно. Также нет транзитивных зависимостей.
+* **2НФ:** PK состоит из двух атрибутов - `{cart_dish}, {dish_id}`, но другие атрибуты зависят от этих двух ключевых атрибутов сразу (они не могут зависеть только от одного).
+* **3НФ и НФБК:** Все зависимости сводятся к зависимости от `{cart_dish}` и `{dish_id}` одновременно. Также нет транзитивных зависимостей.
 
 ---
 
@@ -296,6 +296,7 @@ erDiagram
         int restaurant_branch_id FK "NOT NULL"
         int client_address_id FK "NOT NULL"
         int promocode_id FK
+        int total_cost "NOT NULL"
         text status "NOT NULL"
         datetime created_at "DEFAULT NOW()"
         datetime updated_at "DEFAULT NOW()"
@@ -396,7 +397,7 @@ erDiagram
     }
 
     cart_dish {
-        int client_account_id PK, FK
+        int cart_id PK, FK
         int dish_id PK, FK
         int quantity "NOT NULL"
         datetime created_at "DEFAULT NOW()"
@@ -407,7 +408,6 @@ erDiagram
     user ||--|| client_profile: ""
     user ||--|| courier_profile: ""
     user ||--|| owner_profile: ""
-    user ||--|{ Redis_Session_Store: ""
 
     courier_profile ||--o{ order: ""
 

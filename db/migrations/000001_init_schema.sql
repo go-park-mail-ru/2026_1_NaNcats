@@ -14,16 +14,33 @@ DROP TABLE IF EXISTS "client_profile" CASCADE;
 DROP TABLE IF EXISTS "dish" CASCADE;
 DROP TABLE IF EXISTS "restaurant_branch" CASCADE;
 DROP TABLE IF EXISTS "promocode" CASCADE;
+DROP TABLE IF EXISTS "promocode_usage" CASCADE;
 DROP TABLE IF EXISTS "category" CASCADE;
 DROP TABLE IF EXISTS "location" CASCADE;
 DROP TABLE IF EXISTS "restaurant_brand" CASCADE;
 DROP TABLE IF EXISTS "user" CASCADE;
+DROP TABLE IF EXISTS "user_achievement" CASCADE;
+DROP TABLE IF EXISTS "achievement" CASCADE;
+DROP TABLE IF EXISTS "game_session" CASCADE;
+DROP TABLE IF EXISTS "wordle_streak" CASCADE;
+DROP TABLE IF EXISTS "wordle_guess" CASCADE;
+DROP TABLE IF EXISTS "wordle_game" CASCADE;
+DROP TABLE IF EXISTS "wordle_daily" CASCADE;
+DROP TABLE IF EXISTS "wordle_word" CASCADE;
+DROP TABLE IF EXISTS "restaurant_page_view" CASCADE;
+DROP TABLE IF EXISTS "restaurant_stats_daily" CASCADE;
+DROP TABLE IF EXISTS "restaurant_stats_hourly" CASCADE;
+DROP TABLE IF EXISTS "restaurant_stats_5min" CASCADE;
 
+DROP TYPE IF EXISTS order_status CASCADE;
+DROP TYPE IF EXISTS courier_status CASCADE;
 CREATE TYPE order_status AS ENUM('in_progress', 'waiting', 'delivering', 'finished', 'cancelled');
 CREATE TYPE courier_status AS ENUM('offline', 'waiting', 'delivering');
 
+CREATE EXTENSION IF NOT EXISTS postgis;
+
 CREATE TABLE "user" (
-	id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
 	phone TEXT UNIQUE
 		CHECK (phone ~ '^(\+7|8)[\s\-]?\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}$'),
@@ -34,8 +51,7 @@ CREATE TABLE "user" (
 	email TEXT NOT NULL UNIQUE
 		CHECK (email ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$' AND email = LOWER(email)),
 		
-	password_hash TEXT NOT NULL
-,
+	password_hash TEXT NOT NULL,
 		
 	user_role TEXT NOT NULL
 		CHECK (user_role IN ('client', 'courier', 'owner')),
@@ -47,52 +63,41 @@ CREATE TABLE "user" (
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
+CREATE TABLE "owner_profile" (
+	account_id INT PRIMARY KEY,
+	
+	CONSTRAINT fk_owner_profile_user
+		FOREIGN KEY (account_id)
+		REFERENCES "user"(id)
+		ON DELETE CASCADE
+);
+
 CREATE TABLE "restaurant_brand" (
-	id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	owner_profile_id INT NOT NULL,
 	
 	name TEXT UNIQUE NOT NULL
 		CHECK (char_length(name) <= 30),
 	description TEXT
 		CHECK (char_length(description) <= 500),
 		
-	promotion_tier INTEGER
+	promotion_tier INT NOT NULL DEFAULT 0
 		CHECK (promotion_tier >= 0 AND promotion_tier <= 3),
 		
 	logo_url TEXT
 		CHECK (char_length(logo_url) <= 2048),
-	banner_url TEXT
-		CHECK (char_length(banner_url) <= 2048),
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
-);
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 
-CREATE TABLE "promocode" (
-	id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	
-	code TEXT NOT NULL UNIQUE
-		CHECK (char_length(code) >= 2 AND char_length(code) <= 50),
-	
-	discount_percent INTEGER
-		CHECK (discount_percent > 0 AND discount_percent <= 100),
-	discount_amount INTEGER
-		CHECK (discount_amount > 0),
-	
-	is_global BOOLEAN DEFAULT FALSE NOT NULL,
-	
-	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-	expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-	
-	CONSTRAINT check_discount_type
-		CHECK (
-			(discount_percent IS NOT NULL AND discount_amount IS NULL)
-			OR
-			(discount_percent IS NULL AND discount_amount IS NOT NULL)
-		)
+	CONSTRAINT fk_restaurant_brand_owner_profile
+		FOREIGN KEY(owner_profile_id)
+		REFERENCES "owner_profile"(account_id)
+		ON DELETE RESTRICT
 );
 
 CREATE TABLE "category" (
-	id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
 	name TEXT NOT NULL UNIQUE,
 	
@@ -101,23 +106,20 @@ CREATE TABLE "category" (
 );
 
 CREATE TABLE "location" (
-	id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
 	address_text TEXT NOT NULL,
 	
-	latitude NUMERIC NOT NULL
-		CHECK (latitude >= -90 AND latitude <= 90),
-	longitude NUMERIC NOT NULL
-		CHECK (longitude >= -180 AND longitude <= 180),
+	coordinate GEOGRAPHY(Point, 4326) NOT NULL,
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
 CREATE TABLE "client_profile" (
-	account_id INTEGER PRIMARY KEY,
+	account_id INT PRIMARY KEY,
 	
-	bonus_balance INTEGER DEFAULT 0
+	bonus_balance BIGINT DEFAULT 0
 		CHECK (bonus_balance >= 0),
 	bonus_category_id INT,
 	bonus_category_expires_at TIMESTAMP WITH TIME ZONE,
@@ -132,18 +134,18 @@ CREATE TABLE "client_profile" (
 	CONSTRAINT fk_client_profile_user
 		FOREIGN KEY (account_id)
 		REFERENCES "user"(id)
-		ON DELETE CASCADE --тут каскадное удаление, чтобы при удалении юзера удалялся и клиент
+		ON DELETE CASCADE, --тут каскадное удаление, чтобы при удалении юзера удалялся и клиент
 		
 	CONSTRAINT fk_client_profile_category
 		FOREIGN KEY (bonus_category_id)
 		REFERENCES "category"(id)
-		ON DELETE SET NULl
+		ON DELETE SET NULL
 );
 
 CREATE TABLE "courier_profile" (
-	account_id INTEGER PRIMARY KEY,
+	account_id INT PRIMARY KEY,
 	
-	status courier_status,
+	status courier_status NOT NULL,
 	
 	CONSTRAINT fk_courier_profile_user
 		FOREIGN KEY (account_id)
@@ -151,26 +153,48 @@ CREATE TABLE "courier_profile" (
 		ON DELETE CASCADE --тут каскадное удаление, чтобы при удалении юзера удалялся и курьер
 );
 
-CREATE TABLE "owner_profile" (
-	account_id INTEGER PRIMARY KEY,
-	restaurant_brand_id INTEGER NOT NULL,
+CREATE TABLE "promocode" (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	user_id INT, -- NULL, если промокод не для конкретного юзера
 	
-	CONSTRAINT fk_owner_profile_user
-		FOREIGN KEY (account_id)
-		REFERENCES "user"(id)
-		ON DELETE CASCADE,
+	code TEXT NOT NULL UNIQUE
+		CHECK (char_length(code) >= 2 AND char_length(code) <= 50),
 	
-	CONSTRAINT fk_owner_profile_restaurant_brand
-		FOREIGN KEY (restaurant_brand_id)
-		REFERENCES "restaurant_brand"(id)
-		ON DELETE RESTRICT
+	discount_percent INT
+		CHECK (discount_percent > 0 AND discount_percent <= 100),
+	discount_amount BIGINT
+		CHECK (discount_amount >= 1000000), -- 1 рубль
+
+	max_uses INT -- NULL будет означать безлимит
+		CHECK (max_uses > 0),
+	
+	min_order_amount BIGINT
+		CHECK (min_order_amount >= 1000000), -- 1 рубль
+	
+	
+	is_global BOOL DEFAULT FALSE NOT NULL,
+	
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+	
+	CONSTRAINT check_discount_type
+		CHECK (
+			(discount_percent IS NOT NULL AND discount_amount IS NULL)
+			OR
+			(discount_percent IS NULL AND discount_amount IS NOT NULL)
+		),
+	
+	CONSTRAINT fk_promocode_client_profile
+		FOREIGN KEY (user_id)
+		REFERENCES "client_profile"(account_id)
+		ON DELETE CASCADE
 );
 
 CREATE TABLE "restaurant_branch" (
-	id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
-	restaurant_brand_id INTEGER NOT NULL,
-	location_id INTEGER NOT NULL,
+	restaurant_brand_id INT NOT NULL,
+	location_id INT NOT NULL,
 	
 	open_time TIME,
 	close_time TIME,
@@ -190,9 +214,9 @@ CREATE TABLE "restaurant_branch" (
 );
 
 CREATE TABLE "dish" (
-	id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
-	restaurant_brand_id INTEGER NOT NULL,
+	restaurant_brand_id INT NOT NULL,
 	
 	name TEXT NOT NULL
 		CHECK (char_length(name) <= 50),
@@ -202,8 +226,8 @@ CREATE TABLE "dish" (
 	image_url TEXT 	
 		CHECK (char_length(image_url) <= 2048),
 	
-	price INTEGER NOT NULL
-		CHECK (price > 0),
+	price BIGINT NOT NULL
+		CHECK (price >= 1000000), -- 1 рубль
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -215,10 +239,10 @@ CREATE TABLE "dish" (
 );
 
 CREATE TABLE "client_address" (
-	id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
-	location_id INTEGER NOT NULL,
-	client_account_id INTEGER NOT NULL,
+	location_id INT NOT NULL,
+	client_account_id INT NOT NULL,
 	
 	apartment TEXT
 		CHECK (char_length(apartment) <= 30),
@@ -248,17 +272,17 @@ CREATE TABLE "client_address" (
 );
 
 CREATE TABLE "order" (
-	id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
-	client_account_id INTEGER NOT NULL,
-	courier_account_id INTEGER,
-	restaurant_branch_id INTEGER NOT NULL,
-	client_address_id INTEGER NOT NULL,
-	total_cost INTEGER
-		CHECK (total_cost > 0)
-	promocode_id INTEGER,
+	client_account_id INT NOT NULL,
+	courier_account_id INT,
+	restaurant_branch_id INT NOT NULL,
+	client_address_id INT NOT NULL,
+	total_cost BIGINT
+		CHECK (total_cost >= 1000000), -- 1 рубль
+	promocode_id INT,
 	
-	status order_status,
+	status order_status NOT NULL,
 		
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -290,11 +314,11 @@ CREATE TABLE "order" (
 );
 
 CREATE TABLE "order_review" (
-	order_id INTEGER PRIMARY KEY,
-	restaurant_rating INTEGER
-		CHECK (restaurant_rating >= 0 AND restaurant_rating <= 5), -- NULL означает, что отзыв не выставлен
-	courier_rating INTEGER
-		CHECK (courier_rating >= 0 AND courier_rating <= 5), -- NULL означает, что отзыв не выставлен
+	order_id INT PRIMARY KEY,
+	restaurant_rating INT NOT NULL
+		CHECK (restaurant_rating >= 1 AND restaurant_rating <= 5),
+	courier_rating INT
+		CHECK (courier_rating >= 1 AND courier_rating <= 5),
 	
 	client_comment TEXT
 		CHECK (char_length(client_comment) <= 255),
@@ -308,14 +332,14 @@ CREATE TABLE "order_review" (
 );
 
 CREATE TABLE "order_dish" (
-	order_id INTEGER,
-	dish_id INTEGER,
+	order_id INT,
+	dish_id INT,
 	PRIMARY KEY (order_id, dish_id),
 	
-	quantity INTEGER NOT NULL
+	quantity INT NOT NULL
 		CHECK (quantity > 0),
-	price INTEGER NOT NULL
-		CHECK (price > 0),
+	price BIGINT NOT NULL
+		CHECK (price >= 1000000),
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	
@@ -331,8 +355,8 @@ CREATE TABLE "order_dish" (
 );
 
 CREATE TABLE "promocode_restaurant_brand" (
-	promocode_id INTEGER,
-	restaurant_brand_id INTEGER,
+	promocode_id INT,
+	restaurant_brand_id INT,
 	PRIMARY KEY (promocode_id, restaurant_brand_id),
 	
 	CONSTRAINT fk_promocode_restaurant_brand_promocode
@@ -347,8 +371,8 @@ CREATE TABLE "promocode_restaurant_brand" (
 );
 
 CREATE TABLE "promocode_category" (
-	promocode_id INTEGER,
-	category_id INTEGER,
+	promocode_id INT,
+	category_id INT,
 	PRIMARY KEY (promocode_id, category_id),
 	
 	CONSTRAINT fk_promocode_category_promocode
@@ -362,9 +386,35 @@ CREATE TABLE "promocode_category" (
 		ON DELETE RESTRICT
 );
 
+CREATE TABLE "promocode_usage" (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	promocode_id INT NOT NULL,
+	order_id INT,
+	
+	client_account_id INT,
+	UNIQUE (promocode_id, client_account_id),
+	
+	used_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	
+	CONSTRAINT fk_promocode_usage_promocode
+		FOREIGN KEY (promocode_id)
+		REFERENCES "promocode"(id)
+		ON DELETE CASCADE,
+		
+	CONSTRAINT fk_promocode_usage_order
+		FOREIGN KEY (order_id)
+		REFERENCES  "order"(id)
+		ON DELETE SET NULL,
+		
+	CONSTRAINT fk_promocode_usage_client_profile
+		FOREIGN KEY (client_account_id)
+		REFERENCES "client_profile"(account_id)
+		ON DELETE SET NULL
+);
+
 CREATE TABLE "restaurant_brand_category" (
-	restaurant_brand_id INTEGER,
-	category_id INTEGER,
+	restaurant_brand_id INT,
+	category_id INT,
 	PRIMARY KEY (restaurant_brand_id, category_id),
 	
 	CONSTRAINT fk_restaurant_brand_category_restaurant_brand
@@ -379,8 +429,8 @@ CREATE TABLE "restaurant_brand_category" (
 );
 
 CREATE TABLE "dish_category" (
-	dish_id INTEGER,
-	category_id INTEGER,
+	dish_id INT,
+	category_id INT,
 	PRIMARY KEY (dish_id, category_id),
 	
 	CONSTRAINT fk_dish_category_dish
@@ -395,8 +445,8 @@ CREATE TABLE "dish_category" (
 );
 
 CREATE TABLE "cart" (
-	client_account_id INTEGER PRIMARY KEY,
-	restaurant_brand_id INTEGER NOT NULL,
+	client_account_id INT PRIMARY KEY,
+	restaurant_brand_id INT NOT NULL,
 	
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	
@@ -412,11 +462,11 @@ CREATE TABLE "cart" (
 );
 
 CREATE TABLE "cart_dish" (
-	cart_id INTEGER,
-	dish_id INTEGER,
+	cart_id INT,
+	dish_id INT,
 	PRIMARY KEY (cart_id, dish_id),
 	
-	quantity INTEGER NOT NULL
+	quantity INT NOT NULL
 		CHECK (quantity > 0),
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -433,3 +483,231 @@ CREATE TABLE "cart_dish" (
 		ON DELETE CASCADE
 );
 
+CREATE TABLE "restaurant_stats_5min" (
+	restaurant_brand_id INT,
+	bucket TIMESTAMP WITH TIME ZONE,
+	PRIMARY KEY (restaurant_brand_id, bucket),
+	
+	order_count INT NOT NULL DEFAULT 0
+		CHECK (order_count >= 0),
+	cancelled_count INT NOT NULL DEFAULT 0
+		CHECK (cancelled_count >= 0),
+	income BIGINT NOT NULL DEFAULT 0
+		CHECK (income >= 0),
+	avg_check BIGINT
+		CHECK (avg_check >= 0),
+	avg_delay_sec INT, -- средняя задержка заказа в секундах
+	
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	
+	CONSTRAINT fk_restaurant_stats_5min_restaurant_brand
+		FOREIGN KEY (restaurant_brand_id)
+		REFERENCES "restaurant_brand"(id)
+		ON DELETE CASCADE
+);
+
+CREATE TABLE "restaurant_stats_hourly" (
+	restaurant_brand_id INT,
+	bucket TIMESTAMP WITH TIME ZONE,
+	PRIMARY KEY (restaurant_brand_id, bucket),
+	
+	order_count INT NOT NULL DEFAULT 0
+		CHECK (order_count >= 0),
+	cancelled_count INT NOT NULL DEFAULT 0
+		CHECK (cancelled_count >= 0),
+	income BIGINT NOT NULL DEFAULT 0
+		CHECK (income >= 0),
+	avg_check BIGINT
+		CHECK (avg_check >= 0),
+	avg_delay_sec INT, -- средняя задержка заказа в секундах
+	
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	
+	CONSTRAINT fk_restaurant_stats_hourly_restaurant_brand
+		FOREIGN KEY (restaurant_brand_id)
+		REFERENCES "restaurant_brand"(id)
+		ON DELETE CASCADE
+);
+
+CREATE TABLE "restaurant_stats_daily" (
+	restaurant_brand_id INT,
+	bucket DATE,
+	PRIMARY KEY (restaurant_brand_id, bucket),
+	
+	order_count INT NOT NULL DEFAULT 0
+		CHECK (order_count >= 0),
+	cancelled_count INT NOT NULL DEFAULT 0
+		CHECK (cancelled_count >= 0),
+	income BIGINT NOT NULL DEFAULT 0
+		CHECK (income >= 0),
+	avg_check BIGINT
+		CHECK (avg_check >= 0),
+	avg_delay_sec INT, -- средняя задержка заказа в секундах
+	
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	
+	CONSTRAINT fk_restaurant_stats_daily_restaurant_brand
+		FOREIGN KEY (restaurant_brand_id)
+		REFERENCES "restaurant_brand"(id)
+		ON DELETE CASCADE
+);
+
+CREATE TABLE "restaurant_page_view" (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	restaurant_brand_id INT NOT NULL,
+	user_id INT, -- разрешаем NULL для неавторизованных юзеров
+	
+	viewed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL, -- viewed_at по сути и есть created_at
+	
+	CONSTRAINT fk_restaurant_page_view_restaurant_brand
+		FOREIGN KEY (restaurant_brand_id)
+		REFERENCES "restaurant_brand"(id)
+		ON DELETE CASCADE,
+		
+	CONSTRAINT fk_restaurant_page_view_user
+		FOREIGN KEY (user_id)
+		REFERENCES "user"(id)
+		ON DELETE SET NULL
+);
+
+CREATE TABLE "wordle_word" (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	word TEXT NOT NULL UNIQUE
+		CHECK (char_length(word) = 5 AND word = LOWER(word)),
+		
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE "wordle_daily" (
+	word_of_day DATE PRIMARY KEY,
+	word_id	INT NOT NULL,
+	
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	
+	CONSTRAINT fk_wordle_daily_wordle_word
+		FOREIGN KEY (word_id)
+		REFERENCES "wordle_word"(id)
+		ON DELETE RESTRICT
+);
+
+-- игровая сессия юзера за какой-то день
+CREATE TABLE "wordle_game" (
+	user_id INT NOT NULL,
+	game_date DATE NOT NULL,
+	PRIMARY KEY(user_id, game_date),
+	
+	solved BOOL NOT NULL DEFAULT FALSE,
+	attempt INT NOT NULL DEFAULT 0
+		CHECK (attempt >= 0 AND attempt <= 6),
+		
+	finished_at TIMESTAMP WITH TIME ZONE, -- NULL пока игра не завершена
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	
+	CONSTRAINT fk_wordle_game_user
+		FOREIGN KEY (user_id)
+		REFERENCES "user"(id)
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_wordle_game_wordle_daily
+		FOREIGN KEY (game_date)
+		REFERENCES "wordle_daily"(word_of_day)
+		ON DELETE RESTRICT
+);
+
+-- история угадываний
+CREATE TABLE "wordle_guess" (
+	user_id INT NOT NULL,
+	guess_date DATE NOT NULL,
+	attempt_num INT NOT NULL
+		CHECK (attempt_num >= 1 AND attempt_num <= 6),
+	PRIMARY key(user_id, guess_date, attempt_num),
+		
+	word TEXT NOT NULL
+		CHECK (char_length(word) = 5 AND word = LOWER(word)),
+		
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	
+	CONSTRAINT fk_wordle_guess_wordle_game
+		FOREIGN KEY (user_id, guess_date)
+		REFERENCES "wordle_game"(user_id, game_date)
+		ON DELETE CASCADE 
+);
+
+CREATE TABLE "wordle_streak" (
+	user_id INT PRIMARY KEY,
+	
+	current_streak INT NOT NULL DEFAULT 0,
+	last_played DATE, -- NULL если ещё не играл вообще
+	
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	
+	CONSTRAINT fk_wordle_streak_client_profile
+		FOREIGN KEY (user_id)
+		REFERENCES "user"(id)
+		ON DELETE CASCADE
+);
+
+-- Это таблица для будущей игры, которую будем реализовывать
+-- на странице ожидания заказа. Я её добавил, чтобы потом не
+-- геморно было это делать
+CREATE TABLE "game_session" (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	user_id INT NOT NULL,
+	order_id INT,
+	
+	game_type TEXT NOT NULL, -- 'fruit_ninja', 'blockblast' и т.п., потом придумаем это
+	score INT NOT NULL 
+		CHECK (score >= 0),
+	
+	played_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL, -- то же, что и created_at
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	
+	CONSTRAINT fk_game_session_user
+		FOREIGN KEY (user_id)
+		REFERENCES "user"(id)
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_game_session_order
+		FOREIGN KEY (order_id)
+		REFERENCES "order"(id)
+		ON DELETE SET NULL
+);
+
+CREATE TABLE "achievement" (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	code TEXT NOT NULL UNIQUE,
+	
+	name TEXT NOT NULL
+		CHECK (char_length(name) <= 50),
+	description TEXT
+		CHECK (char_length(description) <= 100),
+		
+	icon_url TEXT
+		CHECK (char_length(icon_url) <= 2048),
+	
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE "user_achievement" (
+	achievement_id INT,
+	user_id INT,
+	PRIMARY KEY(achievement_id, user_id),
+	
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	
+	CONSTRAINT fk_user_achievement_achievement
+		FOREIGN KEY (achievement_id)
+		REFERENCES "achievement"(id)
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_user_achievement_user
+		FOREIGN KEY (user_id)
+		REFERENCES "user"(id)
+		ON DELETE CASCADE
+);
