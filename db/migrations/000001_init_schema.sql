@@ -31,7 +31,8 @@ CREATE TABLE "user" (
 	email TEXT NOT NULL UNIQUE
 		CHECK (email ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'),
 		
-	password_hash TEXT NOT NULL,
+	password_hash TEXT NOT NULL
+,
 		
 	user_role TEXT NOT NULL
 		CHECK (user_role IN ('client', 'courier', 'owner')),
