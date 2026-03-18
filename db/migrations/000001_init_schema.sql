@@ -1,3 +1,24 @@
+DROP TABLE IF EXISTS "cart_dish" CASCADE;
+DROP TABLE IF EXISTS "cart" CASCADE;
+DROP TABLE IF EXISTS "dish_category" CASCADE;
+DROP TABLE IF EXISTS "restaurant_brand_category" CASCADE;
+DROP TABLE IF EXISTS "promocode_category" CASCADE;
+DROP TABLE IF EXISTS "promocode_restaurant_brand" CASCADE;
+DROP TABLE IF EXISTS "order_dish" CASCADE;
+DROP TABLE IF EXISTS "order_review" CASCADE;
+DROP TABLE IF EXISTS "order" CASCADE;
+DROP TABLE IF EXISTS "client_address" CASCADE;
+DROP TABLE IF EXISTS "owner_profile" CASCADE;
+DROP TABLE IF EXISTS "courier_profile" CASCADE;
+DROP TABLE IF EXISTS "client_profile" CASCADE;
+DROP TABLE IF EXISTS "dish" CASCADE;
+DROP TABLE IF EXISTS "restaurant_branch" CASCADE;
+DROP TABLE IF EXISTS "promocode" CASCADE;
+DROP TABLE IF EXISTS "category" CASCADE;
+DROP TABLE IF EXISTS "location" CASCADE;
+DROP TABLE IF EXISTS "restaurant_brand" CASCADE;
+DROP TABLE IF EXISTS "user" CASCADE;
+
 CREATE TABLE "user" (
 	id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
@@ -10,8 +31,7 @@ CREATE TABLE "user" (
 	email TEXT NOT NULL UNIQUE
 		CHECK (email ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'),
 		
-	password_hash TEXT NOT NULL
-		CHECK (char_length(password_hash) = 60),
+	password_hash TEXT NOT NULL,
 		
 	user_role TEXT NOT NULL
 		CHECK (user_role IN ('client', 'courier', 'owner')),
@@ -107,6 +127,11 @@ CREATE TABLE "client_profile" (
 		FOREIGN KEY (account_id)
 		REFERENCES "user"(id)
 		ON DELETE CASCADE --тут каскадное удаление, чтобы при удалении юзера удалялся и клиент
+		
+	CONSTRAINT fk_client_profile_category
+		FOREIGN KEY (bonus_category_id)
+		REFERENCES "category"(id)
+		ON DELETE SET NULl
 );
 
 CREATE TABLE "courier_profile" (
@@ -224,6 +249,8 @@ CREATE TABLE "order" (
 	courier_account_id INTEGER,
 	restaurant_branch_id INTEGER NOT NULL,
 	client_address_id INTEGER NOT NULL,
+	total_cost INTEGER
+		CHECK (total_cost > 0)
 	promocode_id INTEGER,
 	
 	status TEXT NOT NULL
@@ -381,9 +408,9 @@ CREATE TABLE "cart" (
 );
 
 CREATE TABLE "cart_dish" (
-	client_account_id INTEGER,
+	cart_id INTEGER,
 	dish_id INTEGER,
-	PRIMARY KEY (client_account_id, dish_id),
+	PRIMARY KEY (cart_id, dish_id),
 	
 	quantity INTEGER NOT NULL
 		CHECK (quantity > 0),
@@ -391,9 +418,9 @@ CREATE TABLE "cart_dish" (
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	
-	CONSTRAINT fk_cart_dish_client_profile
-		FOREIGN KEY (client_account_id)
-		REFERENCES "client_profile"(account_id)
+	CONSTRAINT fk_cart_dish_cart
+		FOREIGN KEY (cart_id)
+		REFERENCES "cart"(client_account_id)
 		ON DELETE CASCADE,
 	
 	CONSTRAINT fk_cart_dish_dish
