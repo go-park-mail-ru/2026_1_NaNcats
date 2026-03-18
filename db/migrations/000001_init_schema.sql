@@ -50,7 +50,7 @@ CREATE TABLE "user" (
 CREATE TABLE "restaurant_brand" (
 	id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
-	name TEXT NOT NULL
+	name TEXT UNIQUE NOT NULL
 		CHECK (char_length(name) <= 30),
 	description TEXT
 		CHECK (char_length(description) <= 500),
@@ -105,8 +105,10 @@ CREATE TABLE "location" (
 	
 	address_text TEXT NOT NULL,
 	
-	latitude NUMERIC NOT NULL,
-	longitude NUMERIC NOT NULL,
+	latitude NUMERIC NOT NULL
+		CHECK (latitude >= -90 AND latitude <= 90),
+	longitude NUMERIC NOT NULL
+		CHECK (longitude >= -180 AND longitude <= 180),
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
@@ -115,13 +117,13 @@ CREATE TABLE "location" (
 CREATE TABLE "client_profile" (
 	account_id INTEGER PRIMARY KEY,
 	
-	bonus_balance INTEGER
+	bonus_balance INTEGER DEFAULT 0
 		CHECK (bonus_balance >= 0),
 	bonus_category_id INT,
 	bonus_category_expires_at TIMESTAMP WITH TIME ZONE,
 	bonus_expires_at TIMESTAMP WITH TIME ZONE,
 	
-	streak_count INT
+	streak_count INT DEFAULT 0
 		CHECK (streak_count >= 0),
 	
 	last_order_date TIMESTAMP WITH TIME ZONE,
@@ -193,7 +195,7 @@ CREATE TABLE "dish" (
 	restaurant_brand_id INTEGER NOT NULL,
 	
 	name TEXT NOT NULL
-		CHECK(char_length(name) <= 50),
+		CHECK (char_length(name) <= 50),
 	description TEXT
 		CHECK(char_length(description) <= 1000),
 	
@@ -338,7 +340,7 @@ CREATE TABLE "promocode_restaurant_brand" (
 		REFERENCES "promocode"(id)
 		ON DELETE RESTRICT,
 	
-	CONSTRAINT fk_promocode_restaurant_brand_restaurand_brand
+	CONSTRAINT fk_promocode_restaurant_brand_restaurant_brand
 		FOREIGN KEY (restaurant_brand_id)
 		REFERENCES "restaurant_brand"(id)
 		ON DELETE RESTRICT
