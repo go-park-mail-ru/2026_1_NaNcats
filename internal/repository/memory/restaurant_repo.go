@@ -12,15 +12,14 @@ import (
 
 // структура брендов ресторанов на основе мап
 type restaurantBrandRepo struct {
-	mu               sync.RWMutex                         // защита от одновременного чтения из мапы
-	restaurantBrands map[uuid.UUID]domain.RestaurantBrand // мапа сессий, ключ - sessionID
+	mu               sync.RWMutex                         // защита от записи во время чтения из мапы
+	restaurantBrands map[uuid.UUID]domain.RestaurantBrand // мапа ресторанов, ключ - sessionID
 }
 
 // функция-конструктор репозитория сессий
 func NewRestaurantBrandRepo() repository.RestaurantBrandRepository {
 	return &restaurantBrandRepo{
 		restaurantBrands: seedRestaurants(),
-		// restaurantBrands: make(map[uuid.UUID]domain.RestaurantBrand),
 	}
 }
 

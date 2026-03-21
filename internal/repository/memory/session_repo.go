@@ -11,7 +11,7 @@ import (
 
 // структура репозитория сессий на основе мап
 type sessionRepo struct {
-	mu       sync.RWMutex                 // защита от одновременного чтения из мапы
+	mu       sync.RWMutex                 // защита от записи во время чтения из мапы
 	sessions map[uuid.UUID]domain.Session // мапа сессий, ключ - sessionID
 }
 

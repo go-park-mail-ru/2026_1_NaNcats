@@ -28,7 +28,6 @@ func main() {
 
 	userRepo := memory.NewUserRepo()
 	sessionRepo := memory.NewSessionRepo()
-	//imageStorage := memory.NewImageStorage()
 	restaurantBrandRepo := memory.NewRestaurantBrandRepo()
 
 	// ttl сессии - 24 часа
@@ -36,11 +35,9 @@ func main() {
 
 	sessionUC := usecase.NewSessionUseCase(sessionRepo, sessionTTL)
 	authUC := usecase.NewAuthUseCase(userRepo, sessionUC)
-	//imageUC := usecase.NewImageUseCase(imageStorage)
 	restaurantBrandUC := usecase.NewRestaurantBrandUseCase(restaurantBrandRepo)
 
 	authHandler := handler.NewAuthHandler(authUC)
-	//imageHandler := handler.NewImageHandler(imageUC)
 	restaurantBrandHandler := handler.NewRestaurantBrandHandler(restaurantBrandUC)
 
 	fileServer := http.FileServer(http.Dir("./uploads"))

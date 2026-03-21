@@ -11,9 +11,6 @@ import (
 func seedRestaurants() map[uuid.UUID]domain.RestaurantBrand {
 	restaurantsMap := make(map[uuid.UUID]domain.RestaurantBrand)
 
-	// Здесь заполняешь свои данные.
-	// LogoURL и BannerURL — это те новые поля, которые ты добавил в domain.RestaurantBrand.
-	// PromotionTier задавай от 1 до 5 (чтобы протестировать твою сортировку).
 	mockData := []domain.RestaurantBrand{
 		{
 			Name:          "Вкусно - и точка",

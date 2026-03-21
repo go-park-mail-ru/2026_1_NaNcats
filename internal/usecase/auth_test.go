@@ -13,8 +13,14 @@ import (
 )
 
 func TestAuthUseCase_Register(t *testing.T) {
-	// Тип для настройки поведения моков
-	type mockBehavior func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase, input domain.User, resID uuid.UUID)
+	// Группируем моки в структуру для удобной передачи
+	type mocks struct {
+		userRepo  *repoMocks.MockUserRepository
+		sessionUC *ucMocks.MockSessionUseCase
+	}
+
+	// Тип для инициализации моков (mockInit)
+	type mockInit func(m mocks, input domain.User, resID uuid.UUID)
 
 	// Заранее создаем UUID для тестов
 	mockUserID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
@@ -23,7 +29,7 @@ func TestAuthUseCase_Register(t *testing.T) {
 	tests := []struct {
 		name      string
 		input     domain.User
-		prepare   mockBehavior
+		mockInit  mockInit
 		expectErr error
 	}{
 		{
@@ -33,11 +39,11 @@ func TestAuthUseCase_Register(t *testing.T) {
 				Email:        "valid@mail.ru",
 				PasswordHash: "valid_password_123",
 			},
-			prepare: func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase, input domain.User, resID uuid.UUID) {
-				r.EXPECT().
+			mockInit: func(m mocks, input domain.User, resID uuid.UUID) {
+				m.userRepo.EXPECT().
 					CreateUser(gomock.Any(), gomock.Any()).
 					Return(resID, nil)
-				s.EXPECT().
+				m.sessionUC.EXPECT().
 					Create(gomock.Any(), resID).
 					Return(domain.Session{ID: mockSessionID}, nil)
 			},
@@ -49,9 +55,13 @@ func TestAuthUseCase_Register(t *testing.T) {
 				Email:        "m.a.i.l@mail.ru",
 				PasswordHash: "password123",
 			},
-			prepare: func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase, input domain.User, resID uuid.UUID) {
-				r.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Return(resID, nil)
-				s.EXPECT().Create(gomock.Any(), resID).Return(domain.Session{ID: mockSessionID}, nil)
+			mockInit: func(m mocks, input domain.User, resID uuid.UUID) {
+				m.userRepo.EXPECT().
+					CreateUser(gomock.Any(), gomock.Any()).
+					Return(resID, nil)
+				m.sessionUC.EXPECT().
+					Create(gomock.Any(), resID).
+					Return(domain.Session{ID: mockSessionID}, nil)
 			},
 			expectErr: nil,
 		},
@@ -61,8 +71,8 @@ func TestAuthUseCase_Register(t *testing.T) {
 				Email:        "exists@mail.ru",
 				PasswordHash: "password123",
 			},
-			prepare: func(r *repoMocks.MockUserRepository, s *ucMocks.MockSessionUseCase, input domain.User, resID uuid.UUID) {
-				r.EXPECT().
+			mockInit: func(m mocks, input domain.User, resID uuid.UUID) {
+				m.userRepo.EXPECT().
 					CreateUser(gomock.Any(), gomock.Any()).
 					Return(uuid.Nil, domain.ErrEmailAlreadyExists)
 			},
@@ -74,7 +84,7 @@ func TestAuthUseCase_Register(t *testing.T) {
 				Email:        "()<>[]:;\\.,@mail.ru",
 				PasswordHash: "password123",
 			},
-			prepare:   nil, // Моки не вызываются, упадет на валидации
+			mockInit:  nil, // Моки не должны вызываться
 			expectErr: domain.ErrInvalidEmail,
 		},
 		{
@@ -83,7 +93,7 @@ func TestAuthUseCase_Register(t *testing.T) {
 				Email:        "ma..il@mail.ru",
 				PasswordHash: "password123",
 			},
-			prepare:   nil,
+			mockInit:  nil, // Моки не должны вызываться
 			expectErr: domain.ErrInvalidEmail,
 		},
 		{
@@ -99,23 +109,26 @@ func TestAuthUseCase_Register(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			// Инициализация
+			// Инициализация контроллера и моков
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockUserRepo := repoMocks.NewMockUserRepository(ctrl)
-			mockSessionUC := ucMocks.NewMockSessionUseCase(ctrl)
-			authUseCase := NewAuthUseCase(mockUserRepo, mockSessionUC)
-
-			// Настройка моков
-			if testCase.prepare != nil {
-				testCase.prepare(mockUserRepo, mockSessionUC, testCase.input, mockUserID)
+			m := mocks{
+				userRepo:  repoMocks.NewMockUserRepository(ctrl),
+				sessionUC: ucMocks.NewMockSessionUseCase(ctrl),
 			}
 
-			// Выполнение
+			authUseCase := NewAuthUseCase(m.userRepo, m.sessionUC)
+
+			// Если mockInit задан, настраиваем поведение моков
+			if testCase.mockInit != nil {
+				testCase.mockInit(m, testCase.input, mockUserID)
+			}
+
+			// Выполнение тестируемого метода
 			user, session, err := authUseCase.Register(context.Background(), testCase.input)
 
-			// Проверки
+			// Проверки результата
 			if testCase.expectErr != nil {
 				assert.ErrorIs(t, err, testCase.expectErr)
 			} else {
