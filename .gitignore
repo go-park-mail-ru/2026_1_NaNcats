@@ -1,0 +1,29 @@
+# Бинарные файлы (скомпилированные)
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+app
+
+# Зависимости
+vendor/
+
+# Переменные окружения и секреты
+.env
+.env.*
+!.env.example
+
+# Файлы IDE
+.idea/
+.vscode/
+*.swp
+
+# Логи и временные файлы
+*.log
+tmp/
+
+# Тестовое покрытие
+coverage.out
+coverage.html
