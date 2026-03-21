@@ -1,5 +1,22 @@
 version: '3.8'
 services:
+  db:
+    image: postgis/postgis:15-3.3-alpine # Образ с Postgres + PostGIS
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: delivery_db
+    ports:
+      - "5432:5432"
+    healthcheck: # Проверка готовности базы
+      # бэкенд не начнет пытаться подключиться к базе, пока она не будет готова принимать соединения
+      test: ["CMD-SHELL", "pg_isready -U user -d delivery_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+    
   backend:
     build: .
     container_name: go_backend
@@ -7,4 +24,10 @@ services:
       - "8080:8080"
     volumes:
       - ./uploads:/root/uploads
+    environment:
+      # Передаем URL базы данных Go-приложению
+      DATABASE_URL: "postgres://user:password@db:5432/delivery_db?sslmode=disable"
+    depends_on:
+      db:
+        condition: service_healthy # Запускать бэкенд только когда база полностью готова
     restart: always

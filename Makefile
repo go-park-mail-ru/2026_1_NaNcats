@@ -48,6 +48,19 @@ cover: test
 # Пытаемся открыть его (команда xdg-open для Linux, open для Mac)
 	xdg-open $(COVERAGE_HTML) || open $(COVERAGE_HTML) || echo "Открой $(COVERAGE_HTML) в браузере вручную"
 
-# Команда для быстрой проверки, которая сама за собой уберет файл покрытия
-test-once: test
-	rm -f $(COVERAGE_FILE)
+
+# БД
+# Переменные
+DB_URL=postgres://user:password@localhost:5432/delivery_db?sslmode=disable
+
+# Создать новую миграцию (например: make migrate-create name=add_users_table)
+migrate-create:
+	migrate create -ext sql -dir db/migrations -seq $(name)
+
+# Накатить миграции
+migrate-up:
+	migrate -path db/migrations -database "$(DB_URL)" up
+
+# Откатить последнюю миграцию
+migrate-down:
+	migrate -path db/migrations -database "$(DB_URL)" down

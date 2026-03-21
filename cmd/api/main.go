@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
 	"os"
@@ -9,7 +10,9 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/handler"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/memory"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
+	"github.com/golang-migrate/migrate/v4"
 
 	_ "github.com/go-park-mail-ru/2026_1_NaNcats/docs"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -25,6 +28,31 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
+
+	// Получаем URL из переменной окружения (которая прописана в docker-compose)
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		dbURL = "postgres://user:password@localhost:5432/delivery_db?sslmode=disable" // дефолт для локалки без докера
+	}
+
+	// Открываем соединение
+	db, err := sql.Open("pgx", dbURL)
+	if err != nil {
+		log.Fatalf("Unable to connect to database: %v\n", err)
+	}
+	defer db.Close()
+
+	// Проверяем соединение
+	if err := db.Ping(); err != nil {
+		log.Fatalf("Could not ping the database: %v\n", err)
+	}
+
+	// Запускаем миграции
+	err = postgres.RunMigrations(dbURL)
+	if err != nil && err != migrate.ErrNoChange {
+		log.Fatalf("failed to run migrations: %v", err)
+	}
+	log.Println("Migrations applied successfully")
 
 	userRepo := memory.NewUserRepo()
 	sessionRepo := memory.NewSessionRepo()
@@ -74,7 +102,7 @@ func main() {
 		WriteTimeout: 10 * time.Second,
 	}
 
-	err := server.ListenAndServe()
+	err = server.ListenAndServe()
 	if err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
