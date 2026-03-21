@@ -102,7 +102,7 @@ func TestAuthUseCase_Register(t *testing.T) {
 				Email:        "😂😂😂😂😂😂😂@mail.ru",
 				PasswordHash: "password123",
 			},
-			prepare:   nil,
+			mockInit:  nil,
 			expectErr: domain.ErrInvalidEmail,
 		},
 	}
