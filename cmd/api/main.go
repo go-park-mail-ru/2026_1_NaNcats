@@ -35,14 +35,14 @@ func main() {
 		dbURL = "postgres://user:password@localhost:5432/delivery_db?sslmode=disable" // дефолт для локалки без докера
 	}
 
-	// Открываем соединение
+	// Открываем соединение с БД
 	db, err := sql.Open("pgx", dbURL)
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v\n", err)
 	}
 	defer db.Close()
 
-	// Проверяем соединение
+	// Проверяем соединение с БД
 	if err := db.Ping(); err != nil {
 		log.Fatalf("Could not ping the database: %v\n", err)
 	}
@@ -54,7 +54,7 @@ func main() {
 	}
 	log.Println("Migrations applied successfully")
 
-	userRepo := memory.NewUserRepo()
+	userRepo := postgres.NewUserRepo(db)
 	sessionRepo := memory.NewSessionRepo()
 	restaurantBrandRepo := memory.NewRestaurantBrandRepo()
 
