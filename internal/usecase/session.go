@@ -13,9 +13,9 @@ import (
 //go:generate mockgen -destination=mocks/session_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase SessionUseCase
 type SessionUseCase interface {
 	// бизнес-логика создания сессии для пользователя, вовзращает sessionID
-	Create(ctx context.Context, userID uuid.UUID) (domain.Session, error)
+	Create(ctx context.Context, userID int) (domain.Session, error)
 	// проверяет, существует и не истек ли sessionID, возвращает айди юзера при успехе
-	Check(ctx context.Context, sessionID uuid.UUID) (uuid.UUID, error)
+	Check(ctx context.Context, sessionID uuid.UUID) (int, error)
 	// бизнес-логика для удаления сессии, просто вызывает удаление из repository.session
 	Destroy(ctx context.Context, sessionId uuid.UUID) error
 }
@@ -33,7 +33,7 @@ func NewSessionUseCase(sr repository.SessionRepository, ttl time.Duration) Sessi
 	}
 }
 
-func (u *sessionUseCase) Create(ctx context.Context, userID uuid.UUID) (domain.Session, error) {
+func (u *sessionUseCase) Create(ctx context.Context, userID int) (domain.Session, error) {
 	// бизнес-логика создания сессии
 	// возвращает sessionID созданной сессии и момент времени, когда истекает
 
@@ -60,12 +60,12 @@ func (u *sessionUseCase) Create(ctx context.Context, userID uuid.UUID) (domain.S
 }
 
 // проверяет, существует ли сессия, если да - возвращаем id пользователя сессии
-func (u *sessionUseCase) Check(ctx context.Context, sessionID uuid.UUID) (uuid.UUID, error) {
+func (u *sessionUseCase) Check(ctx context.Context, sessionID uuid.UUID) (int, error) {
 	// просим репозиторий найти сессию
 	session, err := u.sessionRepo.GetByID(ctx, sessionID)
 	if err != nil {
 		// сессия не найдена
-		return uuid.Nil, err
+		return 0, err
 	}
 
 	// проверяем срок годности сессии
@@ -74,7 +74,7 @@ func (u *sessionUseCase) Check(ctx context.Context, sessionID uuid.UUID) (uuid.U
 		// игнорируем ошибку удаления, так как для пользователя главное получить ответ, что сессия невалидна
 		_ = u.sessionRepo.Delete(ctx, sessionID)
 
-		return uuid.Nil, domain.ErrSessionExpired
+		return 0, domain.ErrSessionExpired
 	}
 
 	// возвращаем id юзера в случае успеха

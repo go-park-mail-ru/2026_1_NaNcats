@@ -21,7 +21,6 @@ func TestSessionUseCase_Create(t *testing.T) {
 	uc := NewSessionUseCase(mockRepo, ttl)
 
 	t.Run("Успешное создание сессии", func(t *testing.T) {
-		userID := uuid.New()
 		ctx := context.Background()
 
 		// Ожидаем вызов Create в репозитории.
@@ -30,10 +29,10 @@ func TestSessionUseCase_Create(t *testing.T) {
 			Create(gomock.Any(), gomock.Any()).
 			Return(nil)
 
-		sess, err := uc.Create(ctx, userID)
+		sess, err := uc.Create(ctx, 1)
 
 		assert.NoError(t, err)
-		assert.Equal(t, userID, sess.UserID)
+		assert.Equal(t, 1, sess.UserID)
 		assert.NotEqual(t, uuid.Nil, sess.ID)
 		// Проверяем, что время истечения примерно соответствует Now + TTL
 		assert.WithinDuration(t, time.Now().Add(ttl), sess.ExpiresAt, time.Second)
@@ -50,13 +49,13 @@ func TestSessionUseCase_Check(t *testing.T) {
 
 	t.Run("Успешная проверка валидной сессии", func(t *testing.T) {
 		sessID := uuid.New()
-		userID := uuid.New()
+		userID := 1
 
 		mockRepo.EXPECT().
 			GetByID(gomock.Any(), sessID).
 			Return(domain.Session{
 				ID:        sessID,
-				UserID:    userID,
+				UserID:    1,
 				ExpiresAt: time.Now().Add(time.Hour), // валидна еще час
 			}, nil)
 
@@ -84,7 +83,7 @@ func TestSessionUseCase_Check(t *testing.T) {
 		uid, err := uc.Check(ctx, sessID)
 
 		assert.ErrorIs(t, err, domain.ErrSessionExpired)
-		assert.Equal(t, uuid.Nil, uid)
+		assert.Equal(t, 0, uid)
 	})
 
 	t.Run("Ошибка: сессия не найдена в репо", func(t *testing.T) {
@@ -96,7 +95,7 @@ func TestSessionUseCase_Check(t *testing.T) {
 		uid, err := uc.Check(ctx, sessID)
 
 		assert.ErrorIs(t, err, domain.ErrSessionNotFound)
-		assert.Equal(t, uuid.Nil, uid)
+		assert.Equal(t, 0, uid)
 	})
 }
 

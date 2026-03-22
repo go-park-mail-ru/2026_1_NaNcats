@@ -2,13 +2,11 @@ package domain
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // Сущность ресторанного бренда
 type RestaurantBrand struct {
-	ID            uuid.UUID
+	ID            int
 	Name          string
 	Description   string
 	PromotionTier int

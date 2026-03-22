@@ -34,7 +34,7 @@ func TestAuthHandler_Register(t *testing.T) {
 				Password: "password123",
 			},
 			mockInit: func(m *mocks.MockAuthUseCase) {
-				mockUser := domain.User{ID: uuid.New(), Name: "Ivan", Email: "test@mail.ru"}
+				mockUser := domain.User{ID: 1, Name: "Ivan", Email: "test@mail.ru"}
 				mockSess := domain.Session{ID: uuid.New(), ExpiresAt: time.Now().Add(time.Hour)}
 				m.EXPECT().
 					Register(gomock.Any(), gomock.Any()).
@@ -92,13 +92,13 @@ func TestAuthHandler_GetMe(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		userID         any // uuid.UUID или nil
+		userID         any // int или nil
 		mockInit       mockInit
 		expectedStatus int
 	}{
 		{
 			name:   "Успешный запуск",
-			userID: uuid.New(),
+			userID: 1,
 			mockInit: func(m *mocks.MockAuthUseCase) {
 				m.EXPECT().
 					GetProfile(gomock.Any(), gomock.Any()).
@@ -114,19 +114,19 @@ func TestAuthHandler_GetMe(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
 			mockAuthUC := mocks.NewMockAuthUseCase(ctrl)
-			tt.mockInit(mockAuthUC)
+			testCase.mockInit(mockAuthUC)
 
 			authHandler := NewAuthHandler(mockAuthUC)
 
 			req := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
-			if tt.userID != nil {
-				ctx := context.WithValue(req.Context(), middleware.UserIDKey, tt.userID)
+			if testCase.userID != nil {
+				ctx := context.WithValue(req.Context(), middleware.UserIDKey, testCase.userID)
 				req = req.WithContext(ctx)
 			}
 
@@ -134,8 +134,8 @@ func TestAuthHandler_GetMe(t *testing.T) {
 
 			authHandler.GetMe(rec, req)
 
-			assert.Equal(t, tt.expectedStatus, rec.Code)
-			if tt.expectedStatus == http.StatusOK {
+			assert.Equal(t, testCase.expectedStatus, rec.Code)
+			if testCase.expectedStatus == http.StatusOK {
 				assert.Contains(t, rec.Body.String(), "Ivan")
 			}
 		})
@@ -158,7 +158,7 @@ func TestAuthHandler_Login(t *testing.T) {
 				Password: "aboba",
 			},
 			mockInit: func(m *mocks.MockAuthUseCase) {
-				mockUser := domain.User{ID: uuid.New(), Name: "Ivan", Email: "test@mail.ru"}
+				mockUser := domain.User{ID: 1, Name: "Ivan", Email: "test@mail.ru"}
 				mockSess := domain.Session{ID: uuid.New(), ExpiresAt: time.Now().Add(time.Hour)}
 
 				m.EXPECT().
@@ -293,21 +293,21 @@ func TestAuthHandler_Logout(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
 			mockAuthUC := mocks.NewMockAuthUseCase(ctrl)
-			tt.mockInit(mockAuthUC)
+			testCase.mockInit(mockAuthUC)
 
 			authHandler := NewAuthHandler(mockAuthUC)
 
 			req := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
-			if tt.hasCookie {
+			if testCase.hasCookie {
 				req.AddCookie(&http.Cookie{
 					Name:  "session_id",
-					Value: tt.cookieValue,
+					Value: testCase.cookieValue,
 				})
 			}
 
@@ -315,9 +315,9 @@ func TestAuthHandler_Logout(t *testing.T) {
 
 			authHandler.Logout(rec, req)
 
-			assert.Equal(t, tt.expectedStatus, rec.Code)
-			if tt.checkResponse != nil {
-				tt.checkResponse(t, rec)
+			assert.Equal(t, testCase.expectedStatus, rec.Code)
+			if testCase.checkResponse != nil {
+				testCase.checkResponse(t, rec)
 			}
 		})
 	}

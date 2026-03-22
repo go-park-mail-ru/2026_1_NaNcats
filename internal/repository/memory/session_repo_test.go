@@ -24,7 +24,7 @@ func TestSessionRepo_CRUD(t *testing.T) {
 			run: func(t *testing.T, repo repository.SessionRepository) {
 				// Подготовка данных
 				sessID := uuid.New()
-				userID := uuid.New()
+				userID := 1
 				session := domain.Session{
 					ID:        sessID,
 					UserID:    userID,
@@ -55,7 +55,7 @@ func TestSessionRepo_CRUD(t *testing.T) {
 				sessID := uuid.New()
 				session := domain.Session{
 					ID:        sessID,
-					UserID:    uuid.New(),
+					UserID:    5,
 					ExpiresAt: time.Now().Add(time.Hour),
 				}
 
@@ -94,7 +94,7 @@ func TestSessionRepo_Concurrency(t *testing.T) {
 		g.Go(func() error {
 			s := domain.Session{
 				ID:     uuid.New(),
-				UserID: uuid.New(),
+				UserID: i + 1,
 			}
 			return repo.Create(ctx, s)
 		})

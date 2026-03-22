@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -22,33 +21,33 @@ func NewUserRepo(db *sql.DB) repository.UserRepository {
 	}
 }
 
-func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (uuid.UUID, error) {
+func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (int, error) {
 	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
 
-	user.ID = uuid.New()
-
 	query := `
-		INSERT INTO "user" (id, name, email, phone, password_hash, user_role)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO "user" (name, email, phone, password_hash, user_role)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id
 	`
 
-	_, err := r.db.ExecContext(ctx, query,
-		user.ID,
+	var lastInsertedID int
+	err := r.db.QueryRowContext(ctx, query,
 		user.Name,
 		user.Email,
 		user.Phone,
 		user.PasswordHash,
 		"client",
-	)
+	).Scan(&lastInsertedID)
+
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" { // 23505 - проверка на уникальность
-			return uuid.Nil, domain.ErrEmailAlreadyExists
+			return 0, domain.ErrEmailAlreadyExists
 		}
-		return uuid.Nil, err
+		return 0, err
 	}
 
-	return user.ID, nil
+	return lastInsertedID, nil
 }
 
 func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.User, error) {
@@ -60,16 +59,16 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 		WHERE email = $1
 	`
 
-	var user_role string // заглушка
-
 	var user domain.User
+	var userRole string // заглушка
+
 	err := r.db.QueryRowContext(ctx, query, email).Scan(
 		&user.ID,
 		&user.Name,
 		&user.Email,
 		&user.Phone,
 		&user.PasswordHash,
-		user_role,
+		&userRole,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -81,23 +80,23 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 	return user, nil
 }
 
-func (r *userRepo) GetUserByID(ctx context.Context, id uuid.UUID) (domain.User, error) {
+func (r *userRepo) GetUserByID(ctx context.Context, id int) (domain.User, error) {
 	query := `
 		SELECT id, name, email, phone, password_hash, user_role
 		FROM "user"
 		WHERE id = $1
 	`
 
-	var user_role string // заглушка
-
 	var user domain.User
+	var userRole string // заглушка
+
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&user.ID,
 		&user.Name,
 		&user.Email,
 		&user.Phone,
 		&user.PasswordHash,
-		user_role,
+		&userRole,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

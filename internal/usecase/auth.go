@@ -21,7 +21,7 @@ type AuthUseCase interface {
 	Login(ctx context.Context, user domain.User) (domain.User, domain.Session, error)
 	Logout(ctx context.Context, sessionID uuid.UUID) error
 	Check(ctx context.Context, sessionID uuid.UUID) (domain.User, error)
-	GetProfile(ctx context.Context, userID uuid.UUID) (domain.User, error)
+	GetProfile(ctx context.Context, userID int) (domain.User, error)
 }
 
 // реализация контракта
@@ -155,7 +155,7 @@ func (u *authUseCase) Check(ctx context.Context, sessionID uuid.UUID) (domain.Us
 }
 
 // возвращает юзера по переданному userID
-func (u *authUseCase) GetProfile(ctx context.Context, userID uuid.UUID) (domain.User, error) {
+func (u *authUseCase) GetProfile(ctx context.Context, userID int) (domain.User, error) {
 	user, err := u.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
 		return domain.User{}, err

@@ -58,7 +58,7 @@ func (mr *MockAuthUseCaseMockRecorder) Check(ctx, sessionID any) *gomock.Call {
 }
 
 // GetProfile mocks base method.
-func (m *MockAuthUseCase) GetProfile(ctx context.Context, userID uuid.UUID) (domain.User, error) {
+func (m *MockAuthUseCase) GetProfile(ctx context.Context, userID int) (domain.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetProfile", ctx, userID)
 	ret0, _ := ret[0].(domain.User)

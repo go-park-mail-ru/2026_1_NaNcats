@@ -20,10 +20,10 @@ func TestAuthUseCase_Register(t *testing.T) {
 	}
 
 	// Тип для инициализации моков (mockInit)
-	type mockInit func(m mocks, input domain.User, resID uuid.UUID)
+	type mockInit func(m mocks, input domain.User, resID int)
 
 	// Заранее создаем UUID для тестов
-	mockUserID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	mockUserID := 0
 	mockSessionID := uuid.MustParse("99999999-9999-9999-9999-999999999999")
 
 	tests := []struct {
@@ -39,7 +39,7 @@ func TestAuthUseCase_Register(t *testing.T) {
 				Email:        "valid@mail.ru",
 				PasswordHash: "valid_password_123",
 			},
-			mockInit: func(m mocks, input domain.User, resID uuid.UUID) {
+			mockInit: func(m mocks, input domain.User, resID int) {
 				m.userRepo.EXPECT().
 					CreateUser(gomock.Any(), gomock.Any()).
 					Return(resID, nil)
@@ -55,7 +55,7 @@ func TestAuthUseCase_Register(t *testing.T) {
 				Email:        "m.a.i.l@mail.ru",
 				PasswordHash: "password123",
 			},
-			mockInit: func(m mocks, input domain.User, resID uuid.UUID) {
+			mockInit: func(m mocks, input domain.User, resID int) {
 				m.userRepo.EXPECT().
 					CreateUser(gomock.Any(), gomock.Any()).
 					Return(resID, nil)
@@ -71,10 +71,10 @@ func TestAuthUseCase_Register(t *testing.T) {
 				Email:        "exists@mail.ru",
 				PasswordHash: "password123",
 			},
-			mockInit: func(m mocks, input domain.User, resID uuid.UUID) {
+			mockInit: func(m mocks, input domain.User, resID int) {
 				m.userRepo.EXPECT().
 					CreateUser(gomock.Any(), gomock.Any()).
-					Return(uuid.Nil, domain.ErrEmailAlreadyExists)
+					Return(0, domain.ErrEmailAlreadyExists)
 			},
 			expectErr: domain.ErrEmailAlreadyExists,
 		},

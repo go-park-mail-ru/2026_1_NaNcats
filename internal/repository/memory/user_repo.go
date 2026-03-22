@@ -7,24 +7,25 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
-	"github.com/google/uuid"
 )
 
 // реализация контракта репозитория юзера на мапах (in-memory)
 type userRepo struct {
-	mu    sync.RWMutex              // защита от записи во время чтения из мапы
-	users map[uuid.UUID]domain.User // мапа юзеров, ключ - id
+	mu     sync.RWMutex        // защита от записи во время чтения из мапы
+	users  map[int]domain.User // мапа юзеров, ключ - id
+	nextID int
 }
 
 // функция-конструктор userRepo
 func NewUserRepo() repository.UserRepository {
 	return &userRepo{
-		users: make(map[uuid.UUID]domain.User),
+		users:  make(map[int]domain.User),
+		nextID: 1,
 	}
 }
 
 // метод создания юзера в репозитории
-func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (uuid.UUID, error) {
+func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (int, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -33,12 +34,13 @@ func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (uuid.UUID,
 	// проверяем на существование email'а
 	for _, curUser := range r.users {
 		if curUser.Email == user.Email {
-			return uuid.Nil, domain.ErrEmailAlreadyExists
+			return 0, domain.ErrEmailAlreadyExists
 		}
 	}
 
-	user.ID = uuid.New()
+	user.ID = r.nextID
 	r.users[user.ID] = user
+	r.nextID++
 
 	return user.ID, nil
 }
@@ -60,7 +62,7 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 	return domain.User{}, domain.ErrUserNotFound
 }
 
-func (r *userRepo) GetUserByID(ctx context.Context, id uuid.UUID) (domain.User, error) {
+func (r *userRepo) GetUserByID(ctx context.Context, id int) (domain.User, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 

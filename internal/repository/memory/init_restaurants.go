@@ -4,12 +4,11 @@ import (
 	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	"github.com/google/uuid"
 )
 
 // seedRestaurants генерирует стартовые данные (30 ресторанов) для in-memory базы
-func seedRestaurants() map[uuid.UUID]domain.RestaurantBrand {
-	restaurantsMap := make(map[uuid.UUID]domain.RestaurantBrand)
+func seedRestaurants() map[int]domain.RestaurantBrand {
+	restaurantsMap := make(map[int]domain.RestaurantBrand)
 
 	mockData := []domain.RestaurantBrand{
 		{
@@ -224,8 +223,8 @@ func seedRestaurants() map[uuid.UUID]domain.RestaurantBrand {
 		},
 	}
 
-	for _, rest := range mockData {
-		rest.ID = uuid.New()
+	for i, rest := range mockData {
+		rest.ID = i + 1
 		rest.CreatedAt = time.Now()
 		rest.UpdatedAt = time.Now()
 

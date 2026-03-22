@@ -14,7 +14,6 @@ import (
 	reflect "reflect"
 
 	domain "github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	uuid "github.com/google/uuid"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -43,10 +42,10 @@ func (m *MockUserRepository) EXPECT() *MockUserRepositoryMockRecorder {
 }
 
 // CreateUser mocks base method.
-func (m *MockUserRepository) CreateUser(ctx context.Context, user domain.User) (uuid.UUID, error) {
+func (m *MockUserRepository) CreateUser(ctx context.Context, user domain.User) (int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateUser", ctx, user)
-	ret0, _ := ret[0].(uuid.UUID)
+	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -73,7 +72,7 @@ func (mr *MockUserRepositoryMockRecorder) GetUserByEmail(ctx, email any) *gomock
 }
 
 // GetUserByID mocks base method.
-func (m *MockUserRepository) GetUserByID(ctx context.Context, id uuid.UUID) (domain.User, error) {
+func (m *MockUserRepository) GetUserByID(ctx context.Context, id int) (domain.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserByID", ctx, id)
 	ret0, _ := ret[0].(domain.User)

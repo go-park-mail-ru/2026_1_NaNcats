@@ -9,6 +9,6 @@ import (
 // сущность сессии
 type Session struct {
 	ID        uuid.UUID
-	UserID    uuid.UUID
+	UserID    int
 	ExpiresAt time.Time
 }

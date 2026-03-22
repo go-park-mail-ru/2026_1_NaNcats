@@ -7,13 +7,12 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
-	"github.com/google/uuid"
 )
 
 // структура брендов ресторанов на основе мап
 type restaurantBrandRepo struct {
-	mu               sync.RWMutex                         // защита от записи во время чтения из мапы
-	restaurantBrands map[uuid.UUID]domain.RestaurantBrand // мапа ресторанов, ключ - sessionID
+	mu               sync.RWMutex                   // защита от записи во время чтения из мапы
+	restaurantBrands map[int]domain.RestaurantBrand // мапа ресторанов, ключ - sessionID
 }
 
 // функция-конструктор репозитория сессий

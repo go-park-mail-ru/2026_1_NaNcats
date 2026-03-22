@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
 )
@@ -28,7 +27,7 @@ func TestCreateUser(t *testing.T) {
 		{
 			name: "Ошибка: создание существующего пользователя",
 			prepare: func(r *userRepo) {
-				id := uuid.New()
+				id := 2
 				r.users[id] = domain.User{ID: id, Email: "exists@mail.ru", Name: "Ivan"}
 			},
 			input:       domain.User{Email: "exists@mail.ru", Name: "Ivan"},
@@ -37,7 +36,7 @@ func TestCreateUser(t *testing.T) {
 		{
 			name: "Ошибка: регистронезависимость email",
 			prepare: func(r *userRepo) {
-				id := uuid.New()
+				id := 1
 				r.users[id] = domain.User{ID: id, Email: "exists@mail.ru"}
 			},
 			input:       domain.User{Email: "EXISTS@mail.ru"},
@@ -58,10 +57,10 @@ func TestCreateUser(t *testing.T) {
 
 			if tc.expectedErr != nil {
 				require.ErrorIs(t, err, tc.expectedErr)
-				require.Equal(t, uuid.Nil, id) // При ошибке ID должен быть нулевым
+				require.Equal(t, 0, id) // При ошибке ID должен быть нулевым
 			} else {
 				require.NoError(t, err)
-				require.NotEqual(t, uuid.Nil, id) // Проверяем, что UUID сгенерирован
+				require.NotEqual(t, 0, id) // Проверяем, что id сгенерирован
 
 				// Проверяем, что пользователь появился в мапе по этому ID
 				repo.mu.RLock()

@@ -27,7 +27,7 @@ type RegisterRequest struct {
 // DTO отправки сведений о пользователе при регистрации
 type RegisterResponse struct {
 	// Уникальный ID пользователя в системе
-	ID uuid.UUID `json:"id" example:"1"`
+	ID int `json:"id" example:"1"`
 	// Имя для отображения в интерфейсе
 	Name string `json:"name" example:"Иван"`
 	// Email пользователя
@@ -47,7 +47,7 @@ type LoginRequest struct {
 // LoginResponse - DTO для ответа при успешном входе
 type LoginResponse struct {
 	// Уникальный ID пользователя в системе
-	ID uuid.UUID `json:"id" example:"1"`
+	ID int `json:"id" example:"1"`
 	// Имя для отображения в интерфейсе
 	Name string `json:"name" example:"Иван"`
 	// URL аватарки пользователя
@@ -235,7 +235,7 @@ func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 
 	// берем userID из контекста, который нам пришел из мидлвара AuthMiddleware
 	// Value возвращает any. Используем утверждение типа, чтобы Go знал что это uuid
-	userID, ok := ctx.Value(middleware.UserIDKey).(uuid.UUID)
+	userID, ok := ctx.Value(middleware.UserIDKey).(int)
 	// если там не int или nil
 	if !ok {
 		log.Printf("[ERROR] GetMe called without AuthMiddleware")

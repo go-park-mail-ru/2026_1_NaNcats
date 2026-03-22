@@ -81,7 +81,7 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 		}
 
 		restResp := RestaurantBrandResponse{
-			ID:            currRestaurantBrand.ID.String(),
+			ID:            strconv.Itoa(currRestaurantBrand.ID),
 			Name:          currRestaurantBrand.Name,
 			Description:   currRestaurantBrand.Description,
 			PromotionTier: currRestaurantBrand.PromotionTier,

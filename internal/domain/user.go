@@ -2,13 +2,11 @@ package domain
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // сущность юзера
 type User struct {
-	ID           uuid.UUID
+	ID           int
 	Phone        string
 	Name         string
 	Email        string

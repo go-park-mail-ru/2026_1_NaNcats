@@ -14,7 +14,7 @@ type SessionRepository interface {
 	// метод создания сесии в репозитории
 	Create(ctx context.Context, session domain.Session) error
 	// метод получения сессии из репозитория по sessionID
-	GetByID(ctx context.Context, sessionId uuid.UUID) (domain.Session, error)
+	GetByID(ctx context.Context, sessionID uuid.UUID) (domain.Session, error)
 	// метод удаления сессии из репозитория по sessionID
-	Delete(ctx context.Context, sessionId uuid.UUID) error
+	Delete(ctx context.Context, sessionID uuid.UUID) error
 }

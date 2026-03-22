@@ -57,30 +57,30 @@ func (mr *MockSessionRepositoryMockRecorder) Create(ctx, session any) *gomock.Ca
 }
 
 // Delete mocks base method.
-func (m *MockSessionRepository) Delete(ctx context.Context, sessionId uuid.UUID) error {
+func (m *MockSessionRepository) Delete(ctx context.Context, sessionID uuid.UUID) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, sessionId)
+	ret := m.ctrl.Call(m, "Delete", ctx, sessionID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockSessionRepositoryMockRecorder) Delete(ctx, sessionId any) *gomock.Call {
+func (mr *MockSessionRepositoryMockRecorder) Delete(ctx, sessionID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockSessionRepository)(nil).Delete), ctx, sessionId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockSessionRepository)(nil).Delete), ctx, sessionID)
 }
 
 // GetByID mocks base method.
-func (m *MockSessionRepository) GetByID(ctx context.Context, sessionId uuid.UUID) (domain.Session, error) {
+func (m *MockSessionRepository) GetByID(ctx context.Context, sessionID uuid.UUID) (domain.Session, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByID", ctx, sessionId)
+	ret := m.ctrl.Call(m, "GetByID", ctx, sessionID)
 	ret0, _ := ret[0].(domain.Session)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetByID indicates an expected call of GetByID.
-func (mr *MockSessionRepositoryMockRecorder) GetByID(ctx, sessionId any) *gomock.Call {
+func (mr *MockSessionRepositoryMockRecorder) GetByID(ctx, sessionID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockSessionRepository)(nil).GetByID), ctx, sessionId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockSessionRepository)(nil).GetByID), ctx, sessionID)
 }

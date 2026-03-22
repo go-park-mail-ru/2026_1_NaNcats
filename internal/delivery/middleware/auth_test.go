@@ -19,8 +19,9 @@ func TestAuthMiddleware_RequireAuth(t *testing.T) {
 	// Если он вызвался — значит мидлварь пропустила запрос дальше
 	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Проверяем, что в контексте действительно лежит правильный UserID
-		uid := r.Context().Value(UserIDKey)
-		assert.NotNil(t, uid)
+		id := r.Context().Value(UserIDKey)
+		assert.IsType(t, 0, id)
+		assert.NotEqual(t, 0, id)
 		w.WriteHeader(http.StatusOK)
 	})
 
@@ -40,7 +41,7 @@ func TestAuthMiddleware_RequireAuth(t *testing.T) {
 				// Ожидаем проверку сессии
 				m.EXPECT().
 					Check(gomock.Any(), gomock.Any()).
-					Return(uuid.New(), nil)
+					Return(1, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -66,7 +67,7 @@ func TestAuthMiddleware_RequireAuth(t *testing.T) {
 				// Программируем UseCase вернуть ошибку
 				m.EXPECT().
 					Check(gomock.Any(), gomock.Any()).
-					Return(uuid.Nil, domain.ErrSessionExpired)
+					Return(0, domain.ErrSessionExpired)
 			},
 			expectedStatus: http.StatusUnauthorized,
 		},
