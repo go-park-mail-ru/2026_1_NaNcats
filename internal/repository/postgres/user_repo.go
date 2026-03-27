@@ -2,12 +2,12 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"strings"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -72,7 +72,7 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 		&userRole,
 	)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.User{}, domain.ErrUserNotFound
 		}
 		return domain.User{}, err
@@ -100,7 +100,7 @@ func (r *userRepo) GetUserByID(ctx context.Context, id int) (domain.User, error)
 		&userRole,
 	)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.User{}, domain.ErrUserNotFound
 		}
 		return domain.User{}, err
