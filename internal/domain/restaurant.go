@@ -6,12 +6,12 @@ import (
 
 // Сущность ресторанного бренда
 type RestaurantBrand struct {
-	ID            int
-	Name          string
-	Description   string
-	PromotionTier int
-	LogoURL       string
-	BannerURL     string
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	ID             int
+	OwnerProfileID int
+	Name           string
+	Description    string
+	PromotionTier  int
+	LogoURL        string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }

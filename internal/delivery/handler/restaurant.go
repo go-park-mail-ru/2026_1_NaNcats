@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 )
@@ -23,11 +24,13 @@ type RestaurantBrandsResponse struct {
 
 type restaurantBrandHandler struct {
 	restaurantBrandUC usecase.RestaurantBrandUseCase
+	logger            domain.Logger
 }
 
-func NewRestaurantBrandHandler(rbuc usecase.RestaurantBrandUseCase) *restaurantBrandHandler {
+func NewRestaurantBrandHandler(rbuc usecase.RestaurantBrandUseCase, logger domain.Logger) *restaurantBrandHandler {
 	return &restaurantBrandHandler{
 		restaurantBrandUC: rbuc,
+		logger:            logger,
 	}
 }
 
@@ -63,7 +66,15 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 	}
 
 	ctx := r.Context()
-	restaurantBrandsList := h.restaurantBrandUC.GetRestaurantBrandsList(ctx, limit, offset)
+	restaurantBrandsList, err := h.restaurantBrandUC.GetRestaurantBrandsList(ctx, limit, offset)
+	if err != nil {
+		h.logger.Error("Failed to get restaurant brand list", err, map[string]any{
+			"limit":  limit,
+			"offset": offset,
+		})
+		response.Error(w, http.StatusInternalServerError, "Get restaurant brand list error")
+		return
+	}
 
 	dtoList := make([]RestaurantBrandResponse, 0, len(restaurantBrandsList))
 
@@ -74,19 +85,12 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 			currRestaurantBrand.LogoURL = "/api/images/" + currRestaurantBrand.LogoURL
 		}
 
-		if currRestaurantBrand.BannerURL == "" {
-			currRestaurantBrand.BannerURL = "/api/images/default/banner.png"
-		} else {
-			currRestaurantBrand.BannerURL = "/api/images/" + currRestaurantBrand.BannerURL
-		}
-
 		restResp := RestaurantBrandResponse{
 			ID:            strconv.Itoa(currRestaurantBrand.ID),
 			Name:          currRestaurantBrand.Name,
 			Description:   currRestaurantBrand.Description,
 			PromotionTier: currRestaurantBrand.PromotionTier,
 			LogoURL:       currRestaurantBrand.LogoURL,
-			BannerURL:     currRestaurantBrand.BannerURL,
 		}
 
 		dtoList = append(dtoList, restResp)

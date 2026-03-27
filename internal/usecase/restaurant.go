@@ -8,7 +8,7 @@ import (
 )
 
 type RestaurantBrandUseCase interface {
-	GetRestaurantBrandsList(ctx context.Context, limit, offset int) []domain.RestaurantBrand
+	GetRestaurantBrandsList(ctx context.Context, limit, offset int) ([]domain.RestaurantBrand, error)
 }
 
 type restaurantBrandUseCase struct {
@@ -21,6 +21,10 @@ func NewRestaurantBrandUseCase(rbr repository.RestaurantBrandRepository) Restaur
 	}
 }
 
-func (rb *restaurantBrandUseCase) GetRestaurantBrandsList(ctx context.Context, limit, offset int) []domain.RestaurantBrand {
-	return rb.restaurantBrandRepo.GetRestaurantBrandsList(ctx, limit, offset)
+func (rb *restaurantBrandUseCase) GetRestaurantBrandsList(ctx context.Context, limit, offset int) ([]domain.RestaurantBrand, error) {
+	restaurantBrands, err := rb.restaurantBrandRepo.GetRestaurantBrandsList(ctx, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	return restaurantBrands, nil
 }

@@ -9,15 +9,16 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type userRepo struct {
-	db *sql.DB
+	pool *pgxpool.Pool
 }
 
-func NewUserRepo(db *sql.DB) repository.UserRepository {
+func NewUserRepo(pool *pgxpool.Pool) repository.UserRepository {
 	return &userRepo{
-		db: db,
+		pool: pool,
 	}
 }
 
@@ -31,7 +32,7 @@ func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (int, error
 	`
 
 	var lastInsertedID int
-	err := r.db.QueryRowContext(ctx, query,
+	err := r.pool.QueryRow(ctx, query,
 		user.Name,
 		user.Email,
 		user.Phone,
@@ -62,7 +63,7 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 	var user domain.User
 	var userRole string // заглушка
 
-	err := r.db.QueryRowContext(ctx, query, email).Scan(
+	err := r.pool.QueryRow(ctx, query, email).Scan(
 		&user.ID,
 		&user.Name,
 		&user.Email,
@@ -90,7 +91,7 @@ func (r *userRepo) GetUserByID(ctx context.Context, id int) (domain.User, error)
 	var user domain.User
 	var userRole string // заглушка
 
-	err := r.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.pool.QueryRow(ctx, query, id).Scan(
 		&user.ID,
 		&user.Name,
 		&user.Email,

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"database/sql"
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -12,7 +12,9 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/memory"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	_ "github.com/go-park-mail-ru/2026_1_NaNcats/docs"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -29,6 +31,12 @@ func main() {
 		port = "8080"
 	}
 
+	appLogger, err := logger.NewZapLogger()
+	if err != nil {
+		log.Fatalf("Connot start without logger: %v", err)
+	}
+
+	ctx := context.Background()
 	// Получаем URL из переменной окружения (которая прописана в docker-compose)
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
@@ -36,27 +44,27 @@ func main() {
 	}
 
 	// Открываем соединение с БД
-	db, err := sql.Open("pgx", dbURL)
+	pool, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v\n", err)
 	}
-	defer db.Close()
+	defer pool.Close()
 
 	// Проверяем соединение с БД
-	if err := db.Ping(); err != nil {
+	if err := pool.Ping(ctx); err != nil {
 		log.Fatalf("Could not ping the database: %v\n", err)
 	}
 
 	// Запускаем миграции
 	err = postgres.RunMigrations(dbURL)
 	if err != nil && err != migrate.ErrNoChange {
-		log.Fatalf("failed to run migrations: %v", err)
+		log.Fatalf("Failed to run migrations: %v", err)
 	}
 	log.Println("Migrations applied successfully")
 
-	userRepo := postgres.NewUserRepo(db)
+	userRepo := postgres.NewUserRepo(pool)
 	sessionRepo := memory.NewSessionRepo()
-	restaurantBrandRepo := memory.NewRestaurantBrandRepo()
+	restaurantBrandRepo := postgres.NewRestaurantBrandRepo(pool)
 
 	// ttl сессии - 24 часа
 	sessionTTL := 24 * time.Hour
@@ -66,7 +74,7 @@ func main() {
 	restaurantBrandUC := usecase.NewRestaurantBrandUseCase(restaurantBrandRepo)
 
 	authHandler := handler.NewAuthHandler(authUC)
-	restaurantBrandHandler := handler.NewRestaurantBrandHandler(restaurantBrandUC)
+	restaurantBrandHandler := handler.NewRestaurantBrandHandler(restaurantBrandUC, appLogger)
 
 	fileServer := http.FileServer(http.Dir("./uploads"))
 

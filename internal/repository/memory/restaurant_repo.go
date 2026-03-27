@@ -22,7 +22,7 @@ func NewRestaurantBrandRepo() repository.RestaurantBrandRepository {
 	}
 }
 
-func (r *restaurantBrandRepo) GetRestaurantBrandsList(ctx context.Context, limit, offset int) []domain.RestaurantBrand {
+func (r *restaurantBrandRepo) GetRestaurantBrandsList(ctx context.Context, limit, offset int) ([]domain.RestaurantBrand, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -47,7 +47,7 @@ func (r *restaurantBrandRepo) GetRestaurantBrandsList(ctx context.Context, limit
 	total := len(restaurantBrandsSlice)
 
 	if offset >= total {
-		return []domain.RestaurantBrand{}
+		return []domain.RestaurantBrand{}, nil
 	}
 
 	end := offset + limit
@@ -55,5 +55,5 @@ func (r *restaurantBrandRepo) GetRestaurantBrandsList(ctx context.Context, limit
 		end = total
 	}
 
-	return restaurantBrandsSlice[offset:end]
+	return restaurantBrandsSlice[offset:end], nil
 }
