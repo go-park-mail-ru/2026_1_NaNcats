@@ -14,7 +14,7 @@ import (
 //go:generate mockgen -destination=mocks/session_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase SessionUseCase
 type SessionUseCase interface {
 	// бизнес-логика создания сессии для пользователя, вовзращает sessionID
-	Create(ctx context.Context, user domain.User) (domain.Session, error)
+	Create(ctx context.Context, userID int, userAgent string) (domain.Session, error)
 	// проверяет, существует и не истек ли sessionID, возвращает айди юзера при успехе
 	Check(ctx context.Context, id uuid.UUID) (domain.Session, error)
 	// бизнес-логика для удаления сессии, просто вызывает удаление из repository.session
@@ -34,17 +34,20 @@ func NewSessionUseCase(sr repository.SessionRepository, ttl time.Duration) Sessi
 	}
 }
 
-func (u *sessionUseCase) Create(ctx context.Context, user domain.User) (domain.Session, error) {
+func (u *sessionUseCase) Create(ctx context.Context, userID int, userAgent string) (domain.Session, error) {
 	// бизнес-логика создания сессии
 	// возвращает sessionID созданной сессии и момент времени, когда истекает
 
 	// генерация уникальной криптостойкой строки
 	sessionID := uuid.New()
+	expiresAt := time.Now().Add(u.sessionTTL)
 
 	// создаем новый объект сессии
 	session := domain.Session{
-		ID:     sessionID,
-		UserID: user.ID,
+		ID:        sessionID,
+		UserID:    userID,
+		UserAgent: userAgent,
+		ExpiresAt: expiresAt,
 	}
 
 	// вызов создания сессии в репо

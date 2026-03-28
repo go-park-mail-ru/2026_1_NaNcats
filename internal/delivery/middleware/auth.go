@@ -47,14 +47,20 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 
 		ctx := r.Context()
 
-		userID, err := m.sessionUC.Check(ctx, sessionID)
+		session, err := m.sessionUC.Check(ctx, sessionID)
 		if err != nil {
 			response.Error(w, http.StatusUnauthorized, "Invalid or expired session")
 			return
 		}
 
+		currentUserAgent := r.UserAgent()
+		if session.UserAgent != currentUserAgent {
+			m.sessionUC.Destroy(r.Context(), sessionID)
+			return
+		}
+
 		// добавляем к контексту ctx ключ UserIDKey со значение userID
-		ctxWithUser := context.WithValue(ctx, UserIDKey, userID)
+		ctxWithUser := context.WithValue(ctx, UserIDKey, session.UserID)
 
 		// отдаем обработать запрос дальше
 		next.ServeHTTP(w, r.WithContext(ctxWithUser))

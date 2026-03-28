@@ -17,8 +17,8 @@ import (
 //
 //go:generate mockgen -destination=mocks/auth_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase AuthUseCase
 type AuthUseCase interface {
-	Register(ctx context.Context, user domain.User) (domain.User, domain.Session, error)
-	Login(ctx context.Context, user domain.User) (domain.User, domain.Session, error)
+	Register(ctx context.Context, user domain.User, userAgent string) (domain.User, domain.Session, error)
+	Login(ctx context.Context, user domain.User, userAgent string) (domain.User, domain.Session, error)
 	Logout(ctx context.Context, sessionID uuid.UUID) error
 	Check(ctx context.Context, sessionID uuid.UUID) (domain.User, error)
 	GetProfile(ctx context.Context, userID int) (domain.User, error)
@@ -70,7 +70,7 @@ func isValidEmail(email string) bool {
 }
 
 // бизнес-логика регистрации
-func (u *authUseCase) Register(ctx context.Context, user domain.User) (domain.User, domain.Session, error) {
+func (u *authUseCase) Register(ctx context.Context, user domain.User, userAgent string) (domain.User, domain.Session, error) {
 	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
 
 	if !isValidEmail(user.Email) {
@@ -101,7 +101,7 @@ func (u *authUseCase) Register(ctx context.Context, user domain.User) (domain.Us
 	user.ID = id
 
 	// вызов бизнес-логики по созданию сессии
-	createdSession, err := u.sessionUC.Create(ctx, user.ID)
+	createdSession, err := u.sessionUC.Create(ctx, user.ID, userAgent)
 	if err != nil {
 		return domain.User{}, domain.Session{}, err
 	}
@@ -122,7 +122,7 @@ func (u *authUseCase) Login(ctx context.Context, user domain.User, userAgent str
 		return domain.User{}, domain.Session{}, domain.ErrInvalidCredentials
 	}
 
-	createdSession, err := u.sessionUC.Create(ctx, user)
+	createdSession, err := u.sessionUC.Create(ctx, currUser.ID, userAgent)
 	if err != nil {
 		return domain.User{}, domain.Session{}, fmt.Errorf("failed to create session: %w", err)
 	}
@@ -141,12 +141,12 @@ func (u *authUseCase) Logout(ctx context.Context, sessionID uuid.UUID) error {
 
 // возвращает пользователя сессии, проверяя, существует ли сессия и пользователь сессии
 func (u *authUseCase) Check(ctx context.Context, sessionID uuid.UUID) (domain.User, error) {
-	userID, err := u.sessionUC.Check(ctx, sessionID)
+	session, err := u.sessionUC.Check(ctx, sessionID)
 	if err != nil {
 		return domain.User{}, err
 	}
 
-	user, err := u.userRepo.GetUserByID(ctx, userID)
+	user, err := u.userRepo.GetUserByID(ctx, session.UserID)
 	if err != nil {
 		return domain.User{}, err
 	}

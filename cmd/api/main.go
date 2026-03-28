@@ -28,8 +28,6 @@ import (
 // @host		localhost:8080
 // @BasePath	/api
 func main() {
-	redisAddr := flag.String("addr", "redis://user:@localhost:6379/0", "redis addr")
-
 	port := os.Getenv("PORT") // выделенный под сервер порт из окружения
 	if port == "" {
 		port = "8080"
@@ -42,11 +40,16 @@ func main() {
 
 	ctx := context.Background()
 
-	redisConn, err := redis.DialURL(*redisAddr)
-	if err != nil {
-		appLogger.Fatal("Redis startup error", err)
+	redisAddr := flag.String("addr", "redis://user:@localhost:6379/0", "redis addr")
+
+	redisPool := &redis.Pool{
+		MaxIdle:     10,
+		IdleTimeout: 60 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			return redis.DialURL(*redisAddr)
+		},
 	}
-	defer redisConn.Close()
+	defer redisPool.Close()
 
 	// Получаем URL из переменной окружения (которая прописана в docker-compose)
 	dbURL := os.Getenv("DATABASE_URL")
@@ -74,7 +77,7 @@ func main() {
 	log.Println("Migrations applied successfully")
 
 	userRepo := postgres.NewUserRepo(pool)
-	sessionRepo := redisrepo.NewSessionRepo(redisConn)
+	sessionRepo := redisrepo.NewSessionRepo(redisPool)
 	restaurantBrandRepo := postgres.NewRestaurantBrandRepo(pool)
 
 	// ttl сессии - 24 часа

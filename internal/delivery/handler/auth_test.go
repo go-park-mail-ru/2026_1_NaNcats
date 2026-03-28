@@ -37,7 +37,7 @@ func TestAuthHandler_Register(t *testing.T) {
 				mockUser := domain.User{ID: 1, Name: "Ivan", Email: "test@mail.ru"}
 				mockSess := domain.Session{ID: uuid.New(), ExpiresAt: time.Now().Add(time.Hour)}
 				m.EXPECT().
-					Register(gomock.Any(), gomock.Any()).
+					Register(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(mockUser, mockSess, nil)
 			},
 			expectedStatus: http.StatusCreated,
@@ -162,7 +162,7 @@ func TestAuthHandler_Login(t *testing.T) {
 				mockSess := domain.Session{ID: uuid.New(), ExpiresAt: time.Now().Add(time.Hour)}
 
 				m.EXPECT().
-					Login(gomock.Any(), gomock.Any()).
+					Login(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(mockUser, mockSess, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -182,7 +182,7 @@ func TestAuthHandler_Login(t *testing.T) {
 			mockInit: func(m *mocks.MockAuthUseCase) {
 				// Программируем UseCase вернуть ошибку
 				m.EXPECT().
-					Login(gomock.Any(), gomock.Any()).
+					Login(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(domain.User{}, domain.Session{}, domain.ErrInvalidCredentials)
 			},
 			expectedStatus: http.StatusUnauthorized,

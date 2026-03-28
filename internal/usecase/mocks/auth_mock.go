@@ -73,9 +73,9 @@ func (mr *MockAuthUseCaseMockRecorder) GetProfile(ctx, userID any) *gomock.Call 
 }
 
 // Login mocks base method.
-func (m *MockAuthUseCase) Login(ctx context.Context, user domain.User) (domain.User, domain.Session, error) {
+func (m *MockAuthUseCase) Login(ctx context.Context, user domain.User, userAgent string) (domain.User, domain.Session, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Login", ctx, user)
+	ret := m.ctrl.Call(m, "Login", ctx, user, userAgent)
 	ret0, _ := ret[0].(domain.User)
 	ret1, _ := ret[1].(domain.Session)
 	ret2, _ := ret[2].(error)
@@ -83,9 +83,9 @@ func (m *MockAuthUseCase) Login(ctx context.Context, user domain.User) (domain.U
 }
 
 // Login indicates an expected call of Login.
-func (mr *MockAuthUseCaseMockRecorder) Login(ctx, user any) *gomock.Call {
+func (mr *MockAuthUseCaseMockRecorder) Login(ctx, user, userAgent any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*MockAuthUseCase)(nil).Login), ctx, user)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*MockAuthUseCase)(nil).Login), ctx, user, userAgent)
 }
 
 // Logout mocks base method.
@@ -103,9 +103,9 @@ func (mr *MockAuthUseCaseMockRecorder) Logout(ctx, sessionID any) *gomock.Call {
 }
 
 // Register mocks base method.
-func (m *MockAuthUseCase) Register(ctx context.Context, user domain.User) (domain.User, domain.Session, error) {
+func (m *MockAuthUseCase) Register(ctx context.Context, user domain.User, userAgent string) (domain.User, domain.Session, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Register", ctx, user)
+	ret := m.ctrl.Call(m, "Register", ctx, user, userAgent)
 	ret0, _ := ret[0].(domain.User)
 	ret1, _ := ret[1].(domain.Session)
 	ret2, _ := ret[2].(error)
@@ -113,7 +113,7 @@ func (m *MockAuthUseCase) Register(ctx context.Context, user domain.User) (domai
 }
 
 // Register indicates an expected call of Register.
-func (mr *MockAuthUseCaseMockRecorder) Register(ctx, user any) *gomock.Call {
+func (mr *MockAuthUseCaseMockRecorder) Register(ctx, user, userAgent any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockAuthUseCase)(nil).Register), ctx, user)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockAuthUseCase)(nil).Register), ctx, user, userAgent)
 }

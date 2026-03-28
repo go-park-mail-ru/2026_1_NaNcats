@@ -96,11 +96,13 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 		PasswordHash: curRequest.Password,
 	}
 
+	userAgent := r.UserAgent()
+
 	// контекст нынешнего запроса, позволяет досрочно завершить бизнес-логику
 	// если пользователь отключится/отменит загрузку запроса
 	ctx := r.Context()
 
-	createdUser, createdSession, err := h.authUC.Register(ctx, userToCreate)
+	createdUser, createdSession, err := h.authUC.Register(ctx, userToCreate, userAgent)
 	if err != nil {
 		switch {
 		// Клиентские ошибки (400 Bad Request)
@@ -159,9 +161,11 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 		PasswordHash: curRequest.Password,
 	}
 
+	userAgent := r.UserAgent()
+
 	ctx := r.Context()
 
-	loggedUser, createdSession, err := h.authUC.Login(ctx, userToLogin)
+	loggedUser, createdSession, err := h.authUC.Login(ctx, userToLogin, userAgent)
 	if err != nil {
 		switch {
 		// Ошибка авторизации (401)
