@@ -109,7 +109,7 @@ func (u *authUseCase) Register(ctx context.Context, user domain.User) (domain.Us
 	return user, createdSession, nil
 }
 
-func (u *authUseCase) Login(ctx context.Context, user domain.User) (domain.User, domain.Session, error) {
+func (u *authUseCase) Login(ctx context.Context, user domain.User, userAgent string) (domain.User, domain.Session, error) {
 	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
 
 	currUser, err := u.userRepo.GetUserByEmail(ctx, user.Email)
@@ -122,7 +122,7 @@ func (u *authUseCase) Login(ctx context.Context, user domain.User) (domain.User,
 		return domain.User{}, domain.Session{}, domain.ErrInvalidCredentials
 	}
 
-	createdSession, err := u.sessionUC.Create(ctx, currUser.ID)
+	createdSession, err := u.sessionUC.Create(ctx, user)
 	if err != nil {
 		return domain.User{}, domain.Session{}, fmt.Errorf("failed to create session: %w", err)
 	}

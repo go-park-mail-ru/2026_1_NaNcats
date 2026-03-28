@@ -10,5 +10,7 @@ import (
 type Session struct {
 	ID        uuid.UUID
 	UserID    int
+	UserAgent string
+	Role      string
 	ExpiresAt time.Time
 }

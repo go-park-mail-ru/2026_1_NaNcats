@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -9,11 +10,12 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/handler"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/memory"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/redisrepo"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/gomodule/redigo/redis"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	_ "github.com/go-park-mail-ru/2026_1_NaNcats/docs"
@@ -26,6 +28,8 @@ import (
 // @host		localhost:8080
 // @BasePath	/api
 func main() {
+	redisAddr := flag.String("addr", "redis://user:@localhost:6379/0", "redis addr")
+
 	port := os.Getenv("PORT") // выделенный под сервер порт из окружения
 	if port == "" {
 		port = "8080"
@@ -37,6 +41,13 @@ func main() {
 	}
 
 	ctx := context.Background()
+
+	redisConn, err := redis.DialURL(*redisAddr)
+	if err != nil {
+		appLogger.Fatal("Redis startup error", err)
+	}
+	defer redisConn.Close()
+
 	// Получаем URL из переменной окружения (которая прописана в docker-compose)
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
@@ -63,7 +74,7 @@ func main() {
 	log.Println("Migrations applied successfully")
 
 	userRepo := postgres.NewUserRepo(pool)
-	sessionRepo := memory.NewSessionRepo()
+	sessionRepo := redisrepo.NewSessionRepo(redisConn)
 	restaurantBrandRepo := postgres.NewRestaurantBrandRepo(pool)
 
 	// ttl сессии - 24 часа
