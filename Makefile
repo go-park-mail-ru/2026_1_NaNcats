@@ -33,7 +33,7 @@ test:
 
 	@echo "\nОчистка покрытия от моков...\n"
 # Удаляем все строчки, где есть слово "mock", из файла покрытия
-	grep -Ev "mock|init_restaurants.go" $(COVERAGE_FILE) > coverage_clean.out
+	grep -Ev "mock" $(COVERAGE_FILE) > coverage_clean.out
 	mv coverage_clean.out $(COVERAGE_FILE)
 
 	@echo "\nИтоговое покрытие кода:\n"
