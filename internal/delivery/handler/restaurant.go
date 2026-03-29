@@ -66,9 +66,10 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 	}
 
 	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
 	restaurantBrandsList, err := h.restaurantBrandUC.GetRestaurantBrandsList(ctx, limit, offset)
 	if err != nil {
-		h.logger.Error("Failed to get restaurant brand list", err, map[string]any{
+		l.Error("Failed to get restaurant brand list", err, map[string]any{
 			"limit":  limit,
 			"offset": offset,
 		})

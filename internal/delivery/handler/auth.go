@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"time"
 
@@ -57,12 +56,14 @@ type LoginResponse struct {
 // структура хендлера авторизации
 type authHandler struct {
 	authUC usecase.AuthUseCase
+	logger domain.Logger
 }
 
 // функция-конструтор хендлера
-func NewAuthHandler(auc usecase.AuthUseCase) *authHandler {
+func NewAuthHandler(auc usecase.AuthUseCase, logger domain.Logger) *authHandler {
 	return &authHandler{
 		authUC: auc,
+		logger: logger,
 	}
 }
 
@@ -102,25 +103,41 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 	// если пользователь отключится/отменит загрузку запроса
 	ctx := r.Context()
 
+	l := h.logger.WithContext(ctx)
+
 	createdUser, createdSession, err := h.authUC.Register(ctx, userToCreate, userAgent)
 	if err != nil {
 		switch {
 		// Клиентские ошибки (400 Bad Request)
 		case errors.Is(err, domain.ErrInvalidEmail), errors.Is(err, domain.ErrInvalidPassword):
+			l.Info("registration validation failed", map[string]any{
+				"email": curRequest.Email,
+				"error": err.Error(),
+			})
 			response.Error(w, http.StatusBadRequest, err.Error())
 
 		// Ошибка конфликта (409 Conflict)
 		case errors.Is(err, domain.ErrEmailAlreadyExists):
+			l.Info("registration conflict: email already exists", map[string]any{
+				"email": curRequest.Email,
+			})
 			response.Error(w, http.StatusConflict, err.Error())
 
 		// Системные ошибки (500 Internal Server Error)
 		default:
-			// Мы пишем подробности в лог, но клиенту отдаем общую фразу
-			log.Printf("[ERROR] Register failed: %v", err)
+			l.Error("registration failed unexpectedly", err, map[string]any{
+				"email": curRequest.Email,
+			})
 			response.Error(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
 	}
+
+	// успех
+	l.Info("user registered successfully", map[string]any{
+		"user_id": createdUser.ID,
+		"email":   createdUser.Email,
+	})
 
 	response.SetCookie(w, "session_id", createdSession.ID.String(), createdSession.ExpiresAt)
 
@@ -148,10 +165,15 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 // @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
 // @Router			/auth/login [post]
 func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	l := h.logger.WithContext(ctx)
+
 	curRequest := LoginRequest{}
 
 	err := request.JSON(r, &curRequest)
 	if err != nil {
+		l.Info("failed to decode login request", map[string]any{"error": err.Error()})
 		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -163,22 +185,27 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	userAgent := r.UserAgent()
 
-	ctx := r.Context()
-
 	loggedUser, createdSession, err := h.authUC.Login(ctx, userToLogin, userAgent)
 	if err != nil {
 		switch {
 		// Ошибка авторизации (401)
 		case errors.Is(err, domain.ErrInvalidCredentials):
+			l.Info("login failed: invalid credentials", map[string]any{"email": curRequest.Login})
 			response.Error(w, http.StatusUnauthorized, "Invalid email or password")
 
 		// Системные ошибки (500)
 		default:
-			log.Printf("[ERROR] Login failed: %v", err)
+			l.Error("login failed unexpectedly", err, map[string]any{"email": curRequest.Login})
 			response.Error(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
 	}
+
+	// Успещный успех
+	l.Info("user logged in successfully", map[string]any{
+		"user_id": loggedUser.ID,
+		"email":   loggedUser.Email,
+	})
 
 	response.SetCookie(w, "session_id", createdSession.ID.String(), createdSession.ExpiresAt)
 
@@ -197,30 +224,44 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 // @Accept			json
 // @Produce			json
 // @Success			200		"Успешный выход"
-// @Failure			401		{object}  response.ErrorResponse	"Кука не найдена"
 // @Router			/auth/logout [post]
 func (h *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
+
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		// Если куки нет, пользователь и так "вышел". Возвращаем 200
+		l.Info("logout: no session cookie found, user already logged out", nil)
 		response.JSON(w, http.StatusOK, nil)
 		return
 	}
 
 	sessionID, err := uuid.Parse(cookie.Value)
-	if err == nil {
-		// Если UUID валидный, пытаемся удалить сессию в бизнес-логике.
-		ctx := r.Context()
+	if err != nil {
+		// Токен кривой. Сессию в базе искать нет смысла,
+		// но мы логируем это, чтобы видеть странную активность
+		l.Info("logout: invalid session token format", map[string]any{
+			"token_value": cookie.Value,
+		})
+	} else {
+		// Токен валидный, пробуем удалить из хранилища
 		err = h.authUC.Logout(ctx, sessionID)
 		if err != nil {
-			response.Error(w, http.StatusNotFound, "Session not found")
-			return
+			// Даже если сессия не найдена в базе, просто логируем это как Info
+			l.Info("logout: session not found in database or already expired", map[string]any{
+				"session_id": sessionID.String(),
+			})
+		} else {
+			l.Info("logout: session successfully removed from database", map[string]any{
+				"session_id": sessionID.String(),
+			})
 		}
 	}
 
-	// нулевое время в эпохе Unix
-	// в любом случае принудительно удаляем куку у пользователя
 	response.SetCookie(w, "session_id", "", time.Unix(0, 0))
+
+	l.Info("logout: cookie cleared in browser", nil)
 	response.JSON(w, http.StatusOK, nil)
 }
 
@@ -237,12 +278,14 @@ func (h *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// берем userID из контекста, который нам пришел из мидлвара AuthMiddleware
-	// Value возвращает any. Используем утверждение типа, чтобы Go знал что это uuid
-	userID, ok := ctx.Value(middleware.UserIDKey).(int)
-	// если там не int или nil
-	if !ok {
-		log.Printf("[ERROR] GetMe called without AuthMiddleware")
+	l := h.logger.WithContext(ctx)
+
+	userID, err := middleware.GetUserID(ctx)
+
+	if errors.Is(err, middleware.ErrNoUserIDInContext) {
+		l.Error("auth context contract broken: auth middleware missed userID in route", err, map[string]any{
+			"user_id": userID,
+		})
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -251,10 +294,16 @@ func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// Если мидлваря пропустила сессию, значит юзер в базе точно должен быть
 		// Если его нет - это системная проблема или критический сбой
-		log.Printf("[ERROR] GetProfile failed for user %v: %v", userID, err)
+		l.Error("get profile failed", err, map[string]any{
+			"user_id": userID,
+		})
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
+
+	l.Info("profile retrieved successfully", map[string]any{
+		"user_id": loggedUser.ID,
+	})
 
 	resp := LoginResponse{
 		ID:   loggedUser.ID,

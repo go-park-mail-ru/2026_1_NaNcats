@@ -9,15 +9,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// уникальный тип ключа контекста:
-// нужен, чтобы предотвратить коллизии с другими пакетами в контексте
-type contextKey string
-
-const (
-	// ключ ID пользователя для контекста
-	UserIDKey contextKey = "userID"
-)
-
 // мидлвар авторизации:
 // нужен для защиты приватных эндпоинтов от forbidden/unauthorized сессий
 type AuthMiddleware struct {
@@ -59,7 +50,7 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		// добавляем к контексту ctx ключ UserIDKey со значение userID
+		// добавляем к контексту ctx ключ UserIDKey со значением userID
 		ctxWithUser := context.WithValue(ctx, UserIDKey, session.UserID)
 
 		// отдаем обработать запрос дальше

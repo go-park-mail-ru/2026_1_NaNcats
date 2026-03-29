@@ -41,7 +41,7 @@ func TestAuthMiddleware_RequireAuth(t *testing.T) {
 				// Ожидаем проверку сессии
 				m.EXPECT().
 					Check(gomock.Any(), gomock.Any()).
-					Return(1, nil)
+					Return(domain.Session{UserID: 1}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -67,7 +67,7 @@ func TestAuthMiddleware_RequireAuth(t *testing.T) {
 				// Программируем UseCase вернуть ошибку
 				m.EXPECT().
 					Check(gomock.Any(), gomock.Any()).
-					Return(0, domain.ErrSessionExpired)
+					Return(domain.Session{}, domain.ErrSessionExpired)
 			},
 			expectedStatus: http.StatusUnauthorized,
 		},

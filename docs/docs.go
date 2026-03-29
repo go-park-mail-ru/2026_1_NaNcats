@@ -83,12 +83,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "Успешный выход"
-                    },
-                    "401": {
-                        "description": "Кука не найдена",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
                     }
                 }
             }
@@ -243,8 +237,8 @@ const docTemplate = `{
                 },
                 "id": {
                     "description": "Уникальный ID пользователя в системе",
-                    "type": "string",
-                    "example": "1"
+                    "type": "integer",
+                    "example": 1
                 },
                 "name": {
                     "description": "Имя для отображения в интерфейсе",
@@ -288,8 +282,8 @@ const docTemplate = `{
                 },
                 "id": {
                     "description": "Уникальный ID пользователя в системе",
-                    "type": "string",
-                    "example": "1"
+                    "type": "integer",
+                    "example": 1
                 },
                 "name": {
                     "description": "Имя для отображения в интерфейсе",

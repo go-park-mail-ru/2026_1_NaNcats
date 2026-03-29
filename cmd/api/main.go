@@ -87,7 +87,7 @@ func main() {
 	authUC := usecase.NewAuthUseCase(userRepo, sessionUC)
 	restaurantBrandUC := usecase.NewRestaurantBrandUseCase(restaurantBrandRepo)
 
-	authHandler := handler.NewAuthHandler(authUC)
+	authHandler := handler.NewAuthHandler(authUC, appLogger)
 	restaurantBrandHandler := handler.NewRestaurantBrandHandler(restaurantBrandUC, appLogger)
 
 	fileServer := http.FileServer(http.Dir("./uploads"))
@@ -96,6 +96,7 @@ func main() {
 	corsMW := middleware.NewCORSMiddleware([]string{
 		"http://localhost:2033",
 	})
+	requestIDMW := middleware.NewRequestIDMiddleware()
 
 	// создание собственного роутера
 	mux := http.NewServeMux()
@@ -112,14 +113,15 @@ func main() {
 
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
-	// применение глобальных мидлваров
-	siteHandler := corsMW.Handler(mux)
+	// применение глобальных мидлваров, применяются снизу вверх
+	handler := corsMW.Handler(mux)
+	handler = requestIDMW.Handler(handler)
 
 	log.Printf("Server is starting on port %s...", port)
 
 	server := &http.Server{
 		Addr:         ":" + port,
-		Handler:      siteHandler, // передаем обернутый роутер
+		Handler:      handler, // передаем обернутый роутер
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}

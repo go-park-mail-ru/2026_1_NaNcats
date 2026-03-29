@@ -11,14 +11,15 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/mocks"
+	domainMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain/mocks"
+	ucMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
 func TestAuthHandler_Register(t *testing.T) {
-	type mockInit func(m *mocks.MockAuthUseCase)
+	type mockInit func(m *ucMocks.MockAuthUseCase)
 
 	tests := []struct {
 		name           string
@@ -33,7 +34,7 @@ func TestAuthHandler_Register(t *testing.T) {
 				Email:    "test@mail.ru",
 				Password: "password123",
 			},
-			mockInit: func(m *mocks.MockAuthUseCase) {
+			mockInit: func(m *ucMocks.MockAuthUseCase) {
 				mockUser := domain.User{ID: 1, Name: "Ivan", Email: "test@mail.ru"}
 				mockSess := domain.Session{ID: uuid.New(), ExpiresAt: time.Now().Add(time.Hour)}
 				m.EXPECT().
@@ -45,7 +46,7 @@ func TestAuthHandler_Register(t *testing.T) {
 		{
 			name:           "Неверный JSON",
 			inputBody:      "invalid-json",
-			mockInit:       func(m *mocks.MockAuthUseCase) {},
+			mockInit:       func(m *ucMocks.MockAuthUseCase) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -55,10 +56,16 @@ func TestAuthHandler_Register(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockAuthUC := mocks.NewMockAuthUseCase(ctrl)
+			mockAuthUC := ucMocks.NewMockAuthUseCase(ctrl)
 			testCase.mockInit(mockAuthUC)
 
-			authHandler := NewAuthHandler(mockAuthUC)
+			mockLogger := domainMocks.NewMockLogger(ctrl)
+
+			mockLogger.EXPECT().WithContext(gomock.Any()).Return(mockLogger).AnyTimes()
+			mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+			mockLogger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+			authHandler := NewAuthHandler(mockAuthUC, mockLogger)
 
 			var buf bytes.Buffer
 			if s, ok := testCase.inputBody.(string); ok {
@@ -88,7 +95,7 @@ func TestAuthHandler_Register(t *testing.T) {
 }
 
 func TestAuthHandler_GetMe(t *testing.T) {
-	type mockInit func(m *mocks.MockAuthUseCase)
+	type mockInit func(m *ucMocks.MockAuthUseCase)
 
 	tests := []struct {
 		name           string
@@ -99,7 +106,7 @@ func TestAuthHandler_GetMe(t *testing.T) {
 		{
 			name:   "Успешный запуск",
 			userID: 1,
-			mockInit: func(m *mocks.MockAuthUseCase) {
+			mockInit: func(m *ucMocks.MockAuthUseCase) {
 				m.EXPECT().
 					GetProfile(gomock.Any(), gomock.Any()).
 					Return(domain.User{Name: "Ivan"}, nil)
@@ -109,7 +116,7 @@ func TestAuthHandler_GetMe(t *testing.T) {
 		{
 			name:           "Нет юзера",
 			userID:         nil,
-			mockInit:       func(m *mocks.MockAuthUseCase) {},
+			mockInit:       func(m *ucMocks.MockAuthUseCase) {},
 			expectedStatus: http.StatusInternalServerError,
 		},
 	}
@@ -119,10 +126,16 @@ func TestAuthHandler_GetMe(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockAuthUC := mocks.NewMockAuthUseCase(ctrl)
+			mockAuthUC := ucMocks.NewMockAuthUseCase(ctrl)
 			testCase.mockInit(mockAuthUC)
 
-			authHandler := NewAuthHandler(mockAuthUC)
+			mockLogger := domainMocks.NewMockLogger(ctrl)
+
+			mockLogger.EXPECT().WithContext(gomock.Any()).Return(mockLogger).AnyTimes()
+			mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+			mockLogger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+			authHandler := NewAuthHandler(mockAuthUC, mockLogger)
 
 			req := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
 			if testCase.userID != nil {
@@ -143,7 +156,7 @@ func TestAuthHandler_GetMe(t *testing.T) {
 }
 
 func TestAuthHandler_Login(t *testing.T) {
-	type mockInit func(m *mocks.MockAuthUseCase)
+	type mockInit func(m *ucMocks.MockAuthUseCase)
 
 	tests := []struct {
 		name           string
@@ -157,7 +170,7 @@ func TestAuthHandler_Login(t *testing.T) {
 				Login:    "test@gmail.com",
 				Password: "aboba",
 			},
-			mockInit: func(m *mocks.MockAuthUseCase) {
+			mockInit: func(m *ucMocks.MockAuthUseCase) {
 				mockUser := domain.User{ID: 1, Name: "Ivan", Email: "test@mail.ru"}
 				mockSess := domain.Session{ID: uuid.New(), ExpiresAt: time.Now().Add(time.Hour)}
 
@@ -170,7 +183,7 @@ func TestAuthHandler_Login(t *testing.T) {
 		{
 			name:           "Неверный JSON",
 			inputBody:      "invalid JSON",
-			mockInit:       func(m *mocks.MockAuthUseCase) {},
+			mockInit:       func(m *ucMocks.MockAuthUseCase) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -179,7 +192,7 @@ func TestAuthHandler_Login(t *testing.T) {
 				Login:    "test@mail.ru",
 				Password: "wrong",
 			},
-			mockInit: func(m *mocks.MockAuthUseCase) {
+			mockInit: func(m *ucMocks.MockAuthUseCase) {
 				// Программируем UseCase вернуть ошибку
 				m.EXPECT().
 					Login(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -194,10 +207,16 @@ func TestAuthHandler_Login(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockAuthUC := mocks.NewMockAuthUseCase(ctrl)
+			mockAuthUC := ucMocks.NewMockAuthUseCase(ctrl)
 			testCase.mockInit(mockAuthUC)
 
-			authHandler := NewAuthHandler(mockAuthUC)
+			mockLogger := domainMocks.NewMockLogger(ctrl)
+
+			mockLogger.EXPECT().WithContext(gomock.Any()).Return(mockLogger).AnyTimes()
+			mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+			mockLogger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+			authHandler := NewAuthHandler(mockAuthUC, mockLogger)
 
 			var buf bytes.Buffer
 			if s, ok := testCase.inputBody.(string); ok {
@@ -227,7 +246,7 @@ func TestAuthHandler_Login(t *testing.T) {
 }
 
 func TestAuthHandler_Logout(t *testing.T) {
-	type mockInit func(m *mocks.MockAuthUseCase)
+	type mockInit func(m *ucMocks.MockAuthUseCase)
 
 	tests := []struct {
 		name           string
@@ -241,7 +260,7 @@ func TestAuthHandler_Logout(t *testing.T) {
 			name:        "Успешный выход",
 			hasCookie:   true,
 			cookieValue: uuid.New().String(),
-			mockInit: func(m *mocks.MockAuthUseCase) {
+			mockInit: func(m *ucMocks.MockAuthUseCase) {
 				// Ожидаем вызов Logout в UseCase
 				m.EXPECT().
 					Logout(gomock.Any(), gomock.Any()).
@@ -269,27 +288,27 @@ func TestAuthHandler_Logout(t *testing.T) {
 		{
 			name:           "Успех: кука отсутствует",
 			hasCookie:      false,
-			mockInit:       func(m *mocks.MockAuthUseCase) {},
+			mockInit:       func(m *ucMocks.MockAuthUseCase) {},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "Успех: невалидный UUID в куке",
 			hasCookie:      true,
 			cookieValue:    "not-a-uuid",
-			mockInit:       func(m *mocks.MockAuthUseCase) {},
+			mockInit:       func(m *ucMocks.MockAuthUseCase) {},
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:        "Ошибка: сессия не найдена в базе",
+			name:        "Успех, но сессия не найдена в базе",
 			hasCookie:   true,
 			cookieValue: uuid.New().String(),
-			mockInit: func(m *mocks.MockAuthUseCase) {
+			mockInit: func(m *ucMocks.MockAuthUseCase) {
 				// Программируем мок вернуть ошибку (например, сессия уже удалена)
 				m.EXPECT().
 					Logout(gomock.Any(), gomock.Any()).
 					Return(domain.ErrSessionNotFound)
 			},
-			expectedStatus: http.StatusNotFound,
+			expectedStatus: http.StatusOK,
 		},
 	}
 
@@ -298,10 +317,16 @@ func TestAuthHandler_Logout(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockAuthUC := mocks.NewMockAuthUseCase(ctrl)
+			mockAuthUC := ucMocks.NewMockAuthUseCase(ctrl)
 			testCase.mockInit(mockAuthUC)
 
-			authHandler := NewAuthHandler(mockAuthUC)
+			mockLogger := domainMocks.NewMockLogger(ctrl)
+
+			mockLogger.EXPECT().WithContext(gomock.Any()).Return(mockLogger).AnyTimes()
+			mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+			mockLogger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+			authHandler := NewAuthHandler(mockAuthUC, mockLogger)
 
 			req := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
 			if testCase.hasCookie {

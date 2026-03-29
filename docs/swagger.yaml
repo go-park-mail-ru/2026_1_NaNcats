@@ -19,8 +19,8 @@ definitions:
         type: string
       id:
         description: Уникальный ID пользователя в системе
-        example: "1"
-        type: string
+        example: 1
+        type: integer
       name:
         description: Имя для отображения в интерфейсе
         example: Иван
@@ -53,8 +53,8 @@ definitions:
         type: string
       id:
         description: Уникальный ID пользователя в системе
-        example: "1"
-        type: string
+        example: 1
+        type: integer
       name:
         description: Имя для отображения в интерфейсе
         example: Иван
@@ -149,10 +149,6 @@ paths:
       responses:
         "200":
           description: Успешный выход
-        "401":
-          description: Кука не найдена
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
       summary: Выход из текущей
       tags:
       - auth

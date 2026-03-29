@@ -64,3 +64,6 @@ migrate-up:
 # Откатить последнюю миграцию
 migrate-down:
 	migrate -path db/migrations -database "$(DB_URL)" down
+
+swagger:
+	swag init -g cmd/api/main.go
