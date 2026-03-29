@@ -1,11 +1,8 @@
 package logger
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"go.uber.org/zap"
 )
 
@@ -23,21 +20,11 @@ func NewZapLogger() (*ZapLogger, error) {
 	return &ZapLogger{logger: logger}, nil
 }
 
-// сборка всей необходимой метаинформации о запросе из контекста
-func (l *ZapLogger) WithContext(ctx context.Context) domain.Logger {
-	if ctx == nil {
-		return l
+// Универсальный метод добавления полей
+func (l *ZapLogger) With(fields ...zap.Field) *ZapLogger {
+	return &ZapLogger{
+		logger: l.logger.With(fields...),
 	}
-
-	reqID := middleware.GetRequestID(ctx)
-	if reqID != "unknown" {
-		// Клонируем логгер с добавленным полем
-		return &ZapLogger{
-			logger: l.logger.With(zap.String("request_id", reqID)),
-		}
-	}
-
-	return l
 }
 
 func (l *ZapLogger) Info(msg string, fields map[string]any) {

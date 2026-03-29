@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/handler"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
+	infrastructureLogger "github.com/go-park-mail-ru/2026_1_NaNcats/internal/infrastructure/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/redisrepo"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
@@ -33,10 +34,14 @@ func main() {
 		port = "8080"
 	}
 
-	appLogger, err := logger.NewZapLogger()
+	// "чистый" логгер из pkg
+	rawLogger, err := logger.NewZapLogger()
 	if err != nil {
 		log.Fatalf("Connot start without logger: %v", err)
 	}
+
+	// Оборачиваем его в адаптер, который реализует domain.Logger
+	appLogger := infrastructureLogger.NewLoggerAdapter(rawLogger)
 
 	ctx := context.Background()
 
