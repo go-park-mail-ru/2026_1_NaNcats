@@ -27,10 +27,6 @@ DROP TABLE IF EXISTS "wordle_guess" CASCADE;
 DROP TABLE IF EXISTS "wordle_game" CASCADE;
 DROP TABLE IF EXISTS "wordle_daily" CASCADE;
 DROP TABLE IF EXISTS "wordle_word" CASCADE;
-DROP TABLE IF EXISTS "restaurant_page_view" CASCADE;
-DROP TABLE IF EXISTS "restaurant_stats_daily" CASCADE;
-DROP TABLE IF EXISTS "restaurant_stats_hourly" CASCADE;
-DROP TABLE IF EXISTS "restaurant_stats_5min" CASCADE;
 
 DROP TYPE IF EXISTS order_status CASCADE;
 DROP TYPE IF EXISTS courier_status CASCADE;
