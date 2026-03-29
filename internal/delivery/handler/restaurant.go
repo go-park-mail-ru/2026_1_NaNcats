@@ -44,6 +44,9 @@ func NewRestaurantBrandHandler(rbuc usecase.RestaurantBrandUseCase, logger domai
 // @Success				200		{object}  RestaurantBrandsResponse			"Успешное получение списка ресторанов"
 // @Router				/restaurants/brands [get]
 func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
+
 	query := r.URL.Query()
 
 	// Значения по дефолту
@@ -55,6 +58,11 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 	if qLimit := query.Get("limit"); qLimit != "" {
 		if val, err := strconv.Atoi(qLimit); err == nil && val > 0 {
 			limit = val
+		} else {
+			l.Info("invalid limit query parameter, using default", map[string]any{
+				"input":   qLimit,
+				"default": limit,
+			})
 		}
 	}
 
@@ -62,11 +70,14 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 	if qOffset := query.Get("offset"); qOffset != "" {
 		if val, err := strconv.Atoi(qOffset); err == nil && val > 0 {
 			offset = val
+		} else {
+			l.Info("invalid offset query parameter, using default", map[string]any{
+				"input":   qOffset,
+				"default": offset,
+			})
 		}
 	}
 
-	ctx := r.Context()
-	l := h.logger.WithContext(ctx)
 	restaurantBrandsList, err := h.restaurantBrandUC.GetRestaurantBrandsList(ctx, limit, offset)
 	if err != nil {
 		l.Error("Failed to get restaurant brand list", err, map[string]any{
@@ -96,6 +107,12 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 
 		dtoList = append(dtoList, restResp)
 	}
+
+	l.Info("successfully fetched restaurant brands", map[string]any{
+		"count":  len(dtoList),
+		"limit":  limit,
+		"offset": offset,
+	})
 
 	resp := RestaurantBrandsResponse{
 		RestaurantBrands: dtoList,

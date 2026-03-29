@@ -97,6 +97,7 @@ func main() {
 		"http://localhost:2033",
 	})
 	requestIDMW := middleware.NewRequestIDMiddleware()
+	loggingMW := middleware.NewLoggingMiddleware(appLogger)
 
 	// создание собственного роутера
 	mux := http.NewServeMux()
@@ -115,6 +116,7 @@ func main() {
 
 	// применение глобальных мидлваров, применяются снизу вверх
 	handler := corsMW.Handler(mux)
+	handler = loggingMW.Handler(handler)
 	handler = requestIDMW.Handler(handler)
 
 	log.Printf("Server is starting on port %s...", port)
