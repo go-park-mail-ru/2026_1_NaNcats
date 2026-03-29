@@ -13,6 +13,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	domainMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain/mocks"
 	ucMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/mocks"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -98,10 +99,11 @@ func TestAuthHandler_GetMe(t *testing.T) {
 	type mockInit func(m *ucMocks.MockAuthUseCase)
 
 	tests := []struct {
-		name           string
-		userID         any // int или nil
-		mockInit       mockInit
-		expectedStatus int
+		name             string
+		userID           any // int или nil
+		mockInit         mockInit
+		expectedStatus   int
+		expectedJSONCode int
 	}{
 		{
 			name:   "Успешный запуск",
@@ -111,13 +113,15 @@ func TestAuthHandler_GetMe(t *testing.T) {
 					GetProfile(gomock.Any(), gomock.Any()).
 					Return(domain.User{Name: "Ivan"}, nil)
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus:   http.StatusOK,
+			expectedJSONCode: 0, // если не 5xx, то ничего не ожидаем
 		},
 		{
-			name:           "Нет юзера",
-			userID:         nil,
-			mockInit:       func(m *ucMocks.MockAuthUseCase) {},
-			expectedStatus: http.StatusInternalServerError,
+			name:             "Нет юзера",
+			userID:           nil,
+			mockInit:         func(m *ucMocks.MockAuthUseCase) {},
+			expectedStatus:   http.StatusOK,
+			expectedJSONCode: http.StatusInternalServerError,
 		},
 	}
 
@@ -148,7 +152,14 @@ func TestAuthHandler_GetMe(t *testing.T) {
 			authHandler.GetMe(rec, req)
 
 			assert.Equal(t, testCase.expectedStatus, rec.Code)
-			if testCase.expectedStatus == http.StatusOK {
+
+			if testCase.expectedJSONCode != 0 {
+				var resp response.ErrorResponse
+				err := json.NewDecoder(rec.Body).Decode(&resp)
+
+				assert.NoError(t, err)
+				assert.Equal(t, testCase.expectedJSONCode, resp.Code)
+			} else if testCase.expectedStatus == http.StatusOK {
 				assert.Contains(t, rec.Body.String(), "Ivan")
 			}
 		})

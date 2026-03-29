@@ -13,21 +13,24 @@ type ErrorResponse struct {
 
 // функция кодирования в JSON
 func JSON(w http.ResponseWriter, statusCode int, data any) {
-	// установка заголовка Content-Type
-	// сообщаем клиенту, что в теле ответа JSON, чтобы он мог правильно его распарсить
-	w.Header().Set("Content-Type", "application/json")
-	// отправляем HTTP-статус
-	w.WriteHeader(statusCode)
-
 	// защита от отправки пустого тела
 	if data == nil {
 		data = map[string]string{}
 	}
 
-	// кодирование JSON
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	w.Header().Set("Content-Type", "application/json")
+
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		resp := []byte(`{"code":500,"message":"Failed to serialize response"}`)
+
+		w.WriteHeader(http.StatusOK)
+		w.Write(resp)
+		return
 	}
+
+	w.WriteHeader(statusCode)
+	w.Write(bytes)
 }
 
 // обертка над JSON для стандартизации сообщений об ошибках
@@ -37,5 +40,10 @@ func Error(w http.ResponseWriter, statusCode int, message string) {
 		Message: message,
 	}
 
-	JSON(w, statusCode, resp)
+	networkStatus := statusCode
+	if statusCode >= 500 {
+		networkStatus = http.StatusOK
+	}
+
+	JSON(w, networkStatus, resp)
 }
