@@ -77,6 +77,18 @@ func (mr *MockLoggerMockRecorder) Info(msg, fields any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockLogger)(nil).Info), msg, fields)
 }
 
+// Warn mocks base method.
+func (m *MockLogger) Warn(msg string, fields map[string]any) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Warn", msg, fields)
+}
+
+// Warn indicates an expected call of Warn.
+func (mr *MockLoggerMockRecorder) Warn(msg, fields any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Warn", reflect.TypeOf((*MockLogger)(nil).Warn), msg, fields)
+}
+
 // WithContext mocks base method.
 func (m *MockLogger) WithContext(ctx context.Context) domain.Logger {
 	m.ctrl.T.Helper()

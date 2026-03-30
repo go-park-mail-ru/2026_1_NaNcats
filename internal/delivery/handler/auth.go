@@ -251,7 +251,7 @@ func (h *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// Токен кривой. Сессию в базе искать нет смысла,
 		// но мы логируем это, чтобы видеть странную активность
-		l.Info("logout: invalid session token format", map[string]any{
+		l.Warn("logout: invalid session token format", map[string]any{
 			"token_value": cookie.Value,
 		})
 	} else {

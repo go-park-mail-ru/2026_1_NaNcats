@@ -36,6 +36,15 @@ func (l *ZapLogger) Info(msg string, fields map[string]any) {
 	l.logger.Info(msg, zapFields...)
 }
 
+func (l *ZapLogger) Warn(msg string, fields map[string]any) {
+	zapFields := make([]zap.Field, 0, len(fields))
+	for key, val := range fields {
+		zapFields = append(zapFields, zap.Any(key, val))
+	}
+
+	l.logger.Warn(msg, zapFields...)
+}
+
 func (l *ZapLogger) Error(msg string, err error, fields map[string]any) {
 	zapFields := make([]zap.Field, 0, len(fields)+1)
 

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+	domainMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain/mocks"
 	ucMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -81,7 +82,14 @@ func TestAuthMiddleware_RequireAuth(t *testing.T) {
 			mockSessionUC := ucMocks.NewMockSessionUseCase(ctrl)
 			tt.mockInit(mockSessionUC)
 
-			mw := NewAuthMiddleware(mockSessionUC)
+			mockLogger := domainMocks.NewMockLogger(ctrl)
+
+			mockLogger.EXPECT().WithContext(gomock.Any()).Return(mockLogger).AnyTimes()
+			mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+			mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+			mockLogger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+			mw := NewAuthMiddleware(mockSessionUC, mockLogger)
 
 			req := httptest.NewRequest(http.MethodGet, "/api/profile", nil)
 			if tt.hasCookie {

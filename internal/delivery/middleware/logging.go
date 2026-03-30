@@ -42,11 +42,15 @@ func (m *LoggingMiddleware) Handler(next http.Handler) http.Handler {
 
 		duration := time.Since(start)
 
+		userAgent := r.UserAgent()
+
 		m.logger.WithContext(r.Context()).Info("request finished", map[string]any{
-			"status":   wrapped.statusCode,
-			"duration": duration,
-			"method":   r.Method,
-			"path":     r.URL.Path,
+			"status":     wrapped.statusCode,
+			"duration":   duration,
+			"method":     r.Method,
+			"path":       r.URL.Path,
+			"user_agent": userAgent,
+			"ip":         r.RemoteAddr,
 		})
 	})
 }

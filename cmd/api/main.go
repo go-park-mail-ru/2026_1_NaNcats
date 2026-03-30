@@ -97,7 +97,7 @@ func main() {
 
 	fileServer := http.FileServer(http.Dir("./uploads"))
 
-	authMW := middleware.NewAuthMiddleware(sessionUC)
+	authMW := middleware.NewAuthMiddleware(sessionUC, appLogger)
 	corsMW := middleware.NewCORSMiddleware([]string{
 		"http://localhost:2033",
 	})

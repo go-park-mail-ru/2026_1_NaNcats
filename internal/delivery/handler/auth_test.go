@@ -335,6 +335,7 @@ func TestAuthHandler_Logout(t *testing.T) {
 
 			mockLogger.EXPECT().WithContext(gomock.Any()).Return(mockLogger).AnyTimes()
 			mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+			mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 			mockLogger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 			authHandler := NewAuthHandler(mockAuthUC, mockLogger)
