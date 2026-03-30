@@ -81,7 +81,7 @@ func main() {
 	}
 	log.Println("Migrations applied successfully")
 
-	userRepo := postgres.NewUserRepo(pool)
+	userRepo := postgres.NewUserRepo(pool, appLogger)
 	sessionRepo := redisrepo.NewSessionRepo(redisPool)
 	restaurantBrandRepo := postgres.NewRestaurantBrandRepo(pool)
 
