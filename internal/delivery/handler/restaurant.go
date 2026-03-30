@@ -1,5 +1,7 @@
 package handler
 
+//go:generate easyjson $GOFILE
+
 import (
 	"net/http"
 	"strconv"
@@ -9,6 +11,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 )
 
+//easyjson:json
 type RestaurantBrandResponse struct {
 	ID            string `json:"id" example:"550e8400-e29b-41d4-a716-446655440000"`
 	Name          string `json:"name" example:"KFC"`
@@ -18,6 +21,7 @@ type RestaurantBrandResponse struct {
 	BannerURL     string `json:"banner_url" example:"restaurangs/banners/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"`
 }
 
+//easyjson:json
 type RestaurantBrandsResponse struct {
 	RestaurantBrands []RestaurantBrandResponse `json:"restaurants"`
 }

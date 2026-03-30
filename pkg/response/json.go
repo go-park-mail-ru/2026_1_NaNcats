@@ -1,11 +1,18 @@
 package response
 
+//go:generate easyjson $GOFILE
+
 import (
 	"encoding/json"
+	"log"
 	"net/http"
+
+	"github.com/mailru/easyjson"
 )
 
 // ErrorResponse описывает структуру ответа с ошибкой для Swagger
+//
+//easyjson:json
 type ErrorResponse struct {
 	Code    int    `json:"code" example:"400"`
 	Message string `json:"message" example:"Неверный формат запроса"`
@@ -20,12 +27,19 @@ func JSON(w http.ResponseWriter, statusCode int, data any) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	bytes, err := json.Marshal(data)
-	if err != nil {
-		resp := []byte(`{"code":500,"message":"Failed to serialize response"}`)
+	var bytes []byte
+	var err error
 
+	if m, ok := data.(easyjson.Marshaler); ok {
+		bytes, err = easyjson.Marshal(m)
+	} else {
+		log.Printf("[WARN] easyjson fallback! Используем медленный json.Marshal для типа: %T\n", data)
+		bytes, err = json.Marshal(data)
+	}
+
+	if err != nil {
 		w.WriteHeader(http.StatusOK)
-		w.Write(resp)
+		w.Write([]byte(`{"code":500,"message":"Failed to serialize response"}`))
 		return
 	}
 

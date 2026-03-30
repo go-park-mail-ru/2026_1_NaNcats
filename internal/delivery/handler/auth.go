@@ -1,5 +1,7 @@
 package handler
 
+//go:generate easyjson $GOFILE
+
 import (
 	"errors"
 	"net/http"
@@ -14,6 +16,8 @@ import (
 )
 
 // DTO запроса на регистрацию
+//
+//easyjson:json
 type RegisterRequest struct {
 	// Имя пользователя
 	Name string `json:"name" example:"Иван"`
@@ -24,6 +28,8 @@ type RegisterRequest struct {
 }
 
 // DTO отправки сведений о пользователе при регистрации
+//
+//easyjson:json
 type RegisterResponse struct {
 	// Уникальный ID пользователя в системе
 	ID int `json:"id" example:"1"`
@@ -36,6 +42,8 @@ type RegisterResponse struct {
 }
 
 // LoginRequest - DTO для входящего запроса на авторизацию
+//
+//easyjson:json
 type LoginRequest struct {
 	// Email пользователя
 	Login string `json:"login" example:"user@mail.ru"`
@@ -44,6 +52,8 @@ type LoginRequest struct {
 }
 
 // LoginResponse - DTO для ответа при успешном входе
+//
+//easyjson:json
 type LoginResponse struct {
 	// Уникальный ID пользователя в системе
 	ID int `json:"id" example:"1"`
