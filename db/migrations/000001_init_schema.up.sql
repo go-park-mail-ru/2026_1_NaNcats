@@ -245,7 +245,8 @@ CREATE TABLE "order" (
 	total_cost BIGINT
 		CHECK (total_cost >= 1000000), -- 1 рубль
 	promocode_id INT,
-	
+
+	external_payment_id TEXT,
 	status order_status NOT NULL,
 		
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -581,6 +582,25 @@ CREATE TABLE "user_achievement" (
 		ON DELETE CASCADE,
 	
 	CONSTRAINT fk_user_achievement_user
+		FOREIGN KEY (user_id)
+		REFERENCES "user"(id)
+		ON DELETE CASCADE
+);
+
+CREATE TABLE "saved_card" (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	user_id INT NOT NULL,
+
+	payment_token TEXT NOT NULL,
+	masked_pan TEXT NOT NULL
+		CHECK (char_length(masked_pan) <= 20),
+	card_type TEXT NOT NULL,
+
+	is_main BOOLEAN DEFAULT FALSE NOT NULL,
+
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+
+	CONSTRAINT fk_saved_card_user
 		FOREIGN KEY (user_id)
 		REFERENCES "user"(id)
 		ON DELETE CASCADE
