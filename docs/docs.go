@@ -35,7 +35,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.LoginRequest"
+                            "$ref": "#/definitions/delivery_handler.LoginRequest"
                         }
                     }
                 ],
@@ -43,7 +43,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешный вход",
                         "schema": {
-                            "$ref": "#/definitions/handler.LoginResponse"
+                            "$ref": "#/definitions/delivery_handler.LoginResponse"
                         }
                     },
                     "400": {
@@ -104,7 +104,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешный вход и создание сессии",
                         "schema": {
-                            "$ref": "#/definitions/handler.LoginResponse"
+                            "$ref": "#/definitions/delivery_handler.LoginResponse"
                         }
                     },
                     "401": {
@@ -142,7 +142,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.RegisterRequest"
+                            "$ref": "#/definitions/delivery_handler.RegisterRequest"
                         }
                     }
                 ],
@@ -150,7 +150,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Успешная регистрация",
                         "schema": {
-                            "$ref": "#/definitions/handler.RegisterResponse"
+                            "$ref": "#/definitions/delivery_handler.RegisterResponse"
                         }
                     },
                     "400": {
@@ -204,7 +204,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное получение списка ресторанов",
                         "schema": {
-                            "$ref": "#/definitions/handler.RestaurantBrandsResponse"
+                            "$ref": "#/definitions/internal_delivery_handler.RestaurantBrandsResponse"
                         }
                     }
                 }
@@ -212,7 +212,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "handler.LoginRequest": {
+        "delivery_handler.LoginRequest": {
             "type": "object",
             "properties": {
                 "login": {
@@ -227,7 +227,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.LoginResponse": {
+        "delivery_handler.LoginResponse": {
             "type": "object",
             "properties": {
                 "avatar_url": {
@@ -247,7 +247,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.RegisterRequest": {
+        "delivery_handler.RegisterRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -267,7 +267,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.RegisterResponse": {
+        "delivery_handler.RegisterResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -292,7 +292,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.RestaurantBrandResponse": {
+        "delivery_handler.RestaurantBrandResponse": {
             "type": "object",
             "properties": {
                 "banner_url": {
@@ -321,13 +321,133 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.RestaurantBrandsResponse": {
+        "delivery_handler.RestaurantBrandsResponse": {
             "type": "object",
             "properties": {
                 "restaurants": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/handler.RestaurantBrandResponse"
+                        "$ref": "#/definitions/delivery_handler.RestaurantBrandResponse"
+                    }
+                }
+            }
+        },
+        "internal_delivery_handler.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "login": {
+                    "description": "Email пользователя",
+                    "type": "string",
+                    "example": "user@mail.ru"
+                },
+                "password": {
+                    "description": "Пароль в открытом виде",
+                    "type": "string",
+                    "example": "qwerty12345"
+                }
+            }
+        },
+        "internal_delivery_handler.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "avatar_url": {
+                    "description": "URL аватарки пользователя",
+                    "type": "string",
+                    "example": "users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"
+                },
+                "id": {
+                    "description": "Уникальный ID пользователя в системе",
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "description": "Имя для отображения в интерфейсе",
+                    "type": "string",
+                    "example": "Иван"
+                }
+            }
+        },
+        "internal_delivery_handler.RegisterRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "Email пользователя",
+                    "type": "string",
+                    "example": "user@mail.ru"
+                },
+                "name": {
+                    "description": "Имя пользователя",
+                    "type": "string",
+                    "example": "Иван"
+                },
+                "password": {
+                    "description": "Пароль в открытом виде",
+                    "type": "string",
+                    "example": "qwerty12345"
+                }
+            }
+        },
+        "internal_delivery_handler.RegisterResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Время создания аккаунта по стандарту RFC 3339",
+                    "type": "string",
+                    "example": "2006-01-02T15:04:05Z07:00"
+                },
+                "email": {
+                    "description": "Email пользователя",
+                    "type": "string",
+                    "example": "user@mail.ru"
+                },
+                "id": {
+                    "description": "Уникальный ID пользователя в системе",
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "description": "Имя для отображения в интерфейсе",
+                    "type": "string",
+                    "example": "Иван"
+                }
+            }
+        },
+        "internal_delivery_handler.RestaurantBrandResponse": {
+            "type": "object",
+            "properties": {
+                "banner_url": {
+                    "type": "string",
+                    "example": "restaurangs/banners/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Острые крылошки"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "logo_url": {
+                    "type": "string",
+                    "example": "restaurants/logos/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "KFC"
+                },
+                "promotion_tier": {
+                    "type": "integer",
+                    "example": 2
+                }
+            }
+        },
+        "internal_delivery_handler.RestaurantBrandsResponse": {
+            "type": "object",
+            "properties": {
+                "restaurants": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_delivery_handler.RestaurantBrandResponse"
                     }
                 }
             }

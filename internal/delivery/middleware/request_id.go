@@ -20,7 +20,7 @@ func (m *RequestIDMiddleware) Handler(next http.Handler) http.Handler {
 		reqID := r.Header.Get("X-Request-ID")
 
 		if reqID == "" {
-			reqID = uuid.New().String()
+			reqID = uuid.NewString()
 		}
 
 		w.Header().Set("X-Request-ID", reqID)

@@ -1,6 +1,6 @@
 basePath: /api
 definitions:
-  handler.LoginRequest:
+  delivery_handler.LoginRequest:
     properties:
       login:
         description: Email пользователя
@@ -11,7 +11,7 @@ definitions:
         example: qwerty12345
         type: string
     type: object
-  handler.LoginResponse:
+  delivery_handler.LoginResponse:
     properties:
       avatar_url:
         description: URL аватарки пользователя
@@ -26,7 +26,7 @@ definitions:
         example: Иван
         type: string
     type: object
-  handler.RegisterRequest:
+  delivery_handler.RegisterRequest:
     properties:
       email:
         description: Email пользователя
@@ -41,7 +41,7 @@ definitions:
         example: qwerty12345
         type: string
     type: object
-  handler.RegisterResponse:
+  delivery_handler.RegisterResponse:
     properties:
       created_at:
         description: Время создания аккаунта по стандарту RFC 3339
@@ -60,7 +60,7 @@ definitions:
         example: Иван
         type: string
     type: object
-  handler.RestaurantBrandResponse:
+  delivery_handler.RestaurantBrandResponse:
     properties:
       banner_url:
         example: restaurangs/banners/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
@@ -81,11 +81,99 @@ definitions:
         example: 2
         type: integer
     type: object
-  handler.RestaurantBrandsResponse:
+  delivery_handler.RestaurantBrandsResponse:
     properties:
       restaurants:
         items:
-          $ref: '#/definitions/handler.RestaurantBrandResponse'
+          $ref: '#/definitions/delivery_handler.RestaurantBrandResponse'
+        type: array
+    type: object
+  internal_delivery_handler.LoginRequest:
+    properties:
+      login:
+        description: Email пользователя
+        example: user@mail.ru
+        type: string
+      password:
+        description: Пароль в открытом виде
+        example: qwerty12345
+        type: string
+    type: object
+  internal_delivery_handler.LoginResponse:
+    properties:
+      avatar_url:
+        description: URL аватарки пользователя
+        example: users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
+        type: string
+      id:
+        description: Уникальный ID пользователя в системе
+        example: 1
+        type: integer
+      name:
+        description: Имя для отображения в интерфейсе
+        example: Иван
+        type: string
+    type: object
+  internal_delivery_handler.RegisterRequest:
+    properties:
+      email:
+        description: Email пользователя
+        example: user@mail.ru
+        type: string
+      name:
+        description: Имя пользователя
+        example: Иван
+        type: string
+      password:
+        description: Пароль в открытом виде
+        example: qwerty12345
+        type: string
+    type: object
+  internal_delivery_handler.RegisterResponse:
+    properties:
+      created_at:
+        description: Время создания аккаунта по стандарту RFC 3339
+        example: 2006-01-02T15:04:05Z07:00
+        type: string
+      email:
+        description: Email пользователя
+        example: user@mail.ru
+        type: string
+      id:
+        description: Уникальный ID пользователя в системе
+        example: 1
+        type: integer
+      name:
+        description: Имя для отображения в интерфейсе
+        example: Иван
+        type: string
+    type: object
+  internal_delivery_handler.RestaurantBrandResponse:
+    properties:
+      banner_url:
+        example: restaurangs/banners/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
+        type: string
+      description:
+        example: Острые крылошки
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      logo_url:
+        example: restaurants/logos/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
+        type: string
+      name:
+        example: KFC
+        type: string
+      promotion_tier:
+        example: 2
+        type: integer
+    type: object
+  internal_delivery_handler.RestaurantBrandsResponse:
+    properties:
+      restaurants:
+        items:
+          $ref: '#/definitions/internal_delivery_handler.RestaurantBrandResponse'
         type: array
     type: object
   response.ErrorResponse:
@@ -115,14 +203,14 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/handler.LoginRequest'
+          $ref: '#/definitions/delivery_handler.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Успешный вход
           schema:
-            $ref: '#/definitions/handler.LoginResponse'
+            $ref: '#/definitions/delivery_handler.LoginResponse'
         "400":
           description: Неверный формат JSON
           schema:
@@ -163,7 +251,7 @@ paths:
         "200":
           description: Успешный вход и создание сессии
           schema:
-            $ref: '#/definitions/handler.LoginResponse'
+            $ref: '#/definitions/delivery_handler.LoginResponse'
         "401":
           description: Неавторизован
           schema:
@@ -187,14 +275,14 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/handler.RegisterRequest'
+          $ref: '#/definitions/delivery_handler.RegisterRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Успешная регистрация
           schema:
-            $ref: '#/definitions/handler.RegisterResponse'
+            $ref: '#/definitions/delivery_handler.RegisterResponse'
         "400":
           description: Ошибка валидации (email/пароль)
           schema:
@@ -231,7 +319,7 @@ paths:
         "200":
           description: Успешное получение списка ресторанов
           schema:
-            $ref: '#/definitions/handler.RestaurantBrandsResponse'
+            $ref: '#/definitions/internal_delivery_handler.RestaurantBrandsResponse'
       summary: Получение списка ресторанов
       tags:
       - restaurants

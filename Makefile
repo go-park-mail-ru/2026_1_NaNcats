@@ -59,11 +59,11 @@ migrate-create:
 
 # Накатить миграции
 migrate-up:
-	migrate -path db/migrations -database "$(DB_URL)" up
+	migrate -path db/migrations -database "$(MIGRATE_URL)" up
 
 # Откатить последнюю миграцию
 migrate-down:
-	migrate -path db/migrations -database "$(DB_URL)" down
+	migrate -path db/migrations -database "$(MIGRATE_URL)" down
 
 swagger:
 	swag init -g cmd/api/main.go
