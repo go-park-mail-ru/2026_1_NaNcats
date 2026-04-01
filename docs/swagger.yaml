@@ -203,14 +203,14 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/delivery_handler.LoginRequest'
+          $ref: '#/definitions/internal_delivery_handler.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Успешный вход
           schema:
-            $ref: '#/definitions/delivery_handler.LoginResponse'
+            $ref: '#/definitions/internal_delivery_handler.LoginResponse'
         "400":
           description: Неверный формат JSON
           schema:
@@ -251,7 +251,7 @@ paths:
         "200":
           description: Успешный вход и создание сессии
           schema:
-            $ref: '#/definitions/delivery_handler.LoginResponse'
+            $ref: '#/definitions/internal_delivery_handler.LoginResponse'
         "401":
           description: Неавторизован
           schema:
@@ -275,14 +275,14 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/delivery_handler.RegisterRequest'
+          $ref: '#/definitions/internal_delivery_handler.RegisterRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Успешная регистрация
           schema:
-            $ref: '#/definitions/delivery_handler.RegisterResponse'
+            $ref: '#/definitions/internal_delivery_handler.RegisterResponse'
         "400":
           description: Ошибка валидации (email/пароль)
           schema:

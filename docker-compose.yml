@@ -12,7 +12,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     healthcheck: # Проверка готовности базы
       # бэкенд не начнет пытаться подключиться к базе, пока она не будет готова принимать соединения
-      test: ["CMD-SHELL", "pg_isready -U user -d delivery_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 5

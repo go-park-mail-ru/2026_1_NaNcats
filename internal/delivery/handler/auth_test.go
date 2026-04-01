@@ -11,7 +11,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	domainMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain/mocks"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain/mocks"
 	ucMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/mocks"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 	"github.com/google/uuid"
@@ -60,13 +60,9 @@ func TestAuthHandler_Register(t *testing.T) {
 			mockAuthUC := ucMocks.NewMockAuthUseCase(ctrl)
 			testCase.mockInit(mockAuthUC)
 
-			mockLogger := domainMocks.NewMockLogger(ctrl)
+			nopLogger := mocks.NewNopLogger()
 
-			mockLogger.EXPECT().WithContext(gomock.Any()).Return(mockLogger).AnyTimes()
-			mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
-			mockLogger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
-
-			authHandler := NewAuthHandler(mockAuthUC, mockLogger)
+			authHandler := NewAuthHandler(mockAuthUC, nopLogger)
 
 			var buf bytes.Buffer
 			if s, ok := testCase.inputBody.(string); ok {
@@ -133,13 +129,9 @@ func TestAuthHandler_GetMe(t *testing.T) {
 			mockAuthUC := ucMocks.NewMockAuthUseCase(ctrl)
 			testCase.mockInit(mockAuthUC)
 
-			mockLogger := domainMocks.NewMockLogger(ctrl)
+			nopLogger := mocks.NewNopLogger()
 
-			mockLogger.EXPECT().WithContext(gomock.Any()).Return(mockLogger).AnyTimes()
-			mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
-			mockLogger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
-
-			authHandler := NewAuthHandler(mockAuthUC, mockLogger)
+			authHandler := NewAuthHandler(mockAuthUC, nopLogger)
 
 			req := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
 			if testCase.userID != nil {
@@ -221,13 +213,9 @@ func TestAuthHandler_Login(t *testing.T) {
 			mockAuthUC := ucMocks.NewMockAuthUseCase(ctrl)
 			testCase.mockInit(mockAuthUC)
 
-			mockLogger := domainMocks.NewMockLogger(ctrl)
+			nopLogger := mocks.NewNopLogger()
 
-			mockLogger.EXPECT().WithContext(gomock.Any()).Return(mockLogger).AnyTimes()
-			mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
-			mockLogger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
-
-			authHandler := NewAuthHandler(mockAuthUC, mockLogger)
+			authHandler := NewAuthHandler(mockAuthUC, nopLogger)
 
 			var buf bytes.Buffer
 			if s, ok := testCase.inputBody.(string); ok {
@@ -331,14 +319,9 @@ func TestAuthHandler_Logout(t *testing.T) {
 			mockAuthUC := ucMocks.NewMockAuthUseCase(ctrl)
 			testCase.mockInit(mockAuthUC)
 
-			mockLogger := domainMocks.NewMockLogger(ctrl)
+			nopLogger := mocks.NewNopLogger()
 
-			mockLogger.EXPECT().WithContext(gomock.Any()).Return(mockLogger).AnyTimes()
-			mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
-			mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
-			mockLogger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
-
-			authHandler := NewAuthHandler(mockAuthUC, mockLogger)
+			authHandler := NewAuthHandler(mockAuthUC, nopLogger)
 
 			req := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
 			if testCase.hasCookie {

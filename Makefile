@@ -1,3 +1,9 @@
+# Загружаем переменные из .env
+ifneq (,$(wildcard ./.env))
+    include .env
+    export
+endif
+
 APP_NAME = foodcourt
 MAIN_PKG = ./cmd/api/main.go
 COVERAGE_FILE = coverage.out
@@ -48,10 +54,7 @@ cover: test
 # Пытаемся открыть его (команда xdg-open для Linux, open для Mac)
 	xdg-open $(COVERAGE_HTML) || open $(COVERAGE_HTML) || echo "Открой $(COVERAGE_HTML) в браузере вручную"
 
-
-# БД
-# Переменные
-DB_URL=postgres://user:password@localhost:5432/delivery_db?sslmode=disable
+# --- РАБОТА С БД ---
 
 # Создать новую миграцию (например: make migrate-create name=add_users_table)
 migrate-create:
@@ -59,11 +62,11 @@ migrate-create:
 
 # Накатить миграции
 migrate-up:
-	migrate -path db/migrations -database "$(MIGRATE_URL)" up
+	docker compose exec backend ./migrate -path db/migrations -database "$(DATABASE_URL)" up
 
 # Откатить последнюю миграцию
 migrate-down:
-	migrate -path db/migrations -database "$(MIGRATE_URL)" down
+	docker compose exec backend ./migrate -path db/migrations -database "$(DATABASE_URL)" down
 
 swagger:
-	swag init -g cmd/api/main.go
+	swag init -g $(MAIN_PKG)

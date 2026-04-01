@@ -35,7 +35,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/delivery_handler.LoginRequest"
+                            "$ref": "#/definitions/internal_delivery_handler.LoginRequest"
                         }
                     }
                 ],
@@ -43,7 +43,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешный вход",
                         "schema": {
-                            "$ref": "#/definitions/delivery_handler.LoginResponse"
+                            "$ref": "#/definitions/internal_delivery_handler.LoginResponse"
                         }
                     },
                     "400": {
@@ -104,7 +104,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешный вход и создание сессии",
                         "schema": {
-                            "$ref": "#/definitions/delivery_handler.LoginResponse"
+                            "$ref": "#/definitions/internal_delivery_handler.LoginResponse"
                         }
                     },
                     "401": {
@@ -142,7 +142,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/delivery_handler.RegisterRequest"
+                            "$ref": "#/definitions/internal_delivery_handler.RegisterRequest"
                         }
                     }
                 ],
@@ -150,7 +150,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Успешная регистрация",
                         "schema": {
-                            "$ref": "#/definitions/delivery_handler.RegisterResponse"
+                            "$ref": "#/definitions/internal_delivery_handler.RegisterResponse"
                         }
                     },
                     "400": {

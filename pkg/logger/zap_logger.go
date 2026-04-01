@@ -28,29 +28,19 @@ func (l *ZapLogger) With(fields ...zap.Field) *ZapLogger {
 }
 
 func (l *ZapLogger) Info(msg string, fields map[string]any) {
-	zapFields := make([]zap.Field, 0, len(fields))
-	for key, value := range fields {
-		zapFields = append(zapFields, zap.Any(key, value))
-	}
+	zapFields := transferFields(fields, len(fields))
 
 	l.logger.Info(msg, zapFields...)
 }
 
 func (l *ZapLogger) Warn(msg string, fields map[string]any) {
-	zapFields := make([]zap.Field, 0, len(fields))
-	for key, val := range fields {
-		zapFields = append(zapFields, zap.Any(key, val))
-	}
+	zapFields := transferFields(fields, len(fields))
 
 	l.logger.Warn(msg, zapFields...)
 }
 
 func (l *ZapLogger) Error(msg string, err error, fields map[string]any) {
-	zapFields := make([]zap.Field, 0, len(fields)+1)
-
-	for key, value := range fields {
-		zapFields = append(zapFields, zap.Any(key, value))
-	}
+	zapFields := transferFields(fields, len(fields)+1)
 
 	if err != nil {
 		zapFields = append(zapFields, zap.Error(err))
@@ -61,4 +51,14 @@ func (l *ZapLogger) Error(msg string, err error, fields map[string]any) {
 
 func (l *ZapLogger) Fatal(msg string, err error) {
 	l.logger.Fatal(msg, zap.Error(err))
+}
+
+func transferFields(fields map[string]any, capacity int) []zap.Field {
+	zapFields := make([]zap.Field, 0, capacity)
+
+	for key, value := range fields {
+		zapFields = append(zapFields, zap.Any(key, value))
+	}
+
+	return zapFields
 }

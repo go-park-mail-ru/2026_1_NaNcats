@@ -18,6 +18,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/gomodule/redigo/redis"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
 
 	_ "github.com/go-park-mail-ru/2026_1_NaNcats/docs"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -29,6 +30,10 @@ import (
 // @host		localhost:8080
 // @BasePath	/api
 func main() {
+	// Пытаемся загрузить .env файл только для локальной разработки
+	// В Docker переменные прокинутся сами через docker-compose
+	_ = godotenv.Load()
+
 	port := os.Getenv("PORT") // выделенный под сервер порт из окружения
 	if port == "" {
 		port = "8080"
@@ -59,7 +64,7 @@ func main() {
 	// Получаем URL из переменной окружения (которая прописана в docker-compose)
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		dbURL = "postgres://user:password@localhost:5432/delivery_db?sslmode=disable" // дефолт для локалки без докера
+		log.Fatal("DATABASE_URL environment variable is not set")
 	}
 
 	// Открываем соединение с БД
