@@ -90,11 +90,17 @@ func NewAuthHandler(auc usecase.AuthUseCase, logger domain.Logger) *authHandler 
 // @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
 // @Router			/auth/register [post]
 func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
+	// контекст нынешнего запроса, позволяет досрочно завершить бизнес-логику
+	// если пользователь отключится/отменит загрузку запроса
+	ctx := r.Context()
+
+	l := h.logger.WithContext(ctx)
+
 	// объект DTO запроса
 	curRequest := RegisterRequest{}
 
 	// заполняем объект DTO запроса данными из запроса
-	err := request.JSON(r, &curRequest)
+	err := request.JSON(r, &curRequest, l)
 	if err != nil {
 		response.Error(w, http.StatusBadRequest, err.Error())
 		return
@@ -108,12 +114,6 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userAgent := r.UserAgent()
-
-	// контекст нынешнего запроса, позволяет досрочно завершить бизнес-логику
-	// если пользователь отключится/отменит загрузку запроса
-	ctx := r.Context()
-
-	l := h.logger.WithContext(ctx)
 
 	createdUser, createdSession, err := h.authUC.Register(ctx, userToCreate, userAgent)
 	if err != nil {
@@ -181,7 +181,7 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	curRequest := LoginRequest{}
 
-	err := request.JSON(r, &curRequest)
+	err := request.JSON(r, &curRequest, l)
 	if err != nil {
 		l.Info("failed to decode login request", map[string]any{"error": err.Error()})
 		response.Error(w, http.StatusBadRequest, err.Error())

@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/mailru/easyjson"
@@ -21,8 +20,12 @@ var (
 	ErrNotOnlyJSONVal = errors.New("body must only contain a single JSON value")
 )
 
+type Logger interface {
+	Warn(msg string, fields map[string]any)
+}
+
 // функция декодирования JSON запроса в переданный объект v
-func JSON(r *http.Request, v any) error {
+func JSON(r *http.Request, v any, logger Logger) error {
 	// ограничиваем размер тела запроса - 1 Мб
 	const maxBodySize = 1024 * 1024
 	// обертка над телом запроса, ограничивает количество байт, которые можно прочитать
@@ -44,7 +47,9 @@ func JSON(r *http.Request, v any) error {
 		return nil
 	}
 
-	log.Printf("[WARN] request.JSON fallback! Используем json.Decoder для типа: %T", v)
+	logger.Warn("request.JSON fallback, instead using json.Decoder", map[string]any{
+		"object": v,
+	})
 
 	// создает объект-декодер, который читает данные напрямую из потока (r.Body) по частям
 	decoder := json.NewDecoder(r.Body)
