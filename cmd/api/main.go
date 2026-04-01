@@ -67,8 +67,15 @@ func main() {
 		log.Fatal("DATABASE_URL environment variable is not set")
 	}
 
+	config, err := pgxpool.ParseConfig(dbURL)
+	if err != nil {
+		appLogger.Fatal("config parsing failed", err)
+	}
+
+	config.ConnConfig.Tracer = postgres.NewDBTracer(appLogger)
+
 	// Открываем соединение с БД
-	pool, err := pgxpool.New(ctx, dbURL)
+	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v\n", err)
 	}
@@ -86,7 +93,7 @@ func main() {
 	}
 	log.Println("Migrations applied successfully")
 
-	userRepo := postgres.NewUserRepo(pool, appLogger)
+	userRepo := postgres.NewUserRepo(pool)
 	sessionRepo := redisrepo.NewSessionRepo(redisPool)
 	restaurantBrandRepo := postgres.NewRestaurantBrandRepo(pool)
 

@@ -14,19 +14,16 @@ import (
 )
 
 type userRepo struct {
-	pool   *pgxpool.Pool
-	logger domain.Logger
+	pool *pgxpool.Pool
 }
 
-func NewUserRepo(pool *pgxpool.Pool, logger domain.Logger) repository.UserRepository {
+func NewUserRepo(pool *pgxpool.Pool) repository.UserRepository {
 	return &userRepo{
-		pool:   pool,
-		logger: logger,
+		pool: pool,
 	}
 }
 
 func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (int, error) {
-	l := r.logger.WithContext(ctx)
 
 	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
 
@@ -48,23 +45,10 @@ func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (int, error
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation { // проверка на уникальность
-			l.Info("email already exists", map[string]any{
-				"query": "CreateUser",
-				"email": user.Email,
-			})
 			return 0, domain.ErrEmailAlreadyExists
 		}
-		l.Error("database query execution failed", err, map[string]any{
-			"query": "CreateUser",
-			"email": user.Email,
-		})
 		return 0, err
 	}
-
-	l.Info("database trip successful", map[string]any{
-		"query": "GetUserByEmail",
-		"email": user.Email,
-	})
 
 	return lastInsertedID, nil
 }
@@ -81,8 +65,6 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 	var user domain.User
 	var userRole string // заглушка
 
-	l := r.logger.WithContext(ctx)
-
 	err := r.pool.QueryRow(ctx, query, email).Scan(
 		&user.ID,
 		&user.Name,
@@ -93,30 +75,15 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			l.Info("user not found in database", map[string]any{
-				"query": "GetUserByEmail",
-				"email": email,
-			})
 			return domain.User{}, domain.ErrUserNotFound
 		}
-		l.Error("query", err, map[string]any{
-			"query": "GetUserByEmail",
-			"email": email,
-		})
 		return domain.User{}, err
 	}
-
-	l.Info("database trip successful", map[string]any{
-		"query": "GetUserByEmail",
-		"email": email,
-	})
 
 	return user, nil
 }
 
 func (r *userRepo) GetUserByID(ctx context.Context, id int) (domain.User, error) {
-	l := r.logger.WithContext(ctx)
-
 	query := `
 		SELECT id, name, email, phone, password_hash, user_role
 		FROM "user"
@@ -136,23 +103,10 @@ func (r *userRepo) GetUserByID(ctx context.Context, id int) (domain.User, error)
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			l.Info("user not found in database", map[string]any{
-				"query":   "GetUserByID",
-				"user_id": id,
-			})
 			return domain.User{}, domain.ErrUserNotFound
 		}
-		l.Error("database query execution failed", err, map[string]any{
-			"query": "GetUserById",
-			"id":    id,
-		})
 		return domain.User{}, err
 	}
-
-	l.Info("database trip successful", map[string]any{
-		"query": "GetUserById",
-		"id":    id,
-	})
 
 	return user, nil
 }
