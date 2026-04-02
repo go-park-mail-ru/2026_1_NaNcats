@@ -6,14 +6,13 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE TABLE "user" (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
-	phone TEXT UNIQUE
-		CHECK (phone ~ '^(\+7|8)[\s\-]?\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}$'),
+	phone TEXT UNIQUE,
 		
 	name TEXT NOT NULL
 		CHECK (char_length(name) >= 1 AND char_length(name) <= 39),
 		
 	email TEXT NOT NULL UNIQUE
-		CHECK (email ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$' AND email = LOWER(email)),
+		CHECK (email = LOWER(email)),
 		
 	password_hash TEXT NOT NULL,
 		

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -20,20 +19,19 @@ type AuthUseCase interface {
 	Register(ctx context.Context, user domain.User, userAgent string) (domain.User, domain.Session, error)
 	Login(ctx context.Context, user domain.User, userAgent string) (domain.User, domain.Session, error)
 	Logout(ctx context.Context, sessionID uuid.UUID) error
-	Check(ctx context.Context, sessionID uuid.UUID) (domain.User, error)
-	GetProfile(ctx context.Context, userID int) (domain.User, error)
+	CheckUserSession(ctx context.Context, sessionID uuid.UUID) (domain.User, error)
 }
 
 // реализация контракта
 type authUseCase struct {
-	userRepo  repository.UserRepository
+	userUC    UserUseCase
 	sessionUC SessionUseCase
 }
 
 // функция-конструктор бизнес-логики авторизации
-func NewAuthUseCase(ur repository.UserRepository, suc SessionUseCase) AuthUseCase {
+func NewAuthUseCase(uuc UserUseCase, suc SessionUseCase) AuthUseCase {
 	return &authUseCase{
-		userRepo:  ur,
+		userUC:    uuc,
 		sessionUC: suc,
 	}
 }
@@ -93,7 +91,7 @@ func (u *authUseCase) Register(ctx context.Context, user domain.User, userAgent 
 	user.UpdatedAt = time.Now()
 
 	// вызов создания пользователя из репо
-	id, err := u.userRepo.CreateUser(ctx, user)
+	id, err := u.userUC.Create(ctx, user)
 	if err != nil {
 		return domain.User{}, domain.Session{}, err
 	}
@@ -112,7 +110,7 @@ func (u *authUseCase) Register(ctx context.Context, user domain.User, userAgent 
 func (u *authUseCase) Login(ctx context.Context, user domain.User, userAgent string) (domain.User, domain.Session, error) {
 	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
 
-	currUser, err := u.userRepo.GetUserByEmail(ctx, user.Email)
+	currUser, err := u.userUC.GetByEmail(ctx, user.Email)
 	if err != nil {
 		return domain.User{}, domain.Session{}, domain.ErrInvalidCredentials
 	}
@@ -140,23 +138,13 @@ func (u *authUseCase) Logout(ctx context.Context, sessionID uuid.UUID) error {
 }
 
 // возвращает пользователя сессии, проверяя, существует ли сессия и пользователь сессии
-func (u *authUseCase) Check(ctx context.Context, sessionID uuid.UUID) (domain.User, error) {
+func (u *authUseCase) CheckUserSession(ctx context.Context, sessionID uuid.UUID) (domain.User, error) {
 	session, err := u.sessionUC.Check(ctx, sessionID)
 	if err != nil {
 		return domain.User{}, err
 	}
 
-	user, err := u.userRepo.GetUserByID(ctx, session.UserID)
-	if err != nil {
-		return domain.User{}, err
-	}
-
-	return user, nil
-}
-
-// возвращает юзера по переданному userID
-func (u *authUseCase) GetProfile(ctx context.Context, userID int) (domain.User, error) {
-	user, err := u.userRepo.GetUserByID(ctx, userID)
+	user, err := u.userUC.GetByID(ctx, session.UserID)
 	if err != nil {
 		return domain.User{}, err
 	}

@@ -2,7 +2,6 @@ package redisrepo
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
 	"github.com/gomodule/redigo/redis"
 	"github.com/google/uuid"
+	"github.com/mailru/easyjson"
 )
 
 type sessionRepo struct {
@@ -23,7 +23,7 @@ func NewSessionRepo(pool *redis.Pool) repository.SessionRepository {
 }
 
 func (r *sessionRepo) Create(ctx context.Context, session domain.Session, ttl time.Duration) error {
-	dataSerializer, err := json.Marshal(session)
+	dataSerializer, err := easyjson.Marshal(session)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func (r *sessionRepo) GetByID(ctx context.Context, id uuid.UUID) (domain.Session
 	}
 
 	session := &domain.Session{}
-	err = json.Unmarshal(data, session)
+	err = easyjson.Unmarshal(data, session)
 	if err != nil {
 		return domain.Session{}, err
 	}

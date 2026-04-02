@@ -100,12 +100,15 @@ func main() {
 	// ttl сессии - 24 часа
 	sessionTTL := 24 * time.Hour
 
+	userUC := usecase.NewUserUseCase(userRepo)
 	sessionUC := usecase.NewSessionUseCase(sessionRepo, sessionTTL)
-	authUC := usecase.NewAuthUseCase(userRepo, sessionUC)
+	authUC := usecase.NewAuthUseCase(userUC, sessionUC)
 	restaurantBrandUC := usecase.NewRestaurantBrandUseCase(restaurantBrandRepo)
+	userProfileUC := usecase.NewUserProfileUseCase(userUC)
 
-	authHandler := handler.NewAuthHandler(authUC, appLogger)
+	authHandler := handler.NewAuthHandler(authUC, userUC, appLogger)
 	restaurantBrandHandler := handler.NewRestaurantBrandHandler(restaurantBrandUC, appLogger)
+	userProfileHandler := handler.NewUserProfileHandler(userProfileUC, userUC, sessionUC, appLogger)
 
 	fileServer := http.FileServer(http.Dir("./uploads"))
 
@@ -128,6 +131,9 @@ func main() {
 	mux.Handle("GET /api/images/", http.StripPrefix("/api/images", fileServer))
 
 	mux.HandleFunc("GET /api/restaurants/brands", restaurantBrandHandler.GetRestaurantBrandsList)
+
+	mux.Handle("GET /api/profile", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.GetUserProfile)))
+	mux.Handle("PATCH /api/profile", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.UpdateProfile)))
 
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 

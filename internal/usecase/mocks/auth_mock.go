@@ -42,34 +42,19 @@ func (m *MockAuthUseCase) EXPECT() *MockAuthUseCaseMockRecorder {
 	return m.recorder
 }
 
-// Check mocks base method.
-func (m *MockAuthUseCase) Check(ctx context.Context, sessionID uuid.UUID) (domain.User, error) {
+// CheckUserSession mocks base method.
+func (m *MockAuthUseCase) CheckUserSession(ctx context.Context, sessionID uuid.UUID) (domain.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Check", ctx, sessionID)
+	ret := m.ctrl.Call(m, "CheckUserSession", ctx, sessionID)
 	ret0, _ := ret[0].(domain.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Check indicates an expected call of Check.
-func (mr *MockAuthUseCaseMockRecorder) Check(ctx, sessionID any) *gomock.Call {
+// CheckUserSession indicates an expected call of CheckUserSession.
+func (mr *MockAuthUseCaseMockRecorder) CheckUserSession(ctx, sessionID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Check", reflect.TypeOf((*MockAuthUseCase)(nil).Check), ctx, sessionID)
-}
-
-// GetProfile mocks base method.
-func (m *MockAuthUseCase) GetProfile(ctx context.Context, userID int) (domain.User, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetProfile", ctx, userID)
-	ret0, _ := ret[0].(domain.User)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetProfile indicates an expected call of GetProfile.
-func (mr *MockAuthUseCaseMockRecorder) GetProfile(ctx, userID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProfile", reflect.TypeOf((*MockAuthUseCase)(nil).GetProfile), ctx, userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckUserSession", reflect.TypeOf((*MockAuthUseCase)(nil).CheckUserSession), ctx, sessionID)
 }
 
 // Login mocks base method.

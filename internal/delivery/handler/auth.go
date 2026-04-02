@@ -31,8 +31,6 @@ type RegisterRequest struct {
 //
 //easyjson:json
 type RegisterResponse struct {
-	// Уникальный ID пользователя в системе
-	ID int `json:"id" example:"1"`
 	// Имя для отображения в интерфейсе
 	Name string `json:"name" example:"Иван"`
 	// Email пользователя
@@ -55,8 +53,6 @@ type LoginRequest struct {
 //
 //easyjson:json
 type LoginResponse struct {
-	// Уникальный ID пользователя в системе
-	ID int `json:"id" example:"1"`
 	// Имя для отображения в интерфейсе
 	Name string `json:"name" example:"Иван"`
 	// URL аватарки пользователя
@@ -66,13 +62,15 @@ type LoginResponse struct {
 // структура хендлера авторизации
 type authHandler struct {
 	authUC usecase.AuthUseCase
+	userUC usecase.UserUseCase
 	logger domain.Logger
 }
 
 // функция-конструтор хендлера
-func NewAuthHandler(auc usecase.AuthUseCase, logger domain.Logger) *authHandler {
+func NewAuthHandler(auc usecase.AuthUseCase, uuc usecase.UserUseCase, logger domain.Logger) *authHandler {
 	return &authHandler{
 		authUC: auc,
+		userUC: uuc,
 		logger: logger,
 	}
 }
@@ -153,7 +151,6 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	// ответ, который отдаем юзеру
 	resp := RegisterResponse{
-		ID:        createdUser.ID,
 		Name:      createdUser.Name,
 		Email:     createdUser.Email,
 		CreatedAt: createdUser.CreatedAt,
@@ -220,7 +217,6 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 	response.SetCookie(w, "session_id", createdSession.ID.String(), createdSession.ExpiresAt)
 
 	resp := LoginResponse{
-		ID:   loggedUser.ID,
 		Name: loggedUser.Name,
 	}
 
@@ -300,7 +296,7 @@ func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	loggedUser, err := h.authUC.GetProfile(ctx, userID)
+	loggedUser, err := h.userUC.GetByID(ctx, userID)
 	if err != nil {
 		// Если мидлваря пропустила сессию, значит юзер в базе точно должен быть
 		// Если его нет - это системная проблема или критический сбой
@@ -316,7 +312,6 @@ func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	})
 
 	resp := LoginResponse{
-		ID:   loggedUser.ID,
 		Name: loggedUser.Name,
 	}
 

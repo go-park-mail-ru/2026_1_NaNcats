@@ -58,11 +58,12 @@ func TestAuthHandler_Register(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockAuthUC := ucMocks.NewMockAuthUseCase(ctrl)
+			mockUserUC := ucMocks.NewMockUserUseCase(ctrl)
 			testCase.mockInit(mockAuthUC)
 
 			nopLogger := mocks.NewNopLogger()
 
-			authHandler := NewAuthHandler(mockAuthUC, nopLogger)
+			authHandler := NewAuthHandler(mockAuthUC, mockUserUC, nopLogger)
 
 			var buf bytes.Buffer
 			if s, ok := testCase.inputBody.(string); ok {
@@ -92,7 +93,7 @@ func TestAuthHandler_Register(t *testing.T) {
 }
 
 func TestAuthHandler_GetMe(t *testing.T) {
-	type mockInit func(m *ucMocks.MockAuthUseCase)
+	type mockInit func(authMock *ucMocks.MockAuthUseCase, userMock *ucMocks.MockUserUseCase)
 
 	tests := []struct {
 		name             string
@@ -104,9 +105,9 @@ func TestAuthHandler_GetMe(t *testing.T) {
 		{
 			name:   "Успешный запуск",
 			userID: 1,
-			mockInit: func(m *ucMocks.MockAuthUseCase) {
-				m.EXPECT().
-					GetProfile(gomock.Any(), gomock.Any()).
+			mockInit: func(authMock *ucMocks.MockAuthUseCase, userMock *ucMocks.MockUserUseCase) {
+				userMock.EXPECT().
+					GetByID(gomock.Any(), gomock.Any()).
 					Return(domain.User{Name: "Ivan"}, nil)
 			},
 			expectedStatus:   http.StatusOK,
@@ -115,7 +116,7 @@ func TestAuthHandler_GetMe(t *testing.T) {
 		{
 			name:             "Нет юзера",
 			userID:           nil,
-			mockInit:         func(m *ucMocks.MockAuthUseCase) {},
+			mockInit:         func(authMock *ucMocks.MockAuthUseCase, userMock *ucMocks.MockUserUseCase) {},
 			expectedStatus:   http.StatusOK,
 			expectedJSONCode: http.StatusInternalServerError,
 		},
@@ -127,11 +128,12 @@ func TestAuthHandler_GetMe(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockAuthUC := ucMocks.NewMockAuthUseCase(ctrl)
-			testCase.mockInit(mockAuthUC)
+			mockUserUC := ucMocks.NewMockUserUseCase(ctrl)
+			testCase.mockInit(mockAuthUC, mockUserUC)
 
 			nopLogger := mocks.NewNopLogger()
 
-			authHandler := NewAuthHandler(mockAuthUC, nopLogger)
+			authHandler := NewAuthHandler(mockAuthUC, mockUserUC, nopLogger)
 
 			req := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
 			if testCase.userID != nil {
@@ -211,11 +213,12 @@ func TestAuthHandler_Login(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockAuthUC := ucMocks.NewMockAuthUseCase(ctrl)
+			mockUserUC := ucMocks.NewMockUserUseCase(ctrl)
 			testCase.mockInit(mockAuthUC)
 
 			nopLogger := mocks.NewNopLogger()
 
-			authHandler := NewAuthHandler(mockAuthUC, nopLogger)
+			authHandler := NewAuthHandler(mockAuthUC, mockUserUC, nopLogger)
 
 			var buf bytes.Buffer
 			if s, ok := testCase.inputBody.(string); ok {
@@ -317,11 +320,12 @@ func TestAuthHandler_Logout(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockAuthUC := ucMocks.NewMockAuthUseCase(ctrl)
+			mockUserUC := ucMocks.NewMockUserUseCase(ctrl)
 			testCase.mockInit(mockAuthUC)
 
 			nopLogger := mocks.NewNopLogger()
 
-			authHandler := NewAuthHandler(mockAuthUC, nopLogger)
+			authHandler := NewAuthHandler(mockAuthUC, mockUserUC, nopLogger)
 
 			req := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
 			if testCase.hasCookie {

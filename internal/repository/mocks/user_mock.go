@@ -41,6 +41,21 @@ func (m *MockUserRepository) EXPECT() *MockUserRepositoryMockRecorder {
 	return m.recorder
 }
 
+// CheckUserByID mocks base method.
+func (m *MockUserRepository) CheckUserByID(ctx context.Context, userID int) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckUserByID", ctx, userID)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckUserByID indicates an expected call of CheckUserByID.
+func (mr *MockUserRepositoryMockRecorder) CheckUserByID(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckUserByID", reflect.TypeOf((*MockUserRepository)(nil).CheckUserByID), ctx, userID)
+}
+
 // CreateUser mocks base method.
 func (m *MockUserRepository) CreateUser(ctx context.Context, user domain.User) (int, error) {
 	m.ctrl.T.Helper()
@@ -84,4 +99,18 @@ func (m *MockUserRepository) GetUserByID(ctx context.Context, id int) (domain.Us
 func (mr *MockUserRepositoryMockRecorder) GetUserByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByID", reflect.TypeOf((*MockUserRepository)(nil).GetUserByID), ctx, id)
+}
+
+// UpdateProfile mocks base method.
+func (m *MockUserRepository) UpdateProfile(ctx context.Context, userID int, name, email *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateProfile", ctx, userID, name, email)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateProfile indicates an expected call of UpdateProfile.
+func (mr *MockUserRepositoryMockRecorder) UpdateProfile(ctx, userID, name, email any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateProfile", reflect.TypeOf((*MockUserRepository)(nil).UpdateProfile), ctx, userID, name, email)
 }

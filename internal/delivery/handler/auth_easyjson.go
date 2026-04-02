@@ -31,12 +31,6 @@ func easyjson4a0f95aaDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHand
 		key := in.UnsafeFieldName(false)
 		in.WantColon()
 		switch key {
-		case "id":
-			if in.IsNull() {
-				in.Skip()
-			} else {
-				out.ID = int(in.Int())
-			}
 		case "name":
 			if in.IsNull() {
 				in.Skip()
@@ -72,13 +66,8 @@ func easyjson4a0f95aaEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHand
 	first := true
 	_ = first
 	{
-		const prefix string = ",\"id\":"
-		out.RawString(prefix[1:])
-		out.Int(int(in.ID))
-	}
-	{
 		const prefix string = ",\"name\":"
-		out.RawString(prefix)
+		out.RawString(prefix[1:])
 		out.String(string(in.Name))
 	}
 	{
@@ -218,12 +207,6 @@ func easyjson4a0f95aaDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHand
 		key := in.UnsafeFieldName(false)
 		in.WantColon()
 		switch key {
-		case "id":
-			if in.IsNull() {
-				in.Skip()
-			} else {
-				out.ID = int(in.Int())
-			}
 		case "name":
 			if in.IsNull() {
 				in.Skip()
@@ -251,13 +234,8 @@ func easyjson4a0f95aaEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHand
 	first := true
 	_ = first
 	{
-		const prefix string = ",\"id\":"
-		out.RawString(prefix[1:])
-		out.Int(int(in.ID))
-	}
-	{
 		const prefix string = ",\"name\":"
-		out.RawString(prefix)
+		out.RawString(prefix[1:])
 		out.String(string(in.Name))
 	}
 	{

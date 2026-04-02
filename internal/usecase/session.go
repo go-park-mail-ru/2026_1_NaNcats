@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -69,7 +68,7 @@ func (u *sessionUseCase) Check(ctx context.Context, id uuid.UUID) (domain.Sessio
 	}
 
 	if time.Now().After(session.ExpiresAt) {
-		return domain.Session{}, fmt.Errorf("session expired")
+		return domain.Session{}, domain.ErrSessionExpired
 	}
 
 	// возвращаем id юзера в случае успеха

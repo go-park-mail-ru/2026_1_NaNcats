@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	repoMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/mocks"
 	ucMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -15,7 +14,7 @@ import (
 func TestAuthUseCase_Register(t *testing.T) {
 	// Группируем моки в структуру для удобной передачи
 	type mocks struct {
-		userRepo  *repoMocks.MockUserRepository
+		userUC    *ucMocks.MockUserUseCase
 		sessionUC *ucMocks.MockSessionUseCase
 	}
 
@@ -39,8 +38,8 @@ func TestAuthUseCase_Register(t *testing.T) {
 				PasswordHash: "valid_password_123",
 			},
 			mockInit: func(m mocks, input domain.User, resID int, userAgent string) {
-				m.userRepo.EXPECT().
-					CreateUser(gomock.Any(), gomock.Any()).
+				m.userUC.EXPECT().
+					Create(gomock.Any(), gomock.Any()).
 					Return(resID, nil)
 				m.sessionUC.EXPECT().
 					Create(gomock.Any(), resID, userAgent).
@@ -55,8 +54,8 @@ func TestAuthUseCase_Register(t *testing.T) {
 				PasswordHash: "password123",
 			},
 			mockInit: func(m mocks, input domain.User, resID int, userAgent string) {
-				m.userRepo.EXPECT().
-					CreateUser(gomock.Any(), gomock.Any()).
+				m.userUC.EXPECT().
+					Create(gomock.Any(), gomock.Any()).
 					Return(resID, nil)
 				m.sessionUC.EXPECT().
 					Create(gomock.Any(), resID, userAgent).
@@ -71,8 +70,8 @@ func TestAuthUseCase_Register(t *testing.T) {
 				PasswordHash: "password123",
 			},
 			mockInit: func(m mocks, input domain.User, resID int, userAgent string) {
-				m.userRepo.EXPECT().
-					CreateUser(gomock.Any(), gomock.Any()).
+				m.userUC.EXPECT().
+					Create(gomock.Any(), gomock.Any()).
 					Return(0, domain.ErrEmailAlreadyExists)
 			},
 			expectErr: domain.ErrEmailAlreadyExists,
@@ -113,11 +112,11 @@ func TestAuthUseCase_Register(t *testing.T) {
 			defer ctrl.Finish()
 
 			m := mocks{
-				userRepo:  repoMocks.NewMockUserRepository(ctrl),
+				userUC:    ucMocks.NewMockUserUseCase(ctrl),
 				sessionUC: ucMocks.NewMockSessionUseCase(ctrl),
 			}
 
-			authUseCase := NewAuthUseCase(m.userRepo, m.sessionUC)
+			authUseCase := NewAuthUseCase(m.userUC, m.sessionUC)
 
 			userAgent := "Mozilla/5.0 (Test Agent)"
 

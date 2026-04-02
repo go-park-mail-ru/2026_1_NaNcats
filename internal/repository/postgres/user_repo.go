@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
@@ -24,7 +25,6 @@ func NewUserRepo(pool *pgxpool.Pool) repository.UserRepository {
 }
 
 func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (int, error) {
-
 	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
 
 	query := `
@@ -109,4 +109,75 @@ func (r *userRepo) GetUserByID(ctx context.Context, id int) (domain.User, error)
 	}
 
 	return user, nil
+}
+
+func (r *userRepo) CheckUserByID(ctx context.Context, userID int) (bool, error) {
+	query := `SELECT EXISTS(SELECT 1 FROM "user" WHERE id = $1);`
+
+	var isExists bool
+
+	err := r.pool.QueryRow(ctx, query, userID).Scan(&isExists)
+	if err != nil {
+		return false, err
+	}
+
+	return isExists, nil
+}
+
+func (r *userRepo) UpdateProfile(ctx context.Context, userID int, name, email *string) error {
+	query := `UPDATE "user" SET `
+	var setClauses []string
+	var args []any
+	argID := 1 // значение для нумерации аргументов
+
+	if name != nil {
+		setClauses = append(setClauses, "name = $"+strconv.Itoa(argID))
+		args = append(args, *name)
+		argID++
+	}
+
+	if email != nil {
+		setClauses = append(setClauses, "email = $"+strconv.Itoa(argID))
+		args = append(args, *email)
+		argID++
+	}
+
+	if argID == 1 {
+		// кто-то отправил пустой запрос, это не очень хорошо
+		return domain.ErrEmptyDBQuery
+	}
+
+	query += strings.Join(setClauses, ", ") + " WHERE id = $" + strconv.Itoa(argID)
+	args = append(args, userID)
+
+	tag, err := r.pool.Exec(ctx, query, args...)
+	if err != nil {
+		var pgErr *pgconn.PgError
+
+		if errors.As(err, &pgErr) {
+			switch pgErr.Code {
+			case pgerrcode.UniqueViolation: // 23505
+				switch pgErr.ConstraintName { // такую реализацию можно будет легко масштабировать, если решим менять какие-то другие unique поля
+				case "user_email_key":
+					return domain.ErrEmailAlreadyExists
+				}
+			case pgerrcode.CheckViolation:
+				return domain.ErrInvalidInput
+			case pgerrcode.SyntaxError:
+				return domain.ErrSQLSyntax
+			case pgerrcode.DeadlockDetected:
+				return domain.ErrSQLDeadlock
+			case pgerrcode.LockNotAvailable:
+				return domain.ErrSQLLockTimeout
+			default:
+				return err
+			}
+		}
+	}
+
+	if tag.RowsAffected() == 0 {
+		return domain.ErrUserNotFound
+	}
+
+	return nil
 }
