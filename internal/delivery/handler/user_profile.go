@@ -18,6 +18,11 @@ type UserProfileUpdateRequest struct {
 }
 
 //easyjson:json
+type MessageResponse struct {
+	Message string `json:"message"`
+}
+
+//easyjson:json
 type UserProfileResponse struct {
 	Name  string `json:"name" example:"Илья"`
 	Email string `json:"email" example:"terminator2007@gmail.com"`
@@ -119,5 +124,5 @@ func (h *userProfileHandler) UpdateProfile(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	response.JSON(w, http.StatusOK, map[string]string{"message": "profile uptade succeed"})
+	response.JSON(w, http.StatusOK, MessageResponse{Message: "profile uptade succeed"})
 }

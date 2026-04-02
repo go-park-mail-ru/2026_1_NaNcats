@@ -43,19 +43,19 @@
                     "400": {
                         "description": "Неверный формат JSON",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Неверный логин или пароль",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -104,13 +104,13 @@
                     "401": {
                         "description": "Неавторизован",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -150,19 +150,107 @@
                     "400": {
                         "description": "Ошибка валидации (email/пароль)",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Пользователь с такой почтой уже существует",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/profile": {
+            "get": {
+                "description": "Возвращает данные профиля (имя и email) текущего авторизованного пользователя",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Получение профиля пользователя",
+                "responses": {
+                    "200": {
+                        "description": "Успешное получение данных профиля",
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler.UserProfileResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Частично обновляет данные профиля текущего пользователя (имя и/или email)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Обновление данных профиля",
+                "parameters": [
+                    {
+                        "description": "Данные для обновления профиля",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler.UserProfileUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Профиль успешно обновлен",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации JSON или нет данных для обновления",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Указанный email уже используется другим пользователем",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -206,123 +294,16 @@
         }
     },
     "definitions": {
-        "delivery_handler.LoginRequest": {
+        "github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse": {
             "type": "object",
             "properties": {
-                "login": {
-                    "description": "Email пользователя",
-                    "type": "string",
-                    "example": "user@mail.ru"
-                },
-                "password": {
-                    "description": "Пароль в открытом виде",
-                    "type": "string",
-                    "example": "qwerty12345"
-                }
-            }
-        },
-        "delivery_handler.LoginResponse": {
-            "type": "object",
-            "properties": {
-                "avatar_url": {
-                    "description": "URL аватарки пользователя",
-                    "type": "string",
-                    "example": "users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"
-                },
-                "id": {
-                    "description": "Уникальный ID пользователя в системе",
+                "code": {
                     "type": "integer",
-                    "example": 1
+                    "example": 400
                 },
-                "name": {
-                    "description": "Имя для отображения в интерфейсе",
+                "message": {
                     "type": "string",
-                    "example": "Иван"
-                }
-            }
-        },
-        "delivery_handler.RegisterRequest": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "description": "Email пользователя",
-                    "type": "string",
-                    "example": "user@mail.ru"
-                },
-                "name": {
-                    "description": "Имя пользователя",
-                    "type": "string",
-                    "example": "Иван"
-                },
-                "password": {
-                    "description": "Пароль в открытом виде",
-                    "type": "string",
-                    "example": "qwerty12345"
-                }
-            }
-        },
-        "delivery_handler.RegisterResponse": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "description": "Время создания аккаунта по стандарту RFC 3339",
-                    "type": "string",
-                    "example": "2006-01-02T15:04:05Z07:00"
-                },
-                "email": {
-                    "description": "Email пользователя",
-                    "type": "string",
-                    "example": "user@mail.ru"
-                },
-                "id": {
-                    "description": "Уникальный ID пользователя в системе",
-                    "type": "integer",
-                    "example": 1
-                },
-                "name": {
-                    "description": "Имя для отображения в интерфейсе",
-                    "type": "string",
-                    "example": "Иван"
-                }
-            }
-        },
-        "delivery_handler.RestaurantBrandResponse": {
-            "type": "object",
-            "properties": {
-                "banner_url": {
-                    "type": "string",
-                    "example": "restaurangs/banners/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"
-                },
-                "description": {
-                    "type": "string",
-                    "example": "Острые крылошки"
-                },
-                "id": {
-                    "type": "string",
-                    "example": "550e8400-e29b-41d4-a716-446655440000"
-                },
-                "logo_url": {
-                    "type": "string",
-                    "example": "restaurants/logos/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "KFC"
-                },
-                "promotion_tier": {
-                    "type": "integer",
-                    "example": 2
-                }
-            }
-        },
-        "delivery_handler.RestaurantBrandsResponse": {
-            "type": "object",
-            "properties": {
-                "restaurants": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/delivery_handler.RestaurantBrandResponse"
-                    }
+                    "example": "Неверный формат запроса"
                 }
             }
         },
@@ -348,11 +329,6 @@
                     "description": "URL аватарки пользователя",
                     "type": "string",
                     "example": "users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"
-                },
-                "id": {
-                    "description": "Уникальный ID пользователя в системе",
-                    "type": "integer",
-                    "example": 1
                 },
                 "name": {
                     "description": "Имя для отображения в интерфейсе",
@@ -393,11 +369,6 @@
                     "description": "Email пользователя",
                     "type": "string",
                     "example": "user@mail.ru"
-                },
-                "id": {
-                    "description": "Уникальный ID пользователя в системе",
-                    "type": "integer",
-                    "example": 1
                 },
                 "name": {
                     "description": "Имя для отображения в интерфейсе",
@@ -446,16 +417,29 @@
                 }
             }
         },
-        "response.ErrorResponse": {
+        "internal_delivery_handler.UserProfileResponse": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 400
-                },
-                "message": {
+                "email": {
                     "type": "string",
-                    "example": "Неверный формат запроса"
+                    "example": "terminator2007@gmail.com"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Илья"
+                }
+            }
+        },
+        "internal_delivery_handler.UserProfileUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "new_mail@gmail.com"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Андрей"
                 }
             }
         }

@@ -1,92 +1,13 @@
 basePath: /api
 definitions:
-  delivery_handler.LoginRequest:
+  github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse:
     properties:
-      login:
-        description: Email пользователя
-        example: user@mail.ru
-        type: string
-      password:
-        description: Пароль в открытом виде
-        example: qwerty12345
-        type: string
-    type: object
-  delivery_handler.LoginResponse:
-    properties:
-      avatar_url:
-        description: URL аватарки пользователя
-        example: users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
-        type: string
-      id:
-        description: Уникальный ID пользователя в системе
-        example: 1
+      code:
+        example: 400
         type: integer
-      name:
-        description: Имя для отображения в интерфейсе
-        example: Иван
+      message:
+        example: Неверный формат запроса
         type: string
-    type: object
-  delivery_handler.RegisterRequest:
-    properties:
-      email:
-        description: Email пользователя
-        example: user@mail.ru
-        type: string
-      name:
-        description: Имя пользователя
-        example: Иван
-        type: string
-      password:
-        description: Пароль в открытом виде
-        example: qwerty12345
-        type: string
-    type: object
-  delivery_handler.RegisterResponse:
-    properties:
-      created_at:
-        description: Время создания аккаунта по стандарту RFC 3339
-        example: 2006-01-02T15:04:05Z07:00
-        type: string
-      email:
-        description: Email пользователя
-        example: user@mail.ru
-        type: string
-      id:
-        description: Уникальный ID пользователя в системе
-        example: 1
-        type: integer
-      name:
-        description: Имя для отображения в интерфейсе
-        example: Иван
-        type: string
-    type: object
-  delivery_handler.RestaurantBrandResponse:
-    properties:
-      banner_url:
-        example: restaurangs/banners/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
-        type: string
-      description:
-        example: Острые крылошки
-        type: string
-      id:
-        example: 550e8400-e29b-41d4-a716-446655440000
-        type: string
-      logo_url:
-        example: restaurants/logos/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
-        type: string
-      name:
-        example: KFC
-        type: string
-      promotion_tier:
-        example: 2
-        type: integer
-    type: object
-  delivery_handler.RestaurantBrandsResponse:
-    properties:
-      restaurants:
-        items:
-          $ref: '#/definitions/delivery_handler.RestaurantBrandResponse'
-        type: array
     type: object
   internal_delivery_handler.LoginRequest:
     properties:
@@ -105,10 +26,6 @@ definitions:
         description: URL аватарки пользователя
         example: users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
         type: string
-      id:
-        description: Уникальный ID пользователя в системе
-        example: 1
-        type: integer
       name:
         description: Имя для отображения в интерфейсе
         example: Иван
@@ -139,10 +56,6 @@ definitions:
         description: Email пользователя
         example: user@mail.ru
         type: string
-      id:
-        description: Уникальный ID пользователя в системе
-        example: 1
-        type: integer
       name:
         description: Имя для отображения в интерфейсе
         example: Иван
@@ -176,13 +89,22 @@ definitions:
           $ref: '#/definitions/internal_delivery_handler.RestaurantBrandResponse'
         type: array
     type: object
-  response.ErrorResponse:
+  internal_delivery_handler.UserProfileResponse:
     properties:
-      code:
-        example: 400
-        type: integer
-      message:
-        example: Неверный формат запроса
+      email:
+        example: terminator2007@gmail.com
+        type: string
+      name:
+        example: Илья
+        type: string
+    type: object
+  internal_delivery_handler.UserProfileUpdateRequest:
+    properties:
+      email:
+        example: new_mail@gmail.com
+        type: string
+      name:
+        example: Андрей
         type: string
     type: object
 host: localhost:8080
@@ -214,15 +136,15 @@ paths:
         "400":
           description: Неверный формат JSON
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
         "401":
           description: Неверный логин или пароль
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
       summary: Авторизация пользователя
       tags:
       - auth
@@ -255,11 +177,11 @@ paths:
         "401":
           description: Неавторизован
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
         "500":
           description: Внутренняя ошибка
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
       summary: Проверка текущей сессии
       tags:
       - auth
@@ -286,18 +208,78 @@ paths:
         "400":
           description: Ошибка валидации (email/пароль)
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
         "409":
           description: Пользователь с такой почтой уже существует
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
       summary: Регистрация пользователя
       tags:
       - auth
+  /profile:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает данные профиля (имя и email) текущего авторизованного
+        пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное получение данных профиля
+          schema:
+            $ref: '#/definitions/internal_delivery_handler.UserProfileResponse'
+        "404":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+      summary: Получение профиля пользователя
+      tags:
+      - profile
+    patch:
+      consumes:
+      - application/json
+      description: Частично обновляет данные профиля текущего пользователя (имя и/или
+        email)
+      parameters:
+      - description: Данные для обновления профиля
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal_delivery_handler.UserProfileUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Профиль успешно обновлен
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Ошибка валидации JSON или нет данных для обновления
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+        "409":
+          description: Указанный email уже используется другим пользователем
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+      summary: Обновление данных профиля
+      tags:
+      - profile
   /restaurants/brands:
     get:
       description: Возвращает список брендов ресторанов с поддержкой пагинации (limit

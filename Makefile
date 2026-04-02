@@ -9,7 +9,7 @@ MAIN_PKG = ./cmd/api/main.go
 COVERAGE_FILE = coverage.out
 COVERAGE_HTML = coverage.html
 
-.PHONY: all run build clean test gen cover
+.PHONY: all run build clean test gen cover migrate-create migrate-up migrate-down swagger
 
 # Команда по умолчанию
 all: run
@@ -69,4 +69,4 @@ migrate-down:
 	docker compose exec backend ./migrate -path db/migrations -database "$(DATABASE_URL)" down
 
 swagger:
-	swag init -g $(MAIN_PKG)
+	swag init -g $(MAIN_PKG) --parseInternal --parseDependency
