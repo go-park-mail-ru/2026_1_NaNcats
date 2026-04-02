@@ -1,7 +1,5 @@
 package handler
 
-//go:generate easyjson $GOFILE
-
 import (
 	"errors"
 	"net/http"
@@ -41,6 +39,16 @@ func NewUserProfileHandler(upuc usecase.UserProfileUseCase, uuc usecase.UserUseC
 	}
 }
 
+// GetUserProfile godoc
+// @Summary 		Получение профиля пользователя
+// @Description		Возвращает данные профиля (имя и email) текущего авторизованного пользователя
+// @Tags			profile
+// @Accept			json
+// @Produce			json
+// @Success			200		{object}  UserProfileResponse		"Успешное получение данных профиля"
+// @Failure			404		{object}  response.ErrorResponse	"Пользователь не найден"
+// @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
+// @Router			/profile [get]
 func (h *userProfileHandler) GetUserProfile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -68,6 +76,18 @@ func (h *userProfileHandler) GetUserProfile(w http.ResponseWriter, r *http.Reque
 	response.JSON(w, http.StatusOK, resp)
 }
 
+// UpdateProfile godoc
+// @Summary 		Обновление данных профиля
+// @Description		Частично обновляет данные профиля текущего пользователя (имя и/или email)
+// @Tags			profile
+// @Accept			json
+// @Produce			json
+// @Param			input	body	  UserProfileUpdateRequest	true	"Данные для обновления профиля"
+// @Success			200		{object}  map[string]string			"Профиль успешно обновлен"
+// @Failure			400		{object}  response.ErrorResponse	"Ошибка валидации JSON или нет данных для обновления"
+// @Failure			409		{object}  response.ErrorResponse	"Указанный email уже используется другим пользователем"
+// @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
+// @Router			/profile [patch]
 func (h *userProfileHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
@@ -96,6 +116,7 @@ func (h *userProfileHandler) UpdateProfile(w http.ResponseWriter, r *http.Reques
 		default:
 			response.Error(w, http.StatusInternalServerError, "internal server error")
 		}
+		return
 	}
 
 	response.JSON(w, http.StatusOK, map[string]string{"message": "profile uptade succeed"})
