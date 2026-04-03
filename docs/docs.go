@@ -262,6 +262,74 @@ const docTemplate = `{
                 }
             }
         },
+        "/profile/avatar": {
+            "post": {
+                "description": "Загружает и обновляет аватар текущего авторизованного пользователя. Принимает multipart/form-data с полем 'avatar'.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Обновление аватара пользователя",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Файл аватара (WEBP/JPG/JPEG/PNG, до 5МБ)",
+                        "name": "avatar",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Аватар успешно обновлен",
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler.UpdateAvatarResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка запроса (файл слишком большой, неверный формат или отсутствует)",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Удаляет аватар текущего авторизованного пользователя и устанавливает аватар по умолчанию.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Удаление аватара пользователя",
+                "responses": {
+                    "200": {
+                        "description": "Аватар успешно удален",
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler.UpdateAvatarResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/restaurants/brands": {
             "get": {
                 "description": "Возвращает список брендов ресторанов с поддержкой пагинации (limit и offset)",
@@ -423,9 +491,24 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_delivery_handler.UpdateAvatarResponse": {
+            "type": "object",
+            "properties": {
+                "avatar_url": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_delivery_handler.UserProfileResponse": {
             "type": "object",
             "properties": {
+                "avatar_url": {
+                    "type": "string",
+                    "example": "users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"
+                },
                 "email": {
                     "type": "string",
                     "example": "terminator2007@gmail.com"

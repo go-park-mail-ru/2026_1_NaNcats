@@ -89,8 +89,18 @@ definitions:
           $ref: '#/definitions/internal_delivery_handler.RestaurantBrandResponse'
         type: array
     type: object
+  internal_delivery_handler.UpdateAvatarResponse:
+    properties:
+      avatar_url:
+        type: string
+      message:
+        type: string
+    type: object
   internal_delivery_handler.UserProfileResponse:
     properties:
+      avatar_url:
+        example: users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
+        type: string
       email:
         example: terminator2007@gmail.com
         type: string
@@ -278,6 +288,53 @@ paths:
           schema:
             $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
       summary: Обновление данных профиля
+      tags:
+      - profile
+  /profile/avatar:
+    delete:
+      description: Удаляет аватар текущего авторизованного пользователя и устанавливает
+        аватар по умолчанию.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Аватар успешно удален
+          schema:
+            $ref: '#/definitions/internal_delivery_handler.UpdateAvatarResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+      summary: Удаление аватара пользователя
+      tags:
+      - profile
+    post:
+      consumes:
+      - multipart/form-data
+      description: Загружает и обновляет аватар текущего авторизованного пользователя.
+        Принимает multipart/form-data с полем 'avatar'.
+      parameters:
+      - description: Файл аватара (WEBP/JPG/JPEG/PNG, до 5МБ)
+        in: formData
+        name: avatar
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Аватар успешно обновлен
+          schema:
+            $ref: '#/definitions/internal_delivery_handler.UpdateAvatarResponse'
+        "400":
+          description: Ошибка запроса (файл слишком большой, неверный формат или отсутствует)
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+      summary: Обновление аватара пользователя
       tags:
       - profile
   /restaurants/brands:

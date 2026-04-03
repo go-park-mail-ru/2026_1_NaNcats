@@ -18,29 +18,33 @@ type UserProfileUpdateRequest struct {
 }
 
 //easyjson:json
-type MessageResponse struct {
-	Message string `json:"message"`
+type UpdateAvatarResponse struct {
+	Message   string `json:"message"`
+	AvatarURL string `json:"avatar_url"`
 }
 
 //easyjson:json
 type UserProfileResponse struct {
-	Name  string `json:"name" example:"Илья"`
-	Email string `json:"email" example:"terminator2007@gmail.com"`
+	Name      string `json:"name" example:"Илья"`
+	Email     string `json:"email" example:"terminator2007@gmail.com"`
+	AvatarURL string `json:"avatar_url" example:"users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"`
 }
 
 type userProfileHandler struct {
-	userProfileUC usecase.UserProfileUseCase
-	userUC        usecase.UserUseCase
-	sessionUC     usecase.SessionUseCase
-	logger        domain.Logger
+	userProfileUC    usecase.UserProfileUseCase
+	userUC           usecase.UserUseCase
+	sessionUC        usecase.SessionUseCase
+	logger           domain.Logger
+	defaultAvatarURL string
 }
 
-func NewUserProfileHandler(upuc usecase.UserProfileUseCase, uuc usecase.UserUseCase, suc usecase.SessionUseCase, logger domain.Logger) *userProfileHandler {
+func NewUserProfileHandler(upuc usecase.UserProfileUseCase, uuc usecase.UserUseCase, suc usecase.SessionUseCase, logger domain.Logger, defaultAvatarURL string) *userProfileHandler {
 	return &userProfileHandler{
-		userProfileUC: upuc,
-		userUC:        uuc,
-		sessionUC:     suc,
-		logger:        logger,
+		userProfileUC:    upuc,
+		userUC:           uuc,
+		sessionUC:        suc,
+		logger:           logger,
+		defaultAvatarURL: defaultAvatarURL,
 	}
 }
 
@@ -73,9 +77,15 @@ func (h *userProfileHandler) GetUserProfile(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	avatar := userProfile.AvatarURL
+	if avatar == "" {
+		avatar = h.defaultAvatarURL
+	}
+
 	resp := UserProfileResponse{
-		Name:  userProfile.Name,
-		Email: userProfile.Email,
+		Name:      userProfile.Name,
+		Email:     userProfile.Email,
+		AvatarURL: avatar,
 	}
 
 	response.JSON(w, http.StatusOK, resp)
@@ -124,5 +134,88 @@ func (h *userProfileHandler) UpdateProfile(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	response.JSON(w, http.StatusOK, MessageResponse{Message: "profile uptade succeed"})
+	response.JSON(w, http.StatusOK, response.MessageResponse{Message: "profile uptade succeed"})
+}
+
+// UpdateAvatar godoc
+// @Summary 		Обновление аватара пользователя
+// @Description		Загружает и обновляет аватар текущего авторизованного пользователя. Принимает multipart/form-data с полем 'avatar'.
+// @Tags			profile
+// @Accept			multipart/form-data
+// @Produce			json
+// @Param			avatar	formData  file						true	"Файл аватара (WEBP/JPG/JPEG/PNG, до 5МБ)"
+// @Success			200		{object}  UpdateAvatarResponse		"Аватар успешно обновлен"
+// @Failure			400		{object}  response.ErrorResponse	"Ошибка запроса (файл слишком большой, неверный формат или отсутствует)"
+// @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
+// @Router			/profile/avatar [post]
+func (h *userProfileHandler) UpdateAvatar(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	userID, ok := ctx.Value(middleware.UserIDKey).(int)
+	if !ok {
+		response.Error(w, http.StatusInternalServerError, "unauthorized or missing context")
+		return
+	}
+
+	if err := r.ParseMultipartForm(5 << 20); err != nil {
+		response.Error(w, http.StatusBadRequest, "file is too large (max 5MB)")
+		return
+	}
+
+	file, fileHeader, err := r.FormFile("avatar")
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "failed to get 'avatar' field from form")
+		return
+	}
+
+	if fileHeader.Size > (5 << 20) {
+		response.Error(w, http.StatusBadRequest, "file size larger than 5MB limit")
+		return
+	}
+
+	newAvatarURL, err := h.userUC.UpdateAvatar(ctx, userID, file)
+	if err != nil {
+		if errors.Is(err, domain.ErrInvalidImageExt) {
+			response.Error(w, http.StatusBadRequest, "unsupported image format (only JPEG/PNG allowed)")
+			return
+		}
+		h.logger.Error("failed to update avatar", err, map[string]any{})
+		response.Error(w, http.StatusInternalServerError, "failed to upload avatar")
+		return
+	}
+
+	response.JSON(w, http.StatusOK, UpdateAvatarResponse{
+		Message:   "avatar updated successfully",
+		AvatarURL: newAvatarURL,
+	})
+}
+
+// DeleteAvatar godoc
+// @Summary 		Удаление аватара пользователя
+// @Description		Удаляет аватар текущего авторизованного пользователя и устанавливает аватар по умолчанию.
+// @Tags			profile
+// @Produce			json
+// @Success			200		{object}  UpdateAvatarResponse		"Аватар успешно удален"
+// @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
+// @Router			/profile/avatar [delete]
+func (h *userProfileHandler) DeleteAvatar(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	userID, ok := ctx.Value(middleware.UserIDKey).(int)
+	if !ok {
+		response.Error(w, http.StatusInternalServerError, "unauthorized or missing context")
+		return
+	}
+
+	err := h.userUC.DeleteAvatar(ctx, userID)
+	if err != nil {
+		h.logger.Error("failed to delete avatar", err, map[string]any{})
+		response.Error(w, http.StatusInternalServerError, "failed to delete avatar")
+		return
+	}
+
+	response.JSON(w, http.StatusOK, UpdateAvatarResponse{
+		Message:   "avatar deleted successfully",
+		AvatarURL: h.defaultAvatarURL,
+	})
 }

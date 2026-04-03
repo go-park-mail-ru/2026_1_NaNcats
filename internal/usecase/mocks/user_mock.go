@@ -11,6 +11,7 @@ package mocks
 
 import (
 	context "context"
+	io "io"
 	reflect "reflect"
 
 	domain "github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
@@ -71,6 +72,20 @@ func (mr *MockUserUseCaseMockRecorder) Create(ctx, user any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockUserUseCase)(nil).Create), ctx, user)
 }
 
+// DeleteAvatar mocks base method.
+func (m *MockUserUseCase) DeleteAvatar(ctx context.Context, userID int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteAvatar", ctx, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteAvatar indicates an expected call of DeleteAvatar.
+func (mr *MockUserUseCaseMockRecorder) DeleteAvatar(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAvatar", reflect.TypeOf((*MockUserUseCase)(nil).DeleteAvatar), ctx, userID)
+}
+
 // GetByEmail mocks base method.
 func (m *MockUserUseCase) GetByEmail(ctx context.Context, email string) (domain.User, error) {
 	m.ctrl.T.Helper()
@@ -99,6 +114,21 @@ func (m *MockUserUseCase) GetByID(ctx context.Context, userID int) (domain.User,
 func (mr *MockUserUseCaseMockRecorder) GetByID(ctx, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockUserUseCase)(nil).GetByID), ctx, userID)
+}
+
+// UpdateAvatar mocks base method.
+func (m *MockUserUseCase) UpdateAvatar(ctx context.Context, userID int, file io.Reader) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateAvatar", ctx, userID, file)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateAvatar indicates an expected call of UpdateAvatar.
+func (mr *MockUserUseCaseMockRecorder) UpdateAvatar(ctx, userID, file any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAvatar", reflect.TypeOf((*MockUserUseCase)(nil).UpdateAvatar), ctx, userID, file)
 }
 
 // UpdateProfile mocks base method.

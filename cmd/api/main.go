@@ -13,6 +13,7 @@ import (
 	infrastructureLogger "github.com/go-park-mail-ru/2026_1_NaNcats/internal/infrastructure/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/redisrepo"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/s3"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
 	"github.com/golang-migrate/migrate/v4"
@@ -93,24 +94,36 @@ func main() {
 	}
 	log.Println("Migrations applied successfully")
 
+	// S3
+	keyID := os.Getenv("S3_KEY_ID")
+	secretKey := os.Getenv("S3_SECRET_KEY")
+	bucketName := "nancats-bucket"
+
 	userRepo := postgres.NewUserRepo(pool)
 	sessionRepo := redisrepo.NewSessionRepo(redisPool)
 	restaurantBrandRepo := postgres.NewRestaurantBrandRepo(pool)
+	s3Repo, err := s3.NewS3Storage(ctx, keyID, secretKey, bucketName, "ru-central1")
+	if err != nil {
+		appLogger.Fatal("Failed to init S3", err)
+	}
 
 	// ttl сессии - 24 часа
 	sessionTTL := 24 * time.Hour
 
-	userUC := usecase.NewUserUseCase(userRepo)
+	userUC := usecase.NewUserUseCase(userRepo, s3Repo)
 	sessionUC := usecase.NewSessionUseCase(sessionRepo, sessionTTL)
 	authUC := usecase.NewAuthUseCase(userUC, sessionUC)
 	restaurantBrandUC := usecase.NewRestaurantBrandUseCase(restaurantBrandRepo)
 	userProfileUC := usecase.NewUserProfileUseCase(userUC)
 
+	defaultAvatarURL := os.Getenv("DEFAULT_AVATAR_URL")
+	if defaultAvatarURL == "" {
+		appLogger.Warn("DEFAULT_AVATAR_URL пустой, фронтенд может упасть при запросе стандартного аватара", map[string]any{})
+	}
+
 	authHandler := handler.NewAuthHandler(authUC, userUC, appLogger)
 	restaurantBrandHandler := handler.NewRestaurantBrandHandler(restaurantBrandUC, appLogger)
-	userProfileHandler := handler.NewUserProfileHandler(userProfileUC, userUC, sessionUC, appLogger)
-
-	fileServer := http.FileServer(http.Dir("./uploads"))
+	userProfileHandler := handler.NewUserProfileHandler(userProfileUC, userUC, sessionUC, appLogger, defaultAvatarURL)
 
 	authMW := middleware.NewAuthMiddleware(sessionUC, appLogger)
 	corsMW := middleware.NewCORSMiddleware([]string{
@@ -128,12 +141,12 @@ func main() {
 	// ручка, которую дергаем для проверки авторизации по куки с миддлваром на авторизацию
 	mux.Handle("GET /api/auth/me", authMW.RequireAuth(http.HandlerFunc(authHandler.GetMe)))
 
-	mux.Handle("GET /api/images/", http.StripPrefix("/api/images", fileServer))
-
 	mux.HandleFunc("GET /api/restaurants/brands", restaurantBrandHandler.GetRestaurantBrandsList)
 
 	mux.Handle("GET /api/profile", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.GetUserProfile)))
 	mux.Handle("PATCH /api/profile", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.UpdateProfile)))
+	mux.Handle("POST /api/profile/avatar", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.UpdateAvatar)))
+	mux.Handle("DELETE /api/profile/avatar", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.DeleteAvatar)))
 
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 

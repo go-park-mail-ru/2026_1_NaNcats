@@ -181,3 +181,33 @@ func (r *userRepo) UpdateProfile(ctx context.Context, userID int, name, email *s
 
 	return nil
 }
+
+func (r *userRepo) UpdateAvatarURL(ctx context.Context, userID int, newAvatarURL string) error {
+	query := `UPDATE "user" SET "avatar_url" = $1 WHERE id = $2`
+
+	tag, err := r.pool.Exec(ctx, query, newAvatarURL, userID)
+	if err != nil {
+		var pgErr *pgconn.PgError
+
+		if errors.As(err, &pgErr) {
+			switch pgErr.Code {
+			case pgerrcode.CheckViolation:
+				return domain.ErrInvalidInput
+			case pgerrcode.SyntaxError:
+				return domain.ErrSQLSyntax
+			case pgerrcode.DeadlockDetected:
+				return domain.ErrSQLDeadlock
+			case pgerrcode.LockNotAvailable:
+				return domain.ErrSQLLockTimeout
+			default:
+				return err
+			}
+		}
+	}
+
+	if tag.RowsAffected() == 0 {
+		return domain.ErrUserNotFound
+	}
+
+	return nil
+}

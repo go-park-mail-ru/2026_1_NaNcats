@@ -101,6 +101,20 @@ func (mr *MockUserRepositoryMockRecorder) GetUserByID(ctx, id any) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByID", reflect.TypeOf((*MockUserRepository)(nil).GetUserByID), ctx, id)
 }
 
+// UpdateAvatarURL mocks base method.
+func (m *MockUserRepository) UpdateAvatarURL(ctx context.Context, userID int, newAvatarURL string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateAvatarURL", ctx, userID, newAvatarURL)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateAvatarURL indicates an expected call of UpdateAvatarURL.
+func (mr *MockUserRepositoryMockRecorder) UpdateAvatarURL(ctx, userID, newAvatarURL any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAvatarURL", reflect.TypeOf((*MockUserRepository)(nil).UpdateAvatarURL), ctx, userID, newAvatarURL)
+}
+
 // UpdateProfile mocks base method.
 func (m *MockUserRepository) UpdateProfile(ctx context.Context, userID int, name, email *string) error {
 	m.ctrl.T.Helper()

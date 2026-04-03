@@ -20,4 +20,6 @@ type UserRepository interface {
 	CheckUserByID(ctx context.Context, userID int) (bool, error)
 	// метод для обновления полей юзера
 	UpdateProfile(ctx context.Context, userID int, name, email *string) error
+	// метод для обновления URL аватара
+	UpdateAvatarURL(ctx context.Context, userID int, newAvatarURL string) error
 }
