@@ -102,6 +102,7 @@ func main() {
 	userRepo := postgres.NewUserRepo(pool)
 	sessionRepo := redisrepo.NewSessionRepo(redisPool)
 	restaurantBrandRepo := postgres.NewRestaurantBrandRepo(pool)
+	addressRepo := postgres.NewAddressRepo(pool)
 	s3Repo, err := s3.NewS3Storage(ctx, keyID, secretKey, bucketName, "ru-central1")
 	if err != nil {
 		appLogger.Fatal("Failed to init S3", err)
@@ -115,6 +116,7 @@ func main() {
 	authUC := usecase.NewAuthUseCase(userUC, sessionUC)
 	restaurantBrandUC := usecase.NewRestaurantBrandUseCase(restaurantBrandRepo)
 	userProfileUC := usecase.NewUserProfileUseCase(userUC)
+	addressUC := usecase.NewAddressUseCase(addressRepo)
 
 	defaultAvatarURL := os.Getenv("DEFAULT_AVATAR_URL")
 	if defaultAvatarURL == "" {
@@ -124,6 +126,7 @@ func main() {
 	authHandler := handler.NewAuthHandler(authUC, userUC, appLogger)
 	restaurantBrandHandler := handler.NewRestaurantBrandHandler(restaurantBrandUC, appLogger)
 	userProfileHandler := handler.NewUserProfileHandler(userProfileUC, userUC, sessionUC, appLogger, defaultAvatarURL)
+	addressHandler := handler.NewAddressHandler(addressUC, appLogger)
 
 	authMW := middleware.NewAuthMiddleware(sessionUC, appLogger)
 	corsMW := middleware.NewCORSMiddleware([]string{
@@ -147,6 +150,10 @@ func main() {
 	mux.Handle("PATCH /api/profile", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.UpdateProfile)))
 	mux.Handle("POST /api/profile/avatar", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.UpdateAvatar)))
 	mux.Handle("DELETE /api/profile/avatar", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.DeleteAvatar)))
+
+	mux.Handle("POST /api/profile/addresses", authMW.RequireAuth(http.HandlerFunc(addressHandler.AddAddress)))
+	mux.Handle("GET /api/profile/addresses", authMW.RequireAuth(http.HandlerFunc(addressHandler.GetAddresses)))
+	mux.Handle("DELETE /api/profile/addresses/{id}", authMW.RequireAuth(http.HandlerFunc(addressHandler.DeleteAddress)))
 
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
