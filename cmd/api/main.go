@@ -100,6 +100,7 @@ func main() {
 	bucketName := "nancats-bucket"
 
 	userRepo := postgres.NewUserRepo(pool)
+	clientProfileRepo := postgres.NewClientProfileRepo(pool)
 	sessionRepo := redisrepo.NewSessionRepo(redisPool)
 	restaurantBrandRepo := postgres.NewRestaurantBrandRepo(pool)
 	addressRepo := postgres.NewAddressRepo(pool)
@@ -112,8 +113,9 @@ func main() {
 	sessionTTL := 24 * time.Hour
 
 	userUC := usecase.NewUserUseCase(userRepo, s3Repo)
+	clientProfileUC := usecase.NewClientProfileUseCase(clientProfileRepo)
 	sessionUC := usecase.NewSessionUseCase(sessionRepo, sessionTTL)
-	authUC := usecase.NewAuthUseCase(userUC, sessionUC)
+	authUC := usecase.NewAuthUseCase(userUC, sessionUC, clientProfileUC)
 	restaurantBrandUC := usecase.NewRestaurantBrandUseCase(restaurantBrandRepo)
 	userProfileUC := usecase.NewUserProfileUseCase(userUC)
 	addressUC := usecase.NewAddressUseCase(addressRepo)
