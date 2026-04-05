@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"log"
 	"net/http"
@@ -65,7 +66,7 @@ func main() {
 	// Получаем URL из переменной окружения (которая прописана в docker-compose)
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		log.Fatal("DATABASE_URL environment variable is not set")
+		appLogger.Fatal("database connection string is missing", errors.New("DATABASE_URL env var is empty"))
 	}
 
 	config, err := pgxpool.ParseConfig(dbURL)
@@ -78,21 +79,20 @@ func main() {
 	// Открываем соединение с БД
 	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
-		log.Fatalf("Unable to connect to database: %v\n", err)
+		appLogger.Fatal("database pool creation failed", err)
 	}
 	defer pool.Close()
 
 	// Проверяем соединение с БД
 	if err := pool.Ping(ctx); err != nil {
-		log.Fatalf("Could not ping the database: %v\n", err)
+		appLogger.Fatal("could not ping the database", err)
 	}
 
 	// Запускаем миграции
 	err = postgres.RunMigrations(dbURL)
 	if err != nil && err != migrate.ErrNoChange {
-		log.Fatalf("Failed to run migrations: %v", err)
+		appLogger.Fatal("failed to run migrations", err)
 	}
-	log.Println("Migrations applied successfully")
 
 	// S3
 	keyID := os.Getenv("S3_KEY_ID")
@@ -155,8 +155,6 @@ func main() {
 	handler = loggingMW.Handler(handler)
 	handler = requestIDMW.Handler(handler)
 
-	log.Printf("Server is starting on port %s...", port)
-
 	server := &http.Server{
 		Addr:         ":" + port,
 		Handler:      handler, // передаем обернутый роутер
@@ -164,8 +162,14 @@ func main() {
 		WriteTimeout: 10 * time.Second,
 	}
 
+	appLogger.Info("starting server", map[string]any{
+		"port":          port,
+		"read_timeout":  "10s",
+		"write_timeout": "10s",
+	})
+
 	err = server.ListenAndServe()
 	if err != nil {
-		log.Fatalf("Server failed to start: %v", err)
+		appLogger.Fatal("server failed to start", err)
 	}
 }
