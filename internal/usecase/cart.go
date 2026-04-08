@@ -54,7 +54,7 @@ func (u *cartUseCase) UpdateCart(ctx context.Context, userID int, cartData domai
 		}
 
 		if dish.RestaurantID != cartData.RestaurantBrandID {
-			return domain.ErrDifferentRestaurants
+			return domain.ErrMultipleRestaurants
 		}
 	}
 
