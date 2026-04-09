@@ -17,6 +17,8 @@ func (l *NopLogger) Info(msg string, fields map[string]any) {}
 
 func (l *NopLogger) Warn(msg string, fields map[string]any) {}
 
+func (l *NopLogger) Debug(msg string, fields map[string]any) {}
+
 func (l *NopLogger) Error(msg string, err error, fields map[string]any) {}
 
 func (l *NopLogger) Fatal(msg string, err error) {}

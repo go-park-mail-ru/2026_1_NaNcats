@@ -31,8 +31,9 @@ func (a *LoggerAdapter) WithContext(ctx context.Context) domain.Logger {
 }
 
 // Просто пробрасываем вызовы в реальный логгер
-func (a *LoggerAdapter) Info(msg string, fields map[string]any) { a.realLogger.Info(msg, fields) }
-func (a *LoggerAdapter) Warn(msg string, fields map[string]any) { a.realLogger.Warn(msg, fields) }
+func (a *LoggerAdapter) Info(msg string, fields map[string]any)  { a.realLogger.Info(msg, fields) }
+func (a *LoggerAdapter) Warn(msg string, fields map[string]any)  { a.realLogger.Warn(msg, fields) }
+func (a *LoggerAdapter) Debug(msg string, fields map[string]any) { a.realLogger.Debug(msg, fields) }
 func (a *LoggerAdapter) Error(msg string, err error, fields map[string]any) {
 	a.realLogger.Error(msg, err, fields)
 }

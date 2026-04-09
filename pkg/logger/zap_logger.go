@@ -39,6 +39,12 @@ func (l *ZapLogger) Warn(msg string, fields map[string]any) {
 	l.logger.Warn(msg, zapFields...)
 }
 
+func (l *ZapLogger) Debug(msg string, fields map[string]any) {
+	zapFields := transferFields(fields, len(fields))
+
+	l.logger.Debug(msg, zapFields...)
+}
+
 func (l *ZapLogger) Error(msg string, err error, fields map[string]any) {
 	zapFields := transferFields(fields, len(fields)+1)
 
