@@ -30,7 +30,7 @@ func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (int, error
 	query := `
 		INSERT INTO "user" (name, email, phone, password_hash, user_role)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id
+		RETURNING id;
 	`
 
 	var lastInsertedID int
@@ -57,7 +57,7 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 	email = strings.ToLower(strings.TrimSpace(email))
 
 	query := `
-		SELECT id, name, email, phone, password_hash, user_role
+		SELECT id, name, email, phone, password_hash, user_role, avatar_url
 		FROM "user"
 		WHERE email = $1
 	`
@@ -72,6 +72,7 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 		&user.Phone,
 		&user.PasswordHash,
 		&userRole,
+		&user.AvatarURL,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -85,7 +86,7 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 
 func (r *userRepo) GetUserByID(ctx context.Context, id int) (domain.User, error) {
 	query := `
-		SELECT id, name, email, phone, password_hash, user_role
+		SELECT id, name, email, phone, password_hash, user_role, avatar_url
 		FROM "user"
 		WHERE id = $1
 	`
@@ -100,6 +101,7 @@ func (r *userRepo) GetUserByID(ctx context.Context, id int) (domain.User, error)
 		&user.Phone,
 		&user.PasswordHash,
 		&userRole,
+		&user.AvatarURL,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

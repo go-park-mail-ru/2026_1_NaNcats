@@ -309,6 +309,7 @@ func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 
 	resp := LoginResponse{
 		Name: loggedUser.Name,
+		AvatarURL: loggedUser.AvatarURL,
 	}
 
 	response.JSON(w, http.StatusOK, resp)

@@ -37,7 +37,7 @@ func (r *sessionRepo) Create(ctx context.Context, session domain.Session, ttl ti
 		return err
 	}
 	if result != "OK" {
-		return fmt.Errorf("result is not OK")
+		return domain.ErrRedisResultIsNotOK
 	}
 
 	return nil

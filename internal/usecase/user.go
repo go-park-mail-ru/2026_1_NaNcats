@@ -99,7 +99,9 @@ func (u *userUseCase) UpdateAvatar(ctx context.Context, userID int, file io.Read
 	err = u.userRepo.UpdateAvatarURL(ctx, userID, newAvatarURL)
 	if err != nil {
 		// если фотка загружена на S3, но по какой-то причине не обновился URL у юзера, то удаляем фотку
-		_ = u.fileStorage.DeleteFile(ctx, newAvatarURL)
+		go func(urlToDelete string) {
+			_ = u.fileStorage.DeleteFile(context.Background(), user.AvatarURL)
+		}(user.AvatarURL)
 		return "", err
 	}
 

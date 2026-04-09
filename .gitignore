@@ -15,6 +15,9 @@ vendor/
 .env.*
 !.env.example
 
+# Локальный докер
+docker-compose.local.yml
+
 # Файлы IDE
 .idea/
 .vscode/

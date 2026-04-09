@@ -26,13 +26,15 @@ type AuthUseCase interface {
 type authUseCase struct {
 	userUC    UserUseCase
 	sessionUC SessionUseCase
+	clientProfileUC ClientProfileUseCase
 }
 
 // функция-конструктор бизнес-логики авторизации
-func NewAuthUseCase(uuc UserUseCase, suc SessionUseCase) AuthUseCase {
+func NewAuthUseCase(uuc UserUseCase, suc SessionUseCase, cpuc ClientProfileUseCase) AuthUseCase {
 	return &authUseCase{
 		userUC:    uuc,
 		sessionUC: suc,
+		clientProfileUC: cpuc,
 	}
 }
 
@@ -97,6 +99,12 @@ func (u *authUseCase) Register(ctx context.Context, user domain.User, userAgent 
 	}
 
 	user.ID = id
+
+	// создание профиля клиента
+	err = u.clientProfileUC.CreateProfile(ctx, user.ID)
+	if err != nil {
+		return domain.User{}, domain.Session{}, err
+	}
 
 	// вызов бизнес-логики по созданию сессии
 	createdSession, err := u.sessionUC.Create(ctx, user.ID, userAgent)
