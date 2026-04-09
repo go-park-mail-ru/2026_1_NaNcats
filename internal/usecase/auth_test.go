@@ -14,8 +14,9 @@ import (
 func TestAuthUseCase_Register(t *testing.T) {
 	// Группируем моки в структуру для удобной передачи
 	type mocks struct {
-		userUC    *ucMocks.MockUserUseCase
-		sessionUC *ucMocks.MockSessionUseCase
+		userUC          *ucMocks.MockUserUseCase
+		sessionUC       *ucMocks.MockSessionUseCase
+		clientProfileUC *ucMocks.MockClientProfileUseCase
 	}
 
 	// Тип для инициализации моков (mockInit)
@@ -44,6 +45,9 @@ func TestAuthUseCase_Register(t *testing.T) {
 				m.sessionUC.EXPECT().
 					Create(gomock.Any(), resID, userAgent).
 					Return(domain.Session{ID: mockSessionID}, nil)
+				m.clientProfileUC.EXPECT().
+					CreateProfile(gomock.Any(), gomock.Any()).
+					Return(nil)
 			},
 			expectErr: nil,
 		},
@@ -112,11 +116,12 @@ func TestAuthUseCase_Register(t *testing.T) {
 			defer ctrl.Finish()
 
 			m := mocks{
-				userUC:    ucMocks.NewMockUserUseCase(ctrl),
-				sessionUC: ucMocks.NewMockSessionUseCase(ctrl),
+				userUC:          ucMocks.NewMockUserUseCase(ctrl),
+				sessionUC:       ucMocks.NewMockSessionUseCase(ctrl),
+				clientProfileUC: ucMocks.NewMockClientProfileUseCase(ctrl),
 			}
 
-			authUseCase := NewAuthUseCase(m.userUC, m.sessionUC)
+			authUseCase := NewAuthUseCase(m.userUC, m.sessionUC, m.clientProfileUC)
 
 			userAgent := "Mozilla/5.0 (Test Agent)"
 

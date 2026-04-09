@@ -6,6 +6,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/user_profile_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase UserProfileUseCase
 type UserProfileUseCase interface {
 	GetUserProfile(ctx context.Context, userID int) (domain.User, error)
 }

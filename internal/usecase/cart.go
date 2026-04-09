@@ -7,6 +7,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
 )
 
+//go:generate mockgen -destination=mocks/cart_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase CartUseCase
 type CartUseCase interface {
 	GetCart(ctx context.Context, userID int) (domain.Cart, int64, error) // Возвращает карту, полную стоимость коризины и ошибку
 	UpdateCart(ctx context.Context, userID int, cartData domain.Cart) error

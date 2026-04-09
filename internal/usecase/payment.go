@@ -10,6 +10,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/api_clients/yookassa"
 )
 
+//go:generate mockgen -destination=mocks/payment_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase PaymentUseCase
 type PaymentUseCase interface {
 	InitiateCardBinding(ctx context.Context, userID int) (string, error)
 	GetUserCards(ctx context.Context, userID int) ([]domain.PaymentMethod, error)
