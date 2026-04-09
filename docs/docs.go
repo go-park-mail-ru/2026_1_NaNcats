@@ -330,6 +330,141 @@ const docTemplate = `{
                 }
             }
         },
+        "/profile/cards": {
+            "get": {
+                "description": "Возвращает список всех привязанных банковских карт пользователя",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile",
+                    "payments"
+                ],
+                "summary": "Получение сохраненных карт",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_internal_domain.PaymentMethod"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не авторизован",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/cards/bind": {
+            "post": {
+                "description": "Создает запрос на привязку банковской карты пользователя и возвращает URL для подтверждения в ЮKassa",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile",
+                    "payments"
+                ],
+                "summary": "Инициализация привязки карты",
+                "responses": {
+                    "200": {
+                        "description": "URL для подтверждения привязки",
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler.BindingResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не авторизован",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/cards/{id}": {
+            "delete": {
+                "description": "Удаляет привязанную карту из профиля",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile",
+                    "payments"
+                ],
+                "summary": "Удаление карты",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID карты",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Пользователь не авторизован",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Карта не найдена",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/restaurants/brands": {
             "get": {
                 "description": "Возвращает список брендов ресторанов с поддержкой пагинации (limit и offset)",
@@ -365,9 +500,130 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/webhooks/yookassa": {
+            "post": {
+                "description": "Обрабатывает асинхронные уведомления от ЮKassa (например, об успешной привязке платежного метода)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payments",
+                    "webhooks"
+                ],
+                "summary": "Вебхук ЮKassa",
+                "parameters": [
+                    {
+                        "description": "Данные уведомления от ЮKassa",
+                        "name": "notification",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookNotification"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Неверный формат данных",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "github_com_go-park-mail-ru_2026_1_NaNcats_internal_domain.PaymentMethod": {
+            "type": "object",
+            "properties": {
+                "card_type": {
+                    "type": "string",
+                    "example": "Mir"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_default": {
+                    "type": "boolean"
+                },
+                "issuer_name": {
+                    "type": "string",
+                    "example": "Sber"
+                },
+                "last4": {
+                    "type": "string",
+                    "example": "6767"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.PaymentMethodResponseCard": {
+            "type": "object",
+            "properties": {
+                "card_type": {
+                    "type": "string"
+                },
+                "expiry_month": {
+                    "type": "string"
+                },
+                "expiry_year": {
+                    "type": "string"
+                },
+                "first6": {
+                    "type": "string"
+                },
+                "issuer_name": {
+                    "type": "string"
+                },
+                "last4": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookNotification": {
+            "type": "object",
+            "properties": {
+                "event": {
+                    "type": "string"
+                },
+                "object": {
+                    "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookPaymentMethodObject"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookPaymentMethodObject": {
+            "type": "object",
+            "properties": {
+                "card": {
+                    "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.PaymentMethodResponseCard"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "saved": {
+                    "type": "boolean"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -378,6 +634,14 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "example": "Неверный формат запроса"
+                }
+            }
+        },
+        "internal_delivery_handler.BindingResponse": {
+            "type": "object",
+            "properties": {
+                "confirmation_url": {
+                    "type": "string"
                 }
             }
         },

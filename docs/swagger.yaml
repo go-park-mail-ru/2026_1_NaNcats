@@ -1,5 +1,58 @@
 basePath: /api
 definitions:
+  github_com_go-park-mail-ru_2026_1_NaNcats_internal_domain.PaymentMethod:
+    properties:
+      card_type:
+        example: Mir
+        type: string
+      id:
+        type: string
+      is_default:
+        type: boolean
+      issuer_name:
+        example: Sber
+        type: string
+      last4:
+        example: "6767"
+        type: string
+    type: object
+  github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.PaymentMethodResponseCard:
+    properties:
+      card_type:
+        type: string
+      expiry_month:
+        type: string
+      expiry_year:
+        type: string
+      first6:
+        type: string
+      issuer_name:
+        type: string
+      last4:
+        type: string
+    type: object
+  github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookNotification:
+    properties:
+      event:
+        type: string
+      object:
+        $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookPaymentMethodObject'
+      type:
+        type: string
+    type: object
+  github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookPaymentMethodObject:
+    properties:
+      card:
+        $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.PaymentMethodResponseCard'
+      id:
+        type: string
+      saved:
+        type: boolean
+      status:
+        type: string
+      type:
+        type: string
+    type: object
   github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse:
     properties:
       code:
@@ -7,6 +60,11 @@ definitions:
         type: integer
       message:
         example: Неверный формат запроса
+        type: string
+    type: object
+  internal_delivery_handler.BindingResponse:
+    properties:
+      confirmation_url:
         type: string
     type: object
   internal_delivery_handler.LoginRequest:
@@ -337,6 +395,97 @@ paths:
       summary: Обновление аватара пользователя
       tags:
       - profile
+  /profile/cards:
+    get:
+      description: Возвращает список всех привязанных банковских карт пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_internal_domain.PaymentMethod'
+            type: array
+        "401":
+          description: Пользователь не авторизован
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получение сохраненных карт
+      tags:
+      - profile
+      - payments
+  /profile/cards/{id}:
+    delete:
+      description: Удаляет привязанную карту из профиля
+      parameters:
+      - description: ID карты
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Пользователь не авторизован
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Карта не найдена
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Удаление карты
+      tags:
+      - profile
+      - payments
+  /profile/cards/bind:
+    post:
+      description: Создает запрос на привязку банковской карты пользователя и возвращает
+        URL для подтверждения в ЮKassa
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: URL для подтверждения привязки
+          schema:
+            $ref: '#/definitions/internal_delivery_handler.BindingResponse'
+        "401":
+          description: Пользователь не авторизован
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Инициализация привязки карты
+      tags:
+      - profile
+      - payments
   /restaurants/brands:
     get:
       description: Возвращает список брендов ресторанов с поддержкой пагинации (limit
@@ -362,4 +511,32 @@ paths:
       summary: Получение списка ресторанов
       tags:
       - restaurants
+  /webhooks/yookassa:
+    post:
+      consumes:
+      - application/json
+      description: Обрабатывает асинхронные уведомления от ЮKassa (например, об успешной
+        привязке платежного метода)
+      parameters:
+      - description: Данные уведомления от ЮKassa
+        in: body
+        name: notification
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookNotification'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Неверный формат данных
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Вебхук ЮKassa
+      tags:
+      - payments
+      - webhooks
 swagger: "2.0"

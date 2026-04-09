@@ -30,7 +30,7 @@ func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (int, error
 	query := `
 		INSERT INTO "user" (name, email, phone, password_hash, user_role)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id
+		RETURNING id;
 	`
 
 	var lastInsertedID int

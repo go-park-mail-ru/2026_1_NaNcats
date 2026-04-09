@@ -15,6 +15,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/redisrepo"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/s3"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/api_clients/yookassa"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/gomodule/redigo/redis"
@@ -96,13 +97,21 @@ func main() {
 
 	// S3
 	keyID := os.Getenv("S3_KEY_ID")
-	secretKey := os.Getenv("S3_SECRET_KEY")
+	s3SecretKey := os.Getenv("S3_SECRET_KEY")
 	bucketName := "nancats-bucket"
+
+	// ЮКасса
+	shopID := os.Getenv("YOOKASSA_SHOP_ID")
+	yookassaSecretKey := os.Getenv("YOOKASSA_SECRET_KEY")
+	returnURL := os.Getenv("YOOKASSA_RETURN_URL")
+	yookassaClient := yookassa.NewClient(shopID, yookassaSecretKey)
 
 	userRepo := postgres.NewUserRepo(pool)
 	sessionRepo := redisrepo.NewSessionRepo(redisPool)
 	restaurantBrandRepo := postgres.NewRestaurantBrandRepo(pool)
-	s3Repo, err := s3.NewS3Storage(ctx, keyID, secretKey, bucketName, "ru-central1")
+	paymentRepo := postgres.NewPaymentRepo(pool)
+	paymentCacheRepo := redisrepo.NewPaymentCacheRepo(redisPool)
+	s3Repo, err := s3.NewS3Storage(ctx, keyID, s3SecretKey, bucketName, "ru-central1")
 	if err != nil {
 		appLogger.Fatal("Failed to init S3", err)
 	}
@@ -115,6 +124,7 @@ func main() {
 	authUC := usecase.NewAuthUseCase(userUC, sessionUC)
 	restaurantBrandUC := usecase.NewRestaurantBrandUseCase(restaurantBrandRepo)
 	userProfileUC := usecase.NewUserProfileUseCase(userUC)
+	paymentUC := usecase.NewPaymentUseCase(paymentRepo, paymentCacheRepo, yookassaClient, returnURL)
 
 	defaultAvatarURL := os.Getenv("DEFAULT_AVATAR_URL")
 	if defaultAvatarURL == "" {
@@ -124,6 +134,7 @@ func main() {
 	authHandler := handler.NewAuthHandler(authUC, userUC, appLogger)
 	restaurantBrandHandler := handler.NewRestaurantBrandHandler(restaurantBrandUC, appLogger)
 	userProfileHandler := handler.NewUserProfileHandler(userProfileUC, userUC, sessionUC, appLogger, defaultAvatarURL)
+	paymentHandler := handler.NewPaymentHandler(paymentUC, appLogger)
 
 	authMW := middleware.NewAuthMiddleware(sessionUC, appLogger)
 	corsMW := middleware.NewCORSMiddleware([]string{
@@ -147,6 +158,13 @@ func main() {
 	mux.Handle("PATCH /api/profile", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.UpdateProfile)))
 	mux.Handle("POST /api/profile/avatar", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.UpdateAvatar)))
 	mux.Handle("DELETE /api/profile/avatar", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.DeleteAvatar)))
+
+	mux.Handle("POST /api/profile/cards/bind", authMW.RequireAuth(http.HandlerFunc(paymentHandler.InitiateCardBinding)))
+	mux.Handle("GET /api/profile/cards", authMW.RequireAuth(http.HandlerFunc(paymentHandler.GetUserCards)))
+	mux.Handle("DELETE /api/profile/cards/{id}", authMW.RequireAuth(http.HandlerFunc(paymentHandler.DeleteCard)))
+	mux.Handle("PUT /api/profile/cards/{id}", authMW.RequireAuth(http.HandlerFunc(paymentHandler.SetDefaultCard)))
+
+	mux.Handle("POST /api/webhooks/yookassa", http.HandlerFunc(paymentHandler.YookassaWebhook))
 
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
