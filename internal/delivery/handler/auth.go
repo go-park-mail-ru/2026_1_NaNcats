@@ -284,10 +284,8 @@ func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := middleware.GetUserID(ctx)
 
-	if errors.Is(err, middleware.ErrNoUserIDInContext) {
-		l.Error("auth context contract broken: auth middleware missed userID in route", err, map[string]any{
-			"user_id": userID,
-		})
+	if err != nil {
+		l.Error("auth middleware missed userID in route", err, nil)
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}

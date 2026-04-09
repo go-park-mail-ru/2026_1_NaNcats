@@ -11,7 +11,7 @@ func SetCookie(w http.ResponseWriter, name, value string, expiresAt time.Time) {
 		Value:    value,                // значение - случайный идентификатор из usecase
 		Expires:  expiresAt,            // срок жизни
 		HttpOnly: true,                 // защита: JavaScript(фронт) не сможет прочитать эту куку
-		Path:     "/",                  // кука будет отправляться на все эндпоинты сайта
+		Path:     "/",                  // кука будет отправляться на все эндпоинты сайтаx
 		SameSite: http.SameSiteLaxMode, // защита от CSRF атак
 		// Secure: true,				// если будем на https
 	})

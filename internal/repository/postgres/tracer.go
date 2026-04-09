@@ -15,7 +15,7 @@ const (
 	sqlQueryKey  tracerKey = "db_sql"
 )
 
-// Трейсер походов в базу данных
+// Трейсер походов в базу данных. Автоматизирует написание логов о походах в БД
 type DBTracer struct {
 	logger domain.Logger
 }

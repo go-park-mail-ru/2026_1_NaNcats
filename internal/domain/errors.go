@@ -22,4 +22,7 @@ var (
 	ErrSQLDeadlock                = errors.New("detected deadlock")
 	ErrSQLLockTimeout             = errors.New("lock not avaliable")
 	ErrYookassaConfirmationURL    = errors.New("yookassa did not send confirmation url")
+	ErrInvalidQuantity            = errors.New("invalid dish quantity")
+	ErrDishNotFound               = errors.New("dish not found")
+	ErrMultipleRestaurants        = errors.New("restaurant is different in cart and dish")
 )
