@@ -63,7 +63,7 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 		if val, err := strconv.Atoi(qLimit); err == nil && val > 0 {
 			limit = val
 		} else {
-			l.Info("invalid limit query parameter, using default", map[string]any{
+			l.Debug("invalid limit query parameter, using default", map[string]any{
 				"input":   qLimit,
 				"default": limit,
 			})
@@ -75,7 +75,7 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 		if val, err := strconv.Atoi(qOffset); err == nil && val > 0 {
 			offset = val
 		} else {
-			l.Info("invalid offset query parameter, using default", map[string]any{
+			l.Debug("invalid offset query parameter, using default", map[string]any{
 				"input":   qOffset,
 				"default": offset,
 			})
@@ -112,7 +112,7 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 		dtoList = append(dtoList, restResp)
 	}
 
-	l.Info("successfully fetched restaurant brands", map[string]any{
+	l.Debug("successfully fetched restaurant brands", map[string]any{
 		"count":  len(dtoList),
 		"limit":  limit,
 		"offset": offset,

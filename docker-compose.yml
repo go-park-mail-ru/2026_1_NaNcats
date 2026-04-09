@@ -28,6 +28,7 @@ services:
     environment:
       # Передаем URL базы данных Go-приложению
       DATABASE_URL: ${DATABASE_URL}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       db:
         condition: service_healthy # Запускать бэкенд только когда база полностью готова

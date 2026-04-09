@@ -61,8 +61,8 @@ func NewUserProfileHandler(upuc usecase.UserProfileUseCase, uuc usecase.UserUseC
 func (h *userProfileHandler) GetUserProfile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	userID, ok := ctx.Value(middleware.UserIDKey).(int)
-	if !ok {
+	userID, err := middleware.GetUserID(ctx)
+	if err != nil {
 		response.Error(w, http.StatusInternalServerError, "unauthorized or missing context")
 		return
 	}
@@ -107,15 +107,15 @@ func (h *userProfileHandler) UpdateProfile(w http.ResponseWriter, r *http.Reques
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
 
-	userID, ok := ctx.Value(middleware.UserIDKey).(int)
-	if !ok {
+	userID, err := middleware.GetUserID(ctx)
+	if err != nil {
 		response.Error(w, http.StatusInternalServerError, "unauthorized or missing context")
 		return
 	}
 
 	curRequest := UserProfileUpdateRequest{}
 
-	err := request.JSON(r, &curRequest, l)
+	err = request.JSON(r, &curRequest, l)
 	if err != nil {
 		response.Error(w, http.StatusBadRequest, err.Error())
 		return
@@ -151,8 +151,8 @@ func (h *userProfileHandler) UpdateProfile(w http.ResponseWriter, r *http.Reques
 func (h *userProfileHandler) UpdateAvatar(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	userID, ok := ctx.Value(middleware.UserIDKey).(int)
-	if !ok {
+	userID, err := middleware.GetUserID(ctx)
+	if err != nil {
 		response.Error(w, http.StatusInternalServerError, "unauthorized or missing context")
 		return
 	}
@@ -201,13 +201,13 @@ func (h *userProfileHandler) UpdateAvatar(w http.ResponseWriter, r *http.Request
 func (h *userProfileHandler) DeleteAvatar(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	userID, ok := ctx.Value(middleware.UserIDKey).(int)
-	if !ok {
+	userID, err := middleware.GetUserID(ctx)
+	if err != nil {
 		response.Error(w, http.StatusInternalServerError, "unauthorized or missing context")
 		return
 	}
 
-	err := h.userUC.DeleteAvatar(ctx, userID)
+	err = h.userUC.DeleteAvatar(ctx, userID)
 	if err != nil {
 		h.logger.Error("failed to delete avatar", err, map[string]any{})
 		response.Error(w, http.StatusInternalServerError, "failed to delete avatar")

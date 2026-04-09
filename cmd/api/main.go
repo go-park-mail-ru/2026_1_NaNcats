@@ -41,8 +41,14 @@ func main() {
 		port = "8080"
 	}
 
+	// Читаем уровень логирования из переменной окружения
+	logLevel := os.Getenv("LOG_LEVEL")
+	if logLevel == "" {
+		logLevel = "info" // По умолчанию для прода
+	}
+
 	// "чистый" логгер из pkg
-	rawLogger, err := logger.NewZapLogger()
+	rawLogger, err := logger.NewZapLogger(logLevel)
 	if err != nil {
 		log.Fatalf("Connot start without logger: %v", err)
 	}

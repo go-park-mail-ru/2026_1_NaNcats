@@ -53,6 +53,6 @@ func (t *DBTracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, data pgx.Trac
 	if data.Err != nil {
 		l.Error("sql query failed", data.Err, fields)
 	} else {
-		l.Info("sql query successful", fields)
+		l.Debug("sql query successful", fields)
 	}
 }

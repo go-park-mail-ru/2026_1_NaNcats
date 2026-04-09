@@ -118,7 +118,7 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 		switch {
 		// Клиентские ошибки (400 Bad Request)
 		case errors.Is(err, domain.ErrInvalidEmail), errors.Is(err, domain.ErrInvalidPassword):
-			l.Info("registration validation failed", map[string]any{
+			l.Warn("registration validation failed", map[string]any{
 				"email": curRequest.Email,
 				"error": err.Error(),
 			})
@@ -180,7 +180,7 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	err := request.JSON(r, &curRequest, l)
 	if err != nil {
-		l.Info("failed to decode login request", map[string]any{"error": err.Error()})
+		l.Warn("failed to decode login request", map[string]any{"error": err.Error()})
 		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -238,7 +238,7 @@ func (h *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		// Если куки нет, пользователь и так "вышел". Возвращаем 200
-		l.Info("logout: no session cookie found, user already logged out", nil)
+		l.Debug("logout: no session cookie found, user already logged out", nil)
 		response.JSON(w, http.StatusOK, nil)
 		return
 	}
@@ -255,11 +255,7 @@ func (h *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		err = h.authUC.Logout(ctx, sessionID)
 		if err != nil {
 			// Даже если сессия не найдена в базе, просто логируем это как Info
-			l.Info("logout: session not found in database or already expired", map[string]any{
-				"session_id": sessionID.String(),
-			})
-		} else {
-			l.Info("logout: session successfully removed from database", map[string]any{
+			l.Debug("logout: session not found in database or already expired", map[string]any{
 				"session_id": sessionID.String(),
 			})
 		}
@@ -267,7 +263,7 @@ func (h *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	response.SetCookie(w, "session_id", "", time.Unix(0, 0))
 
-	l.Info("logout: cookie cleared in browser", nil)
+	l.Debug("logout: session cleared", nil)
 	response.JSON(w, http.StatusOK, nil)
 }
 
@@ -307,7 +303,7 @@ func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	l.Info("profile retrieved successfully", map[string]any{
+	l.Debug("profile retrieved successfully", map[string]any{
 		"user_id": loggedUser.ID,
 	})
 

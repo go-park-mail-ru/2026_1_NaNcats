@@ -10,8 +10,22 @@ type ZapLogger struct {
 	logger *zap.Logger
 }
 
-func NewZapLogger() (*ZapLogger, error) {
-	cfg := zap.NewProductionConfig()
+func NewZapLogger(levelStr string) (*ZapLogger, error) {
+	var cfg zap.Config
+
+	// Формат и стиль логов
+	if levelStr == "debug" {
+		cfg = zap.NewDevelopmentConfig()
+	} else {
+		cfg = zap.NewProductionConfig()
+	}
+
+	// Какой уровень логов принимать, те что ниже игнорировать
+	level, err := zap.ParseAtomicLevel(levelStr)
+	if err != nil {
+		level = zap.NewAtomicLevelAt(zap.InfoLevel)
+	}
+	cfg.Level = level
 
 	logger, err := cfg.Build()
 	if err != nil {
