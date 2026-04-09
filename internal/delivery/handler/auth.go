@@ -98,7 +98,7 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 	curRequest := RegisterRequest{}
 
 	// заполняем объект DTO запроса данными из запроса
-	err := request.JSON(r, &curRequest, l)
+	err := request.JSON(r, &curRequest)
 	if err != nil {
 		response.Error(w, http.StatusBadRequest, err.Error())
 		return
@@ -178,7 +178,7 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	curRequest := LoginRequest{}
 
-	err := request.JSON(r, &curRequest, l)
+	err := request.JSON(r, &curRequest)
 	if err != nil {
 		l.Warn("failed to decode login request", map[string]any{"error": err.Error()})
 		response.Error(w, http.StatusBadRequest, err.Error())
@@ -306,7 +306,7 @@ func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	})
 
 	resp := LoginResponse{
-		Name: loggedUser.Name,
+		Name:      loggedUser.Name,
 		AvatarURL: loggedUser.AvatarURL,
 	}
 

@@ -20,12 +20,8 @@ var (
 	ErrNotOnlyJSONVal = errors.New("body must only contain a single JSON value")
 )
 
-type Logger interface {
-	Warn(msg string, fields map[string]any)
-}
-
 // функция декодирования JSON запроса в переданный объект v
-func JSON(r *http.Request, v any, logger Logger) error {
+func JSON(r *http.Request, v any) error {
 	// ограничиваем размер тела запроса - 1 Мб
 	const maxBodySize = 1024 * 1024
 	// обертка над телом запроса, ограничивает количество байт, которые можно прочитать
@@ -46,10 +42,6 @@ func JSON(r *http.Request, v any, logger Logger) error {
 
 		return nil
 	}
-
-	logger.Warn("request.JSON fallback, instead using json.Decoder", map[string]any{
-		"object": v,
-	})
 
 	// создает объект-декодер, который читает данные напрямую из потока (r.Body) по частям
 	decoder := json.NewDecoder(r.Body)

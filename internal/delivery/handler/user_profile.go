@@ -105,7 +105,6 @@ func (h *userProfileHandler) GetUserProfile(w http.ResponseWriter, r *http.Reque
 // @Router			/profile [patch]
 func (h *userProfileHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	l := h.logger.WithContext(ctx)
 
 	userID, err := middleware.GetUserID(ctx)
 	if err != nil {
@@ -115,7 +114,7 @@ func (h *userProfileHandler) UpdateProfile(w http.ResponseWriter, r *http.Reques
 
 	curRequest := UserProfileUpdateRequest{}
 
-	err = request.JSON(r, &curRequest, l)
+	err = request.JSON(r, &curRequest)
 	if err != nil {
 		response.Error(w, http.StatusBadRequest, err.Error())
 		return

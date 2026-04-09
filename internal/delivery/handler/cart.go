@@ -98,7 +98,7 @@ func (h *cartHandler) UpdateCart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var reqCart CartRequest
-	err = request.JSON(r, &reqCart, l)
+	err = request.JSON(r, &reqCart)
 	if err != nil {
 		l.Info("invalid update cart json", map[string]any{"error": err.Error()})
 		response.Error(w, http.StatusBadRequest, "internal server error")

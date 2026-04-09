@@ -4,7 +4,6 @@ package response
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/mailru/easyjson"
@@ -33,7 +32,6 @@ func JSON(w http.ResponseWriter, statusCode int, data any) {
 	if m, ok := data.(easyjson.Marshaler); ok {
 		bytes, err = easyjson.Marshal(m)
 	} else {
-		log.Printf("[WARN] easyjson fallback! Используем медленный json.Marshal для типа: %T\n", data)
 		bytes, err = json.Marshal(data)
 	}
 

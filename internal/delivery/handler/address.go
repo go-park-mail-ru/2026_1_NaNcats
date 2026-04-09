@@ -40,7 +40,7 @@ func (h *addressHandler) AddAddress(w http.ResponseWriter, r *http.Request) {
 	userID, _ := middleware.GetUserID(ctx)
 
 	var req AddressRequest
-	if err := request.JSON(r, &req, h.logger); err != nil {
+	if err := request.JSON(r, &req); err != nil {
 		response.Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}

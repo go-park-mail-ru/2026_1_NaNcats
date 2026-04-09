@@ -17,61 +17,7 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(in *jlexer.Lexer, out *addressHandler) {
-	isTopLevel := in.IsStart()
-	if in.IsNull() {
-		if isTopLevel {
-			in.Consumed()
-		}
-		in.Skip()
-		return
-	}
-	in.Delim('{')
-	for !in.IsDelim('}') {
-		key := in.UnsafeFieldName(false)
-		in.WantColon()
-		switch key {
-		default:
-			in.SkipRecursive()
-		}
-		in.WantComma()
-	}
-	in.Delim('}')
-	if isTopLevel {
-		in.Consumed()
-	}
-}
-func easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(out *jwriter.Writer, in addressHandler) {
-	out.RawByte('{')
-	first := true
-	_ = first
-	out.RawByte('}')
-}
-
-// MarshalJSON supports json.Marshaler interface
-func (v addressHandler) MarshalJSON() ([]byte, error) {
-	w := jwriter.Writer{}
-	easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(&w, v)
-	return w.Buffer.BuildBytes(), w.Error
-}
-
-// MarshalEasyJSON supports easyjson.Marshaler interface
-func (v addressHandler) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(w, v)
-}
-
-// UnmarshalJSON supports json.Unmarshaler interface
-func (v *addressHandler) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
-	easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(&r, v)
-	return r.Error()
-}
-
-// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
-func (v *addressHandler) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(l, v)
-}
-func easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler1(in *jlexer.Lexer, out *AddressRequest) {
+func easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(in *jlexer.Lexer, out *AddressRequest) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -149,7 +95,7 @@ func easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHand
 		in.Consumed()
 	}
 }
-func easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler1(out *jwriter.Writer, in AddressRequest) {
+func easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(out *jwriter.Writer, in AddressRequest) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -204,23 +150,23 @@ func easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHand
 // MarshalJSON supports json.Marshaler interface
 func (v AddressRequest) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler1(&w, v)
+	easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v AddressRequest) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler1(w, v)
+	easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *AddressRequest) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler1(&r, v)
+	easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *AddressRequest) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler1(l, v)
+	easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(l, v)
 }

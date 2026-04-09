@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -60,10 +59,8 @@ func TestJSON(t *testing.T) {
 			// Создаем имитацию запроса
 			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.body))
 
-			nopLogger := mocks.NewNopLogger()
-
 			var data testData
-			err := JSON(req, &data, nopLogger)
+			err := JSON(req, &data)
 
 			if tt.wantErr != nil {
 				// Проверка по конкретной переменной (Sentinel error)
@@ -87,10 +84,8 @@ func TestJSON_MaxSize(t *testing.T) {
 	largeBody := `"` + strings.Repeat("a", 1024*1024+1) + `"`
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(largeBody))
 
-	nopLogger := mocks.NewNopLogger()
-
 	var data struct{}
-	err := JSON(req, &data, nopLogger)
+	err := JSON(req, &data)
 
 	assert.ErrorIs(t, err, ErrBodyTooLarge)
 }
