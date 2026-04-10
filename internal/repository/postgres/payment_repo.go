@@ -10,7 +10,6 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type paymentMethodDB struct {
@@ -41,10 +40,10 @@ func (p paymentMethodDB) toDomain() domain.PaymentMethod {
 }
 
 type paymentRepo struct {
-	pool *pgxpool.Pool
+	pool PgxPool
 }
 
-func NewPaymentRepo(pool *pgxpool.Pool) repository.PaymentRepository {
+func NewPaymentRepo(pool PgxPool) repository.PaymentRepository {
 	return &paymentRepo{
 		pool: pool,
 	}

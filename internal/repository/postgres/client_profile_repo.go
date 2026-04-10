@@ -2,16 +2,16 @@ package postgres
 
 import (
 	"context"
+
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type clientProfileRepo struct {
-	pool *pgxpool.Pool
+	pool PgxPool
 }
 
-func NewClientProfileRepo(pool *pgxpool.Pool) repository.ClientProfileRepository {
+func NewClientProfileRepo(pool PgxPool) repository.ClientProfileRepository {
 	return &clientProfileRepo{pool: pool}
 }
 

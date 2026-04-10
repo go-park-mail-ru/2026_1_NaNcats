@@ -6,17 +6,14 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type addressRepo struct {
-	pool *pgxpool.Pool
+	pool PgxPool
 }
 
-func NewAddressRepo(pool *pgxpool.Pool) repository.AddressRepository {
-	return &addressRepo{
-		pool: pool,
-	}
+func NewAddressRepo(pool PgxPool) repository.AddressRepository {
+	return &addressRepo{pool: pool}
 }
 
 func (r *addressRepo) CreateAddress(ctx context.Context, userID int, addr domain.Address) (string, error) {

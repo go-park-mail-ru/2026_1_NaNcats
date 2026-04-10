@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
@@ -44,10 +43,10 @@ func (d restaurantBrandDB) toDomain() domain.RestaurantBrand {
 }
 
 type restaurantBrandRepo struct {
-	pool *pgxpool.Pool
+	pool PgxPool
 }
 
-func NewRestaurantBrandRepo(pool *pgxpool.Pool) repository.RestaurantBrandRepository {
+func NewRestaurantBrandRepo(pool PgxPool) repository.RestaurantBrandRepository {
 	return &restaurantBrandRepo{
 		pool: pool,
 	}

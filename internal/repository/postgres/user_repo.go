@@ -11,14 +11,13 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type userRepo struct {
-	pool *pgxpool.Pool
+	pool PgxPool
 }
 
-func NewUserRepo(pool *pgxpool.Pool) repository.UserRepository {
+func NewUserRepo(pool PgxPool) repository.UserRepository {
 	return &userRepo{
 		pool: pool,
 	}
