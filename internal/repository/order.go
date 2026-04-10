@@ -9,5 +9,5 @@ import (
 type OrderRepository interface {
 	CreateOrder(ctx context.Context, order domain.Order) (string, error)
 	UpdateStatusByPaymentID(ctx context.Context, yookassaPaymentID, newStatus string) error
-	GetOrderByPublicID(ctx context.Context, publicID string) (domain.Order, error)
+	GetOrderByPublicID(ctx context.Context, publicID string, userID int) (domain.Order, error)
 }

@@ -106,13 +106,13 @@ func (r *orderRepo) UpdateStatusByPaymentID(ctx context.Context, yookassaPayment
 	return nil
 }
 
-func (r *orderRepo) GetOrderByPublicID(ctx context.Context, publicID string) (domain.Order, error) {
+func (r *orderRepo) GetOrderByPublicID(ctx context.Context, publicID string, userID int) (domain.Order, error) {
 	query := `
 		SELECT id, client_account_id, courier_account_id, restaurant_branch_id, client_address_id, total_cost, payment_method_id, yookassa_payment_id, status
-		FROM "order" WHERE public_ID = $1;
+		FROM "order" WHERE public_id = $1 AND client_account_id = $2;
 	`
 	var order domain.Order
-	err := r.pool.QueryRow(ctx, query, publicID).Scan(
+	err := r.pool.QueryRow(ctx, query, publicID, userID).Scan(
 		&order.ID,
 		&order.ClientID,
 		&order.CourierID,
