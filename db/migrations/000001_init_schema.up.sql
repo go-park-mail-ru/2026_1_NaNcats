@@ -203,6 +203,7 @@ CREATE TABLE "dish" (
 
 CREATE TABLE "client_address" (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	public_id UUID DEFAULT gen_random_uuid() UNIQUE NOT NULL,
 	
 	location_id INT NOT NULL,
 	client_account_id INT NOT NULL,
@@ -236,6 +237,7 @@ CREATE TABLE "client_address" (
 
 CREATE TABLE "order" (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	public_id UUID DEFAULT gen_random_uuid() UNIQUE NOT NULL,
 	
 	client_account_id INT NOT NULL,
 	courier_account_id INT,
@@ -245,7 +247,9 @@ CREATE TABLE "order" (
 		CHECK (total_cost >= 1000000), -- 1 рубль
 	promocode_id INT,
 
-	external_payment_id TEXT,
+	payment_method_id TEXT,
+	yookassa_payment_id TEXT,
+
 	status order_status NOT NULL,
 		
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,

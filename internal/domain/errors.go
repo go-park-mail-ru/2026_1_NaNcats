@@ -25,4 +25,5 @@ var (
 	ErrInvalidQuantity            = errors.New("invalid dish quantity")
 	ErrDishNotFound               = errors.New("dish not found")
 	ErrMultipleRestaurants        = errors.New("restaurant is different in cart and dish")
+	ErrOrderNotFound              = errors.New("order not found")
 )
