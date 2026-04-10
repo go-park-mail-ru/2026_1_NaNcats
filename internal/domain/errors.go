@@ -18,4 +18,5 @@ var (
 	ErrSQLSyntax          = errors.New("incorrect SQL syntax")
 	ErrSQLDeadlock        = errors.New("detected deadlock")
 	ErrSQLLockTimeout     = errors.New("lock not avaliable")
+	ErrAddressNotFound    = errors.New("address not found")
 )

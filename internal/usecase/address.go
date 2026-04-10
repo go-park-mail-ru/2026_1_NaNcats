@@ -10,6 +10,7 @@ type AddressUseCase interface {
 	AddAddress(ctx context.Context, userID int, addr domain.Address) (int, error)
 	GetMyAddresses(ctx context.Context, userID int) ([]domain.Address, error)
 	DeleteAddress(ctx context.Context, userID int, addressID int) error
+	UpdateAddress(ctx context.Context, userID int, addr domain.Address) error
 }
 
 type addressUseCase struct {
@@ -31,4 +32,8 @@ func (u *addressUseCase) GetMyAddresses(ctx context.Context, userID int) ([]doma
 
 func (u *addressUseCase) DeleteAddress(ctx context.Context, userID int, addressID int) error {
 	return u.repo.DeleteAddress(ctx, userID, addressID)
+}
+
+func (u *addressUseCase) UpdateAddress(ctx context.Context, userID int, addr domain.Address) error {
+	return u.repo.UpdateAddress(ctx, userID, addr)
 }

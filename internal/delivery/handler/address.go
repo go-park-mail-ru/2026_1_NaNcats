@@ -101,3 +101,45 @@ func (h *addressHandler) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 
 	response.JSON(w, http.StatusOK, map[string]string{"message": "deleted"})
 }
+
+func (h *addressHandler) UpdateAddress(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID, _ := middleware.GetUserID(ctx)
+
+	idStr := r.PathValue("id")
+	addrID, err := strconv.Atoi(idStr)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid address id")
+		return
+	}
+
+	var req AddressRequest
+	if err := request.JSON(r, &req, h.logger); err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	addr := domain.Address{
+		ID: addrID,
+		Location: domain.Location{
+			AddressText: req.AddressText,
+			Latitude:    req.Lat,
+			Longitude:   req.Lon,
+		},
+		Apartment:      req.Apartment,
+		Entrance:       req.Entrance,
+		Floor:          req.Floor,
+		DoorCode:       req.DoorCode,
+		CourierComment: req.CourierComment,
+		Label:          req.Label,
+	}
+
+	err = h.usecase.UpdateAddress(ctx, userID, addr)
+	if err != nil {
+		h.logger.Error("failed to update address", err, map[string]any{"addr_id": addrID})
+		response.Error(w, http.StatusInternalServerError, "failed to update address")
+		return
+	}
+
+	response.JSON(w, http.StatusOK, map[string]string{"message": "address updated successfully"})
+}
