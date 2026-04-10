@@ -4,7 +4,6 @@ package handler
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
@@ -37,7 +36,12 @@ func NewAddressHandler(u usecase.AddressUseCase, l domain.Logger) *addressHandle
 
 func (h *addressHandler) AddAddress(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	userID, _ := middleware.GetUserID(ctx)
+
+	userID, err := middleware.GetUserID(ctx)
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, "Internal server error")
+		return
+	}
 
 	var req AddressRequest
 	if err := request.JSON(r, &req); err != nil {
@@ -66,12 +70,17 @@ func (h *addressHandler) AddAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.JSON(w, http.StatusCreated, map[string]int{"id": id})
+	response.JSON(w, http.StatusCreated, map[string]string{"id": id})
 }
 
 func (h *addressHandler) GetAddresses(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	userID, _ := middleware.GetUserID(ctx)
+
+	userID, err := middleware.GetUserID(ctx)
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, "Internal server error")
+		return
+	}
 
 	addresses, err := h.usecase.GetMyAddresses(ctx, userID)
 	if err != nil {
@@ -85,16 +94,15 @@ func (h *addressHandler) GetAddresses(w http.ResponseWriter, r *http.Request) {
 
 func (h *addressHandler) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	userID, _ := middleware.GetUserID(ctx)
 
-	idStr := r.PathValue("id")
-	addrID, err := strconv.Atoi(idStr)
+	userID, err := middleware.GetUserID(ctx)
 	if err != nil {
-		response.Error(w, http.StatusBadRequest, "invalid address id")
+		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
-	if err := h.usecase.DeleteAddress(ctx, userID, addrID); err != nil {
+	addressPublicID := r.PathValue("id")
+	if err := h.usecase.DeleteAddress(ctx, userID, addressPublicID); err != nil {
 		response.Error(w, http.StatusInternalServerError, "failed to delete address")
 		return
 	}

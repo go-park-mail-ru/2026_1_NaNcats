@@ -19,3 +19,10 @@ type OrderDish struct {
 	Quantity int
 	Price    int64
 }
+
+type CreateOrderInput struct {
+	UserID          int
+	AddressPublicID string
+	RestaurantBrach int
+	PaymentMethodID string
+}

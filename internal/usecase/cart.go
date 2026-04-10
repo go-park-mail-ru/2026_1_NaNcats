@@ -31,12 +31,12 @@ func (u *cartUseCase) GetCart(ctx context.Context, userID int) (domain.Cart, int
 		return domain.Cart{}, 0, err
 	}
 
-	var total_cost int64
+	var totalCost int64
 	for _, cartItem := range cart.Items {
-		total_cost += cartItem.Price * int64(cartItem.Quantity)
+		totalCost += cartItem.Price * int64(cartItem.Quantity)
 	}
 
-	return cart, total_cost, nil
+	return cart, totalCost, nil
 }
 
 func (u *cartUseCase) UpdateCart(ctx context.Context, userID int, cartData domain.Cart) error {

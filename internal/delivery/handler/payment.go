@@ -41,9 +41,9 @@ type BindingResponse struct {
 func (h *paymentHandler) InitiateCardBinding(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	userID, ok := ctx.Value(middleware.UserIDKey).(int)
-	if !ok {
-		response.Error(w, http.StatusUnauthorized, "unauthorized")
+	userID, err := middleware.GetUserID(ctx)
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
