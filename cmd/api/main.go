@@ -174,6 +174,7 @@ func main() {
 	mux.Handle("POST /api/profile/addresses", authMW.RequireAuth(http.HandlerFunc(addressHandler.AddAddress)))
 	mux.Handle("GET /api/profile/addresses", authMW.RequireAuth(http.HandlerFunc(addressHandler.GetAddresses)))
 	mux.Handle("DELETE /api/profile/addresses/{id}", authMW.RequireAuth(http.HandlerFunc(addressHandler.DeleteAddress)))
+	mux.Handle("PATCH /api/profile/addresses/{id}", authMW.RequireAuth(http.HandlerFunc(addressHandler.UpdateAddress)))
 
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 

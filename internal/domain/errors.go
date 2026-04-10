@@ -21,5 +21,6 @@ var (
 	ErrSQLSyntax                  = errors.New("incorrect SQL syntax")
 	ErrSQLDeadlock                = errors.New("detected deadlock")
 	ErrSQLLockTimeout             = errors.New("lock not avaliable")
-	ErrYookassaConfirmationURL    = errors.New("yookassa did not send confirmation url")
+	ErrYookassaConfirmationURL     = errors.New("yookassa did not send confirmation url")
+	ErrAddressNotFound            = errors.New("address not found")
 )
