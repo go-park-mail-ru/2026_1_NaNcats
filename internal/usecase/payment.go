@@ -16,20 +16,23 @@ type PaymentUseCase interface {
 	GetUserCards(ctx context.Context, userID int) ([]domain.PaymentMethod, error)
 	SetDefaultCard(ctx context.Context, cardID string, userID int) error
 	DeleteCard(ctx context.Context, cardID string, userID int) error
-	ProcessWebhook(ctx context.Context, paymentMethod *yookassa.WebhookPaymentMethodObject) error
+	ProcessPaymentMethodWebhook(ctx context.Context, paymentMethod *yookassa.WebhookPaymentMethodObject) error
+	ProcessPaymentWebhook(ctx context.Context, payment *yookassa.WebhookPaymentObject) error
 }
 
 type paymentUseCase struct {
 	paymentRepo    repository.PaymentRepository
 	cacheRepo      repository.PaymentCacheRepository
+	orderRepo      repository.OrderRepository
 	yookassaClient *yookassa.Client
 	returnURL      string
 }
 
-func NewPaymentUseCase(pr repository.PaymentRepository, cr repository.PaymentCacheRepository, yc *yookassa.Client, returnURL string) PaymentUseCase {
+func NewPaymentUseCase(pr repository.PaymentRepository, cr repository.PaymentCacheRepository, or repository.OrderRepository, yc *yookassa.Client, returnURL string) PaymentUseCase {
 	return &paymentUseCase{
 		paymentRepo:    pr,
 		cacheRepo:      cr,
+		orderRepo:      or,
 		yookassaClient: yc,
 		returnURL:      returnURL,
 	}
@@ -73,7 +76,7 @@ func (p *paymentUseCase) DeleteCard(ctx context.Context, cardID string, userID i
 	return p.paymentRepo.Delete(ctx, cardID, userID)
 }
 
-func (p *paymentUseCase) ProcessWebhook(ctx context.Context, pm *yookassa.WebhookPaymentMethodObject) error {
+func (p *paymentUseCase) ProcessPaymentMethodWebhook(ctx context.Context, pm *yookassa.WebhookPaymentMethodObject) error {
 	if !pm.Saved || pm.Status != "active" || pm.Card == nil {
 		return nil
 	}
@@ -103,6 +106,29 @@ func (p *paymentUseCase) ProcessWebhook(ctx context.Context, pm *yookassa.Webhoo
 	}
 
 	_ = p.cacheRepo.DeletePendingBinding(ctx, pm.ID)
+
+	return nil
+}
+
+func (p *paymentUseCase) ProcessPaymentWebhook(ctx context.Context, payment *yookassa.WebhookPaymentObject) error {
+	if payment.Status != "succeeded" && payment.Status != "canceled" {
+		return nil
+	}
+
+	var newStatus string
+	switch payment.Status {
+	case "succeeded":
+		newStatus = "paid"
+	case "canceled":
+		newStatus = "canceled"
+	default:
+		return nil
+	}
+
+	err := p.orderRepo.UpdateStatusByPaymentID(ctx, payment.ID, newStatus)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

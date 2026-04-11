@@ -129,3 +129,23 @@ func (r *orderRepo) GetOrderByPublicID(ctx context.Context, publicID string, use
 
 	return order, nil
 }
+
+func (r *orderRepo) SetYookassaID(ctx context.Context, orderPublicID, yookassaID string) error {
+	query := `
+		UPDATE "order"
+		SET yookassa_payment_id = $1
+		WHERE public_id = $2;
+	`
+
+	tag, err := r.pool.Exec(ctx, query, yookassaID, orderPublicID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected := tag.RowsAffected()
+	if rowsAffected == 0 {
+		return domain.ErrOrderNotFound
+	}
+
+	return nil
+}

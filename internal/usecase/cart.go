@@ -18,7 +18,7 @@ type cartUseCase struct {
 	dishRepo repository.RestaurantBrandRepository
 }
 
-func NewCartUseCase(cr repository.CartRepository, dr repository.RestaurantBrandRepository) CartUseCase {
+func NewCartUseCase(cr repository.CartRepository, dr repository.RestaurantBrandRepository) *cartUseCase {
 	return &cartUseCase{
 		cartRepo: cr,
 		dishRepo: dr,

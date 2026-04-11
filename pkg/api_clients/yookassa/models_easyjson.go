@@ -17,7 +17,83 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa(in *jlexer.Lexer, out *WebhookPaymentMethodObject) {
+func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa(in *jlexer.Lexer, out *WebhookPaymentObject) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		switch key {
+		case "id":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.ID = string(in.String())
+			}
+		case "status":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.Status = string(in.String())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa(out *jwriter.Writer, in WebhookPaymentObject) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"id\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.ID))
+	}
+	{
+		const prefix string = ",\"status\":"
+		out.RawString(prefix)
+		out.String(string(in.Status))
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v WebhookPaymentObject) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v WebhookPaymentObject) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *WebhookPaymentObject) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *WebhookPaymentObject) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa(l, v)
+}
+func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa1(in *jlexer.Lexer, out *WebhookPaymentMethodObject) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -79,7 +155,7 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 		in.Consumed()
 	}
 }
-func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa(out *jwriter.Writer, in WebhookPaymentMethodObject) {
+func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa1(out *jwriter.Writer, in WebhookPaymentMethodObject) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -114,27 +190,27 @@ func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 // MarshalJSON supports json.Marshaler interface
 func (v WebhookPaymentMethodObject) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa(&w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa1(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v WebhookPaymentMethodObject) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa(w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa1(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *WebhookPaymentMethodObject) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa(&r, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa1(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *WebhookPaymentMethodObject) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa(l, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa1(l, v)
 }
-func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa1(in *jlexer.Lexer, out *WebhookNotification) {
+func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa2(in *jlexer.Lexer, out *WebhookNotification) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -176,7 +252,7 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 		in.Consumed()
 	}
 }
-func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa1(out *jwriter.Writer, in WebhookNotification) {
+func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa2(out *jwriter.Writer, in WebhookNotification) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -190,7 +266,7 @@ func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 		out.RawString(prefix)
 		out.String(string(in.Event))
 	}
-	{
+	if (in.Object).IsDefined() {
 		const prefix string = ",\"object\":"
 		out.RawString(prefix)
 		(in.Object).MarshalEasyJSON(out)
@@ -201,27 +277,27 @@ func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 // MarshalJSON supports json.Marshaler interface
 func (v WebhookNotification) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa1(&w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa2(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v WebhookNotification) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa1(w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa2(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *WebhookNotification) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa1(&r, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa2(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *WebhookNotification) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa1(l, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa2(l, v)
 }
-func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa2(in *jlexer.Lexer, out *PaymentResponseRecipient) {
+func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa3(in *jlexer.Lexer, out *PaymentResponseRecipient) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -257,7 +333,7 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 		in.Consumed()
 	}
 }
-func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa2(out *jwriter.Writer, in PaymentResponseRecipient) {
+func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa3(out *jwriter.Writer, in PaymentResponseRecipient) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -277,27 +353,27 @@ func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 // MarshalJSON supports json.Marshaler interface
 func (v PaymentResponseRecipient) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa2(&w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa3(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v PaymentResponseRecipient) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa2(w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa3(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *PaymentResponseRecipient) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa2(&r, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa3(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *PaymentResponseRecipient) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa2(l, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa3(l, v)
 }
-func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa3(in *jlexer.Lexer, out *PaymentResponsePaymentMethod) {
+func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa4(in *jlexer.Lexer, out *PaymentResponsePaymentMethod) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -345,7 +421,7 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 		in.Consumed()
 	}
 }
-func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa3(out *jwriter.Writer, in PaymentResponsePaymentMethod) {
+func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa4(out *jwriter.Writer, in PaymentResponsePaymentMethod) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -375,27 +451,27 @@ func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 // MarshalJSON supports json.Marshaler interface
 func (v PaymentResponsePaymentMethod) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa3(&w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa4(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v PaymentResponsePaymentMethod) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa3(w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa4(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *PaymentResponsePaymentMethod) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa3(&r, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa4(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *PaymentResponsePaymentMethod) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa3(l, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa4(l, v)
 }
-func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa4(in *jlexer.Lexer, out *PaymentResponseConfirmation) {
+func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa5(in *jlexer.Lexer, out *PaymentResponseConfirmation) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -415,11 +491,11 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 			} else {
 				out.Type = string(in.String())
 			}
-		case "confirmation_token":
+		case "confirmation_url":
 			if in.IsNull() {
 				in.Skip()
 			} else {
-				out.ConfirmationToken = string(in.String())
+				out.ConfirmationURL = string(in.String())
 			}
 		default:
 			in.SkipRecursive()
@@ -431,7 +507,7 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 		in.Consumed()
 	}
 }
-func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa4(out *jwriter.Writer, in PaymentResponseConfirmation) {
+func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa5(out *jwriter.Writer, in PaymentResponseConfirmation) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -440,10 +516,10 @@ func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 		out.RawString(prefix[1:])
 		out.String(string(in.Type))
 	}
-	{
-		const prefix string = ",\"confirmation_token\":"
+	if in.ConfirmationURL != "" {
+		const prefix string = ",\"confirmation_url\":"
 		out.RawString(prefix)
-		out.String(string(in.ConfirmationToken))
+		out.String(string(in.ConfirmationURL))
 	}
 	out.RawByte('}')
 }
@@ -451,27 +527,27 @@ func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 // MarshalJSON supports json.Marshaler interface
 func (v PaymentResponseConfirmation) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa4(&w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa5(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v PaymentResponseConfirmation) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa4(w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa5(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *PaymentResponseConfirmation) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa4(&r, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa5(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *PaymentResponseConfirmation) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa4(l, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa5(l, v)
 }
-func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa5(in *jlexer.Lexer, out *PaymentResponseAmount) {
+func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa6(in *jlexer.Lexer, out *PaymentResponseAmount) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -507,7 +583,7 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 		in.Consumed()
 	}
 }
-func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa5(out *jwriter.Writer, in PaymentResponseAmount) {
+func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa6(out *jwriter.Writer, in PaymentResponseAmount) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -527,27 +603,27 @@ func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 // MarshalJSON supports json.Marshaler interface
 func (v PaymentResponseAmount) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa5(&w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa6(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v PaymentResponseAmount) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa5(w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa6(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *PaymentResponseAmount) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa5(&r, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa6(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *PaymentResponseAmount) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa5(l, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa6(l, v)
 }
-func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa6(in *jlexer.Lexer, out *PaymentResponse) {
+func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa7(in *jlexer.Lexer, out *PaymentResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -649,7 +725,7 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 		in.Consumed()
 	}
 }
-func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa6(out *jwriter.Writer, in PaymentResponse) {
+func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa7(out *jwriter.Writer, in PaymentResponse) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -709,27 +785,27 @@ func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 // MarshalJSON supports json.Marshaler interface
 func (v PaymentResponse) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa6(&w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa7(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v PaymentResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa6(w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa7(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *PaymentResponse) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa6(&r, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa7(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *PaymentResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa6(l, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa7(l, v)
 }
-func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa7(in *jlexer.Lexer, out *PaymentMethodResponseHolder) {
+func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa8(in *jlexer.Lexer, out *PaymentMethodResponseHolder) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -759,7 +835,7 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 		in.Consumed()
 	}
 }
-func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa7(out *jwriter.Writer, in PaymentMethodResponseHolder) {
+func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa8(out *jwriter.Writer, in PaymentMethodResponseHolder) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -774,27 +850,27 @@ func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 // MarshalJSON supports json.Marshaler interface
 func (v PaymentMethodResponseHolder) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa7(&w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa8(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v PaymentMethodResponseHolder) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa7(w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa8(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *PaymentMethodResponseHolder) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa7(&r, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa8(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *PaymentMethodResponseHolder) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa7(l, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa8(l, v)
 }
-func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa8(in *jlexer.Lexer, out *PaymentMethodResponseConfirmation) {
+func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa9(in *jlexer.Lexer, out *PaymentMethodResponseConfirmation) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -830,7 +906,7 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 		in.Consumed()
 	}
 }
-func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa8(out *jwriter.Writer, in PaymentMethodResponseConfirmation) {
+func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa9(out *jwriter.Writer, in PaymentMethodResponseConfirmation) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -850,27 +926,27 @@ func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 // MarshalJSON supports json.Marshaler interface
 func (v PaymentMethodResponseConfirmation) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa8(&w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa9(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v PaymentMethodResponseConfirmation) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa8(w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa9(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *PaymentMethodResponseConfirmation) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa8(&r, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa9(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *PaymentMethodResponseConfirmation) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa8(l, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa9(l, v)
 }
-func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa9(in *jlexer.Lexer, out *PaymentMethodResponseCard) {
+func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa10(in *jlexer.Lexer, out *PaymentMethodResponseCard) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -930,7 +1006,7 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 		in.Consumed()
 	}
 }
-func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa9(out *jwriter.Writer, in PaymentMethodResponseCard) {
+func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa10(out *jwriter.Writer, in PaymentMethodResponseCard) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -970,27 +1046,27 @@ func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 // MarshalJSON supports json.Marshaler interface
 func (v PaymentMethodResponseCard) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa9(&w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa10(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v PaymentMethodResponseCard) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa9(w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa10(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *PaymentMethodResponseCard) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa9(&r, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa10(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *PaymentMethodResponseCard) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa9(l, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa10(l, v)
 }
-func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa10(in *jlexer.Lexer, out *PaymentMethodResponse) {
+func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa11(in *jlexer.Lexer, out *PaymentMethodResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1078,7 +1154,7 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 		in.Consumed()
 	}
 }
-func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa10(out *jwriter.Writer, in PaymentMethodResponse) {
+func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa11(out *jwriter.Writer, in PaymentMethodResponse) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1128,27 +1204,27 @@ func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 // MarshalJSON supports json.Marshaler interface
 func (v PaymentMethodResponse) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa10(&w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa11(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v PaymentMethodResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa10(w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa11(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *PaymentMethodResponse) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa10(&r, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa11(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *PaymentMethodResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa10(l, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa11(l, v)
 }
-func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa11(in *jlexer.Lexer, out *PaymentMethodRequestConfirmation) {
+func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa12(in *jlexer.Lexer, out *PaymentMethodRequestConfirmation) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1184,7 +1260,7 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 		in.Consumed()
 	}
 }
-func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa11(out *jwriter.Writer, in PaymentMethodRequestConfirmation) {
+func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa12(out *jwriter.Writer, in PaymentMethodRequestConfirmation) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1204,27 +1280,27 @@ func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 // MarshalJSON supports json.Marshaler interface
 func (v PaymentMethodRequestConfirmation) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa11(&w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa12(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v PaymentMethodRequestConfirmation) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa11(w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa12(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *PaymentMethodRequestConfirmation) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa11(&r, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa12(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *PaymentMethodRequestConfirmation) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa11(l, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa12(l, v)
 }
-func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa12(in *jlexer.Lexer, out *CreatePaymentRequestConfirmation) {
+func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa13(in *jlexer.Lexer, out *CreatePaymentRequestConfirmation) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1244,6 +1320,12 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 			} else {
 				out.Type = string(in.String())
 			}
+		case "return_url":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.ReturnURL = string(in.String())
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -1254,7 +1336,7 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 		in.Consumed()
 	}
 }
-func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa12(out *jwriter.Writer, in CreatePaymentRequestConfirmation) {
+func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa13(out *jwriter.Writer, in CreatePaymentRequestConfirmation) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1263,33 +1345,38 @@ func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 		out.RawString(prefix[1:])
 		out.String(string(in.Type))
 	}
+	if in.ReturnURL != "" {
+		const prefix string = ",\"return_url\":"
+		out.RawString(prefix)
+		out.String(string(in.ReturnURL))
+	}
 	out.RawByte('}')
 }
 
 // MarshalJSON supports json.Marshaler interface
 func (v CreatePaymentRequestConfirmation) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa12(&w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa13(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v CreatePaymentRequestConfirmation) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa12(w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa13(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *CreatePaymentRequestConfirmation) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa12(&r, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa13(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *CreatePaymentRequestConfirmation) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa12(l, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa13(l, v)
 }
-func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa13(in *jlexer.Lexer, out *CreatePaymentRequestAmount) {
+func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa14(in *jlexer.Lexer, out *CreatePaymentRequestAmount) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1325,7 +1412,7 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 		in.Consumed()
 	}
 }
-func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa13(out *jwriter.Writer, in CreatePaymentRequestAmount) {
+func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa14(out *jwriter.Writer, in CreatePaymentRequestAmount) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1345,27 +1432,27 @@ func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 // MarshalJSON supports json.Marshaler interface
 func (v CreatePaymentRequestAmount) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa13(&w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa14(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v CreatePaymentRequestAmount) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa13(w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa14(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *CreatePaymentRequestAmount) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa13(&r, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa14(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *CreatePaymentRequestAmount) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa13(l, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa14(l, v)
 }
-func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa14(in *jlexer.Lexer, out *CreatePaymentRequest) {
+func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa15(in *jlexer.Lexer, out *CreatePaymentRequest) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1417,6 +1504,12 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 			} else {
 				out.Description = string(in.String())
 			}
+		case "payment_method_id":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.PaymentMethodID = string(in.String())
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -1427,7 +1520,7 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 		in.Consumed()
 	}
 }
-func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa14(out *jwriter.Writer, in CreatePaymentRequest) {
+func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa15(out *jwriter.Writer, in CreatePaymentRequest) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1456,33 +1549,38 @@ func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 		out.RawString(prefix)
 		out.String(string(in.Description))
 	}
+	if in.PaymentMethodID != "" {
+		const prefix string = ",\"payment_method_id\":"
+		out.RawString(prefix)
+		out.String(string(in.PaymentMethodID))
+	}
 	out.RawByte('}')
 }
 
 // MarshalJSON supports json.Marshaler interface
 func (v CreatePaymentRequest) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa14(&w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa15(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v CreatePaymentRequest) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa14(w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa15(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *CreatePaymentRequest) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa14(&r, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa15(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *CreatePaymentRequest) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa14(l, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa15(l, v)
 }
-func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa15(in *jlexer.Lexer, out *CreatePaymentMethodRequest) {
+func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa16(in *jlexer.Lexer, out *CreatePaymentMethodRequest) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1526,7 +1624,7 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 		in.Consumed()
 	}
 }
-func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa15(out *jwriter.Writer, in CreatePaymentMethodRequest) {
+func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa16(out *jwriter.Writer, in CreatePaymentMethodRequest) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1546,23 +1644,23 @@ func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookass
 // MarshalJSON supports json.Marshaler interface
 func (v CreatePaymentMethodRequest) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa15(&w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa16(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v CreatePaymentMethodRequest) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa15(w, v)
+	easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa16(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *CreatePaymentMethodRequest) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa15(&r, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa16(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *CreatePaymentMethodRequest) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa15(l, v)
+	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsPkgApiClientsYookassa16(l, v)
 }

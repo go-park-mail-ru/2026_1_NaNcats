@@ -78,8 +78,8 @@ func (r *addressRepo) GetAddressesByUserID(ctx context.Context, userID int) ([]d
 	return addresses, nil
 }
 
-func (r *addressRepo) DeleteAddress(ctx context.Context, userID int, addressPublicID string) error {
-	res, err := r.pool.Exec(ctx, `DELETE FROM "client_address" WHERE public_id = $1 AND client_account_id = $2`, addressPublicID, userID)
+func (r *addressRepo) DeleteAddress(ctx context.Context, userID int, publicID string) error {
+	res, err := r.pool.Exec(ctx, `DELETE FROM "client_address" WHERE public_id = $1 AND client_account_id = $2`, publicID, userID)
 	if err != nil {
 		return err
 	}
@@ -88,4 +88,19 @@ func (r *addressRepo) DeleteAddress(ctx context.Context, userID int, addressPubl
 	}
 
 	return nil
+}
+
+func (r *addressRepo) GetInternalIDByPublicID(ctx context.Context, userID int, publicID string) (int, error) {
+	query := `
+		SELECT id FROM "client_address"
+		WHERE public_id = $1 AND client_account_id = $2
+	`
+
+	var internalID int
+	err := r.pool.QueryRow(ctx, query, publicID, userID).Scan(&internalID)
+	if err != nil {
+		return 0, err
+	}
+
+	return internalID, err
 }

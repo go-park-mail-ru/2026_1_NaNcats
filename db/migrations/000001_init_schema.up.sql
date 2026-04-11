@@ -1,4 +1,4 @@
-CREATE TYPE order_status AS ENUM('in_progress', 'waiting', 'delivering', 'finished', 'cancelled');
+CREATE TYPE order_status AS ENUM('in_progress', 'waiting', 'delivering', 'finished', 'canceled');
 CREATE TYPE courier_status AS ENUM('offline', 'waiting', 'delivering');
 
 CREATE EXTENSION IF NOT EXISTS postgis;

@@ -21,8 +21,8 @@ type OrderDish struct {
 }
 
 type CreateOrderInput struct {
-	UserID          int
-	AddressPublicID string
-	RestaurantBrach int
-	PaymentMethodID string
+	UserID             int
+	AddressPublicID    string
+	RestaurantBranchID int
+	PaymentMethodID    string
 }

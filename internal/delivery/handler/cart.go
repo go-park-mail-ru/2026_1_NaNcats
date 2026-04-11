@@ -1,5 +1,7 @@
 package handler
 
+//go:generate easyjson $GOFILE
+
 import (
 	"errors"
 	"net/http"
@@ -43,6 +45,16 @@ func NewCartHandler(cuc usecase.CartUseCase, l domain.Logger) *cartHandler {
 	}
 }
 
+// GetCart godoc
+// @Summary      Получить корзину
+// @Description  Возвращает текущую корзину авторизованного пользователя
+// @Tags         cart
+// @Produce      json
+// @Success      200  {object}  CartResponse
+// @Failure      401  {object}  map[string]string "Unauthorized"
+// @Failure      500  {object}  map[string]string "Internal server error"
+// @Security     ApiKeyAuth
+// @Router       /api/cart [get]
 func (h *cartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
@@ -86,6 +98,19 @@ func (h *cartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, cartResponse)
 }
 
+// UpdateCart godoc
+// @Summary      Обновить корзину
+// @Description  Перезаписывает содержимое корзины пользователя новыми товарами
+// @Tags         cart
+// @Accept       json
+// @Produce      json
+// @Param        input  body      CartRequest  true  "Данные корзины"
+// @Success      200    {object}  map[string]interface{} "Успешное обновление"
+// @Failure      400    {object}  map[string]string "Неверный формат запроса или товары из разных ресторанов"
+// @Failure      401    {object}  map[string]string "Unauthorized"
+// @Failure      500    {object}  map[string]string "Internal server error"
+// @Security     ApiKeyAuth
+// @Router       /api/cart [put]
 func (h *cartHandler) UpdateCart(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)

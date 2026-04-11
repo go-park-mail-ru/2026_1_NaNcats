@@ -1,5 +1,7 @@
 package handler
 
+//go:generate easyjson $GOFILE
+
 import (
 	"errors"
 	"net/http"
@@ -189,11 +191,33 @@ func (h *paymentHandler) YookassaWebhook(w http.ResponseWriter, r *http.Request)
 	}
 	defer r.Body.Close()
 
-	if notification.Event == "payment_method.active" {
-		err := h.paymentUC.ProcessWebhook(ctx, &notification.Object)
+	switch notification.Event {
+	case "payment_method.active":
+		var methodObj yookassa.WebhookPaymentMethodObject
+		if err := easyjson.Unmarshal(notification.Object, &methodObj); err != nil {
+			h.logger.Error("failed to parse payment_method object", err, map[string]any{})
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		err := h.paymentUC.ProcessPaymentMethodWebhook(ctx, &methodObj)
 		if err != nil {
 			h.logger.Error("failed to process yookassa webhook", err, map[string]any{
-				"payment_id": notification.Object.ID,
+				"payment_id": methodObj.ID,
+			})
+		}
+	case "payment.succeeded", "payment.canceled":
+		var paymentObj yookassa.WebhookPaymentObject
+		if err := easyjson.Unmarshal(notification.Object, &paymentObj); err != nil {
+			h.logger.Error("failed to parse payment object", err, map[string]any{})
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		err := h.paymentUC.ProcessPaymentWebhook(ctx, &paymentObj)
+		if err != nil {
+			h.logger.Error("failed to process yookassa webhook", err, map[string]any{
+				"payment_id": paymentObj.ID,
 			})
 		}
 	}

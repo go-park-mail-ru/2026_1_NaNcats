@@ -119,6 +119,7 @@ func main() {
 	paymentRepo := postgres.NewPaymentRepo(pool)
 	paymentCacheRepo := redisrepo.NewPaymentCacheRepo(redisPool)
 	addressRepo := postgres.NewAddressRepo(pool)
+	orderRepo := postgres.NewOrderRepo(pool)
 	s3Repo, err := s3.NewS3Storage(ctx, keyID, s3SecretKey, bucketName, "ru-central1")
 	if err != nil {
 		appLogger.Fatal("Failed to init S3", err)
@@ -133,7 +134,8 @@ func main() {
 	authUC := usecase.NewAuthUseCase(userUC, sessionUC, clientProfileUC)
 	restaurantBrandUC := usecase.NewRestaurantBrandUseCase(restaurantBrandRepo)
 	userProfileUC := usecase.NewUserProfileUseCase(userUC)
-	paymentUC := usecase.NewPaymentUseCase(paymentRepo, paymentCacheRepo, yookassaClient, returnURL)
+	orderUC := usecase.NewOrderUseCase(orderRepo, addressRepo, cartUC, yookassaClient)
+	paymentUC := usecase.NewPaymentUseCase(paymentRepo, paymentCacheRepo, orderRepo, yookassaClient, returnURL)
 	addressUC := usecase.NewAddressUseCase(addressRepo)
 
 	defaultAvatarURL := os.Getenv("DEFAULT_AVATAR_URL")
@@ -146,6 +148,7 @@ func main() {
 	userProfileHandler := handler.NewUserProfileHandler(userProfileUC, userUC, sessionUC, appLogger, defaultAvatarURL)
 	paymentHandler := handler.NewPaymentHandler(paymentUC, appLogger)
 	addressHandler := handler.NewAddressHandler(addressUC, appLogger)
+	orderHandler := handler.NewOrderHandler(orderUC, appLogger)
 
 	authMW := middleware.NewAuthMiddleware(sessionUC, appLogger)
 	corsMW := middleware.NewCORSMiddleware([]string{
@@ -175,11 +178,13 @@ func main() {
 	mux.Handle("DELETE /api/profile/cards/{id}", authMW.RequireAuth(http.HandlerFunc(paymentHandler.DeleteCard)))
 	mux.Handle("PUT /api/profile/cards/{id}", authMW.RequireAuth(http.HandlerFunc(paymentHandler.SetDefaultCard)))
 
-	mux.Handle("POST /api/webhooks/yookassa", http.HandlerFunc(paymentHandler.YookassaWebhook))
-
 	mux.Handle("POST /api/profile/addresses", authMW.RequireAuth(http.HandlerFunc(addressHandler.AddAddress)))
 	mux.Handle("GET /api/profile/addresses", authMW.RequireAuth(http.HandlerFunc(addressHandler.GetAddresses)))
 	mux.Handle("DELETE /api/profile/addresses/{id}", authMW.RequireAuth(http.HandlerFunc(addressHandler.DeleteAddress)))
+
+	mux.Handle("POST /api/orders", authMW.RequireAuth(http.HandlerFunc(orderHandler.CreateOrder)))
+
+	mux.Handle("POST /api/webhooks/yookassa", http.HandlerFunc(paymentHandler.YookassaWebhook))
 
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 

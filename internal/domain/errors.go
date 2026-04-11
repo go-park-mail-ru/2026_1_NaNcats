@@ -26,4 +26,6 @@ var (
 	ErrDishNotFound               = errors.New("dish not found")
 	ErrMultipleRestaurants        = errors.New("restaurant is different in cart and dish")
 	ErrOrderNotFound              = errors.New("order not found")
+	ErrAddressNotFound            = errors.New("address not found")
+	ErrCartIsEmpty                = errors.New("cart is empty")
 )
