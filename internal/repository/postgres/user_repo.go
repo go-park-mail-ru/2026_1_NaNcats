@@ -57,13 +57,13 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 	email = strings.ToLower(strings.TrimSpace(email))
 
 	query := `
-		SELECT id, name, email, phone, password_hash, user_role, avatar_url
+		SELECT id, name, email, COALESCE(phone, ''), password_hash, user_role, COALESCE(avatar_url, '')
 		FROM "user"
 		WHERE email = $1
 	`
 
 	var user domain.User
-	var userRole string // заглушка
+	var userRole string
 
 	err := r.pool.QueryRow(ctx, query, email).Scan(
 		&user.ID,
@@ -86,13 +86,13 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 
 func (r *userRepo) GetUserByID(ctx context.Context, id int) (domain.User, error) {
 	query := `
-		SELECT id, name, email, phone, password_hash, user_role, avatar_url
+		SELECT id, name, email, COALESCE(phone, ''), password_hash, user_role, COALESCE(avatar_url, '')
 		FROM "user"
 		WHERE id = $1
 	`
 
 	var user domain.User
-	var userRole string // заглушка
+	var userRole string
 
 	err := r.pool.QueryRow(ctx, query, id).Scan(
 		&user.ID,

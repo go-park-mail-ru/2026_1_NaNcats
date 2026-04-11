@@ -42,7 +42,7 @@ func (c *Client) CreatePayment(ctx context.Context, req CreatePaymentRequest) (*
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Idempotency-Key", uuid.New().String())
+	httpReq.Header.Set("Idempotence-Key", uuid.New().String())
 	httpReq.SetBasicAuth(c.shopID, c.secretKey)
 
 	resp, err := c.client.Do(httpReq)
@@ -76,7 +76,7 @@ func (c *Client) CreatePaymentMethod(ctx context.Context, req CreatePaymentMetho
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Idempotency-Key", uuid.New().String())
+	httpReq.Header.Set("Idempotence-Key", uuid.New().String())
 	httpReq.SetBasicAuth(c.shopID, c.secretKey)
 
 	resp, err := c.client.Do(httpReq)
