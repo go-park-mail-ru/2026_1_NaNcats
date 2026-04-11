@@ -21,13 +21,14 @@ func NewLoggerAdapter(zapLog *logger.ZapLogger) domain.Logger {
 
 // Сборка всей необходимой метаинформации о запросе из контекста
 func (a *LoggerAdapter) WithContext(ctx context.Context) domain.Logger {
-	reqID := middleware.GetRequestID(ctx)
-	if reqID != "" {
-		// Вызываем "чистый" метод With из pkg и оборачиваем результат обратно в адаптер
-		loggerWithContext := a.realLogger.With(zap.String("request_id", reqID))
-		return &LoggerAdapter{realLogger: loggerWithContext}
+	reqID, ok := ctx.Value(middleware.RequestIDKey).(string)
+	if !ok || reqID == "" {
+		return a
 	}
-	return a
+
+	return &LoggerAdapter{
+		realLogger: a.realLogger.With(zap.String("request_id", reqID)),
+	}
 }
 
 // Просто пробрасываем вызовы в реальный логгер

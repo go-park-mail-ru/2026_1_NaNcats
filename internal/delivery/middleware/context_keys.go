@@ -22,13 +22,3 @@ func GetUserID(ctx context.Context) (int, error) {
 	// если там не int или nil
 	return 0, ErrNoUserIDInContext
 }
-
-// Вспомогательная функция для безопасного извлечения ID из контекста.
-// Возвращает ошибку в string, потому что некритично, а обрабатывать ошибку при использовании логов
-// придется очень часто
-func GetRequestID(ctx context.Context) string {
-	if id, ok := ctx.Value(RequestIDKey).(string); ok {
-		return id
-	}
-	return "unknown"
-}
