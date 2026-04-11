@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -85,4 +86,35 @@ func (r *dishRepo) GetDishesByRestaurantBrandID(ctx context.Context, restaurantB
 		dishes = append(dishes, d.toDomain())
 	}
 	return dishes, nil
+}
+
+func (r *dishRepo) GetDishByID(ctx context.Context, DishID int) (domain.Dish, error) {
+	query := `
+		SELECT id,
+			restaurant_brand_id,
+			name,
+			description,
+			image_url,
+			price,
+			created_at,
+			updated_at
+		FROM "dish"
+		WHERE id = $1
+	`
+
+	rows, err := r.pool.Query(ctx, query, DishID)
+	if err != nil {
+		return domain.Dish{}, err
+	}
+
+	dbDish, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[dishDB])
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.Dish{}, domain.ErrDishNotFound
+		}
+		return domain.Dish{}, err
+	}
+
+	return dbDish.toDomain(), nil
 }

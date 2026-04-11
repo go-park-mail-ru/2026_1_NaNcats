@@ -15,10 +15,10 @@ type CartUseCase interface {
 
 type cartUseCase struct {
 	cartRepo repository.CartRepository
-	dishRepo repository.RestaurantBrandRepository
+	dishRepo repository.DishRepository
 }
 
-func NewCartUseCase(cr repository.CartRepository, dr repository.RestaurantBrandRepository) *cartUseCase {
+func NewCartUseCase(cr repository.CartRepository, dr repository.DishRepository) *cartUseCase {
 	return &cartUseCase{
 		cartRepo: cr,
 		dishRepo: dr,
@@ -49,14 +49,14 @@ func (u *cartUseCase) UpdateCart(ctx context.Context, userID int, cartData domai
 			return domain.ErrInvalidQuantity
 		}
 
-		// dish, err := u.dishRepo.GetDishByID(ctx, cartItem.DishID)
-		// if err != nil {
-		// 	return err
-		// }
+		dish, err := u.dishRepo.GetDishByID(ctx, cartItem.DishID)
+		if err != nil {
+			return err
+		}
 
-		// if dish.RestaurantID != cartData.RestaurantBrandID {
-		// 	return domain.ErrMultipleRestaurants
-		// }
+		if dish.RestaurantBrandID != cartData.RestaurantBrandID {
+			return domain.ErrMultipleRestaurants
+		}
 	}
 
 	return u.cartRepo.UpdateCart(ctx, userID, cartData.RestaurantBrandID, cartData.Items)
