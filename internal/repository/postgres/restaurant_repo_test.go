@@ -4,22 +4,17 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/pashagolub/pgxmock/v5"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestRestaurantBrandRepo_GetRestaurantBrandsList(t *testing.T) {
-	mock, err := pgxmock.NewPool()
-	require.NoError(t, err)
-	defer mock.Close()
-
-	repo := NewRestaurantBrandRepo(mock)
 	ctx := context.Background()
+	now := time.Now()
 
-	// Вспомогательные переменные для ссылок (т.к. в БД структуре указатели)
 	desc1 := "Best burgers"
 	logo1 := "logo1.png"
 
@@ -27,7 +22,7 @@ func TestRestaurantBrandRepo_GetRestaurantBrandsList(t *testing.T) {
 		name    string
 		limit   int
 		offset  int
-		setup   func()
+		setup   func(mock pgxmock.PgxPoolIface)
 		want    []domain.RestaurantBrand
 		wantErr error
 	}{
@@ -35,32 +30,20 @@ func TestRestaurantBrandRepo_GetRestaurantBrandsList(t *testing.T) {
 			name:   "Успех с несколькими брендами",
 			limit:  2,
 			offset: 0,
-			setup: func() {
-				rows := pgxmock.NewRows([]string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url"}).
-					AddRow(1, 101, "Burger King", &desc1, 5, &logo1).
-					AddRow(2, 102, "Mac", nil, 3, nil) // Проверка обработки nil
+			setup: func(mock pgxmock.PgxPoolIface) {
+				columns := []string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "created_at", "updated_at"}
+				rows := pgxmock.NewRows(columns).
+					AddRow(1, 101, "Burger King", &desc1, 5, &logo1, now, now).
+					AddRow(2, 102, "Mac", nil, 3, nil, now, now)
 
-				mock.ExpectQuery(`SELECT id, owner_profile_id, name, description, promotion_tier, logo_url FROM "restaurant_brand"`).
+				// Используем (.+), чтобы не прописывать весь длинный SQL вручную
+				mock.ExpectQuery(`SELECT (.+) FROM "restaurant_brand" (.+) LIMIT \$1 OFFSET \$2`).
 					WithArgs(2, 0).
 					WillReturnRows(rows)
 			},
 			want: []domain.RestaurantBrand{
-				{
-					ID:             1,
-					OwnerProfileID: 101,
-					Name:           "Burger King",
-					Description:    "Best burgers",
-					PromotionTier:  5,
-					LogoURL:        "logo1.png",
-				},
-				{
-					ID:             2,
-					OwnerProfileID: 102,
-					Name:           "Mac",
-					Description:    "", // Конвертировалось из nil
-					PromotionTier:  3,
-					LogoURL:        "", // Конвертировалось из nil
-				},
+				{ID: 1, OwnerProfileID: 101, Name: "Burger King", Description: "Best burgers", PromotionTier: 5, LogoURL: "logo1.png", CreatedAt: now, UpdatedAt: now},
+				{ID: 2, OwnerProfileID: 102, Name: "Mac", Description: "", PromotionTier: 3, LogoURL: "", CreatedAt: now, UpdatedAt: now},
 			},
 			wantErr: nil,
 		},
@@ -68,10 +51,11 @@ func TestRestaurantBrandRepo_GetRestaurantBrandsList(t *testing.T) {
 			name:   "Успех - пустое множество ресторанов",
 			limit:  10,
 			offset: 0,
-			setup: func() {
-				mock.ExpectQuery(`SELECT`).
+			setup: func(mock pgxmock.PgxPoolIface) {
+				columns := []string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "created_at", "updated_at"}
+				mock.ExpectQuery(`SELECT (.+) FROM "restaurant_brand"`).
 					WithArgs(10, 0).
-					WillReturnRows(pgxmock.NewRows([]string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url"}))
+					WillReturnRows(pgxmock.NewRows(columns))
 			},
 			want:    []domain.RestaurantBrand{},
 			wantErr: nil,
@@ -80,8 +64,8 @@ func TestRestaurantBrandRepo_GetRestaurantBrandsList(t *testing.T) {
 			name:   "Ошибка БД",
 			limit:  10,
 			offset: 0,
-			setup: func() {
-				mock.ExpectQuery(`SELECT`).
+			setup: func(mock pgxmock.PgxPoolIface) {
+				mock.ExpectQuery(`SELECT (.+) FROM "restaurant_brand"`).
 					WithArgs(10, 0).
 					WillReturnError(errors.New("connection failed"))
 			},
@@ -92,7 +76,11 @@ func TestRestaurantBrandRepo_GetRestaurantBrandsList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.setup()
+			mock, _ := pgxmock.NewPool()
+			defer mock.Close()
+			repo := NewRestaurantBrandRepo(mock)
+
+			tt.setup(mock)
 
 			got, err := repo.GetRestaurantBrandsList(ctx, tt.limit, tt.offset)
 

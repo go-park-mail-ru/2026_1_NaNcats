@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 
@@ -10,12 +11,14 @@ import (
 )
 
 type restaurantBrandDB struct {
-	ID             int     `db:"id"`
-	OwnerProfileID int     `db:"owner_profile_id"`
-	Name           string  `db:"name"`
-	Description    *string `db:"description"`
-	PromotionTier  int     `db:"promotion_tier"`
-	LogoURL        *string `db:"logo_url"`
+	ID             int       `db:"id"`
+	OwnerProfileID int       `db:"owner_profile_id"`
+	Name           string    `db:"name"`
+	Description    *string   `db:"description"`
+	PromotionTier  int       `db:"promotion_tier"`
+	LogoURL        *string   `db:"logo_url"`
+	CreatedAt      time.Time `db:"created_at"`
+	UpdatedAt      time.Time `db:"updated_at"`
 }
 
 func (d restaurantBrandDB) toDomain() domain.RestaurantBrand {
@@ -34,6 +37,8 @@ func (d restaurantBrandDB) toDomain() domain.RestaurantBrand {
 		Description:    description,
 		PromotionTier:  d.PromotionTier,
 		LogoURL:        logoURL,
+		CreatedAt:      d.CreatedAt,
+		UpdatedAt:      d.UpdatedAt,
 	}
 }
 
