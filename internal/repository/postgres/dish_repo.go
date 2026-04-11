@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
@@ -46,10 +45,10 @@ func (d dishDB) toDomain() domain.Dish {
 }
 
 type dishRepo struct {
-	pool *pgxpool.Pool
+	pool PgxPool
 }
 
-func NewDishRepo(pool *pgxpool.Pool) repository.DishRepository {
+func NewDishRepo(pool PgxPool) repository.DishRepository {
 	return &dishRepo{pool: pool}
 }
 

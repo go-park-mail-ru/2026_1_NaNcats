@@ -56,6 +56,7 @@ func (r *cartRepo) GetCartByUserID(ctx context.Context, userID int) (domain.Cart
 			&resID,
 			&item.DishID,
 			&item.Quantity,
+			&item.Name,
 			&item.Price,
 			&item.ImageURL,
 		)
