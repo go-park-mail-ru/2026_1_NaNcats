@@ -9,14 +9,13 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type orderRepo struct {
-	pool *pgxpool.Pool
+	pool PgxPool
 }
 
-func NewOrderRepo(pool *pgxpool.Pool) repository.OrderRepository {
+func NewOrderRepo(pool PgxPool) repository.OrderRepository {
 	return &orderRepo{
 		pool: pool,
 	}
