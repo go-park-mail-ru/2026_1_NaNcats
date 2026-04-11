@@ -195,6 +195,7 @@ func (r *userRepo) UpdateProfile(ctx context.Context, userID int, name, email *s
 				return err
 			}
 		}
+		return err
 	}
 
 	if tag.RowsAffected() == 0 {

@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 
@@ -11,14 +10,12 @@ import (
 )
 
 type restaurantBrandDB struct {
-	ID             int       `db:"id"`
-	OwnerProfileID int       `db:"owner_profile_id"`
-	Name           string    `db:"name"`
-	Description    *string   `db:"description"`
-	PromotionTier  int       `db:"promotion_tier"`
-	LogoURL        *string   `db:"logo_url"`
-	CreatedAt      time.Time `db:"created_at"`
-	UpdatedAt      time.Time `db:"updated_at"`
+	ID             int     `db:"id"`
+	OwnerProfileID int     `db:"owner_profile_id"`
+	Name           string  `db:"name"`
+	Description    *string `db:"description"`
+	PromotionTier  int     `db:"promotion_tier"`
+	LogoURL        *string `db:"logo_url"`
 }
 
 func (d restaurantBrandDB) toDomain() domain.RestaurantBrand {
@@ -37,8 +34,6 @@ func (d restaurantBrandDB) toDomain() domain.RestaurantBrand {
 		Description:    description,
 		PromotionTier:  d.PromotionTier,
 		LogoURL:        logoURL,
-		CreatedAt:      d.CreatedAt,
-		UpdatedAt:      d.UpdatedAt,
 	}
 }
 
@@ -78,4 +73,6 @@ func (r *restaurantBrandRepo) GetRestaurantBrandsList(ctx context.Context, limit
 	return domainRestaurantBrands, nil
 }
 
-func (r *restaurantBrandRepo) GetDishByID(ctx context.Context, dishID int) (domain.Dish, error) // заглушка
+func (r *restaurantBrandRepo) GetDishByID(ctx context.Context, dishID int) (domain.Dish, error) {
+	panic("unimplemented") // заглушка
+}

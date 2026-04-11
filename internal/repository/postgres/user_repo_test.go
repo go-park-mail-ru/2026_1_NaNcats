@@ -33,9 +33,17 @@ func TestUserRepo_CreateUser(t *testing.T) {
 			name: "Успех",
 			user: domain.User{Name: "Ivan", Email: "TEST@mail.ru", Phone: "7999", PasswordHash: "hash"},
 			mock: func() {
+				mock.ExpectBegin()
+
 				mock.ExpectQuery(`INSERT INTO "user"`).
 					WithArgs("Ivan", "test@mail.ru", "7999", "hash", "client").
 					WillReturnRows(pgxmock.NewRows([]string{"id"}).AddRow(1))
+
+				mock.ExpectExec(`INSERT INTO "client_profile"`).
+					WithArgs(1).
+					WillReturnResult(pgxmock.NewResult("INSERT", 1))
+
+				mock.ExpectCommit()
 			},
 			wantID:  1,
 			wantErr: nil,
@@ -44,8 +52,13 @@ func TestUserRepo_CreateUser(t *testing.T) {
 			name: "Почта уже существует",
 			user: domain.User{Email: "exists@mail.ru"},
 			mock: func() {
+				mock.ExpectBegin()
+
 				mock.ExpectQuery(`INSERT INTO "user"`).
+					WithArgs(pgxmock.AnyArg(), "exists@mail.ru", pgxmock.AnyArg(), pgxmock.AnyArg(), "client").
 					WillReturnError(&pgconn.PgError{Code: pgerrcode.UniqueViolation})
+
+				mock.ExpectRollback()
 			},
 			wantID:  0,
 			wantErr: domain.ErrEmailAlreadyExists,
@@ -58,6 +71,7 @@ func TestUserRepo_CreateUser(t *testing.T) {
 			id, err := repo.CreateUser(ctx, tt.user)
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.Equal(t, tt.wantID, id)
+			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
 }
@@ -94,7 +108,9 @@ func TestUserRepo_GetUserByEmail(t *testing.T) {
 			name:  "Ошибка: юзер не найден",
 			email: "unknown@mail.ru",
 			mock: func() {
-				mock.ExpectQuery(`SELECT`).WillReturnError(pgx.ErrNoRows)
+				mock.ExpectQuery(`SELECT`).
+					WithArgs("unknown@mail.ru").
+					WillReturnError(pgx.ErrNoRows)
 			},
 			wantRes: domain.User{},
 			wantErr: domain.ErrUserNotFound,
@@ -155,6 +171,7 @@ func TestUserRepo_UpdateProfile(t *testing.T) {
 			uEmail: &emailVal,
 			mock: func() {
 				mock.ExpectExec(`UPDATE "user"`).
+					WithArgs(emailVal, 1).
 					WillReturnError(&pgconn.PgError{
 						Code:           pgerrcode.UniqueViolation,
 						ConstraintName: "user_email_key",
@@ -168,6 +185,7 @@ func TestUserRepo_UpdateProfile(t *testing.T) {
 			uName:  &nameVal,
 			mock: func() {
 				mock.ExpectExec(`UPDATE "user"`).
+					WithArgs(nameVal, 404).
 					WillReturnResult(pgxmock.NewResult("UPDATE", 0))
 			},
 			wantErr: domain.ErrUserNotFound,

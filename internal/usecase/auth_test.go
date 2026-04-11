@@ -61,6 +61,9 @@ func TestAuthUseCase_Register(t *testing.T) {
 				m.userUC.EXPECT().
 					Create(gomock.Any(), gomock.Any()).
 					Return(resID, nil)
+				m.clientProfileUC.EXPECT().
+					CreateProfile(gomock.Any(), resID).
+					Return(nil)
 				m.sessionUC.EXPECT().
 					Create(gomock.Any(), resID, userAgent).
 					Return(domain.Session{ID: mockSessionID}, nil)

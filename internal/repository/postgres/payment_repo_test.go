@@ -51,6 +51,7 @@ func TestPaymentRepo_Create(t *testing.T) {
 			name: "Ошибка: payment method уже существует",
 			setup: func() {
 				mock.ExpectQuery(`INSERT INTO "payment_method"`).
+					WithArgs(method.UserID, method.ExternalID, method.CardType, method.Last4, method.IssuerName, method.IsDefault).
 					WillReturnError(&pgconn.PgError{Code: pgerrcode.UniqueViolation})
 			},
 			wantID:  0,
@@ -157,7 +158,9 @@ func TestPaymentRepo_GetByUserID(t *testing.T) {
 			name:   "Ошибка query",
 			userID: 1,
 			setup: func() {
-				mock.ExpectQuery(`SELECT`).WillReturnError(errors.New("db error"))
+				mock.ExpectQuery(`SELECT`).
+					WithArgs(1).
+					WillReturnError(errors.New("db error"))
 			},
 			want:    nil,
 			wantErr: true,
@@ -211,6 +214,7 @@ func TestPaymentRepo_SetDefault(t *testing.T) {
 			userID: 1,
 			setup: func() {
 				mock.ExpectExec(`UPDATE "payment_method"`).
+					WithArgs("ghost_card", 1).
 					WillReturnResult(pgxmock.NewResult("UPDATE", 0))
 			},
 			wantErr: domain.ErrPaymentMethodNotFound,
@@ -220,7 +224,9 @@ func TestPaymentRepo_SetDefault(t *testing.T) {
 			cardID: "card",
 			userID: 1,
 			setup: func() {
-				mock.ExpectExec(`UPDATE`).WillReturnError(errors.New("fail"))
+				mock.ExpectExec(`UPDATE`).
+					WithArgs("card", 1).
+					WillReturnError(errors.New("fail"))
 			},
 			wantErr: fmt.Errorf("failed to set default payment method: %w", errors.New("fail")),
 		},

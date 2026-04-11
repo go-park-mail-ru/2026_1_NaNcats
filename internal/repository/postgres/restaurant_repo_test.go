@@ -82,6 +82,7 @@ func TestRestaurantBrandRepo_GetRestaurantBrandsList(t *testing.T) {
 			offset: 0,
 			setup: func() {
 				mock.ExpectQuery(`SELECT`).
+					WithArgs(10, 0).
 					WillReturnError(errors.New("connection failed"))
 			},
 			want:    nil,
