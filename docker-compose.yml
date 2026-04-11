@@ -31,9 +31,13 @@ services:
     volumes:
       - ./uploads:/app/uploads
     environment:
-      # Передаем URL базы данных Go-приложению
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
+      YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID}
+      YOOKASSA_SECRET_KEY: ${YOOKASSA_SECRET_KEY}
+      YOOKASSA_RETURN_URL: ${YOOKASSA_RETURN_URL}
+      S3_KEY_ID: ${S3_KEY_ID}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
     depends_on:
       - db
       - redis
