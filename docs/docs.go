@@ -15,6 +15,189 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/cart": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Возвращает текущую корзину авторизованного пользователя",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Получить корзину",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler.CartResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Перезаписывает содержимое корзины пользователя новыми товарами",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Обновить корзину",
+                "parameters": [
+                    {
+                        "description": "Данные корзины",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler.CartRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешное обновление",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса или товары из разных ресторанов",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/orders": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Создает заказ на основе корзины, возвращает ID заказа и ссылку на оплату YooKassa (при необходимости)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "order"
+                ],
+                "summary": "Создать заказ",
+                "parameters": [
+                    {
+                        "description": "Данные для оформления заказа",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler.CreateOrderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Заказ успешно создан",
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler.CreateOrderResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request или пустая корзина",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Указанный адрес не найден",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Проверяет учетные данные и устанавливает сессионную куку",
@@ -567,29 +750,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.PaymentMethodResponseCard": {
-            "type": "object",
-            "properties": {
-                "card_type": {
-                    "type": "string"
-                },
-                "expiry_month": {
-                    "type": "string"
-                },
-                "expiry_year": {
-                    "type": "string"
-                },
-                "first6": {
-                    "type": "string"
-                },
-                "issuer_name": {
-                    "type": "string"
-                },
-                "last4": {
-                    "type": "string"
-                }
-            }
-        },
         "github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookNotification": {
             "type": "object",
             "properties": {
@@ -597,27 +757,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "object": {
-                    "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookPaymentMethodObject"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookPaymentMethodObject": {
-            "type": "object",
-            "properties": {
-                "card": {
-                    "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.PaymentMethodResponseCard"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "saved": {
-                    "type": "boolean"
-                },
-                "status": {
-                    "type": "string"
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "type": {
                     "type": "string"
@@ -641,6 +784,85 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "confirmation_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_delivery_handler.CartItemDTO": {
+            "type": "object",
+            "properties": {
+                "dish_id": {
+                    "type": "integer"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_delivery_handler.CartRequest": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_delivery_handler.CartItemDTO"
+                    }
+                },
+                "restaurant_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_delivery_handler.CartResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_delivery_handler.CartItemDTO"
+                    }
+                },
+                "restaurant_id": {
+                    "type": "integer"
+                },
+                "total_cost": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_delivery_handler.CreateOrderRequest": {
+            "type": "object",
+            "properties": {
+                "address_id": {
+                    "type": "string"
+                },
+                "branch_id": {
+                    "type": "integer"
+                },
+                "payment_method_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_delivery_handler.CreateOrderResponse": {
+            "type": "object",
+            "properties": {
+                "confirmation_url": {
+                    "type": "string"
+                },
+                "order_id": {
                     "type": "string"
                 }
             }

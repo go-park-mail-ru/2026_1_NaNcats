@@ -2,7 +2,11 @@ package yookassa
 
 //go:generate easyjson $GOFILE
 
-import "time"
+import (
+	"time"
+
+	"github.com/mailru/easyjson"
+)
 
 // Request модели
 
@@ -19,6 +23,7 @@ type CreatePaymentRequest struct {
 	Capture           bool                              `json:"capture"`
 	SavePaymentMethod bool                              `json:"save_payment_method"`
 	Description       string                            `json:"description,omitempty"`
+	PaymentMethodID   string                            `json:"payment_method_id,omitempty"`
 }
 
 //easyjson:json
@@ -35,7 +40,8 @@ type CreatePaymentRequestAmount struct {
 
 //easyjson:json
 type CreatePaymentRequestConfirmation struct {
-	Type string `json:"type"`
+	Type      string `json:"type"`
+	ReturnURL string `json:"return_url,omitempty"`
 }
 
 // Response модели
@@ -88,8 +94,8 @@ type PaymentResponsePaymentMethod struct {
 
 //easyjson:json
 type PaymentResponseConfirmation struct {
-	Type              string `json:"type"`
-	ConfirmationToken string `json:"confirmation_token"`
+	Type            string `json:"type"`
+	ConfirmationURL string `json:"confirmation_url,omitempty"`
 }
 
 //easyjson:json
@@ -115,9 +121,9 @@ type PaymentMethodResponseConfirmation struct {
 
 //easyjson:json
 type WebhookNotification struct {
-	Type   string                     `json:"type"`
-	Event  string                     `json:"event"`
-	Object WebhookPaymentMethodObject `json:"object"`
+	Type   string              `json:"type"`
+	Event  string              `json:"event"`
+	Object easyjson.RawMessage `json:"object,omitempty"`
 }
 
 //easyjson:json
@@ -127,4 +133,10 @@ type WebhookPaymentMethodObject struct {
 	Saved  bool                       `json:"saved"`
 	Type   string                     `json:"type"`
 	Card   *PaymentMethodResponseCard `json:"card,omitempty"`
+}
+
+//easyjson:json
+type WebhookPaymentObject struct {
+	ID     string `json:"id"`
+	Status string `json:"status"`
 }

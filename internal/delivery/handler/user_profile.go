@@ -1,5 +1,7 @@
 package handler
 
+//go:generate easyjson $GOFILE
+
 import (
 	"errors"
 	"net/http"

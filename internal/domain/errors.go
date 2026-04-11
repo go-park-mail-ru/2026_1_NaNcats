@@ -25,6 +25,7 @@ var (
 	ErrDishNotFound               = errors.New("dish not found")
 	ErrMultipleRestaurants        = errors.New("restaurant is different in cart and dish")
 	ErrOrderNotFound              = errors.New("order not found")
-	ErrYookassaConfirmationURL     = errors.New("yookassa did not send confirmation url")
+	ErrYookassaConfirmationURL    = errors.New("yookassa did not send confirmation url")
 	ErrAddressNotFound            = errors.New("address not found")
+	ErrCartIsEmpty                = errors.New("cart is empty")
 )

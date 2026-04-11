@@ -16,40 +16,14 @@ definitions:
         example: "6767"
         type: string
     type: object
-  github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.PaymentMethodResponseCard:
-    properties:
-      card_type:
-        type: string
-      expiry_month:
-        type: string
-      expiry_year:
-        type: string
-      first6:
-        type: string
-      issuer_name:
-        type: string
-      last4:
-        type: string
-    type: object
   github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookNotification:
     properties:
       event:
         type: string
       object:
-        $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookPaymentMethodObject'
-      type:
-        type: string
-    type: object
-  github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookPaymentMethodObject:
-    properties:
-      card:
-        $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.PaymentMethodResponseCard'
-      id:
-        type: string
-      saved:
-        type: boolean
-      status:
-        type: string
+        items:
+          type: integer
+        type: array
       type:
         type: string
     type: object
@@ -65,6 +39,57 @@ definitions:
   internal_delivery_handler.BindingResponse:
     properties:
       confirmation_url:
+        type: string
+    type: object
+  internal_delivery_handler.CartItemDTO:
+    properties:
+      dish_id:
+        type: integer
+      image_url:
+        type: string
+      name:
+        type: string
+      price:
+        type: integer
+      quantity:
+        type: integer
+    type: object
+  internal_delivery_handler.CartRequest:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/internal_delivery_handler.CartItemDTO'
+        type: array
+      restaurant_id:
+        type: integer
+    type: object
+  internal_delivery_handler.CartResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/internal_delivery_handler.CartItemDTO'
+        type: array
+      restaurant_id:
+        type: integer
+      total_cost:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  internal_delivery_handler.CreateOrderRequest:
+    properties:
+      address_id:
+        type: string
+      branch_id:
+        type: integer
+      payment_method_id:
+        type: string
+    type: object
+  internal_delivery_handler.CreateOrderResponse:
+    properties:
+      confirmation_url:
+        type: string
+      order_id:
         type: string
     type: object
   internal_delivery_handler.LoginRequest:
@@ -182,6 +207,124 @@ info:
   title: NaNcats Delivery API
   version: "1.0"
 paths:
+  /api/cart:
+    get:
+      description: Возвращает текущую корзину авторизованного пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_delivery_handler.CartResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Получить корзину
+      tags:
+      - cart
+    put:
+      consumes:
+      - application/json
+      description: Перезаписывает содержимое корзины пользователя новыми товарами
+      parameters:
+      - description: Данные корзины
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal_delivery_handler.CartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное обновление
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный формат запроса или товары из разных ресторанов
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Обновить корзину
+      tags:
+      - cart
+  /api/orders:
+    post:
+      consumes:
+      - application/json
+      description: Создает заказ на основе корзины, возвращает ID заказа и ссылку
+        на оплату YooKassa (при необходимости)
+      parameters:
+      - description: Данные для оформления заказа
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal_delivery_handler.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Заказ успешно создан
+          schema:
+            $ref: '#/definitions/internal_delivery_handler.CreateOrderResponse'
+        "400":
+          description: Bad request или пустая корзина
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Указанный адрес не найден
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Создать заказ
+      tags:
+      - order
   /auth/login:
     post:
       consumes:

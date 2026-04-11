@@ -86,18 +86,32 @@ func (mr *MockPaymentUseCaseMockRecorder) InitiateCardBinding(ctx, userID any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitiateCardBinding", reflect.TypeOf((*MockPaymentUseCase)(nil).InitiateCardBinding), ctx, userID)
 }
 
-// ProcessWebhook mocks base method.
-func (m *MockPaymentUseCase) ProcessWebhook(ctx context.Context, paymentMethod *yookassa.WebhookPaymentMethodObject) error {
+// ProcessPaymentMethodWebhook mocks base method.
+func (m *MockPaymentUseCase) ProcessPaymentMethodWebhook(ctx context.Context, paymentMethod *yookassa.WebhookPaymentMethodObject) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ProcessWebhook", ctx, paymentMethod)
+	ret := m.ctrl.Call(m, "ProcessPaymentMethodWebhook", ctx, paymentMethod)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// ProcessWebhook indicates an expected call of ProcessWebhook.
-func (mr *MockPaymentUseCaseMockRecorder) ProcessWebhook(ctx, paymentMethod any) *gomock.Call {
+// ProcessPaymentMethodWebhook indicates an expected call of ProcessPaymentMethodWebhook.
+func (mr *MockPaymentUseCaseMockRecorder) ProcessPaymentMethodWebhook(ctx, paymentMethod any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessWebhook", reflect.TypeOf((*MockPaymentUseCase)(nil).ProcessWebhook), ctx, paymentMethod)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessPaymentMethodWebhook", reflect.TypeOf((*MockPaymentUseCase)(nil).ProcessPaymentMethodWebhook), ctx, paymentMethod)
+}
+
+// ProcessPaymentWebhook mocks base method.
+func (m *MockPaymentUseCase) ProcessPaymentWebhook(ctx context.Context, payment *yookassa.WebhookPaymentObject) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProcessPaymentWebhook", ctx, payment)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ProcessPaymentWebhook indicates an expected call of ProcessPaymentWebhook.
+func (mr *MockPaymentUseCaseMockRecorder) ProcessPaymentWebhook(ctx, payment any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessPaymentWebhook", reflect.TypeOf((*MockPaymentUseCase)(nil).ProcessPaymentWebhook), ctx, payment)
 }
 
 // SetDefaultCard mocks base method.

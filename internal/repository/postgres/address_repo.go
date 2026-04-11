@@ -14,7 +14,9 @@ type addressRepo struct {
 }
 
 func NewAddressRepo(pool *pgxpool.Pool) repository.AddressRepository {
-	return &addressRepo{pool: pool}
+	return &addressRepo{
+		pool: pool,
+	}
 }
 
 func (r *addressRepo) CreateAddress(ctx context.Context, userID int, addr domain.Address) (string, error) {
@@ -78,8 +80,8 @@ func (r *addressRepo) GetAddressesByUserID(ctx context.Context, userID int) ([]d
 	return addresses, nil
 }
 
-func (r *addressRepo) DeleteAddress(ctx context.Context, userID int, addressPublicID string) error {
-	res, err := r.pool.Exec(ctx, `DELETE FROM "client_address" WHERE public_id = $1 AND client_account_id = $2`, addressPublicID, userID)
+func (r *addressRepo) DeleteAddress(ctx context.Context, userID int, publicID string) error {
+	res, err := r.pool.Exec(ctx, `DELETE FROM "client_address" WHERE public_id = $1 AND client_account_id = $2`, publicID, userID)
 	if err != nil {
 		return err
 	}
@@ -107,11 +109,11 @@ func (r *addressRepo) UpdateAddress(ctx context.Context, userID int, addr domain
 			WHERE id = $4 AND client_account_id = $5
 		)`
 
-	_, err = tx.Exec(ctx, queryLoc, 
-		addr.Location.AddressText, 
+	_, err = tx.Exec(ctx, queryLoc,
+		addr.Location.AddressText,
 		addr.Location.Longitude,
-		addr.Location.Latitude, 
-		addr.ID, 
+		addr.Location.Latitude,
+		addr.ID,
 		userID,
 	)
 	if err != nil {
@@ -147,4 +149,19 @@ func (r *addressRepo) UpdateAddress(ctx context.Context, userID int, addr domain
 	}
 
 	return tx.Commit(ctx)
+}
+
+func (r *addressRepo) GetInternalIDByPublicID(ctx context.Context, userID int, publicID string) (int, error) {
+	query := `
+		SELECT id FROM "client_address"
+		WHERE public_id = $1 AND client_account_id = $2
+	`
+
+	var internalID int
+	err := r.pool.QueryRow(ctx, query, publicID, userID).Scan(&internalID)
+	if err != nil {
+		return 0, err
+	}
+
+	return internalID, err
 }

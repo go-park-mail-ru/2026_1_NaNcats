@@ -4,6 +4,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
@@ -122,7 +123,7 @@ func (h *addressHandler) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req AddressRequest
-	if err := request.JSON(r, &req, h.logger); err != nil {
+	if err := request.JSON(r, &req); err != nil {
 		response.Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
