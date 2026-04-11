@@ -133,7 +133,7 @@ CREATE TABLE "promocode" (
 		CHECK (min_order_amount >= 1000000), -- 1 рубль
 	
 	
-	is_global BOOL DEFAULT FALSE NOT NULL,
+	is_global BOOLEAN DEFAULT FALSE NOT NULL,
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -455,6 +455,8 @@ CREATE TABLE "wordle_word" (
 	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	word TEXT NOT NULL UNIQUE
 		CHECK (char_length(word) = 5 AND word = LOWER(word)),
+	
+	is_target BOOLEAN NOT NULL,
 		
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
@@ -477,7 +479,7 @@ CREATE TABLE "wordle_game" (
 	game_date DATE NOT NULL,
 	PRIMARY KEY(user_id, game_date),
 	
-	solved BOOL NOT NULL DEFAULT FALSE,
+	solved BOOLEAN NOT NULL DEFAULT FALSE,
 	attempt INT NOT NULL DEFAULT 0
 		CHECK (attempt >= 0 AND attempt <= 6),
 		
