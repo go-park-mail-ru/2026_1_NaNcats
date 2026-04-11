@@ -52,13 +52,18 @@ func main() {
 
 	ctx := context.Background()
 
-	redisAddr := flag.String("addr", "redis://user:@localhost:6379/0", "redis addr")
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
+		redisAddr := flag.String("addr", "redis://user:@localhost:6379/0", "redis addr")
+		flag.Parse()
+		redisURL = *redisAddr
+	}
 
 	redisPool := &redis.Pool{
 		MaxIdle:     10,
 		IdleTimeout: 60 * time.Second,
 		Dial: func() (redis.Conn, error) {
-			return redis.DialURL(*redisAddr)
+			return redis.DialURL(redisURL)
 		},
 	}
 	defer redisPool.Close()

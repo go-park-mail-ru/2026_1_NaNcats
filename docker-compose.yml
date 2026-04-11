@@ -17,6 +17,11 @@ services:
       timeout: 5s
       retries: 5
     restart: always
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_db
+    restart: always
     
   backend:
     build: .
@@ -28,9 +33,10 @@ services:
     environment:
       # Передаем URL базы данных Go-приложению
       DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: redis://redis:6379/0
     depends_on:
-      db:
-        condition: service_healthy # Запускать бэкенд только когда база полностью готова
+      - db
+      - redis
     restart: always
 
 volumes:
