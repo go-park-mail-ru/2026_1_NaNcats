@@ -8,5 +8,4 @@ import (
 
 type RestaurantBrandRepository interface {
 	GetRestaurantBrandsList(ctx context.Context, limit, offset int) ([]domain.RestaurantBrand, error)
-	GetDishByID(ctx context.Context, dishID int) (domain.Dish, error)
 }

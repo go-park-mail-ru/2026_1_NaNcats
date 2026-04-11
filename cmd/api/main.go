@@ -119,6 +119,7 @@ func main() {
 	paymentRepo := postgres.NewPaymentRepo(pool)
 	paymentCacheRepo := redisrepo.NewPaymentCacheRepo(redisPool)
 	addressRepo := postgres.NewAddressRepo(pool)
+	dishRepo := postgres.NewDishRepo(pool)
 	s3Repo, err := s3.NewS3Storage(ctx, keyID, s3SecretKey, bucketName, "ru-central1")
 	if err != nil {
 		appLogger.Fatal("Failed to init S3", err)
@@ -135,6 +136,7 @@ func main() {
 	userProfileUC := usecase.NewUserProfileUseCase(userUC)
 	paymentUC := usecase.NewPaymentUseCase(paymentRepo, paymentCacheRepo, yookassaClient, returnURL)
 	addressUC := usecase.NewAddressUseCase(addressRepo)
+	dishUC := usecase.NewDishUseCase(dishRepo)
 
 	defaultAvatarURL := os.Getenv("DEFAULT_AVATAR_URL")
 	if defaultAvatarURL == "" {
@@ -146,6 +148,7 @@ func main() {
 	userProfileHandler := handler.NewUserProfileHandler(userProfileUC, userUC, sessionUC, appLogger, defaultAvatarURL)
 	paymentHandler := handler.NewPaymentHandler(paymentUC, appLogger)
 	addressHandler := handler.NewAddressHandler(addressUC, appLogger)
+	dishHandler := handler.NewDishHandler(dishUC, appLogger)
 
 	authMW := middleware.NewAuthMiddleware(sessionUC, appLogger)
 	corsMW := middleware.NewCORSMiddleware([]string{
@@ -164,6 +167,7 @@ func main() {
 	mux.Handle("GET /api/auth/me", authMW.RequireAuth(http.HandlerFunc(authHandler.GetMe)))
 
 	mux.HandleFunc("GET /api/restaurants/brands", restaurantBrandHandler.GetRestaurantBrandsList)
+	mux.HandleFunc("GET /api/restaurants/brands/{id}/dishes", dishHandler.GetDishesByRestaurantBrandID)
 
 	mux.Handle("GET /api/profile", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.GetUserProfile)))
 	mux.Handle("PATCH /api/profile", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.UpdateProfile)))
