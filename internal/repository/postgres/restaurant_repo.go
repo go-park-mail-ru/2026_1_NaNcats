@@ -77,7 +77,3 @@ func (r *restaurantBrandRepo) GetRestaurantBrandsList(ctx context.Context, limit
 
 	return domainRestaurantBrands, nil
 }
-
-func (r *restaurantBrandRepo) GetDishByID(ctx context.Context, dishID int) (domain.Dish, error) {
-	panic("unimplemented") // заглушка
-}

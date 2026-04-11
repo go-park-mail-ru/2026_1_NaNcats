@@ -49,14 +49,14 @@ func (u *cartUseCase) UpdateCart(ctx context.Context, userID int, cartData domai
 			return domain.ErrInvalidQuantity
 		}
 
-		dish, err := u.dishRepo.GetDishByID(ctx, cartItem.DishID)
-		if err != nil {
-			return err
-		}
+		// dish, err := u.dishRepo.GetDishByID(ctx, cartItem.DishID)
+		// if err != nil {
+		// 	return err
+		// }
 
-		if dish.RestaurantID != cartData.RestaurantBrandID {
-			return domain.ErrMultipleRestaurants
-		}
+		// if dish.RestaurantID != cartData.RestaurantBrandID {
+		// 	return domain.ErrMultipleRestaurants
+		// }
 	}
 
 	return u.cartRepo.UpdateCart(ctx, userID, cartData.RestaurantBrandID, cartData.Items)

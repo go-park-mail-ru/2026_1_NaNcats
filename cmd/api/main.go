@@ -125,6 +125,8 @@ func main() {
 	paymentCacheRepo := redisrepo.NewPaymentCacheRepo(redisPool)
 	addressRepo := postgres.NewAddressRepo(pool)
 	orderRepo := postgres.NewOrderRepo(pool)
+	dishRepo := postgres.NewDishRepo(pool)
+	cartRepo := postgres.NewCartRepo(pool)
 	s3Repo, err := s3.NewS3Storage(ctx, keyID, s3SecretKey, bucketName, "ru-central1")
 	if err != nil {
 		appLogger.Fatal("Failed to init S3", err)
@@ -139,6 +141,8 @@ func main() {
 	authUC := usecase.NewAuthUseCase(userUC, sessionUC, clientProfileUC)
 	restaurantBrandUC := usecase.NewRestaurantBrandUseCase(restaurantBrandRepo)
 	userProfileUC := usecase.NewUserProfileUseCase(userUC)
+	cartUC := usecase.NewCartUseCase(cartRepo, restaurantBrandRepo)
+	dishUC := usecase.NewDishUseCase(dishRepo)
 	orderUC := usecase.NewOrderUseCase(orderRepo, addressRepo, cartUC, yookassaClient)
 	paymentUC := usecase.NewPaymentUseCase(paymentRepo, paymentCacheRepo, orderRepo, yookassaClient, returnURL)
 	addressUC := usecase.NewAddressUseCase(addressRepo)
@@ -154,6 +158,7 @@ func main() {
 	paymentHandler := handler.NewPaymentHandler(paymentUC, appLogger)
 	addressHandler := handler.NewAddressHandler(addressUC, appLogger)
 	orderHandler := handler.NewOrderHandler(orderUC, appLogger)
+	dishHandler := handler.NewDishHandler(dishUC, appLogger)
 
 	authMW := middleware.NewAuthMiddleware(sessionUC, appLogger)
 	corsMW := middleware.NewCORSMiddleware([]string{
@@ -172,6 +177,7 @@ func main() {
 	mux.Handle("GET /api/auth/me", authMW.RequireAuth(http.HandlerFunc(authHandler.GetMe)))
 
 	mux.HandleFunc("GET /api/restaurants/brands", restaurantBrandHandler.GetRestaurantBrandsList)
+	mux.HandleFunc("GET /api/restaurants/brands/{id}/dishes", dishHandler.GetDishesByRestaurantBrandID)
 
 	mux.Handle("GET /api/profile", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.GetUserProfile)))
 	mux.Handle("PATCH /api/profile", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.UpdateProfile)))
