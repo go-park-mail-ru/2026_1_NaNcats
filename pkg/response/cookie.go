@@ -13,6 +13,6 @@ func SetCookie(w http.ResponseWriter, name, value string, expiresAt time.Time) {
 		HttpOnly: true,                 // защита: JavaScript(фронт) не сможет прочитать эту куку
 		Path:     "/",                  // кука будет отправляться на все эндпоинты сайтаx
 		SameSite: http.SameSiteLaxMode, // защита от CSRF атак
-		// Secure: true,				// если будем на https
+		Secure: true,				
 	})
 }

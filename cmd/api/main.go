@@ -59,13 +59,18 @@ func main() {
 
 	ctx := context.Background()
 
-	redisAddr := flag.String("addr", "redis://user:@localhost:6379/0", "redis addr")
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
+		redisAddr := flag.String("addr", "redis://user:@localhost:6379/0", "redis addr")
+		flag.Parse()
+		redisURL = *redisAddr
+	}
 
 	redisPool := &redis.Pool{
 		MaxIdle:     10,
 		IdleTimeout: 60 * time.Second,
 		Dial: func() (redis.Conn, error) {
-			return redis.DialURL(*redisAddr)
+			return redis.DialURL(redisURL)
 		},
 	}
 	defer redisPool.Close()
@@ -180,6 +185,7 @@ func main() {
 	mux.Handle("POST /api/profile/addresses", authMW.RequireAuth(http.HandlerFunc(addressHandler.AddAddress)))
 	mux.Handle("GET /api/profile/addresses", authMW.RequireAuth(http.HandlerFunc(addressHandler.GetAddresses)))
 	mux.Handle("DELETE /api/profile/addresses/{id}", authMW.RequireAuth(http.HandlerFunc(addressHandler.DeleteAddress)))
+	mux.Handle("PATCH /api/profile/addresses/{id}", authMW.RequireAuth(http.HandlerFunc(addressHandler.UpdateAddress)))
 
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 

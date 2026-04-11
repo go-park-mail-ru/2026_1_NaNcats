@@ -89,3 +89,62 @@ func (r *addressRepo) DeleteAddress(ctx context.Context, userID int, addressPubl
 
 	return nil
 }
+
+func (r *addressRepo) UpdateAddress(ctx context.Context, userID int, addr domain.Address) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	queryLoc := `
+		UPDATE "location"
+		SET address_text = $1, 
+		    coordinate = ST_SetSRID(ST_MakePoint($2, $3), 4326)
+		WHERE id = (
+			SELECT location_id 
+			FROM "client_address" 
+			WHERE id = $4 AND client_account_id = $5
+		)`
+
+	_, err = tx.Exec(ctx, queryLoc, 
+		addr.Location.AddressText, 
+		addr.Location.Longitude,
+		addr.Location.Latitude, 
+		addr.ID, 
+		userID,
+	)
+	if err != nil {
+		return fmt.Errorf("update location failed: %w", err)
+	}
+
+	queryAddr := `
+		UPDATE "client_address"
+		SET apartment = $1, 
+		    entrance = $2, 
+		    floor_level = $3, 
+		    door_code = $4, 
+		    courier_comment = $5, 
+		    label = $6
+		WHERE id = $7 AND client_account_id = $8`
+
+	result, err := tx.Exec(ctx, queryAddr,
+		addr.Apartment,
+		addr.Entrance,
+		addr.Floor,
+		addr.DoorCode,
+		addr.CourierComment,
+		addr.Label,
+		addr.ID,
+		userID,
+	)
+	if err != nil {
+		return fmt.Errorf("update client_address failed: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return domain.ErrAddressNotFound
+	}
+
+	return tx.Commit(ctx)
+}

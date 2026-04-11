@@ -55,7 +55,7 @@ func NewRestaurantBrandRepo(pool *pgxpool.Pool) repository.RestaurantBrandReposi
 
 func (r *restaurantBrandRepo) GetRestaurantBrandsList(ctx context.Context, limit, offset int) ([]domain.RestaurantBrand, error) {
 	query := `
-		SELECT id, owner_profile_id, name, description, promotion_tier, logo_url 
+		SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at
 		FROM "restaurant_brand"
 		ORDER BY promotion_tier DESC, id ASC
 		LIMIT $1 OFFSET $2;
