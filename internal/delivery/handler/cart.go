@@ -5,6 +5,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"os"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
@@ -79,12 +80,17 @@ func (h *cartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, item := range cart.Items {
+		imageURL := item.ImageURL
+		if imageURL == "" {
+			imageURL = os.Getenv("DEFAULT_FOOD_LOGO_URL")
+		}
+
 		cartResponse.Items = append(cartResponse.Items, CartItemDTO{
 			DishID:   item.DishID,
 			Name:     item.Name,
 			Price:    item.Price,
 			Quantity: item.Quantity,
-			ImageURL: "/api/images/" + item.ImageURL, // здесь изменить, добавить маппер
+			ImageURL: imageURL,
 		})
 	}
 
