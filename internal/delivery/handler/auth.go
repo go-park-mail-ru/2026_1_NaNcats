@@ -5,6 +5,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
@@ -257,6 +258,11 @@ func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	l.Debug("profile retrieved successfully", domain.Int("user_id", loggedUser.ID))
+
+	avatarURL := loggedUser.AvatarURL
+	if avatarURL == "" {
+		avatarURL = os.Getenv("DEFAULT_AVATAR_URL")
+	}
 
 	resp := LoginResponse{
 		Name:      loggedUser.Name,
