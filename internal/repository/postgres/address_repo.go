@@ -110,7 +110,7 @@ func (r *addressRepo) UpdateAddress(ctx context.Context, userID int, addr domain
 		addr.Location.AddressText,
 		addr.Location.Longitude,
 		addr.Location.Latitude,
-		addr.PublicID, 
+		addr.PublicID,
 		userID,
 	)
 	if err != nil {

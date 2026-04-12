@@ -7,6 +7,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
 )
 
+//go:generate mockgen -destination=mocks/address_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase AddressUseCase
 type AddressUseCase interface {
 	AddAddress(ctx context.Context, userID int, addr domain.Address) (string, error)
 	GetMyAddresses(ctx context.Context, userID int) ([]domain.Address, error)

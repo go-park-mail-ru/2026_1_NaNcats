@@ -100,7 +100,7 @@ func TestAuthHandler_GetMe(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		userID           any // int или nil
+		userID           any
 		mockInit         mockInit
 		expectedStatus   int
 		expectedJSONCode int
@@ -110,17 +110,17 @@ func TestAuthHandler_GetMe(t *testing.T) {
 			userID: 1,
 			mockInit: func(authMock *ucMocks.MockAuthUseCase, userMock *ucMocks.MockUserUseCase) {
 				userMock.EXPECT().
-					GetByID(gomock.Any(), gomock.Any()).
-					Return(domain.User{Name: "Ivan"}, nil)
+					GetByID(gomock.Any(), 1).
+					Return(domain.User{ID: 1, Name: "Ivan"}, nil)
 			},
 			expectedStatus:   http.StatusOK,
-			expectedJSONCode: 0, // если не 5xx, то ничего не ожидаем
+			expectedJSONCode: 0,
 		},
 		{
-			name:             "Нет юзера",
+			name:             "Нет юзера в контексте",
 			userID:           nil,
 			mockInit:         func(authMock *ucMocks.MockAuthUseCase, userMock *ucMocks.MockUserUseCase) {},
-			expectedStatus:   http.StatusOK,
+			expectedStatus:   http.StatusInternalServerError,
 			expectedJSONCode: http.StatusInternalServerError,
 		},
 	}
@@ -137,7 +137,6 @@ func TestAuthHandler_GetMe(t *testing.T) {
 			testCase.mockInit(mockAuthUC, mockUserUC)
 
 			nopLogger := mocks.NewNopLogger()
-
 			authHandler := NewAuthHandler(mockAuthUC, mockUserUC, nopLogger, val)
 
 			req := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
@@ -147,7 +146,6 @@ func TestAuthHandler_GetMe(t *testing.T) {
 			}
 
 			rec := httptest.NewRecorder()
-
 			authHandler.GetMe(rec, req)
 
 			assert.Equal(t, testCase.expectedStatus, rec.Code)
@@ -155,10 +153,9 @@ func TestAuthHandler_GetMe(t *testing.T) {
 			if testCase.expectedJSONCode != 0 {
 				var resp response.ErrorResponse
 				err := json.NewDecoder(rec.Body).Decode(&resp)
-
 				assert.NoError(t, err)
 				assert.Equal(t, testCase.expectedJSONCode, resp.Code)
-			} else if testCase.expectedStatus == http.StatusOK {
+			} else {
 				assert.Contains(t, rec.Body.String(), "Ivan")
 			}
 		})
@@ -178,7 +175,7 @@ func TestAuthHandler_Login(t *testing.T) {
 			name: "Успешный вход",
 			inputBody: LoginRequest{
 				Login:    "test@gmail.com",
-				Password: "aboba6767",
+				Password: "password123",
 			},
 			mockInit: func(m *ucMocks.MockAuthUseCase) {
 				mockUser := domain.User{ID: 1, Name: "Ivan", Email: "test@mail.ru"}
@@ -200,7 +197,7 @@ func TestAuthHandler_Login(t *testing.T) {
 			name: "Неверный пароль",
 			inputBody: LoginRequest{
 				Login:    "test@mail.ru",
-				Password: "wrongabobapass",
+				Password: "wrongpassword123",
 			},
 			mockInit: func(m *ucMocks.MockAuthUseCase) {
 				// Программируем UseCase вернуть ошибку

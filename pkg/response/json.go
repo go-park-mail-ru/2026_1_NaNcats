@@ -36,7 +36,7 @@ func JSON(w http.ResponseWriter, statusCode int, data any) {
 	}
 
 	if err != nil {
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(`{"code":500,"message":"Failed to serialize response"}`))
 		return
 	}
@@ -52,10 +52,5 @@ func Error(w http.ResponseWriter, statusCode int, message string) {
 		Message: message,
 	}
 
-	networkStatus := statusCode
-	if statusCode >= 500 {
-		networkStatus = http.StatusOK
-	}
-
-	JSON(w, networkStatus, resp)
+	JSON(w, statusCode, resp)
 }
