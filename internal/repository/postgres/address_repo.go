@@ -103,14 +103,14 @@ func (r *addressRepo) UpdateAddress(ctx context.Context, userID int, addr domain
 		WHERE id = (
 			SELECT location_id 
 			FROM "client_address" 
-			WHERE id = $4 AND client_account_id = $5
+			WHERE public_id = $4 AND client_account_id = $5
 		)`
 
 	_, err = tx.Exec(ctx, queryLoc,
 		addr.Location.AddressText,
 		addr.Location.Longitude,
 		addr.Location.Latitude,
-		addr.ID,
+		addr.PublicID, 
 		userID,
 	)
 	if err != nil {
@@ -125,7 +125,7 @@ func (r *addressRepo) UpdateAddress(ctx context.Context, userID int, addr domain
 		    door_code = $4, 
 		    courier_comment = $5, 
 		    label = $6
-		WHERE id = $7 AND client_account_id = $8`
+		WHERE public_id = $7 AND client_account_id = $8`
 
 	result, err := tx.Exec(ctx, queryAddr,
 		addr.Apartment,
@@ -134,7 +134,7 @@ func (r *addressRepo) UpdateAddress(ctx context.Context, userID int, addr domain
 		addr.DoorCode,
 		addr.CourierComment,
 		addr.Label,
-		addr.ID,
+		addr.PublicID,
 		userID,
 	)
 	if err != nil {

@@ -4,7 +4,6 @@ package handler
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
@@ -116,11 +115,6 @@ func (h *addressHandler) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 	userID, _ := middleware.GetUserID(ctx)
 
 	idStr := r.PathValue("id")
-	addrID, err := strconv.Atoi(idStr)
-	if err != nil {
-		response.Error(w, http.StatusBadRequest, "invalid address id")
-		return
-	}
 
 	var req AddressRequest
 	if err := request.JSON(r, &req); err != nil {
@@ -129,7 +123,7 @@ func (h *addressHandler) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 	}
 
 	addr := domain.Address{
-		ID: addrID,
+		PublicID: idStr,
 		Location: domain.Location{
 			AddressText: req.AddressText,
 			Latitude:    req.Lat,
@@ -143,9 +137,9 @@ func (h *addressHandler) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 		Label:          req.Label,
 	}
 
-	err = h.usecase.UpdateAddress(ctx, userID, addr)
+	err := h.usecase.UpdateAddress(ctx, userID, addr)
 	if err != nil {
-		h.logger.Error("failed to update address", err, map[string]any{"addr_id": addrID})
+		h.logger.Error("failed to update address", err, map[string]any{"addr_id": idStr})
 		response.Error(w, http.StatusInternalServerError, "failed to update address")
 		return
 	}
