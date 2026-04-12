@@ -33,17 +33,9 @@ func TestUserRepo_CreateUser(t *testing.T) {
 			name: "Успех",
 			user: domain.User{Name: "Ivan", Email: "TEST@mail.ru", PasswordHash: "hash"},
 			mock: func() {
-				mock.ExpectBegin()
-
 				mock.ExpectQuery(`INSERT INTO "user"`).
 					WithArgs("Ivan", "test@mail.ru", "hash", "client").
 					WillReturnRows(pgxmock.NewRows([]string{"id"}).AddRow(1))
-
-				mock.ExpectExec(`INSERT INTO "client_profile"`).
-					WithArgs(1).
-					WillReturnResult(pgxmock.NewResult("INSERT", 1))
-
-				mock.ExpectCommit()
 			},
 			wantID:  1,
 			wantErr: nil,
@@ -52,13 +44,9 @@ func TestUserRepo_CreateUser(t *testing.T) {
 			name: "Почта уже существует",
 			user: domain.User{Email: "exists@mail.ru"},
 			mock: func() {
-				mock.ExpectBegin()
-
 				mock.ExpectQuery(`INSERT INTO "user"`).
 					WithArgs(pgxmock.AnyArg(), "exists@mail.ru", pgxmock.AnyArg(), "client").
 					WillReturnError(&pgconn.PgError{Code: pgerrcode.UniqueViolation})
-
-				mock.ExpectRollback()
 			},
 			wantID:  0,
 			wantErr: domain.ErrEmailAlreadyExists,
