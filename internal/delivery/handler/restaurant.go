@@ -54,41 +54,37 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 
 	query := r.URL.Query()
 
-	// Значения по дефолту
 	limit := 20
 	offset := 0
 
-	// Считываем параметры
-	// читаем limit
 	if qLimit := query.Get("limit"); qLimit != "" {
 		if val, err := strconv.Atoi(qLimit); err == nil && val > 0 {
 			limit = val
 		} else {
-			l.Debug("invalid limit query parameter, using default", map[string]any{
-				"input":   qLimit,
-				"default": limit,
-			})
+			l.Debug("invalid limit query parameter, using default",
+				domain.String("input", qLimit),
+				domain.Int("default", limit),
+			)
 		}
 	}
 
-	// читаем offset
 	if qOffset := query.Get("offset"); qOffset != "" {
-		if val, err := strconv.Atoi(qOffset); err == nil && val > 0 {
+		if val, err := strconv.Atoi(qOffset); err == nil && val >= 0 {
 			offset = val
 		} else {
-			l.Debug("invalid offset query parameter, using default", map[string]any{
-				"input":   qOffset,
-				"default": offset,
-			})
+			l.Debug("invalid offset query parameter, using default",
+				domain.String("input", qOffset),
+				domain.Int("default", offset),
+			)
 		}
 	}
 
 	restaurantBrandsList, err := h.restaurantBrandUC.GetRestaurantBrandsList(ctx, limit, offset)
 	if err != nil {
-		l.Error("Failed to get restaurant brand list", err, map[string]any{
-			"limit":  limit,
-			"offset": offset,
-		})
+		l.Error("failed to get restaurant brand list", err,
+			domain.Int("limit", limit),
+			domain.Int("offset", offset),
+		)
 		response.Error(w, http.StatusInternalServerError, "Get restaurant brand list error")
 		return
 	}
@@ -111,11 +107,11 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 		dtoList = append(dtoList, restResp)
 	}
 
-	l.Debug("successfully fetched restaurant brands", map[string]any{
-		"count":  len(dtoList),
-		"limit":  limit,
-		"offset": offset,
-	})
+	l.Debug("successfully fetched restaurant brands",
+		domain.Int("count", len(dtoList)),
+		domain.Int("limit", limit),
+		domain.Int("offset", offset),
+	)
 
 	resp := RestaurantBrandsResponse{
 		RestaurantBrands: dtoList,
@@ -126,11 +122,18 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 
 func (h *restaurantBrandHandler) GetRestaurantBrandByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
 	idStr := r.PathValue("id")
-	id, _ := strconv.Atoi(idStr)
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		l.Warn("invalid restaurant id format", domain.String("id_str", idStr))
+		response.Error(w, http.StatusBadRequest, "Invalid ID format")
+		return
+	}
 
 	brand, err := h.restaurantBrandUC.GetRestaurantBrandByID(ctx, id)
 	if err != nil {
+		l.Warn("restaurant not found", domain.Int("id", id))
 		response.Error(w, http.StatusNotFound, "Restaurant not found")
 		return
 	}
@@ -139,6 +142,8 @@ func (h *restaurantBrandHandler) GetRestaurantBrandByID(w http.ResponseWriter, r
 	if logo == "" {
 		logo = os.Getenv("DEFAULT_RESTAURANT_LOGO_URL")
 	}
+
+	l.Debug("successfully fetched restaurant brand", domain.Int("id", id))
 
 	response.JSON(w, http.StatusOK, RestaurantBrandResponse{
 		ID:          strconv.Itoa(brand.ID),

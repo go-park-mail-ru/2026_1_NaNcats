@@ -44,13 +44,13 @@ func (m *LoggingMiddleware) Handler(next http.Handler) http.Handler {
 
 		userAgent := r.UserAgent()
 
-		m.logger.WithContext(r.Context()).Info("request finished", map[string]any{
-			"status":     wrapped.statusCode,
-			"duration":   duration,
-			"method":     r.Method,
-			"path":       r.URL.Path,
-			"user_agent": userAgent,
-			"ip":         r.RemoteAddr,
-		})
+		m.logger.WithContext(r.Context()).Info("request finished",
+			domain.Int("status", wrapped.statusCode),
+			domain.String("duration", duration.String()),
+			domain.String("method", r.Method),
+			domain.String("path", r.URL.Path),
+			domain.String("user_agent", userAgent),
+			domain.String("ip", r.RemoteAddr),
+		)
 	})
 }

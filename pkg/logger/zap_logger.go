@@ -82,3 +82,8 @@ func transferFields(fields map[string]any, capacity int) []zap.Field {
 
 	return zapFields
 }
+
+// Возвращает реальный объект *zap.Logger для использования в адаптерах
+func (l *ZapLogger) GetInternal() *zap.Logger {
+	return l.logger
+}

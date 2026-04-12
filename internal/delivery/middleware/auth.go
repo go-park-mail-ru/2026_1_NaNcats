@@ -39,9 +39,7 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 
 		sessionID, err := uuid.Parse(cookie.Value)
 		if err != nil {
-			l.Warn("logout: invalid session token format", map[string]any{
-				"token_value": cookie.Value,
-			})
+			l.Warn("logout: invalid session token format", domain.String("token_value", cookie.Value))
 			response.Error(w, http.StatusUnauthorized, "Invalid session")
 			return
 		}
@@ -49,17 +47,17 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 		session, err := m.sessionUC.Check(ctx, sessionID)
 		if err != nil {
 			if errors.Is(err, domain.ErrSessionNotFound) || errors.Is(err, domain.ErrSessionExpired) {
-				l.Info("auth: unauthorized access attempt", map[string]any{
-					"session_id": sessionID,
-					"reason":     err.Error(),
-				})
+				l.Info("auth: unauthorized access attempt",
+					domain.String("session_id", sessionID.String()),
+					domain.String("reason", err.Error()),
+				)
 				response.Error(w, http.StatusUnauthorized, "Invalid or expired session")
 				return
 			}
 
-			l.Error("auth: session service critical failure", err, map[string]any{
-				"session_id": sessionID,
-			})
+			l.Error("auth: session service critical failure", err,
+				domain.String("session_id", sessionID.String()),
+			)
 
 			response.Error(w, http.StatusInternalServerError, "Internal server error")
 			return
@@ -67,13 +65,13 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 
 		currentUserAgent := r.UserAgent()
 		if session.UserAgent != currentUserAgent {
-			l.Warn("session user-agent mismatch - potential hijacking attempt", map[string]any{
-				"session_id": sessionID.String(),
-				"user_id":    session.UserID,
-				"expected":   session.UserAgent,
-				"actual":     currentUserAgent,
-				"ip":         r.RemoteAddr,
-			})
+			l.Warn("session user-agent mismatch - potential hijacking attempt",
+				domain.String("session_id", sessionID.String()),
+				domain.Int("user_id", session.UserID),
+				domain.String("expected", session.UserAgent),
+				domain.String("actual", currentUserAgent),
+				domain.String("ip", r.RemoteAddr),
+			)
 			m.sessionUC.Destroy(r.Context(), sessionID)
 			return
 		}

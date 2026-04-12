@@ -42,17 +42,22 @@ func (t *DBTracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, data pgx.Trac
 	}
 
 	sqlQuery, ok := ctx.Value(sqlQueryKey).(string)
+	if !ok {
+		sqlQuery = "unknown sql"
+	}
 
 	l := t.logger.WithContext(ctx)
 
-	fields := map[string]any{
-		"sql":      sqlQuery,
-		"duration": duration.String(),
+	if data.Err != nil {
+		l.Error("sql query failed", data.Err,
+			domain.String("sql", sqlQuery),
+			domain.String("duration", duration.String()),
+		)
+		return
 	}
 
-	if data.Err != nil {
-		l.Error("sql query failed", data.Err, fields)
-	} else {
-		l.Debug("sql query successful", fields)
-	}
+	l.Debug("sql query successful",
+		domain.String("sql", sqlQuery),
+		domain.String("duration", duration.String()),
+	)
 }

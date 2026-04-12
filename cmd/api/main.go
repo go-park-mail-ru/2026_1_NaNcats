@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/handler"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	infrastructureLogger "github.com/go-park-mail-ru/2026_1_NaNcats/internal/infrastructure/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/redisrepo"
@@ -150,7 +151,7 @@ func main() {
 	addressUC := usecase.NewAddressUseCase(addressRepo)
 
 	if os.Getenv("DEFAULT_AVATAR_URL") == "" {
-		appLogger.Warn("DEFAULT_AVATAR_URL пустой, фронтенд может упасть при запросе стандартного аватара", map[string]any{})
+		appLogger.Warn("DEFAULT_AVATAR_URL пустой, фронтенд может упасть при запросе стандартного аватара")
 	}
 
 	authHandler := handler.NewAuthHandler(authUC, userUC, appLogger, validate)
@@ -219,11 +220,11 @@ func main() {
 		WriteTimeout: 10 * time.Second,
 	}
 
-	appLogger.Info("starting server", map[string]any{
-		"port":          port,
-		"read_timeout":  "10s",
-		"write_timeout": "10s",
-	})
+	appLogger.Info("starting server",
+		domain.String("port", port),
+		domain.String("read_timeout", "10s"),
+		domain.String("write_timeout", "10s"),
+	)
 
 	err = server.ListenAndServe()
 	if err != nil {

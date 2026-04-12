@@ -54,53 +54,46 @@ func (h *dishHandler) GetDishesByRestaurantBrandID(w http.ResponseWriter, r *htt
 
 	query := r.URL.Query()
 
-	// Значения по дефолту
 	limit := 20
 	offset := 0
 
-	// limit
 	if qLimit := query.Get("limit"); qLimit != "" {
 		if val, err := strconv.Atoi(qLimit); err == nil && val > 0 {
 			limit = val
 		} else {
-			l.Debug("invalid limit query parameter, using default", map[string]any{
-				"input":   qLimit,
-				"default": limit,
-			})
+			l.Debug("invalid limit query parameter, using default",
+				domain.String("input", qLimit),
+				domain.Int("default", limit),
+			)
 		}
 	}
 
-	// offset
 	if qOffset := query.Get("offset"); qOffset != "" {
 		if val, err := strconv.Atoi(qOffset); err == nil && val >= 0 {
 			offset = val
 		} else {
-			l.Debug("invalid offset query parameter, using default", map[string]any{
-				"input":   qOffset,
-				"default": offset,
-			})
+			l.Debug("invalid offset query parameter, using default",
+				domain.String("input", qOffset),
+				domain.Int("default", offset),
+			)
 		}
 	}
 
-	// Получение id из пути
 	restaurantBrandIDStr := r.PathValue("id")
-
 	restaurantBrandID, err := strconv.Atoi(restaurantBrandIDStr)
 	if err != nil || restaurantBrandID <= 0 {
-		l.Debug("invalid restaurant brand id path parameter", map[string]any{
-			"input": restaurantBrandIDStr,
-		})
+		l.Debug("invalid restaurant brand id path parameter", domain.String("input", restaurantBrandIDStr))
 		response.Error(w, http.StatusBadRequest, "Invalid restaurant brand id")
 		return
 	}
 
 	dishes, err := h.dishUC.GetDishesByRestaurantBrandID(ctx, restaurantBrandID, limit, offset)
 	if err != nil {
-		l.Error("Failed to get dishes list", err, map[string]any{
-			"restaurant_brand_id": restaurantBrandID,
-			"limit":               limit,
-			"offset":              offset,
-		})
+		l.Error("failed to get dishes list", err,
+			domain.Int("restaurant_brand_id", restaurantBrandID),
+			domain.Int("limit", limit),
+			domain.Int("offset", offset),
+		)
 		response.Error(w, http.StatusInternalServerError, "Get dishes list error")
 		return
 	}
@@ -121,12 +114,12 @@ func (h *dishHandler) GetDishesByRestaurantBrandID(w http.ResponseWriter, r *htt
 		})
 	}
 
-	l.Debug("successfully fetched dishes", map[string]any{
-		"count":               len(dto),
-		"restaurant_brand_id": restaurantBrandID,
-		"limit":               limit,
-		"offset":              offset,
-	})
+	l.Debug("successfully fetched dishes",
+		domain.Int("count", len(dto)),
+		domain.Int("restaurant_brand_id", restaurantBrandID),
+		domain.Int("limit", limit),
+		domain.Int("offset", offset),
+	)
 
 	response.JSON(w, http.StatusOK, DishesResponse{Dishes: dto})
 }

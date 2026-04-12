@@ -62,14 +62,16 @@ func (h *cartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := middleware.GetUserID(ctx)
 	if err != nil {
-		l.Error("auth middleware missed userID in route", err, nil)
+		l.Error("failed to get user_id from context", err)
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
 	cart, totalCost, err := h.cartUC.GetCart(ctx, userID)
 	if err != nil {
-		l.Error("get cart failed", err, nil)
+		l.Error("failed to fetch cart", err, domain.Int("user_id", userID))
+		response.Error(w, http.StatusInternalServerError, "failed to get cart")
+		return
 	}
 
 	cartResponse := CartResponse{
@@ -94,12 +96,21 @@ func (h *cartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+<<<<<<< HEAD
 	l.Info("get cart success", map[string]any{
 		"user_id":       userID,
 		"items_count":   len(cart.Items),
 		"total_cost":    totalCost,
 		"restaurant_id": cart.RestaurantBrandID,
 	})
+=======
+	l.Debug("get cart success",
+		domain.Int("user_id", userID),
+		domain.Int("items_count", len(cart.Items)),
+		domain.Any("total_cost", totalCost),
+		domain.Int("restaurant_id", cart.RestaurantBrandID),
+	)
+>>>>>>> c2400c2 (Оптимизирован логгер: удалены лишние аллокации и рефлексии)
 
 	response.JSON(w, http.StatusOK, cartResponse)
 }
@@ -123,7 +134,7 @@ func (h *cartHandler) UpdateCart(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := middleware.GetUserID(ctx)
 	if err != nil {
-		l.Error("auth middleware missed userID in route", err, nil)
+		l.Error("failed to get user_id from context", err)
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -131,8 +142,8 @@ func (h *cartHandler) UpdateCart(w http.ResponseWriter, r *http.Request) {
 	var reqCart CartRequest
 	err = request.JSON(r, &reqCart)
 	if err != nil {
-		l.Info("invalid update cart json", map[string]any{"error": err.Error()})
-		response.Error(w, http.StatusBadRequest, "internal server error")
+		l.Warn("invalid update cart json", domain.Int("user_id", userID), domain.String("error", err.Error()))
+		response.Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
@@ -152,22 +163,21 @@ func (h *cartHandler) UpdateCart(w http.ResponseWriter, r *http.Request) {
 	err = h.cartUC.UpdateCart(ctx, userID, domainCart)
 	if err != nil {
 		switch {
-		case errors.Is(err, domain.ErrInvalidQuantity):
-			response.Error(w, http.StatusBadRequest, err.Error())
-		case errors.Is(err, domain.ErrMultipleRestaurants):
+		case errors.Is(err, domain.ErrInvalidQuantity), errors.Is(err, domain.ErrMultipleRestaurants):
+			l.Warn("cart update validation failed", domain.Int("user_id", userID), domain.String("reason", err.Error()))
 			response.Error(w, http.StatusBadRequest, err.Error())
 		default:
-			l.Error("failed to sync cart", err, map[string]any{"user_id": userID})
+			l.Error("failed to sync cart", err, domain.Int("user_id", userID))
 			response.Error(w, http.StatusInternalServerError, "internal server error")
 		}
 		return
 	}
 
-	l.Info("cart synced successfully", map[string]any{
-		"user_id":       userID,
-		"items_count":   len(reqCart.Items),
-		"restaurant_id": reqCart.RestaurantID,
-	})
+	l.Debug("cart synced successfully",
+		domain.Int("user_id", userID),
+		domain.Int("items_count", len(reqCart.Items)),
+		domain.Int("restaurant_id", reqCart.RestaurantID),
+	)
 
 	response.JSON(w, http.StatusOK, nil)
 }

@@ -64,7 +64,7 @@ func TestUserProfileHandler_GetUserProfile(t *testing.T) {
 			upuc := ucMocks.NewMockUserProfileUseCase(ctrl)
 			uuc := ucMocks.NewMockUserUseCase(ctrl)
 			suc := ucMocks.NewMockSessionUseCase(ctrl)
-			h := NewUserProfileHandler(upuc, uuc, suc, domainMocks.NewNopLogger(), "default.png")
+			h := NewUserProfileHandler(upuc, uuc, suc, domainMocks.NewNopLogger())
 
 			req := httptest.NewRequest(http.MethodGet, "/profile", nil)
 			if tt.userID != nil {
@@ -132,7 +132,7 @@ func TestUserProfileHandler_UpdateProfile(t *testing.T) {
 			upuc := ucMocks.NewMockUserProfileUseCase(ctrl)
 			uuc := ucMocks.NewMockUserUseCase(ctrl)
 			suc := ucMocks.NewMockSessionUseCase(ctrl)
-			h := NewUserProfileHandler(upuc, uuc, suc, domainMocks.NewNopLogger(), "default.png")
+			h := NewUserProfileHandler(upuc, uuc, suc, domainMocks.NewNopLogger())
 
 			b, _ := json.Marshal(tt.body)
 			req := httptest.NewRequest(http.MethodPatch, "/profile", bytes.NewBuffer(b))
@@ -186,7 +186,7 @@ func TestUserProfileHandler_UpdateAvatar(t *testing.T) {
 			upuc := ucMocks.NewMockUserProfileUseCase(ctrl)
 			uuc := ucMocks.NewMockUserUseCase(ctrl)
 			suc := ucMocks.NewMockSessionUseCase(ctrl)
-			h := NewUserProfileHandler(upuc, uuc, suc, domainMocks.NewNopLogger(), "default.png")
+			h := NewUserProfileHandler(upuc, uuc, suc, domainMocks.NewNopLogger())
 
 			body := &bytes.Buffer{}
 			writer := multipart.NewWriter(body)
@@ -247,7 +247,7 @@ func TestUserProfileHandler_DeleteAvatar(t *testing.T) {
 			upuc := ucMocks.NewMockUserProfileUseCase(ctrl)
 			uuc := ucMocks.NewMockUserUseCase(ctrl)
 			suc := ucMocks.NewMockSessionUseCase(ctrl)
-			h := NewUserProfileHandler(upuc, uuc, suc, domainMocks.NewNopLogger(), "default.png")
+			h := NewUserProfileHandler(upuc, uuc, suc, domainMocks.NewNopLogger())
 
 			req := httptest.NewRequest(http.MethodDelete, "/profile/avatar", nil)
 			if tt.userID != nil {

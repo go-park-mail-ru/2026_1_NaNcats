@@ -28,11 +28,11 @@ type CreateOrderResponse struct {
 
 //easyjson:json
 type OrderHistoryResponse struct {
-	OrderID        string    `json:"order_id"`
-	RestaurantName string    `json:"restaurant_name"`
-	TotalCost      int64     `json:"total_cost"`
-	Status         string    `json:"status"`
-	CreatedAt      string    `json:"created_at"`
+	OrderID        string `json:"order_id"`
+	RestaurantName string `json:"restaurant_name"`
+	TotalCost      int64  `json:"total_cost"`
+	Status         string `json:"status"`
+	CreatedAt      string `json:"created_at"`
 }
 
 type orderHandler struct {
@@ -67,42 +67,51 @@ func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := middleware.GetUserID(ctx)
 	if err != nil {
-		l.Error("auth middleware missed userID in route", err, nil)
+		l.Error("failed to get user_id from context", err)
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
 	var req CreateOrderRequest
 	if err = easyjson.UnmarshalFromReader(r.Body, &req); err != nil {
-		l.Error("failed to parse request body", err, nil)
+		l.Warn("failed to decode create order request", domain.Int("user_id", userID), domain.String("error", err.Error()))
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
 	if req.AddressID == "" || req.RestaurantBranchID == 0 {
-		l.Warn("create order bad request", nil)
+		l.Warn("create order request validation failed", domain.Int("user_id", userID))
 		response.Error(w, http.StatusBadRequest, "Bad request")
 		return
 	}
 
-	inpit := domain.CreateOrderInput{
+	input := domain.CreateOrderInput{
 		UserID:             userID,
 		AddressPublicID:    req.AddressID,
 		RestaurantBranchID: req.RestaurantBranchID,
 		PaymentMethodID:    req.PaymentMethodID,
 	}
 
-	orderPublicID, confirmationURL, err := h.orderUC.CreateOrder(ctx, userID, inpit)
+	orderPublicID, confirmationURL, err := h.orderUC.CreateOrder(ctx, userID, input)
 	if err != nil {
 		if errors.Is(err, domain.ErrCartIsEmpty) {
+			l.Warn("order creation failed: cart is empty", domain.Int("user_id", userID))
 			response.Error(w, http.StatusBadRequest, "Cart is empty")
 		} else if errors.Is(err, domain.ErrAddressNotFound) {
+			l.Warn("order creation failed: address not found", domain.Int("user_id", userID), domain.String("address_id", req.AddressID))
 			response.Error(w, http.StatusNotFound, "Address not found")
 		} else {
+			l.Error("order creation failed unexpectedly", err, domain.Int("user_id", userID))
 			response.Error(w, http.StatusInternalServerError, "Something went wrong")
 		}
 		return
 	}
+
+	l.Info("order created successfully",
+		domain.Int("user_id", userID),
+		domain.String("order_id", orderPublicID),
+		domain.Any("payment_required", confirmationURL != ""),
+	)
 
 	response.JSON(w, http.StatusOK, CreateOrderResponse{
 		OrderID:         orderPublicID,
@@ -116,13 +125,14 @@ func (h *orderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := middleware.GetUserID(ctx)
 	if err != nil {
+		l.Warn("unauthorized access to get orders")
 		response.Error(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	orders, err := h.orderUC.GetOrders(ctx, userID)
 	if err != nil {
-		l.Error("failed to get user orders", err, map[string]any{"user_id": userID})
+		l.Error("failed to fetch user orders", err, domain.Int("user_id", userID))
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -137,6 +147,8 @@ func (h *orderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 			CreatedAt:      o.CreatedAt.Format("02.01.2006"),
 		})
 	}
+
+	l.Debug("successfully fetched user orders", domain.Int("user_id", userID), domain.Int("count", len(resp)))
 
 	response.JSON(w, http.StatusOK, resp)
 }

@@ -61,9 +61,11 @@ func NewUserProfileHandler(upuc usecase.UserProfileUseCase, uuc usecase.UserUseC
 // @Router			/profile [get]
 func (h *userProfileHandler) GetUserProfile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
 
 	userID, err := middleware.GetUserID(ctx)
 	if err != nil {
+		l.Error("failed to get user_id from context", err)
 		response.Error(w, http.StatusInternalServerError, "unauthorized or missing context")
 		return
 	}
@@ -71,9 +73,11 @@ func (h *userProfileHandler) GetUserProfile(w http.ResponseWriter, r *http.Reque
 	userProfile, err := h.userProfileUC.GetUserProfile(ctx, userID)
 	if err != nil {
 		if errors.Is(err, domain.ErrUserNotFound) {
+			l.Warn("user profile not found", domain.Int("user_id", userID))
 			response.Error(w, http.StatusNotFound, err.Error())
 			return
 		}
+		l.Error("failed to fetch user profile", err, domain.Int("user_id", userID))
 		response.Error(w, http.StatusInternalServerError, "server error while parsing query")
 		return
 	}
@@ -106,17 +110,19 @@ func (h *userProfileHandler) GetUserProfile(w http.ResponseWriter, r *http.Reque
 // @Router			/profile [patch]
 func (h *userProfileHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
 
 	userID, err := middleware.GetUserID(ctx)
 	if err != nil {
+		l.Error("failed to get user_id from context", err)
 		response.Error(w, http.StatusInternalServerError, "unauthorized or missing context")
 		return
 	}
 
 	curRequest := UserProfileUpdateRequest{}
-
 	err = request.JSON(r, &curRequest)
 	if err != nil {
+		l.Warn("failed to decode update profile request", domain.Int("user_id", userID), domain.String("error", err.Error()))
 		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -125,21 +131,25 @@ func (h *userProfileHandler) UpdateProfile(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrEmailAlreadyExists):
+			l.Info("profile update conflict: email already in use", domain.Int("user_id", userID))
 			response.Error(w, http.StatusConflict, "email already in use")
 		case errors.Is(err, domain.ErrEmptyDBQuery):
+			l.Warn("profile update failed: no data to update", domain.Int("user_id", userID))
 			response.Error(w, http.StatusBadRequest, "no data to update")
 		default:
+			l.Error("failed to update profile", err, domain.Int("user_id", userID))
 			response.Error(w, http.StatusInternalServerError, "internal server error")
 		}
 		return
 	}
 
+	l.Info("profile updated successfully", domain.Int("user_id", userID))
 	response.JSON(w, http.StatusOK, response.MessageResponse{Message: "profile uptade succeed"})
 }
 
 // UpdateAvatar godoc
 // @Summary 		Обновление аватара пользователя
-// @Description		Загружает и обновляет аватар текущего авторизованного пользователя. Принимает multipart/form-data с полем 'avatar'.
+// @Description		Загружает и обновляет аватар текущего авторизованного пользователя. Принимает multipart/form-data with полем 'avatar'.
 // @Tags			profile
 // @Accept			multipart/form-data
 // @Produce			json
@@ -150,25 +160,31 @@ func (h *userProfileHandler) UpdateProfile(w http.ResponseWriter, r *http.Reques
 // @Router			/profile/avatar [post]
 func (h *userProfileHandler) UpdateAvatar(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
 
 	userID, err := middleware.GetUserID(ctx)
 	if err != nil {
+		l.Error("failed to get user_id from context", err)
 		response.Error(w, http.StatusInternalServerError, "unauthorized or missing context")
 		return
 	}
 
 	if err := r.ParseMultipartForm(5 << 20); err != nil {
+		l.Warn("avatar upload failed: file too large", domain.Int("user_id", userID))
 		response.Error(w, http.StatusBadRequest, "file is too large (max 5MB)")
 		return
 	}
 
 	file, fileHeader, err := r.FormFile("avatar")
 	if err != nil {
+		l.Warn("avatar upload failed: missing avatar field", domain.Int("user_id", userID))
 		response.Error(w, http.StatusBadRequest, "failed to get 'avatar' field from form")
 		return
 	}
+	defer file.Close()
 
 	if fileHeader.Size > (5 << 20) {
+		l.Warn("avatar upload failed: size limit exceeded", domain.Int("user_id", userID), domain.Int("size", int(fileHeader.Size)))
 		response.Error(w, http.StatusBadRequest, "file size larger than 5MB limit")
 		return
 	}
@@ -176,14 +192,16 @@ func (h *userProfileHandler) UpdateAvatar(w http.ResponseWriter, r *http.Request
 	newAvatarURL, err := h.userUC.UpdateAvatar(ctx, userID, file)
 	if err != nil {
 		if errors.Is(err, domain.ErrInvalidImageExt) {
+			l.Warn("avatar upload failed: invalid format", domain.Int("user_id", userID))
 			response.Error(w, http.StatusBadRequest, "unsupported image format (only JPEG/PNG allowed)")
 			return
 		}
-		h.logger.Error("failed to update avatar", err, map[string]any{})
+		l.Error("failed to update avatar in storage", err, domain.Int("user_id", userID))
 		response.Error(w, http.StatusInternalServerError, "failed to upload avatar")
 		return
 	}
 
+	l.Info("avatar updated successfully", domain.Int("user_id", userID), domain.String("url", newAvatarURL))
 	response.JSON(w, http.StatusOK, UpdateAvatarResponse{
 		Message:   "avatar updated successfully",
 		AvatarURL: newAvatarURL,
@@ -200,20 +218,23 @@ func (h *userProfileHandler) UpdateAvatar(w http.ResponseWriter, r *http.Request
 // @Router			/profile/avatar [delete]
 func (h *userProfileHandler) DeleteAvatar(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
 
 	userID, err := middleware.GetUserID(ctx)
 	if err != nil {
+		l.Error("failed to get user_id from context", err)
 		response.Error(w, http.StatusInternalServerError, "unauthorized or missing context")
 		return
 	}
 
 	err = h.userUC.DeleteAvatar(ctx, userID)
 	if err != nil {
-		h.logger.Error("failed to delete avatar", err, map[string]any{})
+		l.Error("failed to delete avatar", err, domain.Int("user_id", userID))
 		response.Error(w, http.StatusInternalServerError, "failed to delete avatar")
 		return
 	}
 
+	l.Info("avatar deleted successfully", domain.Int("user_id", userID))
 	response.JSON(w, http.StatusOK, UpdateAvatarResponse{
 		Message:   "avatar deleted successfully",
 		AvatarURL: os.Getenv("DEFAULT_AVATAR_URL"),
