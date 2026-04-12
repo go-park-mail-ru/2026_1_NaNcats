@@ -5,6 +5,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"os"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
@@ -33,20 +34,18 @@ type UserProfileResponse struct {
 }
 
 type userProfileHandler struct {
-	userProfileUC    usecase.UserProfileUseCase
-	userUC           usecase.UserUseCase
-	sessionUC        usecase.SessionUseCase
-	logger           domain.Logger
-	defaultAvatarURL string
+	userProfileUC usecase.UserProfileUseCase
+	userUC        usecase.UserUseCase
+	sessionUC     usecase.SessionUseCase
+	logger        domain.Logger
 }
 
-func NewUserProfileHandler(upuc usecase.UserProfileUseCase, uuc usecase.UserUseCase, suc usecase.SessionUseCase, logger domain.Logger, defaultAvatarURL string) *userProfileHandler {
+func NewUserProfileHandler(upuc usecase.UserProfileUseCase, uuc usecase.UserUseCase, suc usecase.SessionUseCase, logger domain.Logger) *userProfileHandler {
 	return &userProfileHandler{
-		userProfileUC:    upuc,
-		userUC:           uuc,
-		sessionUC:        suc,
-		logger:           logger,
-		defaultAvatarURL: defaultAvatarURL,
+		userProfileUC: upuc,
+		userUC:        uuc,
+		sessionUC:     suc,
+		logger:        logger,
 	}
 }
 
@@ -79,15 +78,15 @@ func (h *userProfileHandler) GetUserProfile(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	avatar := userProfile.AvatarURL
-	if avatar == "" {
-		avatar = h.defaultAvatarURL
+	avatarURL := userProfile.AvatarURL
+	if avatarURL == "" {
+		avatarURL = os.Getenv("DEFAULT_AVATAR_URL")
 	}
 
 	resp := UserProfileResponse{
 		Name:      userProfile.Name,
 		Email:     userProfile.Email,
-		AvatarURL: avatar,
+		AvatarURL: avatarURL,
 	}
 
 	response.JSON(w, http.StatusOK, resp)
@@ -217,6 +216,6 @@ func (h *userProfileHandler) DeleteAvatar(w http.ResponseWriter, r *http.Request
 
 	response.JSON(w, http.StatusOK, UpdateAvatarResponse{
 		Message:   "avatar deleted successfully",
-		AvatarURL: h.defaultAvatarURL,
+		AvatarURL: os.Getenv("DEFAULT_AVATAR_URL"),
 	})
 }

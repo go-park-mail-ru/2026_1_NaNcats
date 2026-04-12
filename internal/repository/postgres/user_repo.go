@@ -83,7 +83,7 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 
 func (r *userRepo) GetUserByID(ctx context.Context, id int) (domain.User, error) {
 	query := `
-		SELECT id, name, email password_hash, user_role, COALESCE(avatar_url, '')
+		SELECT id, name, email, password_hash, user_role, COALESCE(avatar_url, '')
 		FROM "user"
 		WHERE id = $1
 	`

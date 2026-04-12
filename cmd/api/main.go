@@ -149,14 +149,13 @@ func main() {
 	paymentUC := usecase.NewPaymentUseCase(paymentRepo, paymentCacheRepo, orderRepo, yookassaClient, returnURL)
 	addressUC := usecase.NewAddressUseCase(addressRepo)
 
-	defaultAvatarURL := os.Getenv("DEFAULT_AVATAR_URL")
-	if defaultAvatarURL == "" {
+	if os.Getenv("DEFAULT_AVATAR_URL") == "" {
 		appLogger.Warn("DEFAULT_AVATAR_URL пустой, фронтенд может упасть при запросе стандартного аватара", map[string]any{})
 	}
 
 	authHandler := handler.NewAuthHandler(authUC, userUC, appLogger, validate)
 	restaurantBrandHandler := handler.NewRestaurantBrandHandler(restaurantBrandUC, appLogger)
-	userProfileHandler := handler.NewUserProfileHandler(userProfileUC, userUC, sessionUC, appLogger, defaultAvatarURL)
+	userProfileHandler := handler.NewUserProfileHandler(userProfileUC, userUC, sessionUC, appLogger)
 	paymentHandler := handler.NewPaymentHandler(paymentUC, appLogger)
 	addressHandler := handler.NewAddressHandler(addressUC, appLogger)
 	orderHandler := handler.NewOrderHandler(orderUC, appLogger)
