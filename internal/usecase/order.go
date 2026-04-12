@@ -79,13 +79,13 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, userID int, req domain.C
 		SavePaymentMethod: false,
 	}
 
+	paymentRequest.Confirmation = &yookassa.CreatePaymentRequestConfirmation{
+		Type:      "redirect",
+		ReturnURL: os.Getenv("YOOKASSA_RETURN_URL"),
+	}
+
 	if req.PaymentMethodID != "" {
 		paymentRequest.PaymentMethodID = req.PaymentMethodID
-	} else {
-		paymentRequest.Confirmation = &yookassa.CreatePaymentRequestConfirmation{
-			Type:      "redirect",
-			ReturnURL: os.Getenv("YOOKASSA_RETURN_URL"),
-		}
 	}
 
 	paymentResponse, err := o.yookassaClient.CreatePayment(ctx, paymentRequest)
