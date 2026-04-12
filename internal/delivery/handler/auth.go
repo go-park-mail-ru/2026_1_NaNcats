@@ -12,6 +12,8 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/validatorutil"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
 
@@ -24,7 +26,7 @@ type RegisterRequest struct {
 	// Email пользователя
 	Email string `json:"email" example:"user@mail.ru"`
 	// Пароль в открытом виде
-	Password string `json:"password" example:"qwerty12345"`
+	Password string `json:"password" example:"qwerty12345" validate:"min=8,max=128"`
 }
 
 // DTO отправки сведений о пользователе при регистрации
@@ -46,7 +48,7 @@ type LoginRequest struct {
 	// Email пользователя
 	Login string `json:"login" example:"user@mail.ru"`
 	// Пароль в открытом виде
-	Password string `json:"password" example:"qwerty12345"`
+	Password string `json:"password" example:"qwerty12345" validate:"min=8,max=128"`
 }
 
 // LoginResponse - DTO для ответа при успешном входе
@@ -61,17 +63,19 @@ type LoginResponse struct {
 
 // структура хендлера авторизации
 type authHandler struct {
-	authUC usecase.AuthUseCase
-	userUC usecase.UserUseCase
-	logger domain.Logger
+	authUC   usecase.AuthUseCase
+	userUC   usecase.UserUseCase
+	logger   domain.Logger
+	validate *validator.Validate
 }
 
 // функция-конструтор хендлера
-func NewAuthHandler(auc usecase.AuthUseCase, uuc usecase.UserUseCase, logger domain.Logger) *authHandler {
+func NewAuthHandler(auc usecase.AuthUseCase, uuc usecase.UserUseCase, logger domain.Logger, v *validator.Validate) *authHandler {
 	return &authHandler{
-		authUC: auc,
-		userUC: uuc,
-		logger: logger,
+		authUC:   auc,
+		userUC:   uuc,
+		logger:   logger,
+		validate: v,
 	}
 }
 
@@ -101,6 +105,13 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 	err := request.JSON(r, &curRequest)
 	if err != nil {
 		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err = h.validate.Struct(curRequest); err != nil {
+		errMsg := validatorutil.FormatValidationError(err)
+		l.Warn("validation failed", map[string]any{"error": errMsg})
+		response.Error(w, http.StatusBadRequest, errMsg)
 		return
 	}
 
@@ -182,6 +193,13 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		l.Warn("failed to decode login request", map[string]any{"error": err.Error()})
 		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err = h.validate.Struct(curRequest); err != nil {
+		errMsg := validatorutil.FormatValidationError(err)
+		l.Warn("validation failed", map[string]any{"error": errMsg})
+		response.Error(w, http.StatusBadRequest, errMsg)
 		return
 	}
 

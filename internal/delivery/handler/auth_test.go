@@ -14,6 +14,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain/mocks"
 	ucMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/mocks"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -52,6 +53,8 @@ func TestAuthHandler_Register(t *testing.T) {
 		},
 	}
 
+	val := validator.New()
+
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -63,7 +66,7 @@ func TestAuthHandler_Register(t *testing.T) {
 
 			nopLogger := mocks.NewNopLogger()
 
-			authHandler := NewAuthHandler(mockAuthUC, mockUserUC, nopLogger)
+			authHandler := NewAuthHandler(mockAuthUC, mockUserUC, nopLogger, val)
 
 			var buf bytes.Buffer
 			if s, ok := testCase.inputBody.(string); ok {
@@ -122,6 +125,8 @@ func TestAuthHandler_GetMe(t *testing.T) {
 		},
 	}
 
+	val := validator.New()
+
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -133,7 +138,7 @@ func TestAuthHandler_GetMe(t *testing.T) {
 
 			nopLogger := mocks.NewNopLogger()
 
-			authHandler := NewAuthHandler(mockAuthUC, mockUserUC, nopLogger)
+			authHandler := NewAuthHandler(mockAuthUC, mockUserUC, nopLogger, val)
 
 			req := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
 			if testCase.userID != nil {
@@ -207,6 +212,8 @@ func TestAuthHandler_Login(t *testing.T) {
 		},
 	}
 
+	val := validator.New()
+
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -218,7 +225,7 @@ func TestAuthHandler_Login(t *testing.T) {
 
 			nopLogger := mocks.NewNopLogger()
 
-			authHandler := NewAuthHandler(mockAuthUC, mockUserUC, nopLogger)
+			authHandler := NewAuthHandler(mockAuthUC, mockUserUC, nopLogger, val)
 
 			var buf bytes.Buffer
 			if s, ok := testCase.inputBody.(string); ok {
@@ -314,6 +321,8 @@ func TestAuthHandler_Logout(t *testing.T) {
 		},
 	}
 
+	val := validator.New()
+
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -325,7 +334,7 @@ func TestAuthHandler_Logout(t *testing.T) {
 
 			nopLogger := mocks.NewNopLogger()
 
-			authHandler := NewAuthHandler(mockAuthUC, mockUserUC, nopLogger)
+			authHandler := NewAuthHandler(mockAuthUC, mockUserUC, nopLogger, val)
 
 			req := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
 			if testCase.hasCookie {
