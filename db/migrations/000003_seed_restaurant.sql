@@ -1,5 +1,5 @@
 -- 1. Добавляем блюда во "Вкусно и точка"
-WITH rb AS (SELECT id FROM "restaurant_brand" WHERE name = 'Вкусно и точка' LIMIT 1)
+WITH rb AS (SELECT id FROM "restaurant_brand" WHERE name = 'Вкусно - и точка' LIMIT 1)
 INSERT INTO "dish" (restaurant_brand_id, name, description, price, image_url) VALUES
 ((SELECT id FROM rb), 'Гранд', 'Бифштекс из 100% говядины, сыр Чеддер, лук, маринованные огурчики', 185000000, ''),
 ((SELECT id FROM rb), 'Чизбургер', 'Рубленый бифштекс и кусочек сыра Чеддер на карамелизованной булочке', 75000000, ''),
