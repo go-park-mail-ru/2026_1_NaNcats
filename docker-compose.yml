@@ -34,6 +34,9 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       REDIS_URL: redis://redis:6379/0
+      DEFAULT_AVATAR_URL: "https://nancats-bucket.storage.yandexcloud.net/avatars/default-avatar.webp"
+      DEFAULT_RESTAURANT_LOGO_URL: "https://nancats-bucket.storage.yandexcloud.net/restaurants/default-restaurant-logo.webp"
+      DEFAULT_FOOD_LOGO_URL: "https://nancats-bucket.storage.yandexcloud.net/foods/default-food-logo.webp"
       YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID}
       YOOKASSA_SECRET_KEY: ${YOOKASSA_SECRET_KEY}
       YOOKASSA_RETURN_URL: ${YOOKASSA_RETURN_URL}

@@ -19,7 +19,7 @@ type CartItemDTO struct {
 	Name     string `json:"name,omitempty"`
 	Price    int64  `json:"price,omitempty"`
 	Quantity int    `json:"quantity"`
-	ImageURL string `json:"image_url,omitempty"`
+	ImageURL string `json:"image_url"`
 }
 
 type CartRequest struct {
@@ -67,7 +67,7 @@ func (h *cartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cart, total_cost, err := h.cartUC.GetCart(ctx, userID)
+	cart, totalCost, err := h.cartUC.GetCart(ctx, userID)
 	if err != nil {
 		l.Error("get cart failed", err, nil)
 	}
@@ -75,7 +75,7 @@ func (h *cartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 	cartResponse := CartResponse{
 		Items:             make([]CartItemDTO, 0, len(cart.Items)),
 		RestaurantBrandID: cart.RestaurantBrandID,
-		TotalCost:         total_cost,
+		TotalCost:         totalCost,
 		UpdatedAt:         cart.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}
 
@@ -97,7 +97,7 @@ func (h *cartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 	l.Info("get cart success", map[string]any{
 		"user_id":       userID,
 		"items_count":   len(cart.Items),
-		"total_cost":    total_cost,
+		"total_cost":    totalCost,
 		"restaurant_id": cart.RestaurantBrandID,
 	})
 
