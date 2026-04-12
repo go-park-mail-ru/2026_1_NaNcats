@@ -4,6 +4,7 @@ package handler
 
 import (
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
@@ -108,9 +109,7 @@ func (h *dishHandler) GetDishesByRestaurantBrandID(w http.ResponseWriter, r *htt
 	for _, d := range dishes {
 		img := d.ImageURL
 		if img == "" {
-			img = "/api/images/default/dish.png"
-		} else {
-			img = "/api/images/" + img
+			img = os.Getenv("DEFAULT_FOOD_LOGO_URL")
 		}
 
 		dto = append(dto, DishResponse{

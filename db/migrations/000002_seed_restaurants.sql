@@ -32,7 +32,7 @@ VALUES
 ((SELECT account_id FROM owner), 'Technikum', 'Гастробистро от White Rabbit Family', 3, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/16de116c-62c6-42d9-9e14-d08670a26e6c.webp'),
 ((SELECT account_id FROM owner), 'Лепим и Варим', 'Лучшие пельмени в городе', 2, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/280689c2-36da-4398-aba0-5844a348d464.webp'),
 ((SELECT account_id FROM owner), 'Китайские новости', 'Настоящая китайская кухня', 1, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/1c2079cd-edb6-4559-9127-437f54ede600.webp'),
-((SELECT account_id FROM owner), 'Tutta La Vita', 'Итальянская еда', 2, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/logos/8c8389dc-48d0-48ea-aa4a-030a920808d5.webp'),
+((SELECT account_id FROM owner), 'Tutta La Vita', 'Итальянская еда', 2, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/8c8389dc-48d0-48ea-aa4a-030a920808d5.webp'),
 ((SELECT account_id FROM owner), 'KFC', 'Вкусная курица', 2, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/2d94c911-3db4-47a6-bc6b-597dac6a281a.webp'),
 ((SELECT account_id FROM owner), 'Аист', 'Классика на Патриарших', 3, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/c5c1ab16-1997-4a1a-afc8-681791eb7e91.webp'),
 ((SELECT account_id FROM owner), 'Anna', 'Уютная кофейня', 1, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/145cf370-37e4-445a-aa12-b551af28a3c9.webp'),
