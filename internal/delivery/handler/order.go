@@ -26,6 +26,15 @@ type CreateOrderResponse struct {
 	ConfirmationURL string `json:"confirmation_url,omitempty"`
 }
 
+//easyjson:json
+type OrderHistoryResponse struct {
+	OrderID        string    `json:"order_id"`
+	RestaurantName string    `json:"restaurant_name"`
+	TotalCost      int64     `json:"total_cost"`
+	Status         string    `json:"status"`
+	CreatedAt      string    `json:"created_at"`
+}
+
 type orderHandler struct {
 	orderUC usecase.OrderUseCase
 	logger  domain.Logger
@@ -99,4 +108,35 @@ func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		OrderID:         orderPublicID,
 		ConfirmationURL: confirmationURL,
 	})
+}
+
+func (h *orderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
+
+	userID, err := middleware.GetUserID(ctx)
+	if err != nil {
+		response.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	orders, err := h.orderUC.GetOrders(ctx, userID)
+	if err != nil {
+		l.Error("failed to get user orders", err, map[string]any{"user_id": userID})
+		response.Error(w, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+
+	resp := make([]OrderHistoryResponse, 0, len(orders))
+	for _, o := range orders {
+		resp = append(resp, OrderHistoryResponse{
+			OrderID:        o.PublicID,
+			RestaurantName: o.PaymentMethodID,
+			TotalCost:      o.TotalCost,
+			Status:         o.Status,
+			CreatedAt:      o.CreatedAt.Format("02.01.2006"),
+		})
+	}
+
+	response.JSON(w, http.StatusOK, resp)
 }

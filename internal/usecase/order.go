@@ -13,6 +13,7 @@ import (
 
 type OrderUseCase interface {
 	CreateOrder(ctx context.Context, userID int, req domain.CreateOrderInput) (string, string, error)
+	GetOrders(ctx context.Context, userID int) ([]domain.Order, error)
 }
 
 type orderUseCase struct {
@@ -56,7 +57,7 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, userID int, req domain.C
 		RestaurantBranchID: req.RestaurantBranchID,
 		ClientAddressID:    clientAddressID,
 		TotalCost:          totalCost,
-		Status:             "pending_payment",
+		Status:             "in_progress",
 		Items:              items,
 	}
 
@@ -104,3 +105,8 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, userID int, req domain.C
 
 	return orderPublicID, confirmationURL, nil
 }
+
+func (o *orderUseCase) GetOrders(ctx context.Context, userID int) ([]domain.Order, error) {
+	return o.orderRepo.GetOrdersByUserID(ctx, userID)
+}
+

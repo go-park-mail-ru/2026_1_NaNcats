@@ -197,6 +197,7 @@ func main() {
 	mux.Handle("PATCH /api/profile/addresses/{id}", authMW.RequireAuth(http.HandlerFunc(addressHandler.UpdateAddress)))
 
 	mux.Handle("POST /api/orders", authMW.RequireAuth(http.HandlerFunc(orderHandler.CreateOrder)))
+	mux.Handle("GET /api/profile/orders", authMW.RequireAuth(http.HandlerFunc(orderHandler.GetMyOrders)))
 
 	mux.Handle("POST /api/webhooks/yookassa", http.HandlerFunc(paymentHandler.YookassaWebhook))
 

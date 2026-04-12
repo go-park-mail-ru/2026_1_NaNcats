@@ -11,4 +11,5 @@ type OrderRepository interface {
 	UpdateStatusByPaymentID(ctx context.Context, yookassaPaymentID, newStatus string) error
 	GetOrderByPublicID(ctx context.Context, publicID string, userID int) (domain.Order, error)
 	SetYookassaID(ctx context.Context, orderPublicID, yookassaID string) error
+	GetOrdersByUserID(ctx context.Context, userID int) ([]domain.Order, error)
 }

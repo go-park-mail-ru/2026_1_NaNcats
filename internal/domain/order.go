@@ -1,5 +1,7 @@
 package domain
 
+import "time"
+
 type Order struct {
 	ID                 int
 	PublicID           string
@@ -12,6 +14,7 @@ type Order struct {
 	PaymentMethodID    string
 	YookassaPaymentID  string
 	Items              []OrderDish
+	CreatedAt          time.Time
 }
 
 type OrderDish struct {

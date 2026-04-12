@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
@@ -68,13 +69,21 @@ func (r *orderRepo) CreateOrder(ctx context.Context, order domain.Order) (string
 	}
 
 	br := tx.SendBatch(ctx, batch)
-	defer br.Close()
-
+	var batchErr error
 	for i := 0; i < len(order.Items); i++ {
-		_, err = br.Exec()
+		_, err := br.Exec()
 		if err != nil {
-			return "", err
+			batchErr = err
 		}
+	}
+
+	err = br.Close()
+	if err != nil {
+		return "", fmt.Errorf("failed to close batch results: %w", err)
+	}
+
+	if batchErr != nil {
+		return "", fmt.Errorf("error in batch execution: %w", batchErr)
 	}
 
 	err = tx.Commit(ctx)
@@ -147,4 +156,33 @@ func (r *orderRepo) SetYookassaID(ctx context.Context, orderPublicID, yookassaID
 	}
 
 	return nil
+}
+
+func (r *orderRepo) GetOrdersByUserID(ctx context.Context, userID int) ([]domain.Order, error) {
+    query := `
+        SELECT o.id, o.public_id, o.total_cost, o.status, o.created_at, rb.name
+        FROM "order" o
+        JOIN "restaurant_branch" rbr ON o.restaurant_branch_id = rbr.id
+        JOIN "restaurant_brand" rb ON rbr.restaurant_brand_id = rb.id
+        WHERE o.client_account_id = $1
+        ORDER BY o.created_at DESC
+    `
+    rows, err := r.pool.Query(ctx, query, userID)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var orders []domain.Order
+    for rows.Next() {
+        var o domain.Order
+        var restaurantName string
+        err := rows.Scan(&o.ID, &o.PublicID, &o.TotalCost, &o.Status, &o.CreatedAt, &restaurantName)
+        if err != nil {
+            return nil, err
+        }
+        o.PaymentMethodID = restaurantName 
+        orders = append(orders, o)
+    }
+    return orders, nil
 }
