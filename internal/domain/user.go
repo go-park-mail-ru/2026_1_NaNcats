@@ -7,7 +7,6 @@ import (
 // сущность юзера
 type User struct {
 	ID           int
-	Phone        string
 	Name         string
 	Email        string
 	PasswordHash string

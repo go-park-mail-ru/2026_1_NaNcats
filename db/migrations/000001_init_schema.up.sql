@@ -5,8 +5,6 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 
 CREATE TABLE "user" (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	
-	phone TEXT UNIQUE,
 		
 	name TEXT NOT NULL
 		CHECK (char_length(name) >= 1 AND char_length(name) <= 39),

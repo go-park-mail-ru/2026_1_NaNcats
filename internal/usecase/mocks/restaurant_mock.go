@@ -41,6 +41,21 @@ func (m *MockRestaurantBrandUseCase) EXPECT() *MockRestaurantBrandUseCaseMockRec
 	return m.recorder
 }
 
+// GetRestaurantBrandByID mocks base method.
+func (m *MockRestaurantBrandUseCase) GetRestaurantBrandByID(ctx context.Context, id int) (domain.RestaurantBrand, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRestaurantBrandByID", ctx, id)
+	ret0, _ := ret[0].(domain.RestaurantBrand)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRestaurantBrandByID indicates an expected call of GetRestaurantBrandByID.
+func (mr *MockRestaurantBrandUseCaseMockRecorder) GetRestaurantBrandByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestaurantBrandByID", reflect.TypeOf((*MockRestaurantBrandUseCase)(nil).GetRestaurantBrandByID), ctx, id)
+}
+
 // GetRestaurantBrandsList mocks base method.
 func (m *MockRestaurantBrandUseCase) GetRestaurantBrandsList(ctx context.Context, limit, offset int) ([]domain.RestaurantBrand, error) {
 	m.ctrl.T.Helper()

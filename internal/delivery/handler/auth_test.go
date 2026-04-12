@@ -178,7 +178,7 @@ func TestAuthHandler_Login(t *testing.T) {
 			name: "Успешный вход",
 			inputBody: LoginRequest{
 				Login:    "test@gmail.com",
-				Password: "aboba",
+				Password: "aboba6767",
 			},
 			mockInit: func(m *ucMocks.MockAuthUseCase) {
 				mockUser := domain.User{ID: 1, Name: "Ivan", Email: "test@mail.ru"}
@@ -200,7 +200,7 @@ func TestAuthHandler_Login(t *testing.T) {
 			name: "Неверный пароль",
 			inputBody: LoginRequest{
 				Login:    "test@mail.ru",
-				Password: "wrong",
+				Password: "wrongabobapass",
 			},
 			mockInit: func(m *ucMocks.MockAuthUseCase) {
 				// Программируем UseCase вернуть ошибку

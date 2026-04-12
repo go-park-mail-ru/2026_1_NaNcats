@@ -33,7 +33,7 @@ func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (int, error
 	defer tx.Rollback(ctx)
 
 	userQuery := `
-		INSERT INTO "user" (name, email, phone, password_hash, user_role)
+		INSERT INTO "user" (name, email, password_hash, user_role)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id;
 	`
@@ -47,7 +47,6 @@ func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (int, error
 	err = tx.QueryRow(ctx, userQuery,
 		user.Name,
 		user.Email,
-		user.Phone,
 		user.PasswordHash,
 		"client",
 	).Scan(&lastInsertedID)
@@ -77,7 +76,7 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 	email = strings.ToLower(strings.TrimSpace(email))
 
 	query := `
-		SELECT id, name, email, COALESCE(phone, ''), password_hash, user_role, COALESCE(avatar_url, '')
+		SELECT id, name, email, password_hash, user_role, COALESCE(avatar_url, '')
 		FROM "user"
 		WHERE email = $1
 	`
@@ -89,7 +88,6 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 		&user.ID,
 		&user.Name,
 		&user.Email,
-		&user.Phone,
 		&user.PasswordHash,
 		&userRole,
 		&user.AvatarURL,
@@ -106,7 +104,7 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 
 func (r *userRepo) GetUserByID(ctx context.Context, id int) (domain.User, error) {
 	query := `
-		SELECT id, name, email, COALESCE(phone, ''), password_hash, user_role, COALESCE(avatar_url, '')
+		SELECT id, name, email password_hash, user_role, COALESCE(avatar_url, '')
 		FROM "user"
 		WHERE id = $1
 	`
@@ -118,7 +116,6 @@ func (r *userRepo) GetUserByID(ctx context.Context, id int) (domain.User, error)
 		&user.ID,
 		&user.Name,
 		&user.Email,
-		&user.Phone,
 		&user.PasswordHash,
 		&userRole,
 		&user.AvatarURL,

@@ -31,12 +31,12 @@ func TestUserRepo_CreateUser(t *testing.T) {
 	}{
 		{
 			name: "Успех",
-			user: domain.User{Name: "Ivan", Email: "TEST@mail.ru", Phone: "7999", PasswordHash: "hash"},
+			user: domain.User{Name: "Ivan", Email: "TEST@mail.ru", PasswordHash: "hash"},
 			mock: func() {
 				mock.ExpectBegin()
 
 				mock.ExpectQuery(`INSERT INTO "user"`).
-					WithArgs("Ivan", "test@mail.ru", "7999", "hash", "client").
+					WithArgs("Ivan", "test@mail.ru", "hash", "client").
 					WillReturnRows(pgxmock.NewRows([]string{"id"}).AddRow(1))
 
 				mock.ExpectExec(`INSERT INTO "client_profile"`).
@@ -55,7 +55,7 @@ func TestUserRepo_CreateUser(t *testing.T) {
 				mock.ExpectBegin()
 
 				mock.ExpectQuery(`INSERT INTO "user"`).
-					WithArgs(pgxmock.AnyArg(), "exists@mail.ru", pgxmock.AnyArg(), pgxmock.AnyArg(), "client").
+					WithArgs(pgxmock.AnyArg(), "exists@mail.ru", pgxmock.AnyArg(), "client").
 					WillReturnError(&pgconn.PgError{Code: pgerrcode.UniqueViolation})
 
 				mock.ExpectRollback()
@@ -95,13 +95,13 @@ func TestUserRepo_GetUserByEmail(t *testing.T) {
 			name:  "Успех",
 			email: "test@mail.ru",
 			mock: func() {
-				rows := pgxmock.NewRows([]string{"id", "name", "email", "phone", "password_hash", "user_role", "avatar_url"}).
-					AddRow(1, "Ivan", "test@mail.ru", "7999", "hash", "client", "url")
+				rows := pgxmock.NewRows([]string{"id", "name", "email", "password_hash", "user_role", "avatar_url"}).
+					AddRow(1, "Ivan", "test@mail.ru", "hash", "client", "url")
 				mock.ExpectQuery(`SELECT (.+) FROM "user" WHERE email = \$1`).
 					WithArgs("test@mail.ru").
 					WillReturnRows(rows)
 			},
-			wantRes: domain.User{ID: 1, Name: "Ivan", Email: "test@mail.ru", Phone: "7999", PasswordHash: "hash", AvatarURL: "url"},
+			wantRes: domain.User{ID: 1, Name: "Ivan", Email: "test@mail.ru", PasswordHash: "hash", AvatarURL: "url"},
 			wantErr: nil,
 		},
 		{

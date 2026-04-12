@@ -111,9 +111,21 @@ func TestCartRepo_UpdateCart(t *testing.T) {
 				{DishID: 102, Quantity: 1},
 			},
 			setup: func(mock pgxmock.PgxPoolIface) {
-				mock.ExpectExec(`WITH up_cart AS`).
-					WithArgs(userID, resID, []int{101, 102}, []int{2, 1}).
+				mock.ExpectBegin()
+
+				mock.ExpectExec(`INSERT INTO cart`).
+					WithArgs(userID, resID).
 					WillReturnResult(pgxmock.NewResult("INSERT", 1))
+
+				mock.ExpectExec(`DELETE FROM cart_dish WHERE cart_id = \$1`).
+					WithArgs(userID).
+					WillReturnResult(pgxmock.NewResult("DELETE", 2))
+
+				mock.ExpectExec(`INSERT INTO cart_dish`).
+					WithArgs(userID, []int{101, 102}, []int{2, 1}).
+					WillReturnResult(pgxmock.NewResult("INSERT", 2))
+
+				mock.ExpectCommit()
 			},
 			wantErr: false,
 		},
@@ -121,9 +133,17 @@ func TestCartRepo_UpdateCart(t *testing.T) {
 			name:  "Успех: пустая корзина",
 			items: []domain.CartItem{},
 			setup: func(mock pgxmock.PgxPoolIface) {
+				mock.ExpectBegin()
+
+				mock.ExpectExec(`INSERT INTO cart`).
+					WithArgs(userID, resID).
+					WillReturnResult(pgxmock.NewResult("INSERT", 1))
+
 				mock.ExpectExec(`DELETE FROM cart_dish WHERE cart_id = \$1`).
 					WithArgs(userID).
 					WillReturnResult(pgxmock.NewResult("DELETE", 1))
+
+				mock.ExpectCommit()
 			},
 			wantErr: false,
 		},
@@ -131,9 +151,21 @@ func TestCartRepo_UpdateCart(t *testing.T) {
 			name:  "Ошибка бд",
 			items: []domain.CartItem{{DishID: 101, Quantity: 1}},
 			setup: func(mock pgxmock.PgxPoolIface) {
-				mock.ExpectExec(`WITH up_cart AS`).
-					WithArgs(userID, resID, []int{101}, []int{1}).
+				mock.ExpectBegin()
+
+				mock.ExpectExec(`INSERT INTO cart`).
+					WithArgs(userID, resID).
+					WillReturnResult(pgxmock.NewResult("INSERT", 1))
+
+				mock.ExpectExec(`DELETE FROM cart_dish WHERE cart_id = \$1`).
+					WithArgs(userID).
+					WillReturnResult(pgxmock.NewResult("DELETE", 1))
+
+				mock.ExpectExec(`INSERT INTO cart_dish`).
+					WithArgs(userID, []int{101}, []int{1}).
 					WillReturnError(errors.New("db error"))
+
+				mock.ExpectRollback()
 			},
 			wantErr: true,
 		},
