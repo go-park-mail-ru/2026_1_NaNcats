@@ -96,21 +96,12 @@ func (h *cartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-<<<<<<< HEAD
-	l.Info("get cart success", map[string]any{
-		"user_id":       userID,
-		"items_count":   len(cart.Items),
-		"total_cost":    totalCost,
-		"restaurant_id": cart.RestaurantBrandID,
-	})
-=======
 	l.Debug("get cart success",
 		domain.Int("user_id", userID),
 		domain.Int("items_count", len(cart.Items)),
 		domain.Any("total_cost", totalCost),
 		domain.Int("restaurant_id", cart.RestaurantBrandID),
 	)
->>>>>>> c2400c2 (Оптимизирован логгер: удалены лишние аллокации и рефлексии)
 
 	response.JSON(w, http.StatusOK, cartResponse)
 }
