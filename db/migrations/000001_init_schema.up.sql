@@ -38,7 +38,7 @@ CREATE TABLE "restaurant_brand" (
 	owner_profile_id INT NOT NULL,
 	
 	name TEXT UNIQUE NOT NULL
-		CHECK (char_length(name) <= 30),
+		CHECK (char_length(name) <= 60),
 	description TEXT
 		CHECK (char_length(description) <= 500),
 		
