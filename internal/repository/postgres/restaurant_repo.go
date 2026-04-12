@@ -86,7 +86,7 @@ func (r *restaurantBrandRepo) GetByID(ctx context.Context, id int) (domain.Resta
 	`
 	var rb restaurantBrandDB
 	err := r.pool.QueryRow(ctx, query, id).Scan(
-		&rb.ID, &rb.OwnerProfileID, &rb.Name, &rb.Description, 
+		&rb.ID, &rb.OwnerProfileID, &rb.Name, &rb.Description,
 		&rb.PromotionTier, &rb.LogoURL, &rb.CreatedAt, &rb.UpdatedAt,
 	)
 	if err != nil {

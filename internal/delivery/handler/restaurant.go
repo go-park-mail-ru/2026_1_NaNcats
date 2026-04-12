@@ -4,6 +4,7 @@ package handler
 
 import (
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
@@ -96,9 +97,7 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 
 	for _, currRestaurantBrand := range restaurantBrandsList {
 		if currRestaurantBrand.LogoURL == "" {
-			currRestaurantBrand.LogoURL = "/api/images/default/logo.png"
-		} else {
-			currRestaurantBrand.LogoURL = "/api/images/" + currRestaurantBrand.LogoURL
+			currRestaurantBrand.LogoURL = os.Getenv("DEFAULT_RESTAURANT_LOGO_URL")
 		}
 
 		restResp := RestaurantBrandResponse{
@@ -136,8 +135,10 @@ func (h *restaurantBrandHandler) GetRestaurantBrandByID(w http.ResponseWriter, r
 		return
 	}
 
-    logo := brand.LogoURL
-    if logo == "" { logo = "/api/images/default/logo.png" } else { logo = "/api/images/" + logo }
+	logo := brand.LogoURL
+	if logo == "" {
+		logo = os.Getenv("DEFAULT_RESTAURANT_LOGO_URL")
+	}
 
 	response.JSON(w, http.StatusOK, RestaurantBrandResponse{
 		ID:          strconv.Itoa(brand.ID),
