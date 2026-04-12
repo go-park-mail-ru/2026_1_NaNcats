@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain/mocks"
 	ucMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -19,8 +20,9 @@ func TestAuthMiddleware_RequireAuth(t *testing.T) {
 	// Если он вызвался — значит мидлварь пропустила запрос дальше
 	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Проверяем, что в контексте действительно лежит правильный UserID
-		uid := r.Context().Value(UserIDKey)
-		assert.NotNil(t, uid)
+		id := r.Context().Value(UserIDKey)
+		assert.IsType(t, 0, id)
+		assert.NotEqual(t, 0, id)
 		w.WriteHeader(http.StatusOK)
 	})
 
@@ -40,7 +42,7 @@ func TestAuthMiddleware_RequireAuth(t *testing.T) {
 				// Ожидаем проверку сессии
 				m.EXPECT().
 					Check(gomock.Any(), gomock.Any()).
-					Return(uuid.New(), nil)
+					Return(domain.Session{UserID: 1}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -66,7 +68,7 @@ func TestAuthMiddleware_RequireAuth(t *testing.T) {
 				// Программируем UseCase вернуть ошибку
 				m.EXPECT().
 					Check(gomock.Any(), gomock.Any()).
-					Return(uuid.Nil, domain.ErrSessionExpired)
+					Return(domain.Session{}, domain.ErrSessionExpired)
 			},
 			expectedStatus: http.StatusUnauthorized,
 		},
@@ -80,7 +82,9 @@ func TestAuthMiddleware_RequireAuth(t *testing.T) {
 			mockSessionUC := ucMocks.NewMockSessionUseCase(ctrl)
 			tt.mockInit(mockSessionUC)
 
-			mw := NewAuthMiddleware(mockSessionUC)
+			nopLogger := mocks.NewNopLogger()
+
+			mw := NewAuthMiddleware(mockSessionUC, nopLogger)
 
 			req := httptest.NewRequest(http.MethodGet, "/api/profile", nil)
 			if tt.hasCookie {

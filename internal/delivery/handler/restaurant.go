@@ -1,13 +1,17 @@
 package handler
 
+//go:generate easyjson $GOFILE
+
 import (
 	"net/http"
 	"strconv"
 
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 )
 
+//easyjson:json
 type RestaurantBrandResponse struct {
 	ID            string `json:"id" example:"550e8400-e29b-41d4-a716-446655440000"`
 	Name          string `json:"name" example:"KFC"`
@@ -17,17 +21,20 @@ type RestaurantBrandResponse struct {
 	BannerURL     string `json:"banner_url" example:"restaurangs/banners/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"`
 }
 
+//easyjson:json
 type RestaurantBrandsResponse struct {
 	RestaurantBrands []RestaurantBrandResponse `json:"restaurants"`
 }
 
 type restaurantBrandHandler struct {
 	restaurantBrandUC usecase.RestaurantBrandUseCase
+	logger            domain.Logger
 }
 
-func NewRestaurantBrandHandler(rbuc usecase.RestaurantBrandUseCase) *restaurantBrandHandler {
+func NewRestaurantBrandHandler(rbuc usecase.RestaurantBrandUseCase, logger domain.Logger) *restaurantBrandHandler {
 	return &restaurantBrandHandler{
 		restaurantBrandUC: rbuc,
+		logger:            logger,
 	}
 }
 
@@ -41,6 +48,9 @@ func NewRestaurantBrandHandler(rbuc usecase.RestaurantBrandUseCase) *restaurantB
 // @Success				200		{object}  RestaurantBrandsResponse			"Успешное получение списка ресторанов"
 // @Router				/restaurants/brands [get]
 func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
+
 	query := r.URL.Query()
 
 	// Значения по дефолту
@@ -52,6 +62,11 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 	if qLimit := query.Get("limit"); qLimit != "" {
 		if val, err := strconv.Atoi(qLimit); err == nil && val > 0 {
 			limit = val
+		} else {
+			l.Debug("invalid limit query parameter, using default", map[string]any{
+				"input":   qLimit,
+				"default": limit,
+			})
 		}
 	}
 
@@ -59,11 +74,23 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 	if qOffset := query.Get("offset"); qOffset != "" {
 		if val, err := strconv.Atoi(qOffset); err == nil && val > 0 {
 			offset = val
+		} else {
+			l.Debug("invalid offset query parameter, using default", map[string]any{
+				"input":   qOffset,
+				"default": offset,
+			})
 		}
 	}
 
-	ctx := r.Context()
-	restaurantBrandsList := h.restaurantBrandUC.GetRestaurantBrandsList(ctx, limit, offset)
+	restaurantBrandsList, err := h.restaurantBrandUC.GetRestaurantBrandsList(ctx, limit, offset)
+	if err != nil {
+		l.Error("Failed to get restaurant brand list", err, map[string]any{
+			"limit":  limit,
+			"offset": offset,
+		})
+		response.Error(w, http.StatusInternalServerError, "Get restaurant brand list error")
+		return
+	}
 
 	dtoList := make([]RestaurantBrandResponse, 0, len(restaurantBrandsList))
 
@@ -74,27 +101,48 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 			currRestaurantBrand.LogoURL = "/api/images/" + currRestaurantBrand.LogoURL
 		}
 
-		if currRestaurantBrand.BannerURL == "" {
-			currRestaurantBrand.BannerURL = "/api/images/default/banner.png"
-		} else {
-			currRestaurantBrand.BannerURL = "/api/images/" + currRestaurantBrand.BannerURL
-		}
-
 		restResp := RestaurantBrandResponse{
-			ID:            currRestaurantBrand.ID.String(),
+			ID:            strconv.Itoa(currRestaurantBrand.ID),
 			Name:          currRestaurantBrand.Name,
 			Description:   currRestaurantBrand.Description,
 			PromotionTier: currRestaurantBrand.PromotionTier,
 			LogoURL:       currRestaurantBrand.LogoURL,
-			BannerURL:     currRestaurantBrand.BannerURL,
 		}
 
 		dtoList = append(dtoList, restResp)
 	}
+
+	l.Debug("successfully fetched restaurant brands", map[string]any{
+		"count":  len(dtoList),
+		"limit":  limit,
+		"offset": offset,
+	})
 
 	resp := RestaurantBrandsResponse{
 		RestaurantBrands: dtoList,
 	}
 
 	response.JSON(w, http.StatusOK, resp)
+}
+
+func (h *restaurantBrandHandler) GetRestaurantBrandByID(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	idStr := r.PathValue("id")
+	id, _ := strconv.Atoi(idStr)
+
+	brand, err := h.restaurantBrandUC.GetRestaurantBrandByID(ctx, id)
+	if err != nil {
+		response.Error(w, http.StatusNotFound, "Restaurant not found")
+		return
+	}
+
+    logo := brand.LogoURL
+    if logo == "" { logo = "/api/images/default/logo.png" } else { logo = "/api/images/" + logo }
+
+	response.JSON(w, http.StatusOK, RestaurantBrandResponse{
+		ID:          strconv.Itoa(brand.ID),
+		Name:        brand.Name,
+		Description: brand.Description,
+		LogoURL:     logo,
+	})
 }

@@ -2,17 +2,15 @@ package domain
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // сущность юзера
 type User struct {
-	ID           uuid.UUID
-	Phone        string
+	ID           int
 	Name         string
 	Email        string
 	PasswordHash string
+	Role         string
 	AvatarURL    string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time

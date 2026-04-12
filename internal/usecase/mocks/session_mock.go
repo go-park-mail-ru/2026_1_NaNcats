@@ -43,45 +43,45 @@ func (m *MockSessionUseCase) EXPECT() *MockSessionUseCaseMockRecorder {
 }
 
 // Check mocks base method.
-func (m *MockSessionUseCase) Check(ctx context.Context, sessionID uuid.UUID) (uuid.UUID, error) {
+func (m *MockSessionUseCase) Check(ctx context.Context, id uuid.UUID) (domain.Session, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Check", ctx, sessionID)
-	ret0, _ := ret[0].(uuid.UUID)
+	ret := m.ctrl.Call(m, "Check", ctx, id)
+	ret0, _ := ret[0].(domain.Session)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Check indicates an expected call of Check.
-func (mr *MockSessionUseCaseMockRecorder) Check(ctx, sessionID any) *gomock.Call {
+func (mr *MockSessionUseCaseMockRecorder) Check(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Check", reflect.TypeOf((*MockSessionUseCase)(nil).Check), ctx, sessionID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Check", reflect.TypeOf((*MockSessionUseCase)(nil).Check), ctx, id)
 }
 
 // Create mocks base method.
-func (m *MockSessionUseCase) Create(ctx context.Context, userID uuid.UUID) (domain.Session, error) {
+func (m *MockSessionUseCase) Create(ctx context.Context, userID int, userAgent string) (domain.Session, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, userID)
+	ret := m.ctrl.Call(m, "Create", ctx, userID, userAgent)
 	ret0, _ := ret[0].(domain.Session)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockSessionUseCaseMockRecorder) Create(ctx, userID any) *gomock.Call {
+func (mr *MockSessionUseCaseMockRecorder) Create(ctx, userID, userAgent any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockSessionUseCase)(nil).Create), ctx, userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockSessionUseCase)(nil).Create), ctx, userID, userAgent)
 }
 
 // Destroy mocks base method.
-func (m *MockSessionUseCase) Destroy(ctx context.Context, sessionId uuid.UUID) error {
+func (m *MockSessionUseCase) Destroy(ctx context.Context, id uuid.UUID) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Destroy", ctx, sessionId)
+	ret := m.ctrl.Call(m, "Destroy", ctx, id)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Destroy indicates an expected call of Destroy.
-func (mr *MockSessionUseCaseMockRecorder) Destroy(ctx, sessionId any) *gomock.Call {
+func (mr *MockSessionUseCaseMockRecorder) Destroy(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Destroy", reflect.TypeOf((*MockSessionUseCase)(nil).Destroy), ctx, sessionId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Destroy", reflect.TypeOf((*MockSessionUseCase)(nil).Destroy), ctx, id)
 }

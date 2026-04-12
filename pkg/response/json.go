@@ -1,11 +1,17 @@
 package response
 
+//go:generate easyjson $GOFILE
+
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/mailru/easyjson"
 )
 
 // ErrorResponse описывает структуру ответа с ошибкой для Swagger
+//
+//easyjson:json
 type ErrorResponse struct {
 	Code    int    `json:"code" example:"400"`
 	Message string `json:"message" example:"Неверный формат запроса"`
@@ -13,21 +19,30 @@ type ErrorResponse struct {
 
 // функция кодирования в JSON
 func JSON(w http.ResponseWriter, statusCode int, data any) {
-	// установка заголовка Content-Type
-	// сообщаем клиенту, что в теле ответа JSON, чтобы он мог правильно его распарсить
-	w.Header().Set("Content-Type", "application/json")
-	// отправляем HTTP-статус
-	w.WriteHeader(statusCode)
-
 	// защита от отправки пустого тела
 	if data == nil {
 		data = map[string]string{}
 	}
 
-	// кодирование JSON
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	w.Header().Set("Content-Type", "application/json")
+
+	var bytes []byte
+	var err error
+
+	if m, ok := data.(easyjson.Marshaler); ok {
+		bytes, err = easyjson.Marshal(m)
+	} else {
+		bytes, err = json.Marshal(data)
 	}
+
+	if err != nil {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"code":500,"message":"Failed to serialize response"}`))
+		return
+	}
+
+	w.WriteHeader(statusCode)
+	w.Write(bytes)
 }
 
 // обертка над JSON для стандартизации сообщений об ошибках
@@ -37,5 +52,10 @@ func Error(w http.ResponseWriter, statusCode int, message string) {
 		Message: message,
 	}
 
-	JSON(w, statusCode, resp)
+	networkStatus := statusCode
+	if statusCode >= 500 {
+		networkStatus = http.StatusOK
+	}
+
+	JSON(w, networkStatus, resp)
 }

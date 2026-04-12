@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/google/uuid"
@@ -12,9 +13,9 @@ import (
 //go:generate mockgen -destination=mocks/session_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository SessionRepository
 type SessionRepository interface {
 	// метод создания сесии в репозитории
-	Create(ctx context.Context, session domain.Session) error
+	Create(ctx context.Context, session domain.Session, ttl time.Duration) error
 	// метод получения сессии из репозитория по sessionID
-	GetByID(ctx context.Context, sessionId uuid.UUID) (domain.Session, error)
+	GetByID(ctx context.Context, id uuid.UUID) (domain.Session, error)
 	// метод удаления сессии из репозитория по sessionID
-	Delete(ctx context.Context, sessionId uuid.UUID) error
+	Delete(ctx context.Context, id uuid.UUID) error
 }

@@ -14,7 +14,6 @@ import (
 	reflect "reflect"
 
 	domain "github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	uuid "github.com/google/uuid"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -42,11 +41,26 @@ func (m *MockUserRepository) EXPECT() *MockUserRepositoryMockRecorder {
 	return m.recorder
 }
 
+// CheckUserByID mocks base method.
+func (m *MockUserRepository) CheckUserByID(ctx context.Context, userID int) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckUserByID", ctx, userID)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckUserByID indicates an expected call of CheckUserByID.
+func (mr *MockUserRepositoryMockRecorder) CheckUserByID(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckUserByID", reflect.TypeOf((*MockUserRepository)(nil).CheckUserByID), ctx, userID)
+}
+
 // CreateUser mocks base method.
-func (m *MockUserRepository) CreateUser(ctx context.Context, user domain.User) (uuid.UUID, error) {
+func (m *MockUserRepository) CreateUser(ctx context.Context, user domain.User) (int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateUser", ctx, user)
-	ret0, _ := ret[0].(uuid.UUID)
+	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -73,7 +87,7 @@ func (mr *MockUserRepositoryMockRecorder) GetUserByEmail(ctx, email any) *gomock
 }
 
 // GetUserByID mocks base method.
-func (m *MockUserRepository) GetUserByID(ctx context.Context, id uuid.UUID) (domain.User, error) {
+func (m *MockUserRepository) GetUserByID(ctx context.Context, id int) (domain.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserByID", ctx, id)
 	ret0, _ := ret[0].(domain.User)
@@ -85,4 +99,32 @@ func (m *MockUserRepository) GetUserByID(ctx context.Context, id uuid.UUID) (dom
 func (mr *MockUserRepositoryMockRecorder) GetUserByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByID", reflect.TypeOf((*MockUserRepository)(nil).GetUserByID), ctx, id)
+}
+
+// UpdateAvatarURL mocks base method.
+func (m *MockUserRepository) UpdateAvatarURL(ctx context.Context, userID int, newAvatarURL string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateAvatarURL", ctx, userID, newAvatarURL)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateAvatarURL indicates an expected call of UpdateAvatarURL.
+func (mr *MockUserRepositoryMockRecorder) UpdateAvatarURL(ctx, userID, newAvatarURL any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAvatarURL", reflect.TypeOf((*MockUserRepository)(nil).UpdateAvatarURL), ctx, userID, newAvatarURL)
+}
+
+// UpdateProfile mocks base method.
+func (m *MockUserRepository) UpdateProfile(ctx context.Context, userID int, name, email *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateProfile", ctx, userID, name, email)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateProfile indicates an expected call of UpdateProfile.
+func (mr *MockUserRepositoryMockRecorder) UpdateProfile(ctx, userID, name, email any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateProfile", reflect.TypeOf((*MockUserRepository)(nil).UpdateProfile), ctx, userID, name, email)
 }

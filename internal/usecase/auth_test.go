@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	repoMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/mocks"
 	ucMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -15,15 +14,15 @@ import (
 func TestAuthUseCase_Register(t *testing.T) {
 	// Группируем моки в структуру для удобной передачи
 	type mocks struct {
-		userRepo  *repoMocks.MockUserRepository
-		sessionUC *ucMocks.MockSessionUseCase
+		userUC          *ucMocks.MockUserUseCase
+		sessionUC       *ucMocks.MockSessionUseCase
+		clientProfileUC *ucMocks.MockClientProfileUseCase
 	}
 
 	// Тип для инициализации моков (mockInit)
-	type mockInit func(m mocks, input domain.User, resID uuid.UUID)
+	type mockInit func(m mocks, input domain.User, resID int, userAgent string)
 
-	// Заранее создаем UUID для тестов
-	mockUserID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	mockUserID := 1
 	mockSessionID := uuid.MustParse("99999999-9999-9999-9999-999999999999")
 
 	tests := []struct {
@@ -39,13 +38,16 @@ func TestAuthUseCase_Register(t *testing.T) {
 				Email:        "valid@mail.ru",
 				PasswordHash: "valid_password_123",
 			},
-			mockInit: func(m mocks, input domain.User, resID uuid.UUID) {
-				m.userRepo.EXPECT().
-					CreateUser(gomock.Any(), gomock.Any()).
+			mockInit: func(m mocks, input domain.User, resID int, userAgent string) {
+				m.userUC.EXPECT().
+					Create(gomock.Any(), gomock.Any()).
 					Return(resID, nil)
 				m.sessionUC.EXPECT().
-					Create(gomock.Any(), resID).
+					Create(gomock.Any(), resID, userAgent).
 					Return(domain.Session{ID: mockSessionID}, nil)
+				m.clientProfileUC.EXPECT().
+					CreateProfile(gomock.Any(), gomock.Any()).
+					Return(nil)
 			},
 			expectErr: nil,
 		},
@@ -55,12 +57,15 @@ func TestAuthUseCase_Register(t *testing.T) {
 				Email:        "m.a.i.l@mail.ru",
 				PasswordHash: "password123",
 			},
-			mockInit: func(m mocks, input domain.User, resID uuid.UUID) {
-				m.userRepo.EXPECT().
-					CreateUser(gomock.Any(), gomock.Any()).
+			mockInit: func(m mocks, input domain.User, resID int, userAgent string) {
+				m.userUC.EXPECT().
+					Create(gomock.Any(), gomock.Any()).
 					Return(resID, nil)
+				m.clientProfileUC.EXPECT().
+					CreateProfile(gomock.Any(), resID).
+					Return(nil)
 				m.sessionUC.EXPECT().
-					Create(gomock.Any(), resID).
+					Create(gomock.Any(), resID, userAgent).
 					Return(domain.Session{ID: mockSessionID}, nil)
 			},
 			expectErr: nil,
@@ -71,10 +76,10 @@ func TestAuthUseCase_Register(t *testing.T) {
 				Email:        "exists@mail.ru",
 				PasswordHash: "password123",
 			},
-			mockInit: func(m mocks, input domain.User, resID uuid.UUID) {
-				m.userRepo.EXPECT().
-					CreateUser(gomock.Any(), gomock.Any()).
-					Return(uuid.Nil, domain.ErrEmailAlreadyExists)
+			mockInit: func(m mocks, input domain.User, resID int, userAgent string) {
+				m.userUC.EXPECT().
+					Create(gomock.Any(), gomock.Any()).
+					Return(0, domain.ErrEmailAlreadyExists)
 			},
 			expectErr: domain.ErrEmailAlreadyExists,
 		},
@@ -96,6 +101,15 @@ func TestAuthUseCase_Register(t *testing.T) {
 			mockInit:  nil, // Моки не должны вызываться
 			expectErr: domain.ErrInvalidEmail,
 		},
+		{
+			name: "Ошибка: эмодзи в почте",
+			input: domain.User{
+				Email:        "😂😂😂😂😂😂😂@mail.ru",
+				PasswordHash: "password123",
+			},
+			mockInit:  nil,
+			expectErr: domain.ErrInvalidEmail,
+		},
 	}
 
 	for _, testCase := range tests {
@@ -105,19 +119,22 @@ func TestAuthUseCase_Register(t *testing.T) {
 			defer ctrl.Finish()
 
 			m := mocks{
-				userRepo:  repoMocks.NewMockUserRepository(ctrl),
-				sessionUC: ucMocks.NewMockSessionUseCase(ctrl),
+				userUC:          ucMocks.NewMockUserUseCase(ctrl),
+				sessionUC:       ucMocks.NewMockSessionUseCase(ctrl),
+				clientProfileUC: ucMocks.NewMockClientProfileUseCase(ctrl),
 			}
 
-			authUseCase := NewAuthUseCase(m.userRepo, m.sessionUC)
+			authUseCase := NewAuthUseCase(m.userUC, m.sessionUC, m.clientProfileUC)
+
+			userAgent := "Mozilla/5.0 (Test Agent)"
 
 			// Если mockInit задан, настраиваем поведение моков
 			if testCase.mockInit != nil {
-				testCase.mockInit(m, testCase.input, mockUserID)
+				testCase.mockInit(m, testCase.input, mockUserID, userAgent)
 			}
 
 			// Выполнение тестируемого метода
-			user, session, err := authUseCase.Register(context.Background(), testCase.input)
+			user, session, err := authUseCase.Register(context.Background(), testCase.input, userAgent)
 
 			// Проверки результата
 			if testCase.expectErr != nil {

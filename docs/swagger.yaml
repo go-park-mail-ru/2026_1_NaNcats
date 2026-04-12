@@ -1,6 +1,98 @@
 basePath: /api
 definitions:
-  handler.LoginRequest:
+  github_com_go-park-mail-ru_2026_1_NaNcats_internal_domain.PaymentMethod:
+    properties:
+      card_type:
+        example: Mir
+        type: string
+      id:
+        type: string
+      is_default:
+        type: boolean
+      issuer_name:
+        example: Sber
+        type: string
+      last4:
+        example: "6767"
+        type: string
+    type: object
+  github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookNotification:
+    properties:
+      event:
+        type: string
+      object:
+        items:
+          type: integer
+        type: array
+      type:
+        type: string
+    type: object
+  github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse:
+    properties:
+      code:
+        example: 400
+        type: integer
+      message:
+        example: Неверный формат запроса
+        type: string
+    type: object
+  internal_delivery_handler.BindingResponse:
+    properties:
+      confirmation_url:
+        type: string
+    type: object
+  internal_delivery_handler.CartItemDTO:
+    properties:
+      dish_id:
+        type: integer
+      image_url:
+        type: string
+      name:
+        type: string
+      price:
+        type: integer
+      quantity:
+        type: integer
+    type: object
+  internal_delivery_handler.CartRequest:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/internal_delivery_handler.CartItemDTO'
+        type: array
+      restaurant_id:
+        type: integer
+    type: object
+  internal_delivery_handler.CartResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/internal_delivery_handler.CartItemDTO'
+        type: array
+      restaurant_id:
+        type: integer
+      total_cost:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  internal_delivery_handler.CreateOrderRequest:
+    properties:
+      address_id:
+        type: string
+      branch_id:
+        type: integer
+      payment_method_id:
+        type: string
+    type: object
+  internal_delivery_handler.CreateOrderResponse:
+    properties:
+      confirmation_url:
+        type: string
+      order_id:
+        type: string
+    type: object
+  internal_delivery_handler.LoginRequest:
     properties:
       login:
         description: Email пользователя
@@ -11,22 +103,18 @@ definitions:
         example: qwerty12345
         type: string
     type: object
-  handler.LoginResponse:
+  internal_delivery_handler.LoginResponse:
     properties:
       avatar_url:
         description: URL аватарки пользователя
         example: users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
-        type: string
-      id:
-        description: Уникальный ID пользователя в системе
-        example: "1"
         type: string
       name:
         description: Имя для отображения в интерфейсе
         example: Иван
         type: string
     type: object
-  handler.RegisterRequest:
+  internal_delivery_handler.RegisterRequest:
     properties:
       email:
         description: Email пользователя
@@ -41,7 +129,7 @@ definitions:
         example: qwerty12345
         type: string
     type: object
-  handler.RegisterResponse:
+  internal_delivery_handler.RegisterResponse:
     properties:
       created_at:
         description: Время создания аккаунта по стандарту RFC 3339
@@ -51,16 +139,12 @@ definitions:
         description: Email пользователя
         example: user@mail.ru
         type: string
-      id:
-        description: Уникальный ID пользователя в системе
-        example: "1"
-        type: string
       name:
         description: Имя для отображения в интерфейсе
         example: Иван
         type: string
     type: object
-  handler.RestaurantBrandResponse:
+  internal_delivery_handler.RestaurantBrandResponse:
     properties:
       banner_url:
         example: restaurangs/banners/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
@@ -81,20 +165,39 @@ definitions:
         example: 2
         type: integer
     type: object
-  handler.RestaurantBrandsResponse:
+  internal_delivery_handler.RestaurantBrandsResponse:
     properties:
       restaurants:
         items:
-          $ref: '#/definitions/handler.RestaurantBrandResponse'
+          $ref: '#/definitions/internal_delivery_handler.RestaurantBrandResponse'
         type: array
     type: object
-  response.ErrorResponse:
+  internal_delivery_handler.UpdateAvatarResponse:
     properties:
-      code:
-        example: 400
-        type: integer
+      avatar_url:
+        type: string
       message:
-        example: Неверный формат запроса
+        type: string
+    type: object
+  internal_delivery_handler.UserProfileResponse:
+    properties:
+      avatar_url:
+        example: users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
+        type: string
+      email:
+        example: terminator2007@gmail.com
+        type: string
+      name:
+        example: Илья
+        type: string
+    type: object
+  internal_delivery_handler.UserProfileUpdateRequest:
+    properties:
+      email:
+        example: new_mail@gmail.com
+        type: string
+      name:
+        example: Андрей
         type: string
     type: object
 host: localhost:8080
@@ -104,6 +207,124 @@ info:
   title: NaNcats Delivery API
   version: "1.0"
 paths:
+  /api/cart:
+    get:
+      description: Возвращает текущую корзину авторизованного пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_delivery_handler.CartResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Получить корзину
+      tags:
+      - cart
+    put:
+      consumes:
+      - application/json
+      description: Перезаписывает содержимое корзины пользователя новыми товарами
+      parameters:
+      - description: Данные корзины
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal_delivery_handler.CartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное обновление
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный формат запроса или товары из разных ресторанов
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Обновить корзину
+      tags:
+      - cart
+  /api/orders:
+    post:
+      consumes:
+      - application/json
+      description: Создает заказ на основе корзины, возвращает ID заказа и ссылку
+        на оплату YooKassa (при необходимости)
+      parameters:
+      - description: Данные для оформления заказа
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal_delivery_handler.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Заказ успешно создан
+          schema:
+            $ref: '#/definitions/internal_delivery_handler.CreateOrderResponse'
+        "400":
+          description: Bad request или пустая корзина
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Указанный адрес не найден
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Создать заказ
+      tags:
+      - order
   /auth/login:
     post:
       consumes:
@@ -115,26 +336,26 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/handler.LoginRequest'
+          $ref: '#/definitions/internal_delivery_handler.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Успешный вход
           schema:
-            $ref: '#/definitions/handler.LoginResponse'
+            $ref: '#/definitions/internal_delivery_handler.LoginResponse'
         "400":
           description: Неверный формат JSON
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
         "401":
           description: Неверный логин или пароль
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
       summary: Авторизация пользователя
       tags:
       - auth
@@ -149,10 +370,6 @@ paths:
       responses:
         "200":
           description: Успешный выход
-        "401":
-          description: Кука не найдена
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
       summary: Выход из текущей
       tags:
       - auth
@@ -167,15 +384,15 @@ paths:
         "200":
           description: Успешный вход и создание сессии
           schema:
-            $ref: '#/definitions/handler.LoginResponse'
+            $ref: '#/definitions/internal_delivery_handler.LoginResponse'
         "401":
           description: Неавторизован
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
         "500":
           description: Внутренняя ошибка
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
       summary: Проверка текущей сессии
       tags:
       - auth
@@ -191,29 +408,227 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/handler.RegisterRequest'
+          $ref: '#/definitions/internal_delivery_handler.RegisterRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Успешная регистрация
           schema:
-            $ref: '#/definitions/handler.RegisterResponse'
+            $ref: '#/definitions/internal_delivery_handler.RegisterResponse'
         "400":
           description: Ошибка валидации (email/пароль)
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
         "409":
           description: Пользователь с такой почтой уже существует
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
       summary: Регистрация пользователя
       tags:
       - auth
+  /profile:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает данные профиля (имя и email) текущего авторизованного
+        пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное получение данных профиля
+          schema:
+            $ref: '#/definitions/internal_delivery_handler.UserProfileResponse'
+        "404":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+      summary: Получение профиля пользователя
+      tags:
+      - profile
+    patch:
+      consumes:
+      - application/json
+      description: Частично обновляет данные профиля текущего пользователя (имя и/или
+        email)
+      parameters:
+      - description: Данные для обновления профиля
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal_delivery_handler.UserProfileUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Профиль успешно обновлен
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Ошибка валидации JSON или нет данных для обновления
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+        "409":
+          description: Указанный email уже используется другим пользователем
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+      summary: Обновление данных профиля
+      tags:
+      - profile
+  /profile/avatar:
+    delete:
+      description: Удаляет аватар текущего авторизованного пользователя и устанавливает
+        аватар по умолчанию.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Аватар успешно удален
+          schema:
+            $ref: '#/definitions/internal_delivery_handler.UpdateAvatarResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+      summary: Удаление аватара пользователя
+      tags:
+      - profile
+    post:
+      consumes:
+      - multipart/form-data
+      description: Загружает и обновляет аватар текущего авторизованного пользователя.
+        Принимает multipart/form-data с полем 'avatar'.
+      parameters:
+      - description: Файл аватара (WEBP/JPG/JPEG/PNG, до 5МБ)
+        in: formData
+        name: avatar
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Аватар успешно обновлен
+          schema:
+            $ref: '#/definitions/internal_delivery_handler.UpdateAvatarResponse'
+        "400":
+          description: Ошибка запроса (файл слишком большой, неверный формат или отсутствует)
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+      summary: Обновление аватара пользователя
+      tags:
+      - profile
+  /profile/cards:
+    get:
+      description: Возвращает список всех привязанных банковских карт пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_internal_domain.PaymentMethod'
+            type: array
+        "401":
+          description: Пользователь не авторизован
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получение сохраненных карт
+      tags:
+      - profile
+      - payments
+  /profile/cards/{id}:
+    delete:
+      description: Удаляет привязанную карту из профиля
+      parameters:
+      - description: ID карты
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Пользователь не авторизован
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Карта не найдена
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Удаление карты
+      tags:
+      - profile
+      - payments
+  /profile/cards/bind:
+    post:
+      description: Создает запрос на привязку банковской карты пользователя и возвращает
+        URL для подтверждения в ЮKassa
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: URL для подтверждения привязки
+          schema:
+            $ref: '#/definitions/internal_delivery_handler.BindingResponse'
+        "401":
+          description: Пользователь не авторизован
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Инициализация привязки карты
+      tags:
+      - profile
+      - payments
   /restaurants/brands:
     get:
       description: Возвращает список брендов ресторанов с поддержкой пагинации (limit
@@ -235,8 +650,36 @@ paths:
         "200":
           description: Успешное получение списка ресторанов
           schema:
-            $ref: '#/definitions/handler.RestaurantBrandsResponse'
+            $ref: '#/definitions/internal_delivery_handler.RestaurantBrandsResponse'
       summary: Получение списка ресторанов
       tags:
       - restaurants
+  /webhooks/yookassa:
+    post:
+      consumes:
+      - application/json
+      description: Обрабатывает асинхронные уведомления от ЮKassa (например, об успешной
+        привязке платежного метода)
+      parameters:
+      - description: Данные уведомления от ЮKassa
+        in: body
+        name: notification
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookNotification'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Неверный формат данных
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Вебхук ЮKassa
+      tags:
+      - payments
+      - webhooks
 swagger: "2.0"

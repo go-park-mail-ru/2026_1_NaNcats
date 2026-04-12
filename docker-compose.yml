@@ -1,10 +1,49 @@
 version: '3.8'
 services:
+  db:
+    image: postgis/postgis:18-3.6-alpine # Образ с Postgres + PostGIS
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      # сохраняет таблицы и данные пользователей
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck: # Проверка готовности базы
+      # бэкенд не начнет пытаться подключиться к базе, пока она не будет готова принимать соединения
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_db
+    restart: always
+    
   backend:
     build: .
     container_name: go_backend
     ports:
       - "8080:8080"
     volumes:
-      - ./uploads:/root/uploads
+      - ./uploads:/app/uploads
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      REDIS_URL: redis://redis:6379/0
+      YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID}
+      YOOKASSA_SECRET_KEY: ${YOOKASSA_SECRET_KEY}
+      YOOKASSA_RETURN_URL: ${YOOKASSA_RETURN_URL}
+      S3_KEY_ID: ${S3_KEY_ID}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+    depends_on:
+      - db
+      - redis
     restart: always
+
+volumes:
+  # Объявляем именованный том для базы
+  postgres_data:

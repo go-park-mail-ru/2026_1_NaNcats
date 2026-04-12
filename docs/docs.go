@@ -15,6 +15,189 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/cart": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Возвращает текущую корзину авторизованного пользователя",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Получить корзину",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler.CartResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Перезаписывает содержимое корзины пользователя новыми товарами",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Обновить корзину",
+                "parameters": [
+                    {
+                        "description": "Данные корзины",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler.CartRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешное обновление",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса или товары из разных ресторанов",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/orders": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Создает заказ на основе корзины, возвращает ID заказа и ссылку на оплату YooKassa (при необходимости)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "order"
+                ],
+                "summary": "Создать заказ",
+                "parameters": [
+                    {
+                        "description": "Данные для оформления заказа",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler.CreateOrderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Заказ успешно создан",
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler.CreateOrderResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request или пустая корзина",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Указанный адрес не найден",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Проверяет учетные данные и устанавливает сессионную куку",
@@ -35,7 +218,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.LoginRequest"
+                            "$ref": "#/definitions/internal_delivery_handler.LoginRequest"
                         }
                     }
                 ],
@@ -43,25 +226,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешный вход",
                         "schema": {
-                            "$ref": "#/definitions/handler.LoginResponse"
+                            "$ref": "#/definitions/internal_delivery_handler.LoginResponse"
                         }
                     },
                     "400": {
                         "description": "Неверный формат JSON",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Неверный логин или пароль",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -83,12 +266,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "Успешный выход"
-                    },
-                    "401": {
-                        "description": "Кука не найдена",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
                     }
                 }
             }
@@ -110,19 +287,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешный вход и создание сессии",
                         "schema": {
-                            "$ref": "#/definitions/handler.LoginResponse"
+                            "$ref": "#/definitions/internal_delivery_handler.LoginResponse"
                         }
                     },
                     "401": {
                         "description": "Неавторизован",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -148,7 +325,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.RegisterRequest"
+                            "$ref": "#/definitions/internal_delivery_handler.RegisterRequest"
                         }
                     }
                 ],
@@ -156,25 +333,316 @@ const docTemplate = `{
                     "201": {
                         "description": "Успешная регистрация",
                         "schema": {
-                            "$ref": "#/definitions/handler.RegisterResponse"
+                            "$ref": "#/definitions/internal_delivery_handler.RegisterResponse"
                         }
                     },
                     "400": {
                         "description": "Ошибка валидации (email/пароль)",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Пользователь с такой почтой уже существует",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/profile": {
+            "get": {
+                "description": "Возвращает данные профиля (имя и email) текущего авторизованного пользователя",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Получение профиля пользователя",
+                "responses": {
+                    "200": {
+                        "description": "Успешное получение данных профиля",
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler.UserProfileResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Частично обновляет данные профиля текущего пользователя (имя и/или email)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Обновление данных профиля",
+                "parameters": [
+                    {
+                        "description": "Данные для обновления профиля",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler.UserProfileUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Профиль успешно обновлен",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации JSON или нет данных для обновления",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Указанный email уже используется другим пользователем",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/avatar": {
+            "post": {
+                "description": "Загружает и обновляет аватар текущего авторизованного пользователя. Принимает multipart/form-data с полем 'avatar'.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Обновление аватара пользователя",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Файл аватара (WEBP/JPG/JPEG/PNG, до 5МБ)",
+                        "name": "avatar",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Аватар успешно обновлен",
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler.UpdateAvatarResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка запроса (файл слишком большой, неверный формат или отсутствует)",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Удаляет аватар текущего авторизованного пользователя и устанавливает аватар по умолчанию.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Удаление аватара пользователя",
+                "responses": {
+                    "200": {
+                        "description": "Аватар успешно удален",
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler.UpdateAvatarResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/cards": {
+            "get": {
+                "description": "Возвращает список всех привязанных банковских карт пользователя",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile",
+                    "payments"
+                ],
+                "summary": "Получение сохраненных карт",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_internal_domain.PaymentMethod"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не авторизован",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/cards/bind": {
+            "post": {
+                "description": "Создает запрос на привязку банковской карты пользователя и возвращает URL для подтверждения в ЮKassa",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile",
+                    "payments"
+                ],
+                "summary": "Инициализация привязки карты",
+                "responses": {
+                    "200": {
+                        "description": "URL для подтверждения привязки",
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler.BindingResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не авторизован",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/cards/{id}": {
+            "delete": {
+                "description": "Удаляет привязанную карту из профиля",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile",
+                    "payments"
+                ],
+                "summary": "Удаление карты",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID карты",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Пользователь не авторизован",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Карта не найдена",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -210,7 +678,48 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное получение списка ресторанов",
                         "schema": {
-                            "$ref": "#/definitions/handler.RestaurantBrandsResponse"
+                            "$ref": "#/definitions/internal_delivery_handler.RestaurantBrandsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/webhooks/yookassa": {
+            "post": {
+                "description": "Обрабатывает асинхронные уведомления от ЮKassa (например, об успешной привязке платежного метода)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payments",
+                    "webhooks"
+                ],
+                "summary": "Вебхук ЮKassa",
+                "parameters": [
+                    {
+                        "description": "Данные уведомления от ЮKassa",
+                        "name": "notification",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookNotification"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Неверный формат данных",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -218,7 +727,147 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "handler.LoginRequest": {
+        "github_com_go-park-mail-ru_2026_1_NaNcats_internal_domain.PaymentMethod": {
+            "type": "object",
+            "properties": {
+                "card_type": {
+                    "type": "string",
+                    "example": "Mir"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_default": {
+                    "type": "boolean"
+                },
+                "issuer_name": {
+                    "type": "string",
+                    "example": "Sber"
+                },
+                "last4": {
+                    "type": "string",
+                    "example": "6767"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookNotification": {
+            "type": "object",
+            "properties": {
+                "event": {
+                    "type": "string"
+                },
+                "object": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 400
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Неверный формат запроса"
+                }
+            }
+        },
+        "internal_delivery_handler.BindingResponse": {
+            "type": "object",
+            "properties": {
+                "confirmation_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_delivery_handler.CartItemDTO": {
+            "type": "object",
+            "properties": {
+                "dish_id": {
+                    "type": "integer"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_delivery_handler.CartRequest": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_delivery_handler.CartItemDTO"
+                    }
+                },
+                "restaurant_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_delivery_handler.CartResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_delivery_handler.CartItemDTO"
+                    }
+                },
+                "restaurant_id": {
+                    "type": "integer"
+                },
+                "total_cost": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_delivery_handler.CreateOrderRequest": {
+            "type": "object",
+            "properties": {
+                "address_id": {
+                    "type": "string"
+                },
+                "branch_id": {
+                    "type": "integer"
+                },
+                "payment_method_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_delivery_handler.CreateOrderResponse": {
+            "type": "object",
+            "properties": {
+                "confirmation_url": {
+                    "type": "string"
+                },
+                "order_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_delivery_handler.LoginRequest": {
             "type": "object",
             "properties": {
                 "login": {
@@ -233,18 +882,13 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.LoginResponse": {
+        "internal_delivery_handler.LoginResponse": {
             "type": "object",
             "properties": {
                 "avatar_url": {
                     "description": "URL аватарки пользователя",
                     "type": "string",
                     "example": "users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"
-                },
-                "id": {
-                    "description": "Уникальный ID пользователя в системе",
-                    "type": "string",
-                    "example": "1"
                 },
                 "name": {
                     "description": "Имя для отображения в интерфейсе",
@@ -253,7 +897,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.RegisterRequest": {
+        "internal_delivery_handler.RegisterRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -273,7 +917,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.RegisterResponse": {
+        "internal_delivery_handler.RegisterResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -286,11 +930,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "user@mail.ru"
                 },
-                "id": {
-                    "description": "Уникальный ID пользователя в системе",
-                    "type": "string",
-                    "example": "1"
-                },
                 "name": {
                     "description": "Имя для отображения в интерфейсе",
                     "type": "string",
@@ -298,7 +937,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.RestaurantBrandResponse": {
+        "internal_delivery_handler.RestaurantBrandResponse": {
             "type": "object",
             "properties": {
                 "banner_url": {
@@ -327,27 +966,55 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.RestaurantBrandsResponse": {
+        "internal_delivery_handler.RestaurantBrandsResponse": {
             "type": "object",
             "properties": {
                 "restaurants": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/handler.RestaurantBrandResponse"
+                        "$ref": "#/definitions/internal_delivery_handler.RestaurantBrandResponse"
                     }
                 }
             }
         },
-        "response.ErrorResponse": {
+        "internal_delivery_handler.UpdateAvatarResponse": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 400
+                "avatar_url": {
+                    "type": "string"
                 },
                 "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_delivery_handler.UserProfileResponse": {
+            "type": "object",
+            "properties": {
+                "avatar_url": {
                     "type": "string",
-                    "example": "Неверный формат запроса"
+                    "example": "users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "terminator2007@gmail.com"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Илья"
+                }
+            }
+        },
+        "internal_delivery_handler.UserProfileUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "new_mail@gmail.com"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Андрей"
                 }
             }
         }

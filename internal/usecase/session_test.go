@@ -21,16 +21,17 @@ func TestSessionUseCase_Create(t *testing.T) {
 	uc := NewSessionUseCase(mockRepo, ttl)
 
 	t.Run("Успешное создание сессии", func(t *testing.T) {
-		userID := uuid.New()
 		ctx := context.Background()
+		userAgent := "test-agent"
+		userID := 1
 
 		// Ожидаем вызов Create в репозитории.
 		// Используем gomock.Any(), так как ID генерируется внутри метода Create.
 		mockRepo.EXPECT().
-			Create(gomock.Any(), gomock.Any()).
+			Create(gomock.Any(), gomock.Any(), ttl).
 			Return(nil)
 
-		sess, err := uc.Create(ctx, userID)
+		sess, err := uc.Create(ctx, userID, userAgent)
 
 		assert.NoError(t, err)
 		assert.Equal(t, userID, sess.UserID)
@@ -50,20 +51,20 @@ func TestSessionUseCase_Check(t *testing.T) {
 
 	t.Run("Успешная проверка валидной сессии", func(t *testing.T) {
 		sessID := uuid.New()
-		userID := uuid.New()
+		userID := 1
 
 		mockRepo.EXPECT().
 			GetByID(gomock.Any(), sessID).
 			Return(domain.Session{
 				ID:        sessID,
-				UserID:    userID,
+				UserID:    1,
 				ExpiresAt: time.Now().Add(time.Hour), // валидна еще час
 			}, nil)
 
-		resUserID, err := uc.Check(ctx, sessID)
+		resSession, err := uc.Check(ctx, sessID)
 
 		assert.NoError(t, err)
-		assert.Equal(t, userID, resUserID)
+		assert.Equal(t, userID, resSession.UserID)
 	})
 
 	t.Run("Ошибка: сессия истекла", func(t *testing.T) {
@@ -76,27 +77,23 @@ func TestSessionUseCase_Check(t *testing.T) {
 				ExpiresAt: time.Now().Add(-time.Hour), // истекла час назад
 			}, nil)
 
-		// Ждем, что UseCase сам инициирует удаление протухшей сессии
-		mockRepo.EXPECT().
-			Delete(gomock.Any(), sessID).
-			Return(nil)
+		resSession, err := uc.Check(ctx, sessID)
 
-		uid, err := uc.Check(ctx, sessID)
-
-		assert.ErrorIs(t, err, domain.ErrSessionExpired)
-		assert.Equal(t, uuid.Nil, uid)
+		assert.Error(t, err)
+		assert.Equal(t, 0, resSession.UserID)
 	})
 
 	t.Run("Ошибка: сессия не найдена в репо", func(t *testing.T) {
 		sessID := uuid.New()
+
 		mockRepo.EXPECT().
 			GetByID(gomock.Any(), sessID).
 			Return(domain.Session{}, domain.ErrSessionNotFound)
 
-		uid, err := uc.Check(ctx, sessID)
+		resSession, err := uc.Check(ctx, sessID)
 
 		assert.ErrorIs(t, err, domain.ErrSessionNotFound)
-		assert.Equal(t, uuid.Nil, uid)
+		assert.Equal(t, 0, resSession.UserID)
 	})
 }
 

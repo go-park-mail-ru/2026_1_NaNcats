@@ -1,8 +1,9 @@
 package handler
 
+//go:generate easyjson $GOFILE
+
 import (
 	"errors"
-	"log"
 	"net/http"
 	"time"
 
@@ -11,23 +12,27 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/validatorutil"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
 
 // DTO запроса на регистрацию
+//
+//easyjson:json
 type RegisterRequest struct {
 	// Имя пользователя
 	Name string `json:"name" example:"Иван"`
 	// Email пользователя
 	Email string `json:"email" example:"user@mail.ru"`
 	// Пароль в открытом виде
-	Password string `json:"password" example:"qwerty12345"`
+	Password string `json:"password" example:"qwerty12345" validate:"min=8,max=128"`
 }
 
 // DTO отправки сведений о пользователе при регистрации
+//
+//easyjson:json
 type RegisterResponse struct {
-	// Уникальный ID пользователя в системе
-	ID uuid.UUID `json:"id" example:"1"`
 	// Имя для отображения в интерфейсе
 	Name string `json:"name" example:"Иван"`
 	// Email пользователя
@@ -37,17 +42,19 @@ type RegisterResponse struct {
 }
 
 // LoginRequest - DTO для входящего запроса на авторизацию
+//
+//easyjson:json
 type LoginRequest struct {
 	// Email пользователя
 	Login string `json:"login" example:"user@mail.ru"`
 	// Пароль в открытом виде
-	Password string `json:"password" example:"qwerty12345"`
+	Password string `json:"password" example:"qwerty12345" validate:"min=8,max=128"`
 }
 
 // LoginResponse - DTO для ответа при успешном входе
+//
+//easyjson:json
 type LoginResponse struct {
-	// Уникальный ID пользователя в системе
-	ID uuid.UUID `json:"id" example:"1"`
 	// Имя для отображения в интерфейсе
 	Name string `json:"name" example:"Иван"`
 	// URL аватарки пользователя
@@ -56,13 +63,19 @@ type LoginResponse struct {
 
 // структура хендлера авторизации
 type authHandler struct {
-	authUC usecase.AuthUseCase
+	authUC   usecase.AuthUseCase
+	userUC   usecase.UserUseCase
+	logger   domain.Logger
+	validate *validator.Validate
 }
 
 // функция-конструтор хендлера
-func NewAuthHandler(auc usecase.AuthUseCase) *authHandler {
+func NewAuthHandler(auc usecase.AuthUseCase, uuc usecase.UserUseCase, logger domain.Logger, v *validator.Validate) *authHandler {
 	return &authHandler{
-		authUC: auc,
+		authUC:   auc,
+		userUC:   uuc,
+		logger:   logger,
+		validate: v,
 	}
 }
 
@@ -79,6 +92,12 @@ func NewAuthHandler(auc usecase.AuthUseCase) *authHandler {
 // @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
 // @Router			/auth/register [post]
 func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
+	// контекст нынешнего запроса, позволяет досрочно завершить бизнес-логику
+	// если пользователь отключится/отменит загрузку запроса
+	ctx := r.Context()
+
+	l := h.logger.WithContext(ctx)
+
 	// объект DTO запроса
 	curRequest := RegisterRequest{}
 
@@ -89,6 +108,13 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err = h.validate.Struct(curRequest); err != nil {
+		errMsg := validatorutil.FormatValidationError(err)
+		l.Warn("validation failed", map[string]any{"error": errMsg})
+		response.Error(w, http.StatusBadRequest, errMsg)
+		return
+	}
+
 	// структура, в которую кладем данные создаваемого юзера из запроса
 	userToCreate := domain.User{
 		Name:         curRequest.Name,
@@ -96,35 +122,46 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 		PasswordHash: curRequest.Password,
 	}
 
-	// контекст нынешнего запроса, позволяет досрочно завершить бизнес-логику
-	// если пользователь отключится/отменит загрузку запроса
-	ctx := r.Context()
+	userAgent := r.UserAgent()
 
-	createdUser, createdSession, err := h.authUC.Register(ctx, userToCreate)
+	createdUser, createdSession, err := h.authUC.Register(ctx, userToCreate, userAgent)
 	if err != nil {
 		switch {
 		// Клиентские ошибки (400 Bad Request)
 		case errors.Is(err, domain.ErrInvalidEmail), errors.Is(err, domain.ErrInvalidPassword):
+			l.Warn("registration validation failed", map[string]any{
+				"email": curRequest.Email,
+				"error": err.Error(),
+			})
 			response.Error(w, http.StatusBadRequest, err.Error())
 
 		// Ошибка конфликта (409 Conflict)
 		case errors.Is(err, domain.ErrEmailAlreadyExists):
+			l.Info("registration conflict: email already exists", map[string]any{
+				"email": curRequest.Email,
+			})
 			response.Error(w, http.StatusConflict, err.Error())
 
 		// Системные ошибки (500 Internal Server Error)
 		default:
-			// Мы пишем подробности в лог, но клиенту отдаем общую фразу
-			log.Printf("[ERROR] Register failed: %v", err)
+			l.Error("registration failed unexpectedly", err, map[string]any{
+				"email": curRequest.Email,
+			})
 			response.Error(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
 	}
 
+	// успех
+	l.Info("user registered successfully", map[string]any{
+		"user_id": createdUser.ID,
+		"email":   createdUser.Email,
+	})
+
 	response.SetCookie(w, "session_id", createdSession.ID.String(), createdSession.ExpiresAt)
 
 	// ответ, который отдаем юзеру
 	resp := RegisterResponse{
-		ID:        createdUser.ID,
 		Name:      createdUser.Name,
 		Email:     createdUser.Email,
 		CreatedAt: createdUser.CreatedAt,
@@ -146,11 +183,23 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 // @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
 // @Router			/auth/login [post]
 func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	l := h.logger.WithContext(ctx)
+
 	curRequest := LoginRequest{}
 
 	err := request.JSON(r, &curRequest)
 	if err != nil {
+		l.Warn("failed to decode login request", map[string]any{"error": err.Error()})
 		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err = h.validate.Struct(curRequest); err != nil {
+		errMsg := validatorutil.FormatValidationError(err)
+		l.Warn("validation failed", map[string]any{"error": errMsg})
+		response.Error(w, http.StatusBadRequest, errMsg)
 		return
 	}
 
@@ -159,27 +208,33 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 		PasswordHash: curRequest.Password,
 	}
 
-	ctx := r.Context()
+	userAgent := r.UserAgent()
 
-	loggedUser, createdSession, err := h.authUC.Login(ctx, userToLogin)
+	loggedUser, createdSession, err := h.authUC.Login(ctx, userToLogin, userAgent)
 	if err != nil {
 		switch {
 		// Ошибка авторизации (401)
 		case errors.Is(err, domain.ErrInvalidCredentials):
+			l.Info("login failed: invalid credentials", map[string]any{"email": curRequest.Login})
 			response.Error(w, http.StatusUnauthorized, "Invalid email or password")
 
 		// Системные ошибки (500)
 		default:
-			log.Printf("[ERROR] Login failed: %v", err)
+			l.Error("login failed unexpectedly", err, map[string]any{"email": curRequest.Login})
 			response.Error(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
 	}
 
+	// Успещный успех
+	l.Info("user logged in successfully", map[string]any{
+		"user_id": loggedUser.ID,
+		"email":   loggedUser.Email,
+	})
+
 	response.SetCookie(w, "session_id", createdSession.ID.String(), createdSession.ExpiresAt)
 
 	resp := LoginResponse{
-		ID:   loggedUser.ID,
 		Name: loggedUser.Name,
 	}
 
@@ -193,30 +248,40 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 // @Accept			json
 // @Produce			json
 // @Success			200		"Успешный выход"
-// @Failure			401		{object}  response.ErrorResponse	"Кука не найдена"
 // @Router			/auth/logout [post]
 func (h *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
+
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		// Если куки нет, пользователь и так "вышел". Возвращаем 200
+		l.Debug("logout: no session cookie found, user already logged out", nil)
 		response.JSON(w, http.StatusOK, nil)
 		return
 	}
 
 	sessionID, err := uuid.Parse(cookie.Value)
-	if err == nil {
-		// Если UUID валидный, пытаемся удалить сессию в бизнес-логике.
-		ctx := r.Context()
+	if err != nil {
+		// Токен кривой. Сессию в базе искать нет смысла,
+		// но мы логируем это, чтобы видеть странную активность
+		l.Warn("logout: invalid session token format", map[string]any{
+			"token_value": cookie.Value,
+		})
+	} else {
+		// Токен валидный, пробуем удалить из хранилища
 		err = h.authUC.Logout(ctx, sessionID)
 		if err != nil {
-			response.Error(w, http.StatusNotFound, "Session not found")
-			return
+			// Даже если сессия не найдена в базе, просто логируем это как Info
+			l.Debug("logout: session not found in database or already expired", map[string]any{
+				"session_id": sessionID.String(),
+			})
 		}
 	}
 
-	// нулевое время в эпохе Unix
-	// в любом случае принудительно удаляем куку у пользователя
 	response.SetCookie(w, "session_id", "", time.Unix(0, 0))
+
+	l.Debug("logout: session cleared", nil)
 	response.JSON(w, http.StatusOK, nil)
 }
 
@@ -233,28 +298,34 @@ func (h *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// берем userID из контекста, который нам пришел из мидлвара AuthMiddleware
-	// Value возвращает any. Используем утверждение типа, чтобы Go знал что это uuid
-	userID, ok := ctx.Value(middleware.UserIDKey).(uuid.UUID)
-	// если там не int или nil
-	if !ok {
-		log.Printf("[ERROR] GetMe called without AuthMiddleware")
+	l := h.logger.WithContext(ctx)
+
+	userID, err := middleware.GetUserID(ctx)
+
+	if err != nil {
+		l.Error("auth middleware missed userID in route", err, nil)
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
-	loggedUser, err := h.authUC.GetProfile(ctx, userID)
+	loggedUser, err := h.userUC.GetByID(ctx, userID)
 	if err != nil {
 		// Если мидлваря пропустила сессию, значит юзер в базе точно должен быть
 		// Если его нет - это системная проблема или критический сбой
-		log.Printf("[ERROR] GetProfile failed for user %v: %v", userID, err)
+		l.Error("get profile failed", err, map[string]any{
+			"user_id": userID,
+		})
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
+	l.Debug("profile retrieved successfully", map[string]any{
+		"user_id": loggedUser.ID,
+	})
+
 	resp := LoginResponse{
-		ID:   loggedUser.ID,
-		Name: loggedUser.Name,
+		Name:      loggedUser.Name,
+		AvatarURL: loggedUser.AvatarURL,
 	}
 
 	response.JSON(w, http.StatusOK, resp)

@@ -1,11 +1,15 @@
 package request
 
+//go:generate easyjson $GOFILE
+
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/mailru/easyjson"
 )
 
 // ошибки для данного файла
@@ -22,6 +26,22 @@ func JSON(r *http.Request, v any) error {
 	const maxBodySize = 1024 * 1024
 	// обертка над телом запроса, ограничивает количество байт, которые можно прочитать
 	r.Body = http.MaxBytesReader(nil, r.Body, maxBodySize)
+
+	if m, ok := v.(easyjson.Unmarshaler); ok {
+		if err := easyjson.UnmarshalFromReader(r.Body, m); err != nil {
+			if errors.Is(err, io.EOF) {
+				return ErrEmptyBody
+			}
+
+			var maxBytesError *http.MaxBytesError
+			if errors.As(err, &maxBytesError) {
+				return ErrBodyTooLarge
+			}
+			return fmt.Errorf("%w: %v", ErrInvalidJSON, err)
+		}
+
+		return nil
+	}
 
 	// создает объект-декодер, который читает данные напрямую из потока (r.Body) по частям
 	decoder := json.NewDecoder(r.Body)
