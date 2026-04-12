@@ -34,6 +34,18 @@ func NewAddressHandler(u usecase.AddressUseCase, l domain.Logger) *addressHandle
 	return &addressHandler{usecase: u, logger: l}
 }
 
+// AddAddress godoc
+// @Summary 		Добавление нового адреса
+// @Description		Создает новую запись адреса для текущего пользователя
+// @Tags			profile
+// @Accept			json
+// @Produce			json
+// @Param			input	body	  AddressRequest	true	"Данные адреса"
+// @Success			201		{object}  map[string]string			"Успешное создание (возвращает public_id)"
+// @Failure			400		{object}  response.ErrorResponse	"Ошибка в формате запроса"
+// @Failure			401		{object}  response.ErrorResponse	"Неавторизован"
+// @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
+// @Router			/profile/addresses [post]
 func (h *addressHandler) AddAddress(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
@@ -78,6 +90,15 @@ func (h *addressHandler) AddAddress(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusCreated, map[string]string{"id": id})
 }
 
+// GetAddresses godoc
+// @Summary 		Получение списка адресов
+// @Description		Возвращает все сохраненные адреса текущего пользователя
+// @Tags			profile
+// @Produce			json
+// @Success			200		{object}  map[string][]domain.Address	"Список адресов пользователя"
+// @Failure			401		{object}  response.ErrorResponse		"Неавторизован"
+// @Failure			500		{object}  response.ErrorResponse		"Внутренняя ошибка сервера"
+// @Router			/profile/addresses [get]
 func (h *addressHandler) GetAddresses(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
@@ -101,6 +122,15 @@ func (h *addressHandler) GetAddresses(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, map[string]any{"addresses": addresses})
 }
 
+// DeleteAddress godoc
+// @Summary 		Удаление адреса
+// @Description		Удаляет адрес пользователя по его ID
+// @Tags			profile
+// @Param			id		path	  string	true	"Public ID адреса"
+// @Success			200		{object}  map[string]string			"Адрес успешно удален"
+// @Failure			401		{object}  response.ErrorResponse	"Неавторизован"
+// @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
+// @Router			/profile/addresses/{id} [delete]
 func (h *addressHandler) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
@@ -124,6 +154,19 @@ func (h *addressHandler) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, map[string]string{"message": "deleted"})
 }
 
+// UpdateAddress godoc
+// @Summary 		Обновление адреса
+// @Description		Изменяет данные существующего адреса пользователя
+// @Tags			profile
+// @Accept			json
+// @Produce			json
+// @Param			id		path	  string			true	"Public ID адреса"
+// @Param			input	body	  AddressRequest	true	"Новые данные адреса"
+// @Success			200		{object}  map[string]string			"Адрес успешно обновлен"
+// @Failure			400		{object}  response.ErrorResponse	"Ошибка в формате запроса"
+// @Failure			401		{object}  response.ErrorResponse	"Неавторизован"
+// @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
+// @Router			/profile/addresses/{id} [patch]
 func (h *addressHandler) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
