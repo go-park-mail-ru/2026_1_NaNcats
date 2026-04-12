@@ -77,3 +77,20 @@ func (r *restaurantBrandRepo) GetRestaurantBrandsList(ctx context.Context, limit
 
 	return domainRestaurantBrands, nil
 }
+
+func (r *restaurantBrandRepo) GetByID(ctx context.Context, id int) (domain.RestaurantBrand, error) {
+	query := `
+		SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at
+		FROM "restaurant_brand"
+		WHERE id = $1;
+	`
+	var rb restaurantBrandDB
+	err := r.pool.QueryRow(ctx, query, id).Scan(
+		&rb.ID, &rb.OwnerProfileID, &rb.Name, &rb.Description, 
+		&rb.PromotionTier, &rb.LogoURL, &rb.CreatedAt, &rb.UpdatedAt,
+	)
+	if err != nil {
+		return domain.RestaurantBrand{}, err
+	}
+	return rb.toDomain(), nil
+}

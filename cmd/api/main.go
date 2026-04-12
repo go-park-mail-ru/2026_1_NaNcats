@@ -179,6 +179,7 @@ func main() {
 
 	mux.HandleFunc("GET /api/restaurants/brands", restaurantBrandHandler.GetRestaurantBrandsList)
 	mux.HandleFunc("GET /api/restaurants/brands/{id}/dishes", dishHandler.GetDishesByRestaurantBrandID)
+	mux.HandleFunc("GET /api/restaurants/brands/{id}", restaurantBrandHandler.GetRestaurantBrandByID)
 
 	mux.Handle("GET /api/profile", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.GetUserProfile)))
 	mux.Handle("PATCH /api/profile", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.UpdateProfile)))

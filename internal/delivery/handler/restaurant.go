@@ -124,3 +124,25 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 
 	response.JSON(w, http.StatusOK, resp)
 }
+
+func (h *restaurantBrandHandler) GetRestaurantBrandByID(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	idStr := r.PathValue("id")
+	id, _ := strconv.Atoi(idStr)
+
+	brand, err := h.restaurantBrandUC.GetRestaurantBrandByID(ctx, id)
+	if err != nil {
+		response.Error(w, http.StatusNotFound, "Restaurant not found")
+		return
+	}
+
+    logo := brand.LogoURL
+    if logo == "" { logo = "/api/images/default/logo.png" } else { logo = "/api/images/" + logo }
+
+	response.JSON(w, http.StatusOK, RestaurantBrandResponse{
+		ID:          strconv.Itoa(brand.ID),
+		Name:        brand.Name,
+		Description: brand.Description,
+		LogoURL:     logo,
+	})
+}
