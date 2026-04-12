@@ -159,6 +159,7 @@ func main() {
 	addressHandler := handler.NewAddressHandler(addressUC, appLogger)
 	orderHandler := handler.NewOrderHandler(orderUC, appLogger)
 	dishHandler := handler.NewDishHandler(dishUC, appLogger)
+	cartHandler := handler.NewCartHandler(cartUC, appLogger)
 
 	authMW := middleware.NewAuthMiddleware(sessionUC, appLogger)
 	corsMW := middleware.NewCORSMiddleware([]string{
@@ -197,6 +198,9 @@ func main() {
 	mux.Handle("POST /api/orders", authMW.RequireAuth(http.HandlerFunc(orderHandler.CreateOrder)))
 
 	mux.Handle("POST /api/webhooks/yookassa", http.HandlerFunc(paymentHandler.YookassaWebhook))
+
+	mux.Handle("GET /api/cart", authMW.RequireAuth(http.HandlerFunc(cartHandler.GetCart)))
+	mux.Handle("PUT /api/cart", authMW.RequireAuth(http.HandlerFunc(cartHandler.UpdateCart)))
 
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 

@@ -81,35 +81,46 @@ func (r *cartRepo) GetCartByUserID(ctx context.Context, userID int) (domain.Cart
 }
 
 func (r *cartRepo) UpdateCart(ctx context.Context, userID int, resID int, items []domain.CartItem) error {
-	if len(items) == 0 {
-		// Если товаров нет, удаляем все
-		_, err := r.pool.Exec(ctx, `DELETE FROM cart_dish WHERE cart_id = $1`, userID)
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, `
+		INSERT INTO cart (client_account_id, restaurant_brand_id, updated_at)
+		VALUES ($1, $2, NOW())
+		ON CONFLICT (client_account_id) 
+		DO UPDATE SET restaurant_brand_id = $2, updated_at = NOW()`,
+		userID, resID)
+	if err != nil {
 		return err
 	}
 
-	dishIDs := make([]int, len(items))
-	quantities := make([]int, len(items))
-	for i, item := range items {
-		dishIDs[i] = item.DishID
-		quantities[i] = item.Quantity
+	_, err = tx.Exec(ctx, `DELETE FROM cart_dish WHERE cart_id = $1`, userID)
+	if err != nil {
+		return err
 	}
 
-	query := `
-		WITH up_cart AS (
-			INSERT INTO cart (client_account_id, restaurant_brand_id, updated_at)
-			VALUES ($1, $2, NOW())
-			ON CONFLICT (client_account_id) DO UPDATE SET restaurant_brand_id = $2, updated_at = NOW()
-			RETURNING client_account_id
-		),
-		del_dishes AS (
-			DELETE FROM cart_dish WHERE cart_id = $1
-		)
-		INSERT INTO cart_dish (cart_id, dish_id, quantity)
-		SELECT $1, unnest($3::int[]), unnest($4::int[])
-	`
+	if len(items) > 0 {
+		dishIDs := make([]int, len(items))
+		quantities := make([]int, len(items))
+		for i, item := range items {
+			dishIDs[i] = item.DishID
+			quantities[i] = item.Quantity
+		}
 
-	_, err := r.pool.Exec(ctx, query, userID, resID, dishIDs, quantities)
-	return err
+		query := `
+			INSERT INTO cart_dish (cart_id, dish_id, quantity)
+			SELECT $1, unnest($2::int[]), unnest($3::int[])
+		`
+		_, err = tx.Exec(ctx, query, userID, dishIDs, quantities)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit(ctx)
 }
 
 func (r *cartRepo) ClearCart(ctx context.Context, userId int) error {
