@@ -26,25 +26,14 @@ func NewUserRepo(pool PgxPool) repository.UserRepository {
 func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (int, error) {
 	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
 
-	tx, err := r.pool.Begin(ctx)
-	if err != nil {
-		return 0, err
-	}
-	defer tx.Rollback(ctx)
-
-	userQuery := `
+	query := `
 		INSERT INTO "user" (name, email, password_hash, user_role)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id;
 	`
 
-	clientProfileRepo := `
-		INSERT INTO "client_profile" (account_id)
-		VALUES ($1);
-	`
-
 	var lastInsertedID int
-	err = tx.QueryRow(ctx, userQuery,
+	err := r.pool.QueryRow(ctx, query,
 		user.Name,
 		user.Email,
 		user.PasswordHash,
@@ -56,16 +45,6 @@ func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (int, error
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation { // проверка на уникальность
 			return 0, domain.ErrEmailAlreadyExists
 		}
-		return 0, err
-	}
-
-	_, err = tx.Exec(ctx, clientProfileRepo, lastInsertedID)
-	if err != nil {
-		return 0, err
-	}
-
-	err = tx.Commit(ctx)
-	if err != nil {
 		return 0, err
 	}
 
