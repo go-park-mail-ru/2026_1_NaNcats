@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/password"
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // контракт бизнес-логики авторизации
@@ -24,16 +24,16 @@ type AuthUseCase interface {
 
 // реализация контракта
 type authUseCase struct {
-	userUC    UserUseCase
-	sessionUC SessionUseCase
+	userUC          UserUseCase
+	sessionUC       SessionUseCase
 	clientProfileUC ClientProfileUseCase
 }
 
 // функция-конструктор бизнес-логики авторизации
 func NewAuthUseCase(uuc UserUseCase, suc SessionUseCase, cpuc ClientProfileUseCase) AuthUseCase {
 	return &authUseCase{
-		userUC:    uuc,
-		sessionUC: suc,
+		userUC:          uuc,
+		sessionUC:       suc,
 		clientProfileUC: cpuc,
 	}
 }
@@ -77,12 +77,8 @@ func (u *authUseCase) Register(ctx context.Context, user domain.User, userAgent 
 		return domain.User{}, domain.Session{}, domain.ErrInvalidEmail
 	}
 
-	if len(user.PasswordHash) < 8 {
-		return domain.User{}, domain.Session{}, domain.ErrInvalidPassword
-	}
-
 	// генерируем хешированный пароль
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.PasswordHash), bcrypt.DefaultCost)
+	hashedPassword, err := password.HashPassword(user.PasswordHash, password.DefaultParams)
 	if err != nil {
 		return domain.User{}, domain.Session{}, fmt.Errorf("bcrypt failed: %w", err)
 	}
@@ -123,8 +119,8 @@ func (u *authUseCase) Login(ctx context.Context, user domain.User, userAgent str
 		return domain.User{}, domain.Session{}, domain.ErrInvalidCredentials
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(currUser.PasswordHash), []byte(user.PasswordHash))
-	if err != nil {
+	isValid, err := password.VerifyPassword(user.PasswordHash, currUser.PasswordHash)
+	if err != nil || !isValid {
 		return domain.User{}, domain.Session{}, domain.ErrInvalidCredentials
 	}
 

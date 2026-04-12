@@ -18,6 +18,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/api_clients/yookassa"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
+	"github.com/go-playground/validator/v10"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/gomodule/redigo/redis"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -58,6 +59,7 @@ func main() {
 	appLogger := infrastructureLogger.NewLoggerAdapter(rawLogger)
 
 	ctx := context.Background()
+	validate := validator.New()
 
 	redisURL := os.Getenv("REDIS_URL")
 	if redisURL == "" {
@@ -152,7 +154,7 @@ func main() {
 		appLogger.Warn("DEFAULT_AVATAR_URL пустой, фронтенд может упасть при запросе стандартного аватара", map[string]any{})
 	}
 
-	authHandler := handler.NewAuthHandler(authUC, userUC, appLogger)
+	authHandler := handler.NewAuthHandler(authUC, userUC, appLogger, validate)
 	restaurantBrandHandler := handler.NewRestaurantBrandHandler(restaurantBrandUC, appLogger)
 	userProfileHandler := handler.NewUserProfileHandler(userProfileUC, userUC, sessionUC, appLogger, defaultAvatarURL)
 	paymentHandler := handler.NewPaymentHandler(paymentUC, appLogger)
