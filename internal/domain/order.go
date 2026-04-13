@@ -28,4 +28,7 @@ type CreateOrderInput struct {
 	AddressPublicID    string
 	RestaurantBranchID int
 	PaymentMethodID    string
+	DeliveryCost       int64
+	ServiceFee         int64
+	TotalCost          int64
 }

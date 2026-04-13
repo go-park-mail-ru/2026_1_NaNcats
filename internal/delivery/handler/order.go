@@ -18,6 +18,9 @@ type CreateOrderRequest struct {
 	AddressID          string `json:"address_id"`
 	RestaurantBranchID int    `json:"branch_id"`
 	PaymentMethodID    string `json:"payment_method_id,omitempty"`
+	DeliveryCost       int64  `json:"delivery_cost"`
+	ServiceFee         int64  `json:"service_fee"`
+	TotalCost          int64  `json:"total_cost"`
 }
 
 //easyjson:json
@@ -90,6 +93,9 @@ func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		AddressPublicID:    req.AddressID,
 		RestaurantBranchID: req.RestaurantBranchID,
 		PaymentMethodID:    req.PaymentMethodID,
+		DeliveryCost:       req.DeliveryCost,
+		ServiceFee:         req.ServiceFee,
+		TotalCost:          req.TotalCost,
 	}
 
 	orderPublicID, confirmationURL, err := h.orderUC.CreateOrder(ctx, userID, input)

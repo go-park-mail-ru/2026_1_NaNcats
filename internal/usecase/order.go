@@ -34,7 +34,8 @@ func NewOrderUseCase(or repository.OrderRepository, ar repository.AddressReposit
 }
 
 func (o *orderUseCase) CreateOrder(ctx context.Context, userID int, req domain.CreateOrderInput) (string, string, error) {
-	cart, totalCost, err := o.cartUC.GetCart(ctx, userID)
+	// 1. Получаем стоимость ТОЛЬКО товаров в корзине
+	cart, cartTotalCost, err := o.cartUC.GetCart(ctx, userID)
 	if err != nil {
 		return "", "", err
 	}
@@ -53,11 +54,13 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, userID int, req domain.C
 		})
 	}
 
+	finalTotalCost := cartTotalCost + req.DeliveryCost + req.ServiceFee
+
 	order := domain.Order{
 		ClientID:           userID,
 		RestaurantBranchID: req.RestaurantBranchID,
 		ClientAddressID:    clientAddressID,
-		TotalCost:          totalCost,
+		TotalCost:          finalTotalCost,
 		Status:             "in_progress",
 		Items:              items,
 	}
@@ -67,8 +70,8 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, userID int, req domain.C
 		return "", "", err
 	}
 
-	rubles := totalCost / 1_000_000
-	kopecks := (totalCost%1_000_000)/10_000 + 100
+	rubles := finalTotalCost / 1_000_000
+	kopecks := (finalTotalCost%1_000_000)/10_000 + 100
 	value := strconv.FormatInt(rubles, 10) + "." + strconv.FormatInt(kopecks, 10)[1:]
 
 	paymentRequest := yookassa.CreatePaymentRequest{
