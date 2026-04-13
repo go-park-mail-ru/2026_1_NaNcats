@@ -174,6 +174,7 @@ func main() {
 	csrfMid := middleware.NewCSRFMiddleware(sessionUC, appLogger)
 	corsMW := middleware.NewCORSMiddleware([]string{
 		"http://localhost:2033",
+		"https://localhost:2033",
 	})
 	requestIDMW := middleware.NewRequestIDMiddleware()
 	loggingMW := middleware.NewLoggingMiddleware(appLogger)
