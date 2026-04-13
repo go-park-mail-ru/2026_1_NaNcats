@@ -53,7 +53,7 @@ func (r *addressRepo) GetAddressesByUserID(ctx context.Context, userID int) ([]d
 			   COALESCE(a.door_code, ''), COALESCE(a.courier_comment, ''), COALESCE(a.label, '')
 		FROM "client_address" a
 		JOIN "location" l ON a.location_id = l.id
-		WHERE a.client_account_id = $1
+		WHERE a.client_account_id = $1 AND a.is_active = true
 		ORDER BY a.created_at DESC;`
 
 	rows, err := r.pool.Query(ctx, query, userID)
@@ -78,7 +78,13 @@ func (r *addressRepo) GetAddressesByUserID(ctx context.Context, userID int) ([]d
 }
 
 func (r *addressRepo) DeleteAddress(ctx context.Context, userID int, publicID string) error {
-	res, err := r.pool.Exec(ctx, `DELETE FROM "client_address" WHERE public_id = $1 AND client_account_id = $2`, publicID, userID)
+	query := `
+		UPDATE "client_address"
+		SET is_active = false
+		WHERE public_id = $1 AND client_account_id = $2
+	`
+
+	res, err := r.pool.Exec(ctx, query, publicID, userID)
 	if err != nil {
 		return err
 	}
@@ -104,7 +110,7 @@ func (r *addressRepo) UpdateAddress(ctx context.Context, userID int, addr domain
 			SELECT location_id 
 			FROM "client_address" 
 			WHERE public_id = $4 AND client_account_id = $5
-		)`
+		);`
 
 	_, err = tx.Exec(ctx, queryLoc,
 		addr.Location.AddressText,
@@ -125,7 +131,7 @@ func (r *addressRepo) UpdateAddress(ctx context.Context, userID int, addr domain
 		    door_code = $4, 
 		    courier_comment = $5, 
 		    label = $6
-		WHERE public_id = $7 AND client_account_id = $8`
+		WHERE public_id = $7 AND client_account_id = $8;`
 
 	result, err := tx.Exec(ctx, queryAddr,
 		addr.Apartment,
@@ -151,7 +157,7 @@ func (r *addressRepo) UpdateAddress(ctx context.Context, userID int, addr domain
 func (r *addressRepo) GetInternalIDByPublicID(ctx context.Context, userID int, publicID string) (int, error) {
 	query := `
 		SELECT id FROM "client_address"
-		WHERE public_id = $1 AND client_account_id = $2
+		WHERE public_id = $1 AND client_account_id = $2;
 	`
 
 	var internalID int

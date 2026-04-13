@@ -218,6 +218,8 @@ CREATE TABLE "client_address" (
 		CHECK (char_length(courier_comment) <= 255),
 	label TEXT
 		CHECK (char_length(label) <= 60),
+
+	is_active BOOLEAN DEFAULT true NOT NULL,
 		
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
