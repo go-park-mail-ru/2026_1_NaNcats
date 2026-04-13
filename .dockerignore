@@ -1,0 +1,5 @@
+.git
+coverage.html
+coverage.out
+bin
+.env

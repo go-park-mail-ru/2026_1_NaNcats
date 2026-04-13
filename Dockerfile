@@ -7,10 +7,15 @@ RUN apk add --no-cache curl gcc musl-dev
 RUN curl -L https://github.com/golang-migrate/migrate/releases/download/v4.17.0/migrate.linux-amd64.tar.gz | tar xvz
 
 COPY go.mod go.sum ./
-RUN go mod download
+
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
+
 COPY . .
 
-RUN CGO_ENABLED=1 GOOS=linux go build -o main ./cmd/api
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg/mod \
+    CGO_ENABLED=1 GOOS=linux go build -o main ./cmd/api
 
 FROM alpine:latest
 WORKDIR /app
