@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
@@ -215,6 +216,8 @@ func TestUserProfileHandler_UpdateAvatar(t *testing.T) {
 func TestUserProfileHandler_DeleteAvatar(t *testing.T) {
 	type mockInit func(u *ucMocks.MockUserUseCase)
 
+	defaultURL := os.Getenv("DEFAULT_AVATAR_URL")
+
 	tests := []struct {
 		name           string
 		userID         any
@@ -225,7 +228,7 @@ func TestUserProfileHandler_DeleteAvatar(t *testing.T) {
 			name:   "Успешное удаление аватара",
 			userID: 1,
 			mockInit: func(u *ucMocks.MockUserUseCase) {
-				u.EXPECT().DeleteAvatar(gomock.Any(), 1).Return(nil)
+				u.EXPECT().DeleteAvatar(gomock.Any(), 1).Return(defaultURL, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -233,7 +236,7 @@ func TestUserProfileHandler_DeleteAvatar(t *testing.T) {
 			name:   "Ошибка сервера при удалении",
 			userID: 1,
 			mockInit: func(u *ucMocks.MockUserUseCase) {
-				u.EXPECT().DeleteAvatar(gomock.Any(), 1).Return(errors.New("fail"))
+				u.EXPECT().DeleteAvatar(gomock.Any(), 1).Return("", errors.New("fail"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 		},
