@@ -110,14 +110,14 @@ func (u *userUseCase) UpdateAvatar(ctx context.Context, userID int, file io.Read
 	if err != nil {
 		// если фотка загружена на S3, но по какой-то причине не обновился URL у юзера, то удаляем фотку
 		go func(urlToDelete string) {
-			_ = u.fileStorage.DeleteFile(context.Background(), user.AvatarURL)
+			_ = u.fileStorage.DeleteFile(context.Background(), urlToDelete)
 		}(newAvatarURL)
 		return "", err
 	}
 
 	if user.AvatarURL != "" {
 		go func(urlToDelete string) {
-			_ = u.fileStorage.DeleteFile(context.Background(), user.AvatarURL)
+			_ = u.fileStorage.DeleteFile(context.Background(), urlToDelete)
 		}(user.AvatarURL)
 	}
 
@@ -130,9 +130,11 @@ func (u *userUseCase) DeleteAvatar(ctx context.Context, userID int) (string, err
 		return "", err
 	}
 
-	if user.AvatarURL == "" {
-		return "", nil
+	if user.AvatarURL == u.defaultAvatarURL || user.AvatarURL == "" {
+		return u.defaultAvatarURL, nil
 	}
+
+	urlToDelete := user.AvatarURL
 
 	err = u.userRepo.UpdateAvatarURL(ctx, userID, "")
 	if err != nil {
@@ -140,8 +142,8 @@ func (u *userUseCase) DeleteAvatar(ctx context.Context, userID int) (string, err
 	}
 
 	go func(urlToDelete string) {
-		_ = u.fileStorage.DeleteFile(context.Background(), user.AvatarURL)
-	}(user.AvatarURL)
+		_ = u.fileStorage.DeleteFile(context.Background(), urlToDelete)
+	}(urlToDelete)
 
 	return u.defaultAvatarURL, nil
 }
