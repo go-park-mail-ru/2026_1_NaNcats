@@ -31,11 +31,12 @@ type CreateOrderResponse struct {
 
 //easyjson:json
 type OrderHistoryResponse struct {
-	OrderID        string `json:"order_id"`
-	RestaurantName string `json:"restaurant_name"`
-	TotalCost      int64  `json:"total_cost"`
-	Status         string `json:"status"`
-	CreatedAt      string `json:"created_at"`
+	OrderID            string `json:"order_id"`
+	RestaurantName     string `json:"restaurant_name"`
+	RestaurantImageURL string `json:"restaurant_image_url"`
+	TotalCost          int64  `json:"total_cost"`
+	Status             string `json:"status"`
+	CreatedAt          string `json:"created_at"`
 }
 
 type orderHandler struct {
@@ -146,11 +147,12 @@ func (h *orderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 	resp := make([]OrderHistoryResponse, 0, len(orders))
 	for _, o := range orders {
 		resp = append(resp, OrderHistoryResponse{
-			OrderID:        o.PublicID,
-			RestaurantName: o.PaymentMethodID,
-			TotalCost:      o.TotalCost,
-			Status:         o.Status,
-			CreatedAt:      o.CreatedAt.Format("02.01.2006"),
+			OrderID:            o.PublicID,
+			RestaurantName:     o.PaymentMethodID,
+			RestaurantImageURL: o.RestaurantLogoURL,
+			TotalCost:          o.TotalCost,
+			Status:             o.Status,
+			CreatedAt:          o.CreatedAt.Format("02.01.2006"),
 		})
 	}
 

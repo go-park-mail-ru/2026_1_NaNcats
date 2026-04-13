@@ -15,6 +15,8 @@ type Order struct {
 	YookassaPaymentID  string
 	Items              []OrderDish
 	CreatedAt          time.Time
+	RestaurantName     string
+	RestaurantLogoURL  string
 }
 
 type OrderDish struct {

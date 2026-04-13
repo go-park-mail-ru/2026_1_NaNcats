@@ -153,7 +153,7 @@ func main() {
 	userProfileUC := usecase.NewUserProfileUseCase(userUC)
 	cartUC := usecase.NewCartUseCase(cartRepo, dishRepo, defaultFoodLogoURL)
 	dishUC := usecase.NewDishUseCase(dishRepo, defaultFoodLogoURL)
-	orderUC := usecase.NewOrderUseCase(orderRepo, addressRepo, cartUC, yookassaClient)
+	orderUC := usecase.NewOrderUseCase(orderRepo, addressRepo, cartUC, yookassaClient, defaultRestaurantLogoURL)
 	paymentUC := usecase.NewPaymentUseCase(paymentRepo, paymentCacheRepo, orderRepo, yookassaClient, returnURL)
 	addressUC := usecase.NewAddressUseCase(addressRepo)
 

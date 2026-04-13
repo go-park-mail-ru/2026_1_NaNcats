@@ -43,6 +43,12 @@ func easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHand
 			} else {
 				out.RestaurantName = string(in.String())
 			}
+		case "restaurant_image_url":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.RestaurantImageURL = string(in.String())
+			}
 		case "total_cost":
 			if in.IsNull() {
 				in.Skip()
@@ -84,6 +90,11 @@ func easyjson120d1ca2EncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHand
 		const prefix string = ",\"restaurant_name\":"
 		out.RawString(prefix)
 		out.String(string(in.RestaurantName))
+	}
+	{
+		const prefix string = ",\"restaurant_image_url\":"
+		out.RawString(prefix)
+		out.String(string(in.RestaurantImageURL))
 	}
 	{
 		const prefix string = ",\"total_cost\":"

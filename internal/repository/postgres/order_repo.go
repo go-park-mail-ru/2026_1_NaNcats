@@ -159,30 +159,29 @@ func (r *orderRepo) SetYookassaID(ctx context.Context, orderPublicID, yookassaID
 }
 
 func (r *orderRepo) GetOrdersByUserID(ctx context.Context, userID int) ([]domain.Order, error) {
-    query := `
-        SELECT o.id, o.public_id, o.total_cost, o.status, o.created_at, rb.name
+	query := `
+        SELECT o.id, o.public_id, o.total_cost, o.status, o.created_at, rb.name, rb.logo_url
         FROM "order" o
         JOIN "restaurant_branch" rbr ON o.restaurant_branch_id = rbr.id
         JOIN "restaurant_brand" rb ON rbr.restaurant_brand_id = rb.id
         WHERE o.client_account_id = $1
         ORDER BY o.created_at DESC
     `
-    rows, err := r.pool.Query(ctx, query, userID)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	rows, err := r.pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-    var orders []domain.Order
-    for rows.Next() {
-        var o domain.Order
-        var restaurantName string
-        err := rows.Scan(&o.ID, &o.PublicID, &o.TotalCost, &o.Status, &o.CreatedAt, &restaurantName)
-        if err != nil {
-            return nil, err
-        }
-        o.PaymentMethodID = restaurantName 
-        orders = append(orders, o)
-    }
-    return orders, nil
+	var orders []domain.Order
+	for rows.Next() {
+		var o domain.Order
+		err := rows.Scan(&o.ID, &o.PublicID, &o.TotalCost, &o.Status, &o.CreatedAt, &o.RestaurantName, &o.RestaurantLogoURL)
+		if err != nil {
+			return nil, err
+		}
+		o.PaymentMethodID = o.RestaurantName
+		orders = append(orders, o)
+	}
+	return orders, nil
 }

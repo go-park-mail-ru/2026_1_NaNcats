@@ -18,18 +18,20 @@ type OrderUseCase interface {
 }
 
 type orderUseCase struct {
-	orderRepo      repository.OrderRepository
-	addressRepo    repository.AddressRepository
-	cartUC         CartUseCase
-	yookassaClient *yookassa.Client
+	orderRepo                repository.OrderRepository
+	addressRepo              repository.AddressRepository
+	cartUC                   CartUseCase
+	yookassaClient           *yookassa.Client
+	defaultRestaurantLogoURL string
 }
 
-func NewOrderUseCase(or repository.OrderRepository, ar repository.AddressRepository, cuc CartUseCase, yc *yookassa.Client) *orderUseCase {
+func NewOrderUseCase(or repository.OrderRepository, ar repository.AddressRepository, cuc CartUseCase, yc *yookassa.Client, drlurl string) *orderUseCase {
 	return &orderUseCase{
-		orderRepo:      or,
-		addressRepo:    ar,
-		cartUC:         cuc,
-		yookassaClient: yc,
+		orderRepo:                or,
+		addressRepo:              ar,
+		cartUC:                   cuc,
+		yookassaClient:           yc,
+		defaultRestaurantLogoURL: drlurl,
 	}
 }
 
@@ -111,5 +113,16 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, userID int, req domain.C
 }
 
 func (o *orderUseCase) GetOrders(ctx context.Context, userID int) ([]domain.Order, error) {
-	return o.orderRepo.GetOrdersByUserID(ctx, userID)
+	orders, err := o.orderRepo.GetOrdersByUserID(ctx, userID)
+	if err != nil {
+		return []domain.Order{}, err
+	}
+
+	for i, order := range orders {
+		if order.RestaurantLogoURL == "" {
+			orders[i].RestaurantLogoURL = o.defaultRestaurantLogoURL
+		}
+	}
+
+	return orders, nil
 }
