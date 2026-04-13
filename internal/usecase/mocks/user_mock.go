@@ -73,11 +73,12 @@ func (mr *MockUserUseCaseMockRecorder) Create(ctx, user any) *gomock.Call {
 }
 
 // DeleteAvatar mocks base method.
-func (m *MockUserUseCase) DeleteAvatar(ctx context.Context, userID int) error {
+func (m *MockUserUseCase) DeleteAvatar(ctx context.Context, userID int) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteAvatar", ctx, userID)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // DeleteAvatar indicates an expected call of DeleteAvatar.

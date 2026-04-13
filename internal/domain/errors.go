@@ -28,4 +28,5 @@ var (
 	ErrYookassaConfirmationURL    = errors.New("yookassa did not send confirmation url")
 	ErrAddressNotFound            = errors.New("address not found")
 	ErrCartIsEmpty                = errors.New("cart is empty")
+	ErrNoDefaultPhotoURL          = errors.New("default photo is not set")
 )

@@ -4,7 +4,6 @@ package handler
 
 import (
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
@@ -100,16 +99,11 @@ func (h *dishHandler) GetDishesByRestaurantBrandID(w http.ResponseWriter, r *htt
 
 	dto := make([]DishResponse, 0, len(dishes))
 	for _, d := range dishes {
-		img := d.ImageURL
-		if img == "" {
-			img = os.Getenv("DEFAULT_FOOD_LOGO_URL")
-		}
-
 		dto = append(dto, DishResponse{
 			ID:          strconv.Itoa(d.ID),
 			Name:        d.Name,
 			Description: d.Description,
-			ImageURL:    img,
+			ImageURL:    d.ImageURL,
 			Price:       d.Price,
 		})
 	}

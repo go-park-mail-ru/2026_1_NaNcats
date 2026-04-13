@@ -61,7 +61,7 @@ func TestCartUseCase_GetCart(t *testing.T) {
 
 			cr := repoMocks.NewMockCartRepository(ctrl)
 			dr := repoMocks.NewMockDishRepository(ctrl)
-			uc := NewCartUseCase(cr, dr)
+			uc := NewCartUseCase(cr, dr, "")
 
 			tt.mockInit(cr)
 
@@ -146,7 +146,7 @@ func TestCartUseCase_UpdateCart(t *testing.T) {
 
 			cr := repoMocks.NewMockCartRepository(ctrl)
 			dr := repoMocks.NewMockDishRepository(ctrl)
-			uc := NewCartUseCase(cr, dr)
+			uc := NewCartUseCase(cr, dr, "")
 
 			tt.mockInit(cr, dr)
 

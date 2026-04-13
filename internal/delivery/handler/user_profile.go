@@ -5,7 +5,6 @@ package handler
 import (
 	"errors"
 	"net/http"
-	"os"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
@@ -82,15 +81,10 @@ func (h *userProfileHandler) GetUserProfile(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	avatarURL := userProfile.AvatarURL
-	if avatarURL == "" {
-		avatarURL = os.Getenv("DEFAULT_AVATAR_URL")
-	}
-
 	resp := UserProfileResponse{
 		Name:      userProfile.Name,
 		Email:     userProfile.Email,
-		AvatarURL: avatarURL,
+		AvatarURL: userProfile.AvatarURL,
 	}
 
 	response.JSON(w, http.StatusOK, resp)
@@ -227,7 +221,7 @@ func (h *userProfileHandler) DeleteAvatar(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	err = h.userUC.DeleteAvatar(ctx, userID)
+	newAvatarURL, err := h.userUC.DeleteAvatar(ctx, userID)
 	if err != nil {
 		l.Error("failed to delete avatar", err, domain.Int("user_id", userID))
 		response.Error(w, http.StatusInternalServerError, "failed to delete avatar")
@@ -237,6 +231,6 @@ func (h *userProfileHandler) DeleteAvatar(w http.ResponseWriter, r *http.Request
 	l.Info("avatar deleted successfully", domain.Int("user_id", userID))
 	response.JSON(w, http.StatusOK, UpdateAvatarResponse{
 		Message:   "avatar deleted successfully",
-		AvatarURL: os.Getenv("DEFAULT_AVATAR_URL"),
+		AvatarURL: newAvatarURL,
 	})
 }

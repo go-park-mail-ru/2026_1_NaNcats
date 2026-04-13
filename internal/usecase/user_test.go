@@ -48,7 +48,7 @@ func TestUserUseCase_Create(t *testing.T) {
 			defer ctrl.Finish()
 
 			ur := repoMocks.NewMockUserRepository(ctrl)
-			uc := NewUserUseCase(ur, nil)
+			uc := NewUserUseCase(ur, nil, "")
 
 			tt.mockInit(ur)
 			id, err := uc.Create(ctx, user)
@@ -92,7 +92,7 @@ func TestUserUseCase_GetByID(t *testing.T) {
 			defer ctrl.Finish()
 
 			ur := repoMocks.NewMockUserRepository(ctrl)
-			uc := NewUserUseCase(ur, nil)
+			uc := NewUserUseCase(ur, nil, "")
 
 			tt.mockInit(ur)
 			_, err := uc.GetByID(ctx, tt.userID)
@@ -137,7 +137,7 @@ func TestUserUseCase_Check(t *testing.T) {
 			defer ctrl.Finish()
 
 			ur := repoMocks.NewMockUserRepository(ctrl)
-			uc := NewUserUseCase(ur, nil)
+			uc := NewUserUseCase(ur, nil, "")
 
 			tt.mockInit(ur)
 			res, err := uc.Check(ctx, tt.userID)
@@ -171,7 +171,7 @@ func TestUserUseCase_UpdateProfile(t *testing.T) {
 			defer ctrl.Finish()
 
 			ur := repoMocks.NewMockUserRepository(ctrl)
-			uc := NewUserUseCase(ur, nil)
+			uc := NewUserUseCase(ur, nil, "")
 
 			tt.mockInit(ur)
 			err := uc.UpdateProfile(ctx, 1, &name, nil)
@@ -216,7 +216,7 @@ func TestUserUseCase_UpdateAvatar(t *testing.T) {
 
 			ur := repoMocks.NewMockUserRepository(ctrl)
 			fs := repoMocks.NewMockFileStorage(ctrl)
-			uc := NewUserUseCase(ur, fs)
+			uc := NewUserUseCase(ur, fs, "")
 
 			tt.mockInit(ur, fs)
 			_, err := uc.UpdateAvatar(ctx, userID, tt.reader)
@@ -270,10 +270,10 @@ func TestUserUseCase_DeleteAvatar(t *testing.T) {
 
 			ur := repoMocks.NewMockUserRepository(ctrl)
 			fs := repoMocks.NewMockFileStorage(ctrl)
-			uc := NewUserUseCase(ur, fs)
+			uc := NewUserUseCase(ur, fs, "")
 
 			tt.mockInit(ur, fs)
-			err := uc.DeleteAvatar(ctx, userID)
+			_, err := uc.DeleteAvatar(ctx, userID)
 
 			if tt.wantErr != nil {
 				assert.Equal(t, tt.wantErr.Error(), err.Error())

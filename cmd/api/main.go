@@ -138,14 +138,21 @@ func main() {
 	// ttl сессии - 24 часа
 	sessionTTL := 24 * time.Hour
 
-	userUC := usecase.NewUserUseCase(userRepo, s3Repo)
+	defaultAvatarURL := os.Getenv("DEFAULT_AVATAR_URL")
+	defaultRestaurantLogoURL := os.Getenv("DEFAULT_RESTAURANT_LOGO_URL")
+	defaultFoodLogoURL := os.Getenv("DEFAULT_FOOD_LOGO_URL")
+	if defaultAvatarURL == "" || defaultRestaurantLogoURL == "" || defaultFoodLogoURL == "" {
+		appLogger.Fatal("One of the default avatars is null", domain.ErrNoDefaultPhotoURL)
+	}
+
+	userUC := usecase.NewUserUseCase(userRepo, s3Repo, defaultAvatarURL)
 	clientProfileUC := usecase.NewClientProfileUseCase(clientProfileRepo)
 	sessionUC := usecase.NewSessionUseCase(sessionRepo, sessionTTL)
 	authUC := usecase.NewAuthUseCase(userUC, sessionUC, clientProfileUC)
-	restaurantBrandUC := usecase.NewRestaurantBrandUseCase(restaurantBrandRepo)
+	restaurantBrandUC := usecase.NewRestaurantBrandUseCase(restaurantBrandRepo, defaultRestaurantLogoURL)
 	userProfileUC := usecase.NewUserProfileUseCase(userUC)
-	cartUC := usecase.NewCartUseCase(cartRepo, dishRepo)
-	dishUC := usecase.NewDishUseCase(dishRepo)
+	cartUC := usecase.NewCartUseCase(cartRepo, dishRepo, defaultFoodLogoURL)
+	dishUC := usecase.NewDishUseCase(dishRepo, defaultFoodLogoURL)
 	orderUC := usecase.NewOrderUseCase(orderRepo, addressRepo, cartUC, yookassaClient)
 	paymentUC := usecase.NewPaymentUseCase(paymentRepo, paymentCacheRepo, orderRepo, yookassaClient, returnURL)
 	addressUC := usecase.NewAddressUseCase(addressRepo)

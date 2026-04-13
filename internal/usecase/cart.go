@@ -14,14 +14,16 @@ type CartUseCase interface {
 }
 
 type cartUseCase struct {
-	cartRepo repository.CartRepository
-	dishRepo repository.DishRepository
+	cartRepo           repository.CartRepository
+	dishRepo           repository.DishRepository
+	defaultFoodLogoURL string
 }
 
-func NewCartUseCase(cr repository.CartRepository, dr repository.DishRepository) *cartUseCase {
+func NewCartUseCase(cr repository.CartRepository, dr repository.DishRepository, dflurl string) *cartUseCase {
 	return &cartUseCase{
-		cartRepo: cr,
-		dishRepo: dr,
+		cartRepo:           cr,
+		dishRepo:           dr,
+		defaultFoodLogoURL: dflurl,
 	}
 }
 
@@ -32,7 +34,11 @@ func (u *cartUseCase) GetCart(ctx context.Context, userID int) (domain.Cart, int
 	}
 
 	var totalCost int64
-	for _, cartItem := range cart.Items {
+	for i, cartItem := range cart.Items {
+		if cartItem.ImageURL == "" {
+			cart.Items[i].ImageURL = u.defaultFoodLogoURL
+		}
+
 		totalCost += cartItem.Price * int64(cartItem.Quantity)
 	}
 

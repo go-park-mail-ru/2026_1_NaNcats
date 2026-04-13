@@ -14,12 +14,14 @@ type DishUseCase interface {
 }
 
 type dishUseCase struct {
-	dishRepo repository.DishRepository
+	dishRepo           repository.DishRepository
+	defaultFoodLogoURL string
 }
 
-func NewDishUseCase(dr repository.DishRepository) DishUseCase {
+func NewDishUseCase(dr repository.DishRepository, dflurl string) DishUseCase {
 	return &dishUseCase{
-		dishRepo: dr,
+		dishRepo:           dr,
+		defaultFoodLogoURL: dflurl,
 	}
 }
 
@@ -40,5 +42,16 @@ func (uc *dishUseCase) GetDishesByRestaurantBrandID(ctx context.Context, restaur
 		offset = 0
 	}
 
-	return uc.dishRepo.GetDishesByRestaurantBrandID(ctx, restaurantBrandID, limit, offset)
+	dishes, err := uc.dishRepo.GetDishesByRestaurantBrandID(ctx, restaurantBrandID, limit, offset)
+	if err != nil {
+		return []domain.Dish{}, err
+	}
+
+	for i, dish := range dishes {
+		if dish.ImageURL == "" {
+			dishes[i].ImageURL = uc.defaultFoodLogoURL
+		}
+	}
+
+	return dishes, nil
 }

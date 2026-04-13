@@ -94,7 +94,7 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, userID int, req domain.C
 
 	paymentResponse, err := o.yookassaClient.CreatePayment(ctx, paymentRequest)
 	if err != nil {
-		return "", "", nil
+		return "", "", err
 	}
 
 	if err = o.orderRepo.SetYookassaID(ctx, orderPublicID, paymentResponse.ID); err != nil {

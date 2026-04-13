@@ -18,18 +18,20 @@ type UserUseCase interface {
 	Check(ctx context.Context, userID int) (bool, error)
 	UpdateProfile(ctx context.Context, userID int, name, email *string) error
 	UpdateAvatar(ctx context.Context, userID int, file io.Reader) (string, error)
-	DeleteAvatar(ctx context.Context, userID int) error
+	DeleteAvatar(ctx context.Context, userID int) (string, error)
 }
 
 type userUseCase struct {
-	userRepo    repository.UserRepository
-	fileStorage repository.FileStorage
+	userRepo         repository.UserRepository
+	fileStorage      repository.FileStorage
+	defaultAvatarURL string
 }
 
-func NewUserUseCase(ur repository.UserRepository, fs repository.FileStorage) UserUseCase {
+func NewUserUseCase(ur repository.UserRepository, fs repository.FileStorage, daurl string) UserUseCase {
 	return &userUseCase{
-		userRepo:    ur,
-		fileStorage: fs,
+		userRepo:         ur,
+		fileStorage:      fs,
+		defaultAvatarURL: daurl,
 	}
 }
 
@@ -50,6 +52,10 @@ func (u *userUseCase) GetByID(ctx context.Context, userID int) (domain.User, err
 		return domain.User{}, err
 	}
 
+	if user.AvatarURL == "" {
+		user.AvatarURL = u.defaultAvatarURL
+	}
+
 	return user, nil
 }
 
@@ -58,6 +64,10 @@ func (u *userUseCase) GetByEmail(ctx context.Context, email string) (domain.User
 	user, err := u.userRepo.GetUserByEmail(ctx, email)
 	if err != nil {
 		return domain.User{}, err
+	}
+
+	if user.AvatarURL == "" {
+		user.AvatarURL = u.defaultAvatarURL
 	}
 
 	return user, nil
@@ -101,7 +111,7 @@ func (u *userUseCase) UpdateAvatar(ctx context.Context, userID int, file io.Read
 		// если фотка загружена на S3, но по какой-то причине не обновился URL у юзера, то удаляем фотку
 		go func(urlToDelete string) {
 			_ = u.fileStorage.DeleteFile(context.Background(), user.AvatarURL)
-		}(user.AvatarURL)
+		}(newAvatarURL)
 		return "", err
 	}
 
@@ -114,24 +124,24 @@ func (u *userUseCase) UpdateAvatar(ctx context.Context, userID int, file io.Read
 	return newAvatarURL, nil
 }
 
-func (u *userUseCase) DeleteAvatar(ctx context.Context, userID int) error {
+func (u *userUseCase) DeleteAvatar(ctx context.Context, userID int) (string, error) {
 	user, err := u.GetByID(ctx, userID)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if user.AvatarURL == "" {
-		return nil
+		return "", nil
 	}
 
 	err = u.userRepo.UpdateAvatarURL(ctx, userID, "")
 	if err != nil {
-		return err
+		return u.defaultAvatarURL, err
 	}
 
 	go func(urlToDelete string) {
 		_ = u.fileStorage.DeleteFile(context.Background(), user.AvatarURL)
 	}(user.AvatarURL)
 
-	return nil
+	return u.defaultAvatarURL, nil
 }

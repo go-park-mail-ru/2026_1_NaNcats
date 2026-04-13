@@ -18,7 +18,7 @@ INSERT INTO "dish" (restaurant_brand_id, name, description, price, image_url) VA
 ((SELECT id FROM rb), 'Пицца Пепперони (30 см)', 'Пикантная пепперони, томатный соус и сыр моцарелла', 699000000, 'https://nancats-bucket.storage.yandexcloud.net/foods/bac8f917-2762-4e65-9e61-fbc6a4ef54da.webp'),
 ((SELECT id FROM rb), 'Пицца Мясная (30 см)', 'Бекон, пепперони, ветчина, томатный соус и моцарелла', 899000000, 'https://nancats-bucket.storage.yandexcloud.net/foods/78d0499a-7c23-49d4-824b-84955f9e6225.webp'),
 ((SELECT id FROM rb), 'Сырные палочки', 'Хрустящие палочки с сыром и чесночным соусом', 299000000, 'https://nancats-bucket.storage.yandexcloud.net/foods/2b77e55a-a7a7-4be3-98b0-578e159f0214.webp'),
-((SELECT id FROM rb), 'Пицца Маргарита (30 см)', 'Традиционная пицца с томатным соусом и увеличенной порцией моцареллы', 549000000, 'd7444179-ef0c-4dac-817d-70eeb62e4ca7.webp');
+((SELECT id FROM rb), 'Пицца Маргарита (30 см)', 'Традиционная пицца с томатным соусом и увеличенной порцией моцареллы', 549000000, 'https://nancats-bucket.storage.yandexcloud.net/foods/d7444179-ef0c-4dac-817d-70eeb62e4ca7.webp');
 
 -- 3. Добавляем блюда в "FoodBand"
 WITH rb AS (SELECT id FROM "restaurant_brand" WHERE name = 'FoodBand' LIMIT 1)
