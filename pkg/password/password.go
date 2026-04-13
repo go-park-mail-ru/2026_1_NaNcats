@@ -19,6 +19,11 @@ var (
 	ErrWrongPassword       = errors.New("wrong password")
 )
 
+const (
+	MaxPasswordLength = 128
+	MinPasswordLength = 6
+)
+
 type Params struct {
 	Memory      uint32
 	Iterations  uint32
@@ -41,9 +46,9 @@ func HashPassword(password string, p *Params) (string, error) {
 	}
 
 	passLen := len([]rune(password))
-	if passLen > 128 {
+	if passLen > MaxPasswordLength {
 		return "", ErrPasswordTooLong
-	} else if passLen < 8 {
+	} else if passLen < MinPasswordLength {
 		return "", ErrPasswordTooShort
 	}
 
@@ -65,7 +70,7 @@ func HashPassword(password string, p *Params) (string, error) {
 
 func VerifyPassword(password, encodedHash string) (bool, error) {
 	passLen := len([]rune(password))
-	if passLen > 128 {
+	if passLen > MaxPasswordLength {
 		return false, ErrPasswordTooLong
 	}
 
