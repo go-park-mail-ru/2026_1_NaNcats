@@ -117,3 +117,35 @@ func (r *dishRepo) GetDishByID(ctx context.Context, DishID int) (domain.Dish, er
 
 	return dbDish.toDomain(), nil
 }
+
+func (r *dishRepo) GetDishesByIDs(ctx context.Context, ids []int) ([]domain.Dish, error) {
+	query := `
+		SELECT id,
+			restaurant_brand_id,
+			name,
+			description,
+			image_url,
+			price,
+			created_at,
+			updated_at
+		FROM "dish"
+		WHERE id=ANY($1);
+	`
+
+	rows, err := r.pool.Query(ctx, query, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	dbDishes, err := pgx.CollectRows(rows, pgx.RowToStructByName[dishDB])
+	if err != nil {
+		return nil, err
+	}
+
+	dishes := make([]domain.Dish, 0, len(dbDishes))
+	for _, dish := range dbDishes {
+		dishes = append(dishes, dish.toDomain())
+	}
+
+	return dishes, nil
+}

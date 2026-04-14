@@ -56,6 +56,21 @@ func (mr *MockDishRepositoryMockRecorder) GetDishByID(ctx, DishID any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDishByID", reflect.TypeOf((*MockDishRepository)(nil).GetDishByID), ctx, DishID)
 }
 
+// GetDishesByIDs mocks base method.
+func (m *MockDishRepository) GetDishesByIDs(ctx context.Context, ids []int) ([]domain.Dish, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDishesByIDs", ctx, ids)
+	ret0, _ := ret[0].([]domain.Dish)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDishesByIDs indicates an expected call of GetDishesByIDs.
+func (mr *MockDishRepositoryMockRecorder) GetDishesByIDs(ctx, ids any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDishesByIDs", reflect.TypeOf((*MockDishRepository)(nil).GetDishesByIDs), ctx, ids)
+}
+
 // GetDishesByRestaurantBrandID mocks base method.
 func (m *MockDishRepository) GetDishesByRestaurantBrandID(ctx context.Context, restaurantBrandID, limit, offset int) ([]domain.Dish, error) {
 	m.ctrl.T.Helper()
