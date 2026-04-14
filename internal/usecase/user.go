@@ -115,7 +115,7 @@ func (u *userUseCase) UpdateAvatar(ctx context.Context, userID int, file io.Read
 		return "", err
 	}
 
-	if user.AvatarURL != "" {
+	if user.AvatarURL != u.defaultAvatarURL && user.AvatarURL != "" {
 		go func(urlToDelete string) {
 			_ = u.fileStorage.DeleteFile(context.Background(), urlToDelete)
 		}(user.AvatarURL)
