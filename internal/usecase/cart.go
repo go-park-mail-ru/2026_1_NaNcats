@@ -50,16 +50,25 @@ func (u *cartUseCase) UpdateCart(ctx context.Context, userID int, cartData domai
 		return u.cartRepo.ClearCart(ctx, userID)
 	}
 
-	for _, cartItem := range cartData.Items {
-		if cartItem.Quantity == 0 {
+	dishIDs := make([]int, len(cartData.Items))
+
+	for ind, item := range cartData.Items {
+		if item.Quantity <= 0 {
 			return domain.ErrInvalidQuantity
 		}
+		dishIDs[ind] = item.DishID
+	}
 
-		dish, err := u.dishRepo.GetDishByID(ctx, cartItem.DishID)
-		if err != nil {
-			return err
-		}
+	dishes, err := u.dishRepo.GetDishesByIDs(ctx, dishIDs)
+	if err != nil {
+		return err
+	}
 
+	if len(dishes) != len(dishIDs) {
+		return domain.ErrDishNotFound
+	}
+
+	for _, dish := range dishes {
 		if dish.RestaurantBrandID != cartData.RestaurantBrandID {
 			return domain.ErrMultipleRestaurants
 		}
