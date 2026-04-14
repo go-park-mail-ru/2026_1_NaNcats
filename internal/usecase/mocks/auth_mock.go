@@ -57,6 +57,21 @@ func (mr *MockAuthUseCaseMockRecorder) CheckUserSession(ctx, sessionID any) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckUserSession", reflect.TypeOf((*MockAuthUseCase)(nil).CheckUserSession), ctx, sessionID)
 }
 
+// GetCSRFBySessionID mocks base method.
+func (m *MockAuthUseCase) GetCSRFBySessionID(ctx context.Context, sessionID uuid.UUID) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCSRFBySessionID", ctx, sessionID)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCSRFBySessionID indicates an expected call of GetCSRFBySessionID.
+func (mr *MockAuthUseCaseMockRecorder) GetCSRFBySessionID(ctx, sessionID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCSRFBySessionID", reflect.TypeOf((*MockAuthUseCase)(nil).GetCSRFBySessionID), ctx, sessionID)
+}
+
 // Login mocks base method.
 func (m *MockAuthUseCase) Login(ctx context.Context, user domain.User, userAgent string) (domain.User, domain.Session, error) {
 	m.ctrl.T.Helper()
@@ -101,4 +116,18 @@ func (m *MockAuthUseCase) Register(ctx context.Context, user domain.User, userAg
 func (mr *MockAuthUseCaseMockRecorder) Register(ctx, user, userAgent any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockAuthUseCase)(nil).Register), ctx, user, userAgent)
+}
+
+// SetCSRFForUser mocks base method.
+func (m *MockAuthUseCase) SetCSRFForUser(ctx context.Context, sessionID uuid.UUID, token string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetCSRFForUser", ctx, sessionID, token)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetCSRFForUser indicates an expected call of SetCSRFForUser.
+func (mr *MockAuthUseCaseMockRecorder) SetCSRFForUser(ctx, sessionID, token any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCSRFForUser", reflect.TypeOf((*MockAuthUseCase)(nil).SetCSRFForUser), ctx, sessionID, token)
 }

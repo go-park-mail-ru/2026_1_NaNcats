@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
@@ -181,25 +182,25 @@ func TestAddressRepo_DeleteAddress(t *testing.T) {
 		{
 			name: "Успех",
 			setup: func(mock pgxmock.PgxPoolIface) {
-				mock.ExpectExec(`DELETE FROM "client_address"`).
-					WithArgs(publicID, userID).
-					WillReturnResult(pgxmock.NewResult("DELETE", 1))
+				mock.ExpectExec(regexp.QuoteMeta(`UPDATE "client_address" SET is_active = false WHERE public_id = $1 AND client_account_id = $2`)).
+					WithArgs("addr-uuid", 1).
+					WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 			},
 			wantErr: nil,
 		},
 		{
 			name: "Ошибка: адрес не найден",
 			setup: func(mock pgxmock.PgxPoolIface) {
-				mock.ExpectExec(`DELETE FROM "client_address"`).
+				mock.ExpectExec(regexp.QuoteMeta(`UPDATE "client_address" SET is_active = false WHERE public_id = $1 AND client_account_id = $2`)).
 					WithArgs(publicID, userID).
-					WillReturnResult(pgxmock.NewResult("DELETE", 0))
+					WillReturnResult(pgxmock.NewResult("UPDATE", 0))
 			},
 			wantErr: domain.ErrEmptyDBQuery,
 		},
 		{
 			name: "Ошибка",
 			setup: func(mock pgxmock.PgxPoolIface) {
-				mock.ExpectExec(`DELETE`).
+				mock.ExpectExec(regexp.QuoteMeta(`UPDATE "client_address" SET is_active = false WHERE public_id = $1 AND client_account_id = $2`)).
 					WithArgs(publicID, userID).
 					WillReturnError(dbErr)
 			},

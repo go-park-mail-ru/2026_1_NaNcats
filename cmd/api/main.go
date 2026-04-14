@@ -171,6 +171,7 @@ func main() {
 	cartHandler := handler.NewCartHandler(cartUC, appLogger)
 
 	authMW := middleware.NewAuthMiddleware(sessionUC, appLogger)
+	csrfMid := middleware.NewCSRFMiddleware(sessionUC, appLogger)
 	corsMW := middleware.NewCORSMiddleware([]string{
 		"http://localhost:2033",
 	})
@@ -191,27 +192,29 @@ func main() {
 	mux.HandleFunc("GET /api/restaurants/brands/{id}", restaurantBrandHandler.GetRestaurantBrandByID)
 
 	mux.Handle("GET /api/profile", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.GetUserProfile)))
-	mux.Handle("PATCH /api/profile", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.UpdateProfile)))
-	mux.Handle("POST /api/profile/avatar", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.UpdateAvatar)))
-	mux.Handle("DELETE /api/profile/avatar", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.DeleteAvatar)))
+	mux.Handle("PATCH /api/profile", authMW.RequireAuth(csrfMid.Check(http.HandlerFunc(userProfileHandler.UpdateProfile))))
+	mux.Handle("POST /api/profile/avatar", authMW.RequireAuth(csrfMid.Check(http.HandlerFunc(userProfileHandler.UpdateAvatar))))
+	mux.Handle("DELETE /api/profile/avatar", authMW.RequireAuth(csrfMid.Check(http.HandlerFunc(userProfileHandler.DeleteAvatar))))
 
-	mux.Handle("POST /api/profile/cards/bind", authMW.RequireAuth(http.HandlerFunc(paymentHandler.InitiateCardBinding)))
+	mux.Handle("POST /api/profile/cards/bind", authMW.RequireAuth(csrfMid.Check(http.HandlerFunc(paymentHandler.InitiateCardBinding))))
 	mux.Handle("GET /api/profile/cards", authMW.RequireAuth(http.HandlerFunc(paymentHandler.GetUserCards)))
-	mux.Handle("DELETE /api/profile/cards/{id}", authMW.RequireAuth(http.HandlerFunc(paymentHandler.DeleteCard)))
-	mux.Handle("PUT /api/profile/cards/{id}", authMW.RequireAuth(http.HandlerFunc(paymentHandler.SetDefaultCard)))
+	mux.Handle("DELETE /api/profile/cards/{id}", authMW.RequireAuth(csrfMid.Check(http.HandlerFunc(paymentHandler.DeleteCard))))
+	mux.Handle("PUT /api/profile/cards/{id}", authMW.RequireAuth(csrfMid.Check(http.HandlerFunc(paymentHandler.SetDefaultCard))))
 
-	mux.Handle("POST /api/profile/addresses", authMW.RequireAuth(http.HandlerFunc(addressHandler.AddAddress)))
+	mux.Handle("POST /api/profile/addresses", authMW.RequireAuth(csrfMid.Check(http.HandlerFunc(addressHandler.AddAddress))))
 	mux.Handle("GET /api/profile/addresses", authMW.RequireAuth(http.HandlerFunc(addressHandler.GetAddresses)))
-	mux.Handle("DELETE /api/profile/addresses/{id}", authMW.RequireAuth(http.HandlerFunc(addressHandler.DeleteAddress)))
-	mux.Handle("PATCH /api/profile/addresses/{id}", authMW.RequireAuth(http.HandlerFunc(addressHandler.UpdateAddress)))
+	mux.Handle("DELETE /api/profile/addresses/{id}", authMW.RequireAuth(csrfMid.Check(http.HandlerFunc(addressHandler.DeleteAddress))))
+	mux.Handle("PATCH /api/profile/addresses/{id}", authMW.RequireAuth(csrfMid.Check(http.HandlerFunc(addressHandler.UpdateAddress))))
 
-	mux.Handle("POST /api/orders", authMW.RequireAuth(http.HandlerFunc(orderHandler.CreateOrder)))
+	mux.Handle("POST /api/orders", authMW.RequireAuth(csrfMid.Check(http.HandlerFunc(orderHandler.CreateOrder))))
 	mux.Handle("GET /api/profile/orders", authMW.RequireAuth(http.HandlerFunc(orderHandler.GetMyOrders)))
 
 	mux.Handle("POST /api/webhooks/yookassa", http.HandlerFunc(paymentHandler.YookassaWebhook))
 
 	mux.Handle("GET /api/cart", authMW.RequireAuth(http.HandlerFunc(cartHandler.GetCart)))
-	mux.Handle("PUT /api/cart", authMW.RequireAuth(http.HandlerFunc(cartHandler.UpdateCart)))
+	mux.Handle("PUT /api/cart", authMW.RequireAuth(csrfMid.Check(http.HandlerFunc(cartHandler.UpdateCart))))
+
+	mux.Handle("GET /api/csrf", authMW.RequireAuth(http.HandlerFunc(authHandler.GetCSRF)))
 
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 

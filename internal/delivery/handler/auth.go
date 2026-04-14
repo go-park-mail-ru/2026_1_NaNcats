@@ -10,6 +10,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/csrf"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/validatorutil"
@@ -29,6 +30,7 @@ type RegisterResponse struct {
 	Name      string    `json:"name" example:"Иван"`
 	Email     string    `json:"email" example:"user@mail.ru"`
 	CreatedAt time.Time `json:"created_at" example:"2006-01-02T15:04:05Z07:00"`
+	CSRFToken string    `json:"csrf_token"`
 }
 
 //easyjson:json
@@ -41,6 +43,12 @@ type LoginRequest struct {
 type LoginResponse struct {
 	Name      string `json:"name" example:"Иван"`
 	AvatarURL string `json:"avatar_url" example:"users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"`
+	CSRFToken string `json:"csrf_token"`
+}
+
+//easyjson:json
+type CSRFResponse struct {
+	CSRFToken string `json:"csrf_token"`
 }
 
 type authHandler struct {
@@ -120,12 +128,27 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	l.Info("user registered successfully", domain.Int("user_id", createdUser.ID), domain.String("email", createdUser.Email))
 
+	csrfToken, err := csrf.GenerateToken()
+	if err != nil {
+		l.Error("failed to generate csrf", err)
+		response.Error(w, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+
+	err = h.authUC.SetCSRFForUser(ctx, createdSession.ID, csrfToken)
+	if err != nil {
+		l.Error("failed to save csrf to redis", err)
+		response.Error(w, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+
 	response.SetCookie(w, "session_id", createdSession.ID.String(), createdSession.ExpiresAt)
 
 	resp := RegisterResponse{
 		Name:      createdUser.Name,
 		Email:     createdUser.Email,
 		CreatedAt: createdUser.CreatedAt,
+		CSRFToken: csrfToken,
 	}
 
 	response.JSON(w, http.StatusCreated, resp)
@@ -184,10 +207,26 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	l.Info("user logged in successfully", domain.Int("user_id", loggedUser.ID), domain.String("email", loggedUser.Email))
 
+	csrfToken, err := csrf.GenerateToken()
+	if err != nil {
+		l.Error("failed to generate csrf", err)
+		response.Error(w, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+
+	err = h.authUC.SetCSRFForUser(ctx, createdSession.ID, csrfToken)
+	if err != nil {
+		l.Error("failed to save csrf to redis", err)
+		response.Error(w, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+
 	response.SetCookie(w, "session_id", createdSession.ID.String(), createdSession.ExpiresAt)
 
 	resp := LoginResponse{
-		Name: loggedUser.Name,
+		Name:      loggedUser.Name,
+		AvatarURL: loggedUser.AvatarURL,
+		CSRFToken: csrfToken,
 	}
 
 	response.JSON(w, http.StatusOK, resp)
@@ -264,4 +303,30 @@ func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.JSON(w, http.StatusOK, resp)
+}
+
+func (h *authHandler) GetCSRF(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
+
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		l.Debug("get_csrf: no session cookie found")
+		response.JSON(w, http.StatusOK, "no session")
+		return
+	}
+
+	sessionID, err := uuid.Parse(cookie.Value)
+	if err != nil {
+
+	}
+
+	token, err := h.authUC.GetCSRFBySessionID(ctx, sessionID)
+	if err != nil {
+		h.logger.WithContext(ctx).Error("failed to get csrf", err)
+		response.Error(w, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+
+	response.JSON(w, http.StatusOK, CSRFResponse{CSRFToken: token})
 }

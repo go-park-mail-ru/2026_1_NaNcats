@@ -51,6 +51,12 @@ func easyjson4a0f95aaDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHand
 					in.AddError((out.CreatedAt).UnmarshalJSON(data))
 				}
 			}
+		case "csrf_token":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.CSRFToken = string(in.String())
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -79,6 +85,11 @@ func easyjson4a0f95aaEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHand
 		const prefix string = ",\"created_at\":"
 		out.RawString(prefix)
 		out.Raw((in.CreatedAt).MarshalJSON())
+	}
+	{
+		const prefix string = ",\"csrf_token\":"
+		out.RawString(prefix)
+		out.String(string(in.CSRFToken))
 	}
 	out.RawByte('}')
 }
@@ -219,6 +230,12 @@ func easyjson4a0f95aaDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHand
 			} else {
 				out.AvatarURL = string(in.String())
 			}
+		case "csrf_token":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.CSRFToken = string(in.String())
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -242,6 +259,11 @@ func easyjson4a0f95aaEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHand
 		const prefix string = ",\"avatar_url\":"
 		out.RawString(prefix)
 		out.String(string(in.AvatarURL))
+	}
+	{
+		const prefix string = ",\"csrf_token\":"
+		out.RawString(prefix)
+		out.String(string(in.CSRFToken))
 	}
 	out.RawByte('}')
 }
@@ -344,4 +366,69 @@ func (v *LoginRequest) UnmarshalJSON(data []byte) error {
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *LoginRequest) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson4a0f95aaDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler3(l, v)
+}
+func easyjson4a0f95aaDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler4(in *jlexer.Lexer, out *CSRFResponse) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		switch key {
+		case "csrf_token":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.CSRFToken = string(in.String())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson4a0f95aaEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler4(out *jwriter.Writer, in CSRFResponse) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"csrf_token\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.CSRFToken))
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v CSRFResponse) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson4a0f95aaEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler4(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v CSRFResponse) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson4a0f95aaEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler4(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *CSRFResponse) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson4a0f95aaDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler4(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *CSRFResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson4a0f95aaDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler4(l, v)
 }

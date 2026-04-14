@@ -85,3 +85,32 @@ func (mr *MockSessionUseCaseMockRecorder) Destroy(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Destroy", reflect.TypeOf((*MockSessionUseCase)(nil).Destroy), ctx, id)
 }
+
+// GetCSRF mocks base method.
+func (m *MockSessionUseCase) GetCSRF(ctx context.Context, sessionID uuid.UUID) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCSRF", ctx, sessionID)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCSRF indicates an expected call of GetCSRF.
+func (mr *MockSessionUseCaseMockRecorder) GetCSRF(ctx, sessionID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCSRF", reflect.TypeOf((*MockSessionUseCase)(nil).GetCSRF), ctx, sessionID)
+}
+
+// SetCSRF mocks base method.
+func (m *MockSessionUseCase) SetCSRF(ctx context.Context, sessionID uuid.UUID, token string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetCSRF", ctx, sessionID, token)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetCSRF indicates an expected call of SetCSRF.
+func (mr *MockSessionUseCaseMockRecorder) SetCSRF(ctx, sessionID, token any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCSRF", reflect.TypeOf((*MockSessionUseCase)(nil).SetCSRF), ctx, sessionID, token)
+}

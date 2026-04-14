@@ -38,10 +38,14 @@ func TestAuthHandler_Register(t *testing.T) {
 			},
 			mockInit: func(m *ucMocks.MockAuthUseCase) {
 				mockUser := domain.User{ID: 1, Name: "Ivan", Email: "test@mail.ru"}
-				mockSess := domain.Session{ID: uuid.New(), ExpiresAt: time.Now().Add(time.Hour)}
+				sessID := uuid.New()
+				mockSess := domain.Session{ID: sessID, ExpiresAt: time.Now().Add(time.Hour)}
 				m.EXPECT().
 					Register(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(mockUser, mockSess, nil)
+				m.EXPECT().
+					SetCSRFForUser(gomock.Any(), sessID, gomock.Any()).
+					Return(nil)
 			},
 			expectedStatus: http.StatusCreated,
 		},
@@ -90,6 +94,7 @@ func TestAuthHandler_Register(t *testing.T) {
 				err := json.NewDecoder(rec.Body).Decode(&resp)
 				assert.NoError(t, err)
 				assert.NotEmpty(t, resp.Name)
+				assert.NotEmpty(t, resp.CSRFToken)
 			}
 		})
 	}
@@ -179,11 +184,15 @@ func TestAuthHandler_Login(t *testing.T) {
 			},
 			mockInit: func(m *ucMocks.MockAuthUseCase) {
 				mockUser := domain.User{ID: 1, Name: "Ivan", Email: "test@mail.ru"}
-				mockSess := domain.Session{ID: uuid.New(), ExpiresAt: time.Now().Add(time.Hour)}
+				sessID := uuid.New()
+				mockSess := domain.Session{ID: sessID, ExpiresAt: time.Now().Add(time.Hour)}
 
 				m.EXPECT().
 					Login(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(mockUser, mockSess, nil)
+				m.EXPECT().
+					SetCSRFForUser(gomock.Any(), sessID, gomock.Any()).
+					Return(nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -246,6 +255,7 @@ func TestAuthHandler_Login(t *testing.T) {
 				err := json.NewDecoder(rec.Body).Decode(&resp)
 				assert.NoError(t, err)
 				assert.NotEmpty(t, resp.Name)
+				assert.NotEmpty(t, resp.CSRFToken)
 			}
 		})
 	}

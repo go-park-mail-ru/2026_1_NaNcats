@@ -18,6 +18,8 @@ type SessionUseCase interface {
 	Check(ctx context.Context, id uuid.UUID) (domain.Session, error)
 	// бизнес-логика для удаления сессии, просто вызывает удаление из repository.session
 	Destroy(ctx context.Context, id uuid.UUID) error
+	SetCSRF(ctx context.Context, sessionID uuid.UUID, token string) error
+	GetCSRF(ctx context.Context, sessionID uuid.UUID) (string, error)
 }
 
 // структура usecase сессий на основе мап
@@ -78,4 +80,12 @@ func (u *sessionUseCase) Check(ctx context.Context, id uuid.UUID) (domain.Sessio
 func (u *sessionUseCase) Destroy(ctx context.Context, id uuid.UUID) error {
 	// просто передаем команду удаления куки в репо
 	return u.sessionRepo.Delete(ctx, id)
+}
+
+func (u *sessionUseCase) SetCSRF(ctx context.Context, sessionID uuid.UUID, token string) error {
+	return u.sessionRepo.SetCSRF(ctx, sessionID, token)
+}
+
+func (u *sessionUseCase) GetCSRF(ctx context.Context, sessionID uuid.UUID) (string, error) {
+	return u.sessionRepo.GetCSRF(ctx, sessionID)
 }

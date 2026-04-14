@@ -20,6 +20,8 @@ type AuthUseCase interface {
 	Login(ctx context.Context, user domain.User, userAgent string) (domain.User, domain.Session, error)
 	Logout(ctx context.Context, sessionID uuid.UUID) error
 	CheckUserSession(ctx context.Context, sessionID uuid.UUID) (domain.User, error)
+	SetCSRFForUser(ctx context.Context, sessionID uuid.UUID, token string) error
+	GetCSRFBySessionID(ctx context.Context, sessionID uuid.UUID) (string, error)
 }
 
 // реализация контракта
@@ -154,4 +156,13 @@ func (u *authUseCase) CheckUserSession(ctx context.Context, sessionID uuid.UUID)
 	}
 
 	return user, nil
+}
+
+func (u *authUseCase) SetCSRFForUser(ctx context.Context, sessionID uuid.UUID, token string) error {
+	return u.sessionUC.SetCSRF(ctx, sessionID, token)
+}
+
+func (u *authUseCase) GetCSRFBySessionID(ctx context.Context, sessionID uuid.UUID) (string, error) {
+	return u.sessionUC.GetCSRF(ctx, sessionID)
+
 }

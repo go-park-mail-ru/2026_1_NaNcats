@@ -18,4 +18,7 @@ type SessionRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (domain.Session, error)
 	// метод удаления сессии из репозитория по sessionID
 	Delete(ctx context.Context, id uuid.UUID) error
+	// устанавливаем CSRF токен
+	SetCSRF(ctx context.Context, id uuid.UUID, token string) error
+	GetCSRF(ctx context.Context, id uuid.UUID) (string, error)
 }

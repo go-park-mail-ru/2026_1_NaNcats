@@ -12,6 +12,7 @@ import (
 	"github.com/mailru/easyjson"
 )
 
+const CSRFTokenTTL = 3600 // захардкодил, потом добавлю конфиг
 type sessionRepo struct {
 	redisPool *redis.Pool
 }
@@ -73,4 +74,33 @@ func (r *sessionRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 
 	return nil
+}
+
+func (r *sessionRepo) SetCSRF(ctx context.Context, id uuid.UUID, token string) error {
+	conn := r.redisPool.Get()
+	defer conn.Close()
+
+	mkey := "csrf:" + id.String()
+	result, err := redis.String(conn.Do("SET", mkey, token, "EX", CSRFTokenTTL))
+	if err != nil {
+		return err
+	}
+	if result != "OK" {
+		return domain.ErrRedisResultIsNotOK
+	}
+
+	return nil
+}
+
+func (r *sessionRepo) GetCSRF(ctx context.Context, id uuid.UUID) (string, error) {
+	conn := r.redisPool.Get()
+	defer conn.Close()
+
+	mkey := "csrf:" + id.String()
+	token, err := redis.String(conn.Do("GET", mkey))
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }
