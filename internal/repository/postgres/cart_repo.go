@@ -6,7 +6,39 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+	"github.com/jackc/pgx/v5"
 )
+
+type cartItemDB struct {
+	RestaurantID int       `db:"restaurant_brand_id"`
+	UpdatedAt    time.Time `db:"updated_at"`
+	// Поля из left должны быть указателями чтобы обработать null (пустую корзину)
+	DishID   *int    `db:"dish_id"`
+	Quantity *int    `db:"quantity"`
+	Name     *string `db:"name"`
+	Price    *int64  `db:"price"`
+	ImageURL *string `db:"image_url"`
+}
+
+func (r cartItemDB) toDomainItem() domain.CartItem {
+	item := domain.CartItem{}
+	if r.DishID != nil {
+		item.DishID = *r.DishID
+	}
+	if r.Quantity != nil {
+		item.Quantity = *r.Quantity
+	}
+	if r.Name != nil {
+		item.Name = *r.Name
+	}
+	if r.Price != nil {
+		item.Price = *r.Price
+	}
+	if r.ImageURL != nil {
+		item.ImageURL = *r.ImageURL
+	}
+	return item
+}
 
 type cartRepo struct {
 	pool PgxPool
@@ -22,11 +54,12 @@ func (r *cartRepo) GetCartByUserID(ctx context.Context, userID int) (domain.Cart
 	query := `
 		SELECT 
 			c.restaurant_brand_id,
+			c.updated_at,
 			cd.dish_id,
-			COALESCE(cd.quantity, 0),
-			COALESCE(d.name, ''),
-			COALESCE(d.price, 0),
-			COALESCE(d.image_url, '')
+			cd.quantity,
+			d.name,
+			d.price,
+			d.image_url
 		FROM cart c
 		LEFT JOIN cart_dish cd ON c.client_account_id = cd.cart_id
 		LEFT JOIN dish d ON cd.dish_id = d.id
@@ -37,45 +70,28 @@ func (r *cartRepo) GetCartByUserID(ctx context.Context, userID int) (domain.Cart
 	if err != nil {
 		return domain.Cart{}, err
 	}
-	defer rows.Close()
+
+	dbRows, err := pgx.CollectRows(rows, pgx.RowToStructByName[cartItemDB])
+	if err != nil {
+		return domain.Cart{}, err
+	}
+
+	if len(dbRows) == 0 {
+		return domain.Cart{UserID: userID, Items: []domain.CartItem{}}, nil
+	}
 
 	cart := domain.Cart{
-		UserID: userID,
-		Items:  []domain.CartItem{},
+		UserID:            userID,
+		RestaurantBrandID: dbRows[0].RestaurantID,
+		UpdatedAt:         dbRows[0].UpdatedAt,
+		Items:             make([]domain.CartItem, 0, len(dbRows)),
 	}
 
-	found := false
-
-	for rows.Next() {
-		found = true
-
-		var item domain.CartItem
-		var resID int
-
-		err := rows.Scan(
-			&resID,
-			&item.DishID,
-			&item.Quantity,
-			&item.Name,
-			&item.Price,
-			&item.ImageURL,
-		)
-		if err != nil {
-			return domain.Cart{}, err
-		}
-
-		cart.RestaurantBrandID = resID
-
-		if item.DishID != 0 {
-			cart.Items = append(cart.Items, item)
+	for _, row := range dbRows {
+		if row.DishID != nil {
+			cart.Items = append(cart.Items, row.toDomainItem())
 		}
 	}
-
-	if !found {
-		return domain.Cart{Items: []domain.CartItem{}, UserID: 0, RestaurantBrandID: 0, UpdatedAt: time.Time{}}, nil
-	}
-
-	cart.UpdatedAt = time.Now()
 
 	return cart, nil
 }
