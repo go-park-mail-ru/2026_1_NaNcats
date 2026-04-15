@@ -97,26 +97,15 @@ func (r *cartRepo) GetCartByUserID(ctx context.Context, userID int) (domain.Cart
 }
 
 func (r *cartRepo) UpdateCart(ctx context.Context, userID int, resID int, items []domain.CartItem) error {
-	tx, err := r.pool.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
-
-	_, err = tx.Exec(ctx, `
+	batch := &pgx.Batch{}
+	batch.Queue(`
 		INSERT INTO cart (client_account_id, restaurant_brand_id, updated_at)
 		VALUES ($1, $2, NOW())
 		ON CONFLICT (client_account_id) 
 		DO UPDATE SET restaurant_brand_id = $2, updated_at = NOW()`,
 		userID, resID)
-	if err != nil {
-		return err
-	}
 
-	_, err = tx.Exec(ctx, `DELETE FROM cart_dish WHERE cart_id = $1`, userID)
-	if err != nil {
-		return err
-	}
+	batch.Queue(`DELETE FROM cart_dish WHERE cart_id = $1`, userID)
 
 	if len(items) > 0 {
 		dishIDs := make([]int, len(items))
@@ -126,17 +115,25 @@ func (r *cartRepo) UpdateCart(ctx context.Context, userID int, resID int, items 
 			quantities[i] = item.Quantity
 		}
 
-		query := `
+		batch.Queue(`
 			INSERT INTO cart_dish (cart_id, dish_id, quantity)
-			SELECT $1, unnest($2::int[]), unnest($3::int[])
-		`
-		_, err = tx.Exec(ctx, query, userID, dishIDs, quantities)
+			SELECT $1, unnest($2::int[]), unnest($3::int[])`,
+			userID, dishIDs, quantities)
+	}
+
+	// Отправляем весь пакет в рамках одной транзакции
+	br := r.pool.SendBatch(ctx, batch)
+	defer br.Close()
+
+	// Нужно пройтись по результатам всех команд в батче, чтобы поймать ошибку
+	for i := 0; i < batch.Len(); i++ {
+		_, err := br.Exec()
 		if err != nil {
 			return err
 		}
 	}
 
-	return tx.Commit(ctx)
+	return nil
 }
 
 func (r *cartRepo) ClearCart(ctx context.Context, userId int) error {

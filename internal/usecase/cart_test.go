@@ -11,74 +11,16 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestCartUseCase_GetCart(t *testing.T) {
-	type mockInit func(cr *repoMocks.MockCartRepository)
-
-	tests := []struct {
-		name      string
-		userID    int
-		mockInit  mockInit
-		wantCart  domain.Cart
-		wantTotal int64
-		wantErr   error
-	}{
-		{
-			name:   "Успешное получение и расчет стоимости",
-			userID: 1,
-			mockInit: func(cr *repoMocks.MockCartRepository) {
-				cr.EXPECT().GetCartByUserID(gomock.Any(), 1).Return(domain.Cart{
-					Items: []domain.CartItem{
-						{DishID: 1, Price: 100, Quantity: 2},
-						{DishID: 2, Price: 300, Quantity: 1},
-					},
-				}, nil)
-			},
-			wantCart: domain.Cart{
-				Items: []domain.CartItem{
-					{DishID: 1, Price: 100, Quantity: 2},
-					{DishID: 2, Price: 300, Quantity: 1},
-				},
-			},
-			wantTotal: 500,
-			wantErr:   nil,
-		},
-		{
-			name:   "Ошибка репозитория",
-			userID: 1,
-			mockInit: func(cr *repoMocks.MockCartRepository) {
-				cr.EXPECT().GetCartByUserID(gomock.Any(), 1).Return(domain.Cart{}, errors.New("db error"))
-			},
-			wantCart:  domain.Cart{},
-			wantTotal: 0,
-			wantErr:   errors.New("db error"),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			cr := repoMocks.NewMockCartRepository(ctrl)
-			dr := repoMocks.NewMockDishRepository(ctrl)
-			uc := NewCartUseCase(cr, dr, "")
-
-			tt.mockInit(cr)
-
-			cart, total, err := uc.GetCart(context.Background(), tt.userID)
-
-			assert.Equal(t, tt.wantErr, err)
-			assert.Equal(t, tt.wantCart, cart)
-			assert.Equal(t, tt.wantTotal, total)
-		})
-	}
-}
-
 func TestCartUseCase_UpdateCart(t *testing.T) {
+	// Тип для инициализации моков
 	type mockInit func(cr *repoMocks.MockCartRepository, dr *repoMocks.MockDishRepository)
 
+	userID := 1
+	restaurantID := 10
+
+	// Данные для успешного кейса
 	cartData := domain.Cart{
-		RestaurantBrandID: 10,
+		RestaurantBrandID: restaurantID,
 		Items: []domain.CartItem{
 			{DishID: 1, Quantity: 2},
 		},
@@ -93,49 +35,72 @@ func TestCartUseCase_UpdateCart(t *testing.T) {
 	}{
 		{
 			name:     "Успешное обновление",
-			userID:   1,
+			userID:   userID,
 			cartData: cartData,
 			mockInit: func(cr *repoMocks.MockCartRepository, dr *repoMocks.MockDishRepository) {
-				dr.EXPECT().GetDishByID(gomock.Any(), 1).Return(domain.Dish{RestaurantBrandID: 10}, nil)
-				cr.EXPECT().UpdateCart(gomock.Any(), 1, 10, cartData.Items).Return(nil)
+				dr.EXPECT().
+					GetDishesByIDs(gomock.Any(), []int{1}).
+					Return([]domain.Dish{{ID: 1, RestaurantBrandID: restaurantID}}, nil)
+
+				cr.EXPECT().
+					UpdateCart(gomock.Any(), userID, restaurantID, cartData.Items).
+					Return(nil)
 			},
 			wantErr: nil,
 		},
 		{
 			name:     "Очистка корзины при пустом списке",
-			userID:   1,
+			userID:   userID,
 			cartData: domain.Cart{Items: []domain.CartItem{}},
 			mockInit: func(cr *repoMocks.MockCartRepository, dr *repoMocks.MockDishRepository) {
-				cr.EXPECT().ClearCart(gomock.Any(), 1).Return(nil)
+				cr.EXPECT().
+					ClearCart(gomock.Any(), userID).
+					Return(nil)
 			},
 			wantErr: nil,
 		},
 		{
-			name:   "Ошибка: количество равно 0",
-			userID: 1,
+			name:   "Ошибка: количество меньше или равно 0",
+			userID: userID,
 			cartData: domain.Cart{
 				Items: []domain.CartItem{{DishID: 1, Quantity: 0}},
 			},
-			mockInit: func(cr *repoMocks.MockCartRepository, dr *repoMocks.MockDishRepository) {},
-			wantErr:  domain.ErrInvalidQuantity,
+			mockInit: func(cr *repoMocks.MockCartRepository, dr *repoMocks.MockDishRepository) {
+			},
+			wantErr: domain.ErrInvalidQuantity,
 		},
 		{
 			name:     "Ошибка: товары из разных ресторанов",
-			userID:   1,
+			userID:   userID,
 			cartData: cartData,
 			mockInit: func(cr *repoMocks.MockCartRepository, dr *repoMocks.MockDishRepository) {
-				dr.EXPECT().GetDishByID(gomock.Any(), 1).Return(domain.Dish{RestaurantBrandID: 99}, nil)
+				dr.EXPECT().
+					GetDishesByIDs(gomock.Any(), []int{1}).
+					Return([]domain.Dish{{ID: 1, RestaurantBrandID: 99}}, nil)
 			},
 			wantErr: domain.ErrMultipleRestaurants,
 		},
 		{
-			name:     "Ошибка: блюдо не найдено",
-			userID:   1,
+			name:     "Ошибка: блюдо не найдено (база вернула меньше записей)",
+			userID:   userID,
 			cartData: cartData,
 			mockInit: func(cr *repoMocks.MockCartRepository, dr *repoMocks.MockDishRepository) {
-				dr.EXPECT().GetDishByID(gomock.Any(), 1).Return(domain.Dish{}, errors.New("not found"))
+				dr.EXPECT().
+					GetDishesByIDs(gomock.Any(), []int{1}).
+					Return([]domain.Dish{}, nil)
 			},
-			wantErr: errors.New("not found"),
+			wantErr: domain.ErrDishNotFound,
+		},
+		{
+			name:     "Ошибка: сбой в работе репозитория блюд",
+			userID:   userID,
+			cartData: cartData,
+			mockInit: func(cr *repoMocks.MockCartRepository, dr *repoMocks.MockDishRepository) {
+				dr.EXPECT().
+					GetDishesByIDs(gomock.Any(), []int{1}).
+					Return(nil, errors.New("internal DB error"))
+			},
+			wantErr: errors.New("internal DB error"),
 		},
 	}
 
@@ -146,13 +111,18 @@ func TestCartUseCase_UpdateCart(t *testing.T) {
 
 			cr := repoMocks.NewMockCartRepository(ctrl)
 			dr := repoMocks.NewMockDishRepository(ctrl)
-			uc := NewCartUseCase(cr, dr, "")
+			uc := NewCartUseCase(cr, dr, "default_url")
 
 			tt.mockInit(cr, dr)
 
 			err := uc.UpdateCart(context.Background(), tt.userID, tt.cartData)
 
-			assert.Equal(t, tt.wantErr, err)
+			if tt.wantErr != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.wantErr.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

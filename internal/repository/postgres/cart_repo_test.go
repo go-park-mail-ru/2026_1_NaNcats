@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/pashagolub/pgxmock/v5"
@@ -14,6 +15,17 @@ import (
 func TestCartRepo_GetCartByUserID(t *testing.T) {
 	ctx := context.Background()
 	userID := 1
+	now := time.Now().Truncate(time.Second) // Округляем для тестов
+
+	// Вспомогательные переменные для передачи указателей в AddRow
+	dID1, dID2 := 101, 102
+	qty1, qty2 := 2, 1
+	name1, name2 := "Burger", "Cola"
+	price1, price2 := int64(500), int64(300)
+	url1, url2 := "img1.png", "img2.png"
+
+	// Список колонок должен СТРОГО совпадать с тегами в cartRowDB
+	columns := []string{"restaurant_brand_id", "updated_at", "dish_id", "quantity", "name", "price", "image_url"}
 
 	tests := []struct {
 		name    string
@@ -22,12 +34,11 @@ func TestCartRepo_GetCartByUserID(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Успех",
+			name: "Успех: товары в корзине",
 			setup: func(mock pgxmock.PgxPoolIface) {
-				columns := []string{"res_id", "dish_id", "qty", "name", "price", "url"}
 				rows := pgxmock.NewRows(columns).
-					AddRow(10, 101, 2, "Burger", int64(500), "img1.png").
-					AddRow(10, 102, 1, "Cola", int64(300), "img2.png")
+					AddRow(10, now, &dID1, &qty1, &name1, &price1, &url1).
+					AddRow(10, now, &dID2, &qty2, &name2, &price2, &url2)
 
 				mock.ExpectQuery(`SELECT (.+) FROM cart c`).
 					WithArgs(userID).
@@ -36,6 +47,7 @@ func TestCartRepo_GetCartByUserID(t *testing.T) {
 			want: domain.Cart{
 				UserID:            userID,
 				RestaurantBrandID: 10,
+				UpdatedAt:         now,
 				Items: []domain.CartItem{
 					{DishID: 101, Quantity: 2, Name: "Burger", Price: 500, ImageURL: "img1.png"},
 					{DishID: 102, Quantity: 1, Name: "Cola", Price: 300, ImageURL: "img2.png"},
@@ -44,26 +56,43 @@ func TestCartRepo_GetCartByUserID(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Успех: корзина пустая",
+			name: "Успех: корзина существует, но она пустая (LEFT JOIN вернул NULL)",
 			setup: func(mock pgxmock.PgxPoolIface) {
-				columns := []string{"res_id", "dish_id", "qty", "name", "price", "url"}
+				// В этом случае база возвращает 1 строку, где данные корзины есть, а товара - NULL
+				rows := pgxmock.NewRows(columns).
+					AddRow(10, now, nil, nil, nil, nil, nil)
+
 				mock.ExpectQuery(`SELECT`).
 					WithArgs(userID).
-					WillReturnRows(pgxmock.NewRows(columns))
+					WillReturnRows(rows)
 			},
 			want: domain.Cart{
-				UserID:            0,
-				RestaurantBrandID: 0,
+				UserID:            userID,
+				RestaurantBrandID: 10,
+				UpdatedAt:         now,
 				Items:             []domain.CartItem{},
 			},
 			wantErr: false,
 		},
 		{
-			name: "Ошибка бд",
+			name: "Успех: запись о корзине вообще отсутствует в БД",
 			setup: func(mock pgxmock.PgxPoolIface) {
 				mock.ExpectQuery(`SELECT`).
 					WithArgs(userID).
-					WillReturnError(errors.New("db error"))
+					WillReturnRows(pgxmock.NewRows(columns))
+			},
+			want: domain.Cart{
+				UserID: userID,
+				Items:  []domain.CartItem{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Ошибка: сбой базы данных",
+			setup: func(mock pgxmock.PgxPoolIface) {
+				mock.ExpectQuery(`SELECT`).
+					WithArgs(userID).
+					WillReturnError(errors.New("db connection failure"))
 			},
 			want:    domain.Cart{},
 			wantErr: true,
@@ -80,6 +109,7 @@ func TestCartRepo_GetCartByUserID(t *testing.T) {
 			tt.setup(mock)
 
 			got, err := repo.GetCartByUserID(ctx, userID)
+
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -87,6 +117,11 @@ func TestCartRepo_GetCartByUserID(t *testing.T) {
 				assert.Equal(t, tt.want.UserID, got.UserID)
 				assert.Equal(t, tt.want.RestaurantBrandID, got.RestaurantBrandID)
 				assert.Equal(t, tt.want.Items, got.Items)
+
+				// Проверка времени с допуском в 1 секунду
+				if !tt.want.UpdatedAt.IsZero() {
+					assert.WithinDuration(t, tt.want.UpdatedAt, got.UpdatedAt, time.Second)
+				}
 			}
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
@@ -111,21 +146,19 @@ func TestCartRepo_UpdateCart(t *testing.T) {
 				{DishID: 102, Quantity: 1},
 			},
 			setup: func(mock pgxmock.PgxPoolIface) {
-				mock.ExpectBegin()
+				batch := mock.ExpectBatch()
 
-				mock.ExpectExec(`INSERT INTO cart`).
+				batch.ExpectExec(`INSERT INTO cart`).
 					WithArgs(userID, resID).
 					WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
-				mock.ExpectExec(`DELETE FROM cart_dish WHERE cart_id = \$1`).
+				batch.ExpectExec(`DELETE FROM cart_dish`).
 					WithArgs(userID).
 					WillReturnResult(pgxmock.NewResult("DELETE", 2))
 
-				mock.ExpectExec(`INSERT INTO cart_dish`).
+				batch.ExpectExec(`INSERT INTO cart_dish`).
 					WithArgs(userID, []int{101, 102}, []int{2, 1}).
 					WillReturnResult(pgxmock.NewResult("INSERT", 2))
-
-				mock.ExpectCommit()
 			},
 			wantErr: false,
 		},
@@ -133,39 +166,35 @@ func TestCartRepo_UpdateCart(t *testing.T) {
 			name:  "Успех: пустая корзина",
 			items: []domain.CartItem{},
 			setup: func(mock pgxmock.PgxPoolIface) {
-				mock.ExpectBegin()
+				batch := mock.ExpectBatch()
 
-				mock.ExpectExec(`INSERT INTO cart`).
+				batch.ExpectExec(`INSERT INTO cart`).
 					WithArgs(userID, resID).
 					WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
-				mock.ExpectExec(`DELETE FROM cart_dish WHERE cart_id = \$1`).
+				batch.ExpectExec(`DELETE FROM cart_dish`).
 					WithArgs(userID).
 					WillReturnResult(pgxmock.NewResult("DELETE", 1))
-
-				mock.ExpectCommit()
 			},
 			wantErr: false,
 		},
 		{
-			name:  "Ошибка бд",
+			name:  "Ошибка бд: сбой на вставке товаров",
 			items: []domain.CartItem{{DishID: 101, Quantity: 1}},
 			setup: func(mock pgxmock.PgxPoolIface) {
-				mock.ExpectBegin()
+				batch := mock.ExpectBatch()
 
-				mock.ExpectExec(`INSERT INTO cart`).
+				batch.ExpectExec(`INSERT INTO cart`).
 					WithArgs(userID, resID).
 					WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
-				mock.ExpectExec(`DELETE FROM cart_dish WHERE cart_id = \$1`).
+				batch.ExpectExec(`DELETE FROM cart_dish`).
 					WithArgs(userID).
 					WillReturnResult(pgxmock.NewResult("DELETE", 1))
 
-				mock.ExpectExec(`INSERT INTO cart_dish`).
+				batch.ExpectExec(`INSERT INTO cart_dish`).
 					WithArgs(userID, []int{101}, []int{1}).
-					WillReturnError(errors.New("db error"))
-
-				mock.ExpectRollback()
+					WillReturnError(errors.New("db write error"))
 			},
 			wantErr: true,
 		},
