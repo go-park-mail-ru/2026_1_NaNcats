@@ -63,7 +63,7 @@ func TestCSRFMiddleware_Check(t *testing.T) {
 			mw := NewCSRFMiddleware(mockSessionUC, mocks.NewNopLogger())
 			req := httptest.NewRequest(tt.method, "/api/test", nil)
 			if tt.hasCookie {
-				req.AddCookie(&http.Cookie{Name: "session_id", Value: uuid.New().String()})
+				req.AddCookie(&http.Cookie{Name: "session_id", Value: uuid.NewString()})
 			}
 			if tt.headerToken != "" {
 				req.Header.Set("X-CSRF-Token", tt.headerToken)

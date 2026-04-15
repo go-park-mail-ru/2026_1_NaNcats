@@ -37,7 +37,7 @@ func TestAuthMiddleware_RequireAuth(t *testing.T) {
 		{
 			name:        "Успешная авторизация",
 			hasCookie:   true,
-			cookieValue: uuid.New().String(),
+			cookieValue: uuid.NewString(),
 			mockInit: func(m *ucMocks.MockSessionUseCase) {
 				// Ожидаем проверку сессии
 				m.EXPECT().
@@ -63,7 +63,7 @@ func TestAuthMiddleware_RequireAuth(t *testing.T) {
 		{
 			name:        "Ошибка: сессия протухла или не найдена",
 			hasCookie:   true,
-			cookieValue: uuid.New().String(),
+			cookieValue: uuid.NewString(),
 			mockInit: func(m *ucMocks.MockSessionUseCase) {
 				// Программируем UseCase вернуть ошибку
 				m.EXPECT().

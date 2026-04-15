@@ -275,7 +275,7 @@ func TestAuthHandler_Logout(t *testing.T) {
 		{
 			name:        "Успешный выход",
 			hasCookie:   true,
-			cookieValue: uuid.New().String(),
+			cookieValue: uuid.NewString(),
 			mockInit: func(m *ucMocks.MockAuthUseCase) {
 				// Ожидаем вызов Logout в UseCase
 				m.EXPECT().
@@ -317,7 +317,7 @@ func TestAuthHandler_Logout(t *testing.T) {
 		{
 			name:        "Успех, но сессия не найдена в базе",
 			hasCookie:   true,
-			cookieValue: uuid.New().String(),
+			cookieValue: uuid.NewString(),
 			mockInit: func(m *ucMocks.MockAuthUseCase) {
 				// Программируем мок вернуть ошибку (например, сессия уже удалена)
 				m.EXPECT().

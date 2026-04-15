@@ -112,7 +112,7 @@ func (u *userUseCase) UpdateAvatar(ctx context.Context, userID int, file io.Read
 		return "", domain.ErrInvalidImageExt
 	}
 
-	filename := "avatars/" + uuid.New().String() + ".webp"
+	filename := "avatars/" + uuid.NewString() + ".webp"
 
 	newAvatarURL, err := u.fileStorage.UploadFile(ctx, webpData, filename, "image/webp")
 	if err != nil {
