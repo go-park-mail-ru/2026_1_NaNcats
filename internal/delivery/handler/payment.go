@@ -14,6 +14,15 @@ import (
 	"github.com/mailru/easyjson"
 )
 
+//easyjson:json
+type PaymentMethodResponse struct {
+	ID         string `json:"id" example:"pay-method-uuid"`
+	CardType   string `json:"card_type" example:"Mir"`
+	Last4      string `json:"last4" example:"6767"`
+	IssuerName string `json:"issuer_name,omitempty" example:"Sber"`
+	IsDefault  bool   `json:"is_default"`
+}
+
 type paymentHandler struct {
 	paymentUC usecase.PaymentUseCase
 	logger    domain.Logger
@@ -70,7 +79,7 @@ func (h *paymentHandler) InitiateCardBinding(w http.ResponseWriter, r *http.Requ
 // @Description		Возвращает список всех привязанных банковских карт пользователя
 // @Tags			profile, payments
 // @Produce			json
-// @Success			200		{array}		domain.PaymentMethod
+// @Success			200		{array}		PaymentMethodResponse
 // @Failure			401		{object}	map[string]string "Пользователь не авторизован"
 // @Failure			500		{object}	map[string]string "Внутренняя ошибка сервера"
 // @Router			/profile/cards [get]
@@ -98,7 +107,18 @@ func (h *paymentHandler) GetUserCards(w http.ResponseWriter, r *http.Request) {
 
 	l.Debug("successfully fetched user cards", domain.Int("user_id", userID), domain.Int("count", len(cards)))
 
-	response.JSON(w, http.StatusOK, cards)
+	resp := make([]PaymentMethodResponse, 0, len(cards))
+	for _, card := range cards {
+		resp = append(resp, PaymentMethodResponse{
+			ID:         card.ExternalID,
+			CardType:   card.CardType,
+			Last4:      card.Last4,
+			IssuerName: card.IssuerName,
+			IsDefault:  card.IsDefault,
+		})
+	}
+
+	response.JSON(w, http.StatusOK, resp)
 }
 
 // DeleteCard godoc

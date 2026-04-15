@@ -6,7 +6,38 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+	"github.com/jackc/pgx/v5"
 )
+
+type addressDB struct {
+	PublicID       string  `db:"public_id"`
+	AddressText    string  `db:"address_text"`
+	Latitude       float64 `db:"lat"`
+	Longitude      float64 `db:"lon"`
+	Apartment      string  `db:"apartment"`
+	Entrance       string  `db:"entrance"`
+	Floor          string  `db:"floor_level"`
+	DoorCode       string  `db:"door_code"`
+	CourierComment string  `db:"courier_comment"`
+	Label          string  `db:"label"`
+}
+
+func (a addressDB) toDomain() domain.Address {
+	return domain.Address{
+		PublicID: a.PublicID,
+		Location: domain.Location{
+			AddressText: a.AddressText,
+			Latitude:    a.Latitude,
+			Longitude:   a.Longitude,
+		},
+		Apartment:      a.Apartment,
+		Entrance:       a.Entrance,
+		Floor:          a.Floor,
+		DoorCode:       a.DoorCode,
+		CourierComment: a.CourierComment,
+		Label:          a.Label,
+	}
+}
 
 type addressRepo struct {
 	pool PgxPool
@@ -62,19 +93,17 @@ func (r *addressRepo) GetAddressesByUserID(ctx context.Context, userID int) ([]d
 	}
 	defer rows.Close()
 
-	var addresses []domain.Address
-	for rows.Next() {
-		var a domain.Address
-		err := rows.Scan(
-			&a.PublicID, &a.Location.AddressText, &a.Location.Latitude, &a.Location.Longitude,
-			&a.Apartment, &a.Entrance, &a.Floor, &a.DoorCode, &a.CourierComment, &a.Label,
-		)
-		if err != nil {
-			return nil, err
-		}
-		addresses = append(addresses, a)
+	dbAddresses, err := pgx.CollectRows(rows, pgx.RowToStructByName[addressDB])
+	if err != nil {
+		return nil, err
 	}
-	return addresses, nil
+
+	result := make([]domain.Address, 0, len(dbAddresses))
+	for _, addr := range dbAddresses {
+		result = append(result, addr.toDomain())
+	}
+
+	return result, nil
 }
 
 func (r *addressRepo) DeleteAddress(ctx context.Context, userID int, publicID string) error {

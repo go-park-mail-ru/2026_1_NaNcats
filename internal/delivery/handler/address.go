@@ -25,6 +25,42 @@ type AddressRequest struct {
 	Label          string  `json:"label"`
 }
 
+//easyjson:json
+type LocationResponse struct {
+	AddressText string  `json:"address_text"`
+	Latitude    float64 `json:"latitude"`
+	Longitude   float64 `json:"longitude"`
+}
+
+//easyjson:json
+type AddressResponse struct {
+	ID             string           `json:"id"`
+	Location       LocationResponse `json:"location"`
+	Apartment      string           `json:"apartment"`
+	Entrance       string           `json:"entrance"`
+	Floor          string           `json:"floor"`
+	DoorCode       string           `json:"door_code"`
+	CourierComment string           `json:"courier_comment"`
+	Label          string           `json:"label"`
+}
+
+func mapAddressToResponse(a domain.Address) AddressResponse {
+	return AddressResponse{
+		ID: a.PublicID,
+		Location: LocationResponse{
+			AddressText: a.Location.AddressText,
+			Latitude:    a.Location.Latitude,
+			Longitude:   a.Location.Longitude,
+		},
+		Apartment:      a.Apartment,
+		Entrance:       a.Entrance,
+		Floor:          a.Floor,
+		DoorCode:       a.DoorCode,
+		CourierComment: a.CourierComment,
+		Label:          a.Label,
+	}
+}
+
 type addressHandler struct {
 	usecase usecase.AddressUseCase
 	logger  domain.Logger
@@ -95,7 +131,7 @@ func (h *addressHandler) AddAddress(w http.ResponseWriter, r *http.Request) {
 // @Description		Возвращает все сохраненные адреса текущего пользователя
 // @Tags			profile
 // @Produce			json
-// @Success			200		{object}  map[string][]domain.Address	"Список адресов пользователя"
+// @Success			200		{object}  map[string][]AddressResponse	"Список адресов пользователя"
 // @Failure			401		{object}  response.ErrorResponse		"Неавторизован"
 // @Failure			500		{object}  response.ErrorResponse		"Внутренняя ошибка сервера"
 // @Router			/profile/addresses [get]
@@ -119,7 +155,12 @@ func (h *addressHandler) GetAddresses(w http.ResponseWriter, r *http.Request) {
 
 	l.Debug("fetched user addresses", domain.Int("user_id", userID), domain.Int("count", len(addresses)))
 
-	response.JSON(w, http.StatusOK, map[string]any{"addresses": addresses})
+	resp := make([]AddressResponse, 0, len(addresses))
+	for _, addr := range addresses {
+		resp = append(resp, mapAddressToResponse(addr))
+	}
+
+	response.JSON(w, http.StatusOK, map[string]any{"addresses": resp})
 }
 
 // DeleteAddress godoc

@@ -1,11 +1,11 @@
 package domain
 
 type PaymentMethod struct {
-	ID         int    `json:"-"`
-	UserID     int    `json:"-"`
-	ExternalID string `json:"id"`
-	CardType   string `json:"card_type" example:"Mir"`
-	Last4      string `json:"last4" example:"6767"`
-	IssuerName string `json:"issuer_name,omitempty" example:"Sber"`
-	IsDefault  bool   `json:"is_default"`
+	ID         int
+	UserID     int
+	ExternalID string
+	CardType   string
+	Last4      string
+	IssuerName string
+	IsDefault  bool
 }
