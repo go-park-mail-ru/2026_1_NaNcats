@@ -5,13 +5,14 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
 )
 
 type clientProfileRepo struct {
-	pool PgxPool
+	pool postgres.PgxPool
 }
 
-func NewClientProfileRepo(pool PgxPool) repository.ClientProfileRepository {
+func NewClientProfileRepo(pool postgres.PgxPool) repository.ClientProfileRepository {
 	return &clientProfileRepo{pool: pool}
 }
 

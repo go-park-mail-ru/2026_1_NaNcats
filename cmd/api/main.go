@@ -9,14 +9,36 @@ import (
 	"os"
 	"time"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/handler"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	infrastructureLogger "github.com/go-park-mail-ru/2026_1_NaNcats/internal/infrastructure/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/redisrepo"
+	addressPG "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres/address"
+	cartPG "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres/cart"
+	orderPG "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres/order"
+	paymentPG "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres/payment"
+	restaurantPG "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres/restaurant"
+	userPG "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres/user"
+	paymentCache "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/redisrepo/payment"
+	sessionCache "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/redisrepo/session"
+
+	addressUsecase "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/address"
+	authUsecase "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/auth"
+	cartUsecase "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/cart"
+	orderUsecase "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/order"
+	paymentUsecase "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/payment"
+	restaurantUsecase "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/restaurant"
+	userUsecase "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/user"
+
+	addressHandler "github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/handler/address"
+	authHandler "github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/handler/auth"
+	cartHandler "github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/handler/cart"
+	orderHandler "github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/handler/order"
+	paymentHandler "github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/handler/payment"
+	restaurantHandler "github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/handler/restaurant"
+	userHandler "github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/handler/user"
+
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/s3"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/api_clients/yookassa"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
 	"github.com/go-playground/validator/v10"
@@ -120,16 +142,16 @@ func main() {
 	returnURL := os.Getenv("YOOKASSA_RETURN_URL")
 	yookassaClient := yookassa.NewClient(shopID, yookassaSecretKey)
 
-	userRepo := postgres.NewUserRepo(pool)
-	clientProfileRepo := postgres.NewClientProfileRepo(pool)
-	sessionRepo := redisrepo.NewSessionRepo(redisPool)
-	restaurantBrandRepo := postgres.NewRestaurantBrandRepo(pool)
-	paymentRepo := postgres.NewPaymentRepo(pool)
-	paymentCacheRepo := redisrepo.NewPaymentCacheRepo(redisPool)
-	addressRepo := postgres.NewAddressRepo(pool)
-	orderRepo := postgres.NewOrderRepo(pool)
-	dishRepo := postgres.NewDishRepo(pool)
-	cartRepo := postgres.NewCartRepo(pool)
+	userRepo := userPG.NewUserRepo(pool)
+	clientProfileRepo := userPG.NewClientProfileRepo(pool)
+	sessionRepo := sessionCache.NewSessionRepo(redisPool)
+	restaurantBrandRepo := restaurantPG.NewRestaurantBrandRepo(pool)
+	paymentRepo := paymentPG.NewPaymentRepo(pool)
+	paymentCacheRepo := paymentCache.NewPaymentCacheRepo(redisPool)
+	addressRepo := addressPG.NewAddressRepo(pool)
+	orderRepo := orderPG.NewOrderRepo(pool)
+	dishRepo := restaurantPG.NewDishRepo(pool)
+	cartRepo := cartPG.NewCartRepo(pool)
 	s3Repo, err := s3.NewS3Storage(ctx, keyID, s3SecretKey, bucketName, "ru-central1")
 	if err != nil {
 		appLogger.Fatal("Failed to init S3", err)
@@ -145,30 +167,30 @@ func main() {
 		appLogger.Fatal("One of the default avatars is null", domain.ErrNoDefaultPhotoURL)
 	}
 
-	userUC := usecase.NewUserUseCase(userRepo, s3Repo, defaultAvatarURL)
-	clientProfileUC := usecase.NewClientProfileUseCase(clientProfileRepo)
-	sessionUC := usecase.NewSessionUseCase(sessionRepo, sessionTTL)
-	authUC := usecase.NewAuthUseCase(userUC, sessionUC, clientProfileUC)
-	restaurantBrandUC := usecase.NewRestaurantBrandUseCase(restaurantBrandRepo, defaultRestaurantLogoURL)
-	userProfileUC := usecase.NewUserProfileUseCase(userUC)
-	cartUC := usecase.NewCartUseCase(cartRepo, dishRepo, defaultFoodLogoURL)
-	dishUC := usecase.NewDishUseCase(dishRepo, defaultFoodLogoURL)
-	orderUC := usecase.NewOrderUseCase(orderRepo, addressRepo, cartUC, yookassaClient, defaultRestaurantLogoURL)
-	paymentUC := usecase.NewPaymentUseCase(paymentRepo, paymentCacheRepo, orderRepo, yookassaClient, returnURL)
-	addressUC := usecase.NewAddressUseCase(addressRepo)
+	userUC := userUsecase.NewUserUseCase(userRepo, s3Repo, defaultAvatarURL)
+	clientProfileUC := userUsecase.NewClientProfileUseCase(clientProfileRepo)
+	sessionUC := authUsecase.NewSessionUseCase(sessionRepo, sessionTTL)
+	authUC := authUsecase.NewAuthUseCase(userUC, sessionUC, clientProfileUC)
+	restaurantBrandUC := restaurantUsecase.NewRestaurantBrandUseCase(restaurantBrandRepo, defaultRestaurantLogoURL)
+	userProfileUC := userUsecase.NewUserProfileUseCase(userUC)
+	cartUC := cartUsecase.NewCartUseCase(cartRepo, dishRepo, defaultFoodLogoURL)
+	dishUC := restaurantUsecase.NewDishUseCase(dishRepo, defaultFoodLogoURL)
+	orderUC := orderUsecase.NewOrderUseCase(orderRepo, addressRepo, cartUC, yookassaClient, defaultRestaurantLogoURL)
+	paymentUC := paymentUsecase.NewPaymentUseCase(paymentRepo, paymentCacheRepo, orderRepo, yookassaClient, returnURL)
+	addressUC := addressUsecase.NewAddressUseCase(addressRepo)
 
 	if os.Getenv("DEFAULT_AVATAR_URL") == "" {
 		appLogger.Warn("DEFAULT_AVATAR_URL пустой, фронтенд может упасть при запросе стандартного аватара")
 	}
 
-	authHandler := handler.NewAuthHandler(authUC, userUC, appLogger, validate)
-	restaurantBrandHandler := handler.NewRestaurantBrandHandler(restaurantBrandUC, appLogger)
-	userProfileHandler := handler.NewUserProfileHandler(userProfileUC, userUC, sessionUC, appLogger)
-	paymentHandler := handler.NewPaymentHandler(paymentUC, appLogger)
-	addressHandler := handler.NewAddressHandler(addressUC, appLogger)
-	orderHandler := handler.NewOrderHandler(orderUC, appLogger)
-	dishHandler := handler.NewDishHandler(dishUC, appLogger)
-	cartHandler := handler.NewCartHandler(cartUC, appLogger)
+	authHandler := authHandler.NewAuthHandler(authUC, userUC, appLogger, validate)
+	restaurantBrandHandler := restaurantHandler.NewRestaurantBrandHandler(restaurantBrandUC, appLogger)
+	userProfileHandler := userHandler.NewUserProfileHandler(userProfileUC, userUC, sessionUC, appLogger)
+	paymentHandler := paymentHandler.NewPaymentHandler(paymentUC, appLogger)
+	addressHandler := addressHandler.NewAddressHandler(addressUC, appLogger)
+	orderHandler := orderHandler.NewOrderHandler(orderUC, appLogger)
+	dishHandler := restaurantHandler.NewDishHandler(dishUC, appLogger)
+	cartHandler := cartHandler.NewCartHandler(cartUC, appLogger)
 
 	authMW := middleware.NewAuthMiddleware(sessionUC, appLogger)
 	csrfMid := middleware.NewCSRFMiddleware(sessionUC, appLogger)

@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -40,10 +41,10 @@ func (p paymentMethodDB) toDomain() domain.PaymentMethod {
 }
 
 type paymentRepo struct {
-	pool PgxPool
+	pool postgres.PgxPool
 }
 
-func NewPaymentRepo(pool PgxPool) repository.PaymentRepository {
+func NewPaymentRepo(pool postgres.PgxPool) repository.PaymentRepository {
 	return &paymentRepo{
 		pool: pool,
 	}

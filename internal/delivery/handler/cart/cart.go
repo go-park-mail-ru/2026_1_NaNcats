@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
+	cart "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/cart"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 )
@@ -35,11 +35,11 @@ type CartResponse struct {
 }
 
 type cartHandler struct {
-	cartUC usecase.CartUseCase
+	cartUC cart.CartUseCase
 	logger domain.Logger
 }
 
-func NewCartHandler(cuc usecase.CartUseCase, l domain.Logger) *cartHandler {
+func NewCartHandler(cuc cart.CartUseCase, l domain.Logger) *cartHandler {
 	return &cartHandler{
 		cartUC: cuc,
 		logger: l,

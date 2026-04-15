@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
 )
 
 type restaurantBrandDB struct {
@@ -43,10 +44,10 @@ func (d restaurantBrandDB) toDomain() domain.RestaurantBrand {
 }
 
 type restaurantBrandRepo struct {
-	pool PgxPool
+	pool postgres.PgxPool
 }
 
-func NewRestaurantBrandRepo(pool PgxPool) repository.RestaurantBrandRepository {
+func NewRestaurantBrandRepo(pool postgres.PgxPool) repository.RestaurantBrandRepository {
 	return &restaurantBrandRepo{
 		pool: pool,
 	}

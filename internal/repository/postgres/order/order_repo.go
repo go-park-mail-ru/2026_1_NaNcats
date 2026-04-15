@@ -7,16 +7,17 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type orderRepo struct {
-	pool PgxPool
+	pool postgres.PgxPool
 }
 
-func NewOrderRepo(pool PgxPool) repository.OrderRepository {
+func NewOrderRepo(pool postgres.PgxPool) repository.OrderRepository {
 	return &orderRepo{
 		pool: pool,
 	}

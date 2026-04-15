@@ -1,4 +1,4 @@
-package handler
+package auth
 
 //go:generate easyjson $GOFILE
 
@@ -9,7 +9,8 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
+	auth "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/auth"
+	user "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/user"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/validatorutil"
@@ -51,13 +52,13 @@ type CSRFResponse struct {
 }
 
 type authHandler struct {
-	authUC   usecase.AuthUseCase
-	userUC   usecase.UserUseCase
+	authUC   auth.AuthUseCase
+	userUC   user.UserUseCase
 	logger   domain.Logger
 	validate *validator.Validate
 }
 
-func NewAuthHandler(auc usecase.AuthUseCase, uuc usecase.UserUseCase, logger domain.Logger, v *validator.Validate) *authHandler {
+func NewAuthHandler(auc auth.AuthUseCase, uuc user.UserUseCase, logger domain.Logger, v *validator.Validate) *authHandler {
 	return &authHandler{
 		authUC:   auc,
 		userUC:   uuc,

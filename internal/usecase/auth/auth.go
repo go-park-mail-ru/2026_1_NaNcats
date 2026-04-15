@@ -27,13 +27,13 @@ type AuthUseCase interface {
 
 // реализация контракта
 type authUseCase struct {
-	userUC          UserUseCase
+	userUC          user.UserUseCase
 	sessionUC       SessionUseCase
 	clientProfileUC user.ClientProfileUseCase
 }
 
 // функция-конструктор бизнес-логики авторизации
-func NewAuthUseCase(uuc UserUseCase, suc SessionUseCase, cpuc user.ClientProfileUseCase) AuthUseCase {
+func NewAuthUseCase(uuc user.UserUseCase, suc SessionUseCase, cpuc user.ClientProfileUseCase) AuthUseCase {
 	return &authUseCase{
 		userUC:          uuc,
 		sessionUC:       suc,

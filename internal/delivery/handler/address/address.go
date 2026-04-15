@@ -1,4 +1,4 @@
-package handler
+package address
 
 //go:generate easyjson $GOFILE
 
@@ -8,6 +8,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
+	address "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/address"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 )
@@ -62,7 +63,7 @@ func mapAddressToResponse(a domain.Address) AddressResponse {
 }
 
 type addressHandler struct {
-	usecase usecase.AddressUseCase
+	usecase address.AddressUseCase
 	logger  domain.Logger
 }
 

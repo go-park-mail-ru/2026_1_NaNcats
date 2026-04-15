@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -41,10 +42,10 @@ func (r cartItemDB) toDomainItem() domain.CartItem {
 }
 
 type cartRepo struct {
-	pool PgxPool
+	pool postgres.PgxPool
 }
 
-func NewCartRepo(pool PgxPool) repository.CartRepository {
+func NewCartRepo(pool postgres.PgxPool) repository.CartRepository {
 	return &cartRepo{
 		pool: pool,
 	}

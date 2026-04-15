@@ -8,16 +8,17 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type userRepo struct {
-	pool PgxPool
+	pool postgres.PgxPool
 }
 
-func NewUserRepo(pool PgxPool) repository.UserRepository {
+func NewUserRepo(pool postgres.PgxPool) repository.UserRepository {
 	return &userRepo{
 		pool: pool,
 	}

@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
 )
 
 type dishDB struct {
@@ -45,10 +46,10 @@ func (d dishDB) toDomain() domain.Dish {
 }
 
 type dishRepo struct {
-	pool PgxPool
+	pool postgres.PgxPool
 }
 
-func NewDishRepo(pool PgxPool) repository.DishRepository {
+func NewDishRepo(pool postgres.PgxPool) repository.DishRepository {
 	return &dishRepo{pool: pool}
 }
 

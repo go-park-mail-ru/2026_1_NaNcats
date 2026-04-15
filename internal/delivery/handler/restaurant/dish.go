@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
+	restaurant "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/restaurant"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 )
 
@@ -26,11 +26,11 @@ type DishesResponse struct {
 }
 
 type dishHandler struct {
-	dishUC usecase.DishUseCase
+	dishUC restaurant.DishUseCase
 	logger domain.Logger
 }
 
-func NewDishHandler(duc usecase.DishUseCase, logger domain.Logger) *dishHandler {
+func NewDishHandler(duc restaurant.DishUseCase, logger domain.Logger) *dishHandler {
 	return &dishHandler{
 		dishUC: duc,
 		logger: logger,

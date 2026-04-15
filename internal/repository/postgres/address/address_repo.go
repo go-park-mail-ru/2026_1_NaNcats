@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -40,10 +41,10 @@ func (a addressDB) toDomain() domain.Address {
 }
 
 type addressRepo struct {
-	pool PgxPool
+	pool postgres.PgxPool
 }
 
-func NewAddressRepo(pool PgxPool) repository.AddressRepository {
+func NewAddressRepo(pool postgres.PgxPool) repository.AddressRepository {
 	return &addressRepo{pool: pool}
 }
 

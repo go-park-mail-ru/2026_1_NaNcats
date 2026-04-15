@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+	cart "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/cart"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/api_clients/yookassa"
 )
 
@@ -20,12 +21,12 @@ type OrderUseCase interface {
 type orderUseCase struct {
 	orderRepo                repository.OrderRepository
 	addressRepo              repository.AddressRepository
-	cartUC                   CartUseCase
+	cartUC                   cart.CartUseCase
 	yookassaClient           *yookassa.Client
 	defaultRestaurantLogoURL string
 }
 
-func NewOrderUseCase(or repository.OrderRepository, ar repository.AddressRepository, cuc CartUseCase, yc *yookassa.Client, drlurl string) *orderUseCase {
+func NewOrderUseCase(or repository.OrderRepository, ar repository.AddressRepository, cuc cart.CartUseCase, yc *yookassa.Client, drlurl string) *orderUseCase {
 	return &orderUseCase{
 		orderRepo:                or,
 		addressRepo:              ar,
