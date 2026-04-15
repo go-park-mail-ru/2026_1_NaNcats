@@ -132,7 +132,7 @@ func TestAddressRepo_GetAddressesByUserID(t *testing.T) {
 			setup: func(mock pgxmock.PgxPoolIface) {
 				mock.ExpectQuery(`SELECT`).WithArgs(userID).WillReturnRows(pgxmock.NewRows([]string{"public_id"}))
 			},
-			want:    nil,
+			want:    []domain.Address{},
 			wantErr: false,
 		},
 		{
