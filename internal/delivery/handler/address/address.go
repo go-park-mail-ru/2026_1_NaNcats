@@ -44,6 +44,21 @@ type AddressResponse struct {
 	Label          string           `json:"label"`
 }
 
+//easyjson:json
+type CreateAddressResponse struct {
+	ID string `json:"id"`
+}
+
+//easyjson:json
+type AddressListResponse struct {
+	Addresses []AddressResponse `json:"addresses"`
+}
+
+//easyjson:json
+type MessageResponse struct {
+	Message string `json:"message"`
+}
+
 func mapAddressToResponse(a domain.Address) AddressResponse {
 	return AddressResponse{
 		ID: a.PublicID,
@@ -77,7 +92,7 @@ func NewAddressHandler(u address.AddressUseCase, l domain.Logger) *addressHandle
 // @Accept			json
 // @Produce			json
 // @Param			input	body	  AddressRequest	true	"Данные адреса"
-// @Success			201		{object}  map[string]string			"Успешное создание (возвращает public_id)"
+// @Success			201		{object}  CreateAddressResponse			"Успешное создание (возвращает public_id)"
 // @Failure			400		{object}  response.ErrorResponse	"Ошибка в формате запроса"
 // @Failure			401		{object}  response.ErrorResponse	"Неавторизован"
 // @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
@@ -123,7 +138,7 @@ func (h *addressHandler) AddAddress(w http.ResponseWriter, r *http.Request) {
 
 	l.Info("address added successfully", domain.Int("user_id", userID), domain.String("address_id", id))
 
-	response.JSON(w, http.StatusCreated, map[string]string{"id": id})
+	response.JSON(w, http.StatusCreated, CreateAddressResponse{ID: id})
 }
 
 // GetAddresses godoc
@@ -131,7 +146,7 @@ func (h *addressHandler) AddAddress(w http.ResponseWriter, r *http.Request) {
 // @Description		Возвращает все сохраненные адреса текущего пользователя
 // @Tags			profile
 // @Produce			json
-// @Success			200		{object}  map[string][]AddressResponse	"Список адресов пользователя"
+// @Success			200		{object}  AddressListResponse	"Список адресов пользователя"
 // @Failure			401		{object}  response.ErrorResponse		"Неавторизован"
 // @Failure			500		{object}  response.ErrorResponse		"Внутренняя ошибка сервера"
 // @Router			/profile/addresses [get]
@@ -160,7 +175,7 @@ func (h *addressHandler) GetAddresses(w http.ResponseWriter, r *http.Request) {
 		resp = append(resp, mapAddressToResponse(addr))
 	}
 
-	response.JSON(w, http.StatusOK, map[string]any{"addresses": resp})
+	response.JSON(w, http.StatusOK, AddressListResponse{Addresses: resp})
 }
 
 // DeleteAddress godoc
@@ -168,7 +183,7 @@ func (h *addressHandler) GetAddresses(w http.ResponseWriter, r *http.Request) {
 // @Description		Удаляет адрес пользователя по его ID
 // @Tags			profile
 // @Param			id		path	  string	true	"Public ID адреса"
-// @Success			200		{object}  map[string]string			"Адрес успешно удален"
+// @Success			200		{object}  MessageResponse			"Адрес успешно удален"
 // @Failure			401		{object}  response.ErrorResponse	"Неавторизован"
 // @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
 // @Router			/profile/addresses/{id} [delete]
@@ -192,7 +207,7 @@ func (h *addressHandler) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 
 	l.Info("address deleted successfully", domain.Int("user_id", userID), domain.String("address_id", addressPublicID))
 
-	response.JSON(w, http.StatusOK, map[string]string{"message": "deleted"})
+	response.JSON(w, http.StatusOK, MessageResponse{Message: "deleted"})
 }
 
 // UpdateAddress godoc
@@ -203,7 +218,7 @@ func (h *addressHandler) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 // @Produce			json
 // @Param			id		path	  string			true	"Public ID адреса"
 // @Param			input	body	  AddressRequest	true	"Новые данные адреса"
-// @Success			200		{object}  map[string]string			"Адрес успешно обновлен"
+// @Success			200		{object}  MessageResponse			"Адрес успешно обновлен"
 // @Failure			400		{object}  response.ErrorResponse	"Ошибка в формате запроса"
 // @Failure			401		{object}  response.ErrorResponse	"Неавторизован"
 // @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
@@ -252,5 +267,5 @@ func (h *addressHandler) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 
 	l.Info("address updated successfully", domain.Int("user_id", userID), domain.String("address_id", idStr))
 
-	response.JSON(w, http.StatusOK, map[string]string{"message": "address updated successfully"})
+	response.JSON(w, http.StatusOK, MessageResponse{Message: "address updated successfully"})
 }

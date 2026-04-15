@@ -1,21 +1,5 @@
 basePath: /api
 definitions:
-  github_com_go-park-mail-ru_2026_1_NaNcats_internal_domain.PaymentMethod:
-    properties:
-      card_type:
-        example: Mir
-        type: string
-      id:
-        type: string
-      is_default:
-        type: boolean
-      issuer_name:
-        example: Sber
-        type: string
-      last4:
-        example: "6767"
-        type: string
-    type: object
   github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookNotification:
     properties:
       event:
@@ -36,12 +20,130 @@ definitions:
         example: Неверный формат запроса
         type: string
     type: object
-  internal_delivery_handler.BindingResponse:
+  internal_delivery_handler_address.AddressListResponse:
     properties:
-      confirmation_url:
+      addresses:
+        items:
+          $ref: '#/definitions/internal_delivery_handler_address.AddressResponse'
+        type: array
+    type: object
+  internal_delivery_handler_address.AddressRequest:
+    properties:
+      address_text:
+        type: string
+      apartment:
+        type: string
+      courier_comment:
+        type: string
+      door_code:
+        type: string
+      entrance:
+        type: string
+      floor:
+        type: string
+      label:
+        type: string
+      lat:
+        type: number
+      lon:
+        type: number
+    type: object
+  internal_delivery_handler_address.AddressResponse:
+    properties:
+      apartment:
+        type: string
+      courier_comment:
+        type: string
+      door_code:
+        type: string
+      entrance:
+        type: string
+      floor:
+        type: string
+      id:
+        type: string
+      label:
+        type: string
+      location:
+        $ref: '#/definitions/internal_delivery_handler_address.LocationResponse'
+    type: object
+  internal_delivery_handler_address.CreateAddressResponse:
+    properties:
+      id:
         type: string
     type: object
-  internal_delivery_handler.CartItemDTO:
+  internal_delivery_handler_address.LocationResponse:
+    properties:
+      address_text:
+        type: string
+      latitude:
+        type: number
+      longitude:
+        type: number
+    type: object
+  internal_delivery_handler_address.MessageResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  internal_delivery_handler_auth.CSRFResponse:
+    properties:
+      csrf_token:
+        type: string
+      message:
+        type: string
+    type: object
+  internal_delivery_handler_auth.LoginRequest:
+    properties:
+      login:
+        example: user@mail.ru
+        type: string
+      password:
+        example: qwerty12345
+        maxLength: 128
+        minLength: 8
+        type: string
+    type: object
+  internal_delivery_handler_auth.LoginResponse:
+    properties:
+      avatar_url:
+        example: users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
+        type: string
+      csrf_token:
+        type: string
+      name:
+        example: Иван
+        type: string
+    type: object
+  internal_delivery_handler_auth.RegisterRequest:
+    properties:
+      email:
+        example: user@mail.ru
+        type: string
+      name:
+        example: Иван
+        type: string
+      password:
+        example: qwerty12345
+        maxLength: 128
+        minLength: 8
+        type: string
+    type: object
+  internal_delivery_handler_auth.RegisterResponse:
+    properties:
+      created_at:
+        example: 2006-01-02T15:04:05Z07:00
+        type: string
+      csrf_token:
+        type: string
+      email:
+        example: user@mail.ru
+        type: string
+      name:
+        example: Иван
+        type: string
+    type: object
+  internal_delivery_handler_cart.CartItemDTO:
     properties:
       dish_id:
         type: integer
@@ -54,20 +156,20 @@ definitions:
       quantity:
         type: integer
     type: object
-  internal_delivery_handler.CartRequest:
+  internal_delivery_handler_cart.CartRequest:
     properties:
       items:
         items:
-          $ref: '#/definitions/internal_delivery_handler.CartItemDTO'
+          $ref: '#/definitions/internal_delivery_handler_cart.CartItemDTO'
         type: array
       restaurant_id:
         type: integer
     type: object
-  internal_delivery_handler.CartResponse:
+  internal_delivery_handler_cart.CartResponse:
     properties:
       items:
         items:
-          $ref: '#/definitions/internal_delivery_handler.CartItemDTO'
+          $ref: '#/definitions/internal_delivery_handler_cart.CartItemDTO'
         type: array
       restaurant_id:
         type: integer
@@ -76,75 +178,76 @@ definitions:
       updated_at:
         type: string
     type: object
-  internal_delivery_handler.CreateOrderRequest:
+  internal_delivery_handler_order.CreateOrderRequest:
     properties:
       address_id:
         type: string
       branch_id:
         type: integer
+      delivery_cost:
+        type: integer
       payment_method_id:
         type: string
+      service_fee:
+        type: integer
+      total_cost:
+        type: integer
     type: object
-  internal_delivery_handler.CreateOrderResponse:
+  internal_delivery_handler_order.CreateOrderResponse:
     properties:
       confirmation_url:
         type: string
       order_id:
         type: string
     type: object
-  internal_delivery_handler.LoginRequest:
+  internal_delivery_handler_payment.BindingResponse:
     properties:
-      login:
-        description: Email пользователя
-        example: user@mail.ru
-        type: string
-      password:
-        description: Пароль в открытом виде
-        example: qwerty12345
+      confirmation_url:
         type: string
     type: object
-  internal_delivery_handler.LoginResponse:
+  internal_delivery_handler_payment.PaymentMethodResponse:
     properties:
-      avatar_url:
-        description: URL аватарки пользователя
-        example: users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
+      card_type:
+        example: Mir
+        type: string
+      id:
+        example: pay-method-uuid
+        type: string
+      is_default:
+        type: boolean
+      issuer_name:
+        example: Sber
+        type: string
+      last4:
+        example: "6767"
+        type: string
+    type: object
+  internal_delivery_handler_restaurant.DishResponse:
+    properties:
+      description:
+        example: Сочный бургер с сыром
+        type: string
+      id:
+        example: "1"
+        type: string
+      image_url:
+        example: /api/images/dishes/cheeseburger.png
         type: string
       name:
-        description: Имя для отображения в интерфейсе
-        example: Иван
+        example: Чизбургер
         type: string
+      price:
+        example: 19900
+        type: integer
     type: object
-  internal_delivery_handler.RegisterRequest:
+  internal_delivery_handler_restaurant.DishesResponse:
     properties:
-      email:
-        description: Email пользователя
-        example: user@mail.ru
-        type: string
-      name:
-        description: Имя пользователя
-        example: Иван
-        type: string
-      password:
-        description: Пароль в открытом виде
-        example: qwerty12345
-        type: string
+      dishes:
+        items:
+          $ref: '#/definitions/internal_delivery_handler_restaurant.DishResponse'
+        type: array
     type: object
-  internal_delivery_handler.RegisterResponse:
-    properties:
-      created_at:
-        description: Время создания аккаунта по стандарту RFC 3339
-        example: 2006-01-02T15:04:05Z07:00
-        type: string
-      email:
-        description: Email пользователя
-        example: user@mail.ru
-        type: string
-      name:
-        description: Имя для отображения в интерфейсе
-        example: Иван
-        type: string
-    type: object
-  internal_delivery_handler.RestaurantBrandResponse:
+  internal_delivery_handler_restaurant.RestaurantBrandResponse:
     properties:
       banner_url:
         example: restaurangs/banners/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
@@ -165,21 +268,21 @@ definitions:
         example: 2
         type: integer
     type: object
-  internal_delivery_handler.RestaurantBrandsResponse:
+  internal_delivery_handler_restaurant.RestaurantBrandsResponse:
     properties:
       restaurants:
         items:
-          $ref: '#/definitions/internal_delivery_handler.RestaurantBrandResponse'
+          $ref: '#/definitions/internal_delivery_handler_restaurant.RestaurantBrandResponse'
         type: array
     type: object
-  internal_delivery_handler.UpdateAvatarResponse:
+  internal_delivery_handler_user.UpdateAvatarResponse:
     properties:
       avatar_url:
         type: string
       message:
         type: string
     type: object
-  internal_delivery_handler.UserProfileResponse:
+  internal_delivery_handler_user.UserProfileResponse:
     properties:
       avatar_url:
         example: users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
@@ -191,7 +294,7 @@ definitions:
         example: Илья
         type: string
     type: object
-  internal_delivery_handler.UserProfileUpdateRequest:
+  internal_delivery_handler_user.UserProfileUpdateRequest:
     properties:
       email:
         example: new_mail@gmail.com
@@ -216,7 +319,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_delivery_handler.CartResponse'
+            $ref: '#/definitions/internal_delivery_handler_cart.CartResponse'
         "401":
           description: Unauthorized
           schema:
@@ -244,7 +347,7 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/internal_delivery_handler.CartRequest'
+          $ref: '#/definitions/internal_delivery_handler_cart.CartRequest'
       produces:
       - application/json
       responses:
@@ -288,14 +391,14 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/internal_delivery_handler.CreateOrderRequest'
+          $ref: '#/definitions/internal_delivery_handler_order.CreateOrderRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Заказ успешно создан
           schema:
-            $ref: '#/definitions/internal_delivery_handler.CreateOrderResponse'
+            $ref: '#/definitions/internal_delivery_handler_order.CreateOrderResponse'
         "400":
           description: Bad request или пустая корзина
           schema:
@@ -336,14 +439,14 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/internal_delivery_handler.LoginRequest'
+          $ref: '#/definitions/internal_delivery_handler_auth.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Успешный вход
           schema:
-            $ref: '#/definitions/internal_delivery_handler.LoginResponse'
+            $ref: '#/definitions/internal_delivery_handler_auth.LoginResponse'
         "400":
           description: Неверный формат JSON
           schema:
@@ -384,7 +487,7 @@ paths:
         "200":
           description: Успешный вход и создание сессии
           schema:
-            $ref: '#/definitions/internal_delivery_handler.LoginResponse'
+            $ref: '#/definitions/internal_delivery_handler_auth.LoginResponse'
         "401":
           description: Неавторизован
           schema:
@@ -408,14 +511,14 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/internal_delivery_handler.RegisterRequest'
+          $ref: '#/definitions/internal_delivery_handler_auth.RegisterRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Успешная регистрация
           schema:
-            $ref: '#/definitions/internal_delivery_handler.RegisterResponse'
+            $ref: '#/definitions/internal_delivery_handler_auth.RegisterResponse'
         "400":
           description: Ошибка валидации (email/пароль)
           schema:
@@ -431,6 +534,24 @@ paths:
       summary: Регистрация пользователя
       tags:
       - auth
+  /csrf:
+    get:
+      description: Возвращает текущий CSRF токен пользователя на основе его сессии.
+        Если сессия не найдена, возвращает соответствующее сообщение.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное получение токена или сообщение об отсутствии сессии
+          schema:
+            $ref: '#/definitions/internal_delivery_handler_auth.CSRFResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+      summary: Получение CSRF токена
+      tags:
+      - auth
   /profile:
     get:
       consumes:
@@ -443,7 +564,7 @@ paths:
         "200":
           description: Успешное получение данных профиля
           schema:
-            $ref: '#/definitions/internal_delivery_handler.UserProfileResponse'
+            $ref: '#/definitions/internal_delivery_handler_user.UserProfileResponse'
         "404":
           description: Пользователь не найден
           schema:
@@ -466,7 +587,7 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/internal_delivery_handler.UserProfileUpdateRequest'
+          $ref: '#/definitions/internal_delivery_handler_user.UserProfileUpdateRequest'
       produces:
       - application/json
       responses:
@@ -491,6 +612,123 @@ paths:
       summary: Обновление данных профиля
       tags:
       - profile
+  /profile/addresses:
+    get:
+      description: Возвращает все сохраненные адреса текущего пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список адресов пользователя
+          schema:
+            $ref: '#/definitions/internal_delivery_handler_address.AddressListResponse'
+        "401":
+          description: Неавторизован
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+      summary: Получение списка адресов
+      tags:
+      - profile
+    post:
+      consumes:
+      - application/json
+      description: Создает новую запись адреса для текущего пользователя
+      parameters:
+      - description: Данные адреса
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal_delivery_handler_address.AddressRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Успешное создание (возвращает public_id)
+          schema:
+            $ref: '#/definitions/internal_delivery_handler_address.CreateAddressResponse'
+        "400":
+          description: Ошибка в формате запроса
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+        "401":
+          description: Неавторизован
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+      summary: Добавление нового адреса
+      tags:
+      - profile
+  /profile/addresses/{id}:
+    delete:
+      description: Удаляет адрес пользователя по его ID
+      parameters:
+      - description: Public ID адреса
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: Адрес успешно удален
+          schema:
+            $ref: '#/definitions/internal_delivery_handler_address.MessageResponse'
+        "401":
+          description: Неавторизован
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+      summary: Удаление адреса
+      tags:
+      - profile
+    patch:
+      consumes:
+      - application/json
+      description: Изменяет данные существующего адреса пользователя
+      parameters:
+      - description: Public ID адреса
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Новые данные адреса
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal_delivery_handler_address.AddressRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Адрес успешно обновлен
+          schema:
+            $ref: '#/definitions/internal_delivery_handler_address.MessageResponse'
+        "400":
+          description: Ошибка в формате запроса
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+        "401":
+          description: Неавторизован
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+      summary: Обновление адреса
+      tags:
+      - profile
   /profile/avatar:
     delete:
       description: Удаляет аватар текущего авторизованного пользователя и устанавливает
@@ -501,7 +739,7 @@ paths:
         "200":
           description: Аватар успешно удален
           schema:
-            $ref: '#/definitions/internal_delivery_handler.UpdateAvatarResponse'
+            $ref: '#/definitions/internal_delivery_handler_user.UpdateAvatarResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
@@ -513,7 +751,7 @@ paths:
       consumes:
       - multipart/form-data
       description: Загружает и обновляет аватар текущего авторизованного пользователя.
-        Принимает multipart/form-data с полем 'avatar'.
+        Принимает multipart/form-data with полем 'avatar'.
       parameters:
       - description: Файл аватара (WEBP/JPG/JPEG/PNG, до 5МБ)
         in: formData
@@ -526,7 +764,7 @@ paths:
         "200":
           description: Аватар успешно обновлен
           schema:
-            $ref: '#/definitions/internal_delivery_handler.UpdateAvatarResponse'
+            $ref: '#/definitions/internal_delivery_handler_user.UpdateAvatarResponse'
         "400":
           description: Ошибка запроса (файл слишком большой, неверный формат или отсутствует)
           schema:
@@ -548,7 +786,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_internal_domain.PaymentMethod'
+              $ref: '#/definitions/internal_delivery_handler_payment.PaymentMethodResponse'
             type: array
         "401":
           description: Пользователь не авторизован
@@ -612,7 +850,7 @@ paths:
         "200":
           description: URL для подтверждения привязки
           schema:
-            $ref: '#/definitions/internal_delivery_handler.BindingResponse'
+            $ref: '#/definitions/internal_delivery_handler_payment.BindingResponse'
         "401":
           description: Пользователь не авторизован
           schema:
@@ -650,8 +888,38 @@ paths:
         "200":
           description: Успешное получение списка ресторанов
           schema:
-            $ref: '#/definitions/internal_delivery_handler.RestaurantBrandsResponse'
+            $ref: '#/definitions/internal_delivery_handler_restaurant.RestaurantBrandsResponse'
       summary: Получение списка ресторанов
+      tags:
+      - restaurants
+  /restaurants/brands/{id}/dishes:
+    get:
+      description: Возвращает список блюд ресторана (по restaurant_brand_id) с поддержкой
+        пагинации (limit и offset)
+      parameters:
+      - description: ID бренда ресторана (restaurant_brand_id)
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 20
+        description: Количество получаемых блюд
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Смещение от начала списка
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное получение списка блюд
+          schema:
+            $ref: '#/definitions/internal_delivery_handler_restaurant.DishesResponse'
+      summary: Получение списка блюд ресторана
       tags:
       - restaurants
   /webhooks/yookassa:

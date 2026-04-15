@@ -49,6 +49,7 @@ type LoginResponse struct {
 //easyjson:json
 type CSRFResponse struct {
 	CSRFToken string `json:"csrf_token"`
+	Message   string `json:"message,omitempty"`
 }
 
 type authHandler struct {
@@ -291,6 +292,14 @@ func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, resp)
 }
 
+// GetCSRF godoc
+// @Summary         Получение CSRF токена
+// @Description     Возвращает текущий CSRF токен пользователя на основе его сессии. Если сессия не найдена, возвращает соответствующее сообщение.
+// @Tags            auth
+// @Produce         json
+// @Success         200     {object}  CSRFResponse           "Успешное получение токена или сообщение об отсутствии сессии"
+// @Failure         500     {object}  response.ErrorResponse "Внутренняя ошибка сервера"
+// @Router          /csrf [get]
 func (h *authHandler) GetCSRF(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
@@ -298,13 +307,15 @@ func (h *authHandler) GetCSRF(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		l.Debug("get_csrf: no session cookie found")
-		response.JSON(w, http.StatusOK, "no session")
+		response.JSON(w, http.StatusOK, CSRFResponse{Message: "no session"})
 		return
 	}
 
 	sessionID, err := uuid.Parse(cookie.Value)
 	if err != nil {
-
+		l.Error("get_csrf: invalid uuid", err)
+		response.Error(w, http.StatusBadRequest, "Invalid session ID")
+		return
 	}
 
 	token, err := h.authUC.GetCSRFBySessionID(ctx, sessionID)

@@ -34,7 +34,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.CartResponse"
+                            "$ref": "#/definitions/internal_delivery_handler_cart.CartResponse"
                         }
                     },
                     "401": {
@@ -81,7 +81,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.CartRequest"
+                            "$ref": "#/definitions/internal_delivery_handler_cart.CartRequest"
                         }
                     }
                 ],
@@ -148,7 +148,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.CreateOrderRequest"
+                            "$ref": "#/definitions/internal_delivery_handler_order.CreateOrderRequest"
                         }
                     }
                 ],
@@ -156,7 +156,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Заказ успешно создан",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.CreateOrderResponse"
+                            "$ref": "#/definitions/internal_delivery_handler_order.CreateOrderResponse"
                         }
                     },
                     "400": {
@@ -218,7 +218,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.LoginRequest"
+                            "$ref": "#/definitions/internal_delivery_handler_auth.LoginRequest"
                         }
                     }
                 ],
@@ -226,7 +226,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешный вход",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.LoginResponse"
+                            "$ref": "#/definitions/internal_delivery_handler_auth.LoginResponse"
                         }
                     },
                     "400": {
@@ -287,7 +287,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешный вход и создание сессии",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.LoginResponse"
+                            "$ref": "#/definitions/internal_delivery_handler_auth.LoginResponse"
                         }
                     },
                     "401": {
@@ -325,7 +325,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.RegisterRequest"
+                            "$ref": "#/definitions/internal_delivery_handler_auth.RegisterRequest"
                         }
                     }
                 ],
@@ -333,7 +333,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Успешная регистрация",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.RegisterResponse"
+                            "$ref": "#/definitions/internal_delivery_handler_auth.RegisterResponse"
                         }
                     },
                     "400": {
@@ -346,6 +346,32 @@ const docTemplate = `{
                         "description": "Пользователь с такой почтой уже существует",
                         "schema": {
                             "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/csrf": {
+            "get": {
+                "description": "Возвращает текущий CSRF токен пользователя на основе его сессии. Если сессия не найдена, возвращает соответствующее сообщение.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Получение CSRF токена",
+                "responses": {
+                    "200": {
+                        "description": "Успешное получение токена или сообщение об отсутствии сессии",
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler_auth.CSRFResponse"
                         }
                     },
                     "500": {
@@ -374,7 +400,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное получение данных профиля",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.UserProfileResponse"
+                            "$ref": "#/definitions/internal_delivery_handler_user.UserProfileResponse"
                         }
                     },
                     "404": {
@@ -410,7 +436,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.UserProfileUpdateRequest"
+                            "$ref": "#/definitions/internal_delivery_handler_user.UserProfileUpdateRequest"
                         }
                     }
                 ],
@@ -445,9 +471,186 @@ const docTemplate = `{
                 }
             }
         },
+        "/profile/addresses": {
+            "get": {
+                "description": "Возвращает все сохраненные адреса текущего пользователя",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Получение списка адресов",
+                "responses": {
+                    "200": {
+                        "description": "Список адресов пользователя",
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler_address.AddressListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизован",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Создает новую запись адреса для текущего пользователя",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Добавление нового адреса",
+                "parameters": [
+                    {
+                        "description": "Данные адреса",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler_address.AddressRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Успешное создание (возвращает public_id)",
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler_address.CreateAddressResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка в формате запроса",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизован",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/addresses/{id}": {
+            "delete": {
+                "description": "Удаляет адрес пользователя по его ID",
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Удаление адреса",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Public ID адреса",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Адрес успешно удален",
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler_address.MessageResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизован",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Изменяет данные существующего адреса пользователя",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Обновление адреса",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Public ID адреса",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Новые данные адреса",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler_address.AddressRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Адрес успешно обновлен",
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler_address.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка в формате запроса",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизован",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/profile/avatar": {
             "post": {
-                "description": "Загружает и обновляет аватар текущего авторизованного пользователя. Принимает multipart/form-data с полем 'avatar'.",
+                "description": "Загружает и обновляет аватар текущего авторизованного пользователя. Принимает multipart/form-data with полем 'avatar'.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -471,7 +674,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Аватар успешно обновлен",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.UpdateAvatarResponse"
+                            "$ref": "#/definitions/internal_delivery_handler_user.UpdateAvatarResponse"
                         }
                     },
                     "400": {
@@ -501,7 +704,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Аватар успешно удален",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.UpdateAvatarResponse"
+                            "$ref": "#/definitions/internal_delivery_handler_user.UpdateAvatarResponse"
                         }
                     },
                     "500": {
@@ -530,7 +733,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_internal_domain.PaymentMethod"
+                                "$ref": "#/definitions/internal_delivery_handler_payment.PaymentMethodResponse"
                             }
                         }
                     },
@@ -570,7 +773,7 @@ const docTemplate = `{
                     "200": {
                         "description": "URL для подтверждения привязки",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.BindingResponse"
+                            "$ref": "#/definitions/internal_delivery_handler_payment.BindingResponse"
                         }
                     },
                     "401": {
@@ -678,7 +881,50 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное получение списка ресторанов",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler.RestaurantBrandsResponse"
+                            "$ref": "#/definitions/internal_delivery_handler_restaurant.RestaurantBrandsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/restaurants/brands/{id}/dishes": {
+            "get": {
+                "description": "Возвращает список блюд ресторана (по restaurant_brand_id) с поддержкой пагинации (limit и offset)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "restaurants"
+                ],
+                "summary": "Получение списка блюд ресторана",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID бренда ресторана (restaurant_brand_id)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Количество получаемых блюд",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Смещение от начала списка",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешное получение списка блюд",
+                        "schema": {
+                            "$ref": "#/definitions/internal_delivery_handler_restaurant.DishesResponse"
                         }
                     }
                 }
@@ -727,29 +973,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_go-park-mail-ru_2026_1_NaNcats_internal_domain.PaymentMethod": {
-            "type": "object",
-            "properties": {
-                "card_type": {
-                    "type": "string",
-                    "example": "Mir"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "is_default": {
-                    "type": "boolean"
-                },
-                "issuer_name": {
-                    "type": "string",
-                    "example": "Sber"
-                },
-                "last4": {
-                    "type": "string",
-                    "example": "6767"
-                }
-            }
-        },
         "github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookNotification": {
             "type": "object",
             "properties": {
@@ -780,15 +1003,190 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler.BindingResponse": {
+        "internal_delivery_handler_address.AddressListResponse": {
             "type": "object",
             "properties": {
-                "confirmation_url": {
+                "addresses": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_delivery_handler_address.AddressResponse"
+                    }
+                }
+            }
+        },
+        "internal_delivery_handler_address.AddressRequest": {
+            "type": "object",
+            "properties": {
+                "address_text": {
+                    "type": "string"
+                },
+                "apartment": {
+                    "type": "string"
+                },
+                "courier_comment": {
+                    "type": "string"
+                },
+                "door_code": {
+                    "type": "string"
+                },
+                "entrance": {
+                    "type": "string"
+                },
+                "floor": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "lat": {
+                    "type": "number"
+                },
+                "lon": {
+                    "type": "number"
+                }
+            }
+        },
+        "internal_delivery_handler_address.AddressResponse": {
+            "type": "object",
+            "properties": {
+                "apartment": {
+                    "type": "string"
+                },
+                "courier_comment": {
+                    "type": "string"
+                },
+                "door_code": {
+                    "type": "string"
+                },
+                "entrance": {
+                    "type": "string"
+                },
+                "floor": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "location": {
+                    "$ref": "#/definitions/internal_delivery_handler_address.LocationResponse"
+                }
+            }
+        },
+        "internal_delivery_handler_address.CreateAddressResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
                     "type": "string"
                 }
             }
         },
-        "internal_delivery_handler.CartItemDTO": {
+        "internal_delivery_handler_address.LocationResponse": {
+            "type": "object",
+            "properties": {
+                "address_text": {
+                    "type": "string"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                }
+            }
+        },
+        "internal_delivery_handler_address.MessageResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_delivery_handler_auth.CSRFResponse": {
+            "type": "object",
+            "properties": {
+                "csrf_token": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_delivery_handler_auth.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "login": {
+                    "type": "string",
+                    "example": "user@mail.ru"
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 8,
+                    "example": "qwerty12345"
+                }
+            }
+        },
+        "internal_delivery_handler_auth.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "avatar_url": {
+                    "type": "string",
+                    "example": "users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"
+                },
+                "csrf_token": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Иван"
+                }
+            }
+        },
+        "internal_delivery_handler_auth.RegisterRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "user@mail.ru"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Иван"
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 8,
+                    "example": "qwerty12345"
+                }
+            }
+        },
+        "internal_delivery_handler_auth.RegisterResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2006-01-02T15:04:05Z07:00"
+                },
+                "csrf_token": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "user@mail.ru"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Иван"
+                }
+            }
+        },
+        "internal_delivery_handler_cart.CartItemDTO": {
             "type": "object",
             "properties": {
                 "dish_id": {
@@ -808,13 +1206,13 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler.CartRequest": {
+        "internal_delivery_handler_cart.CartRequest": {
             "type": "object",
             "properties": {
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_delivery_handler.CartItemDTO"
+                        "$ref": "#/definitions/internal_delivery_handler_cart.CartItemDTO"
                     }
                 },
                 "restaurant_id": {
@@ -822,13 +1220,13 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler.CartResponse": {
+        "internal_delivery_handler_cart.CartResponse": {
             "type": "object",
             "properties": {
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_delivery_handler.CartItemDTO"
+                        "$ref": "#/definitions/internal_delivery_handler_cart.CartItemDTO"
                     }
                 },
                 "restaurant_id": {
@@ -842,7 +1240,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler.CreateOrderRequest": {
+        "internal_delivery_handler_order.CreateOrderRequest": {
             "type": "object",
             "properties": {
                 "address_id": {
@@ -851,12 +1249,21 @@ const docTemplate = `{
                 "branch_id": {
                     "type": "integer"
                 },
+                "delivery_cost": {
+                    "type": "integer"
+                },
                 "payment_method_id": {
                     "type": "string"
+                },
+                "service_fee": {
+                    "type": "integer"
+                },
+                "total_cost": {
+                    "type": "integer"
                 }
             }
         },
-        "internal_delivery_handler.CreateOrderResponse": {
+        "internal_delivery_handler_order.CreateOrderResponse": {
             "type": "object",
             "properties": {
                 "confirmation_url": {
@@ -867,77 +1274,75 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler.LoginRequest": {
+        "internal_delivery_handler_payment.BindingResponse": {
             "type": "object",
             "properties": {
-                "login": {
-                    "description": "Email пользователя",
-                    "type": "string",
-                    "example": "user@mail.ru"
-                },
-                "password": {
-                    "description": "Пароль в открытом виде",
-                    "type": "string",
-                    "example": "qwerty12345"
+                "confirmation_url": {
+                    "type": "string"
                 }
             }
         },
-        "internal_delivery_handler.LoginResponse": {
+        "internal_delivery_handler_payment.PaymentMethodResponse": {
             "type": "object",
             "properties": {
-                "avatar_url": {
-                    "description": "URL аватарки пользователя",
+                "card_type": {
                     "type": "string",
-                    "example": "users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"
+                    "example": "Mir"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "pay-method-uuid"
+                },
+                "is_default": {
+                    "type": "boolean"
+                },
+                "issuer_name": {
+                    "type": "string",
+                    "example": "Sber"
+                },
+                "last4": {
+                    "type": "string",
+                    "example": "6767"
+                }
+            }
+        },
+        "internal_delivery_handler_restaurant.DishResponse": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Сочный бургер с сыром"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "image_url": {
+                    "type": "string",
+                    "example": "/api/images/dishes/cheeseburger.png"
                 },
                 "name": {
-                    "description": "Имя для отображения в интерфейсе",
                     "type": "string",
-                    "example": "Иван"
+                    "example": "Чизбургер"
+                },
+                "price": {
+                    "type": "integer",
+                    "example": 19900
                 }
             }
         },
-        "internal_delivery_handler.RegisterRequest": {
+        "internal_delivery_handler_restaurant.DishesResponse": {
             "type": "object",
             "properties": {
-                "email": {
-                    "description": "Email пользователя",
-                    "type": "string",
-                    "example": "user@mail.ru"
-                },
-                "name": {
-                    "description": "Имя пользователя",
-                    "type": "string",
-                    "example": "Иван"
-                },
-                "password": {
-                    "description": "Пароль в открытом виде",
-                    "type": "string",
-                    "example": "qwerty12345"
+                "dishes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_delivery_handler_restaurant.DishResponse"
+                    }
                 }
             }
         },
-        "internal_delivery_handler.RegisterResponse": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "description": "Время создания аккаунта по стандарту RFC 3339",
-                    "type": "string",
-                    "example": "2006-01-02T15:04:05Z07:00"
-                },
-                "email": {
-                    "description": "Email пользователя",
-                    "type": "string",
-                    "example": "user@mail.ru"
-                },
-                "name": {
-                    "description": "Имя для отображения в интерфейсе",
-                    "type": "string",
-                    "example": "Иван"
-                }
-            }
-        },
-        "internal_delivery_handler.RestaurantBrandResponse": {
+        "internal_delivery_handler_restaurant.RestaurantBrandResponse": {
             "type": "object",
             "properties": {
                 "banner_url": {
@@ -966,18 +1371,18 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler.RestaurantBrandsResponse": {
+        "internal_delivery_handler_restaurant.RestaurantBrandsResponse": {
             "type": "object",
             "properties": {
                 "restaurants": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_delivery_handler.RestaurantBrandResponse"
+                        "$ref": "#/definitions/internal_delivery_handler_restaurant.RestaurantBrandResponse"
                     }
                 }
             }
         },
-        "internal_delivery_handler.UpdateAvatarResponse": {
+        "internal_delivery_handler_user.UpdateAvatarResponse": {
             "type": "object",
             "properties": {
                 "avatar_url": {
@@ -988,7 +1393,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler.UserProfileResponse": {
+        "internal_delivery_handler_user.UserProfileResponse": {
             "type": "object",
             "properties": {
                 "avatar_url": {
@@ -1005,7 +1410,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler.UserProfileUpdateRequest": {
+        "internal_delivery_handler_user.UserProfileUpdateRequest": {
             "type": "object",
             "properties": {
                 "email": {

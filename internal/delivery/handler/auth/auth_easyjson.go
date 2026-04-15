@@ -387,6 +387,12 @@ func easyjson4a0f95aaDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHand
 			} else {
 				out.CSRFToken = string(in.String())
 			}
+		case "message":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.Message = string(in.String())
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -405,6 +411,11 @@ func easyjson4a0f95aaEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHand
 		const prefix string = ",\"csrf_token\":"
 		out.RawString(prefix[1:])
 		out.String(string(in.CSRFToken))
+	}
+	if in.Message != "" {
+		const prefix string = ",\"message\":"
+		out.RawString(prefix)
+		out.String(string(in.Message))
 	}
 	out.RawByte('}')
 }
