@@ -10,7 +10,6 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/csrf"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/validatorutil"
@@ -128,14 +127,7 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	l.Info("user registered successfully", domain.Int("user_id", createdUser.ID), domain.String("email", createdUser.Email))
 
-	csrfToken, err := csrf.GenerateToken()
-	if err != nil {
-		l.Error("failed to generate csrf", err)
-		response.Error(w, http.StatusInternalServerError, "Internal server error")
-		return
-	}
-
-	err = h.authUC.SetCSRFForUser(ctx, createdSession.ID, csrfToken)
+	csrfToken, err := h.authUC.SetCSRFForUser(ctx, createdSession.ID)
 	if err != nil {
 		l.Error("failed to save csrf to redis", err)
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
@@ -207,14 +199,7 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	l.Info("user logged in successfully", domain.Int("user_id", loggedUser.ID), domain.String("email", loggedUser.Email))
 
-	csrfToken, err := csrf.GenerateToken()
-	if err != nil {
-		l.Error("failed to generate csrf", err)
-		response.Error(w, http.StatusInternalServerError, "Internal server error")
-		return
-	}
-
-	err = h.authUC.SetCSRFForUser(ctx, createdSession.ID, csrfToken)
+	csrfToken, err := h.authUC.SetCSRFForUser(ctx, createdSession.ID)
 	if err != nil {
 		l.Error("failed to save csrf to redis", err)
 		response.Error(w, http.StatusInternalServerError, "Internal server error")

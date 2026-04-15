@@ -119,15 +119,16 @@ func (mr *MockAuthUseCaseMockRecorder) Register(ctx, user, userAgent any) *gomoc
 }
 
 // SetCSRFForUser mocks base method.
-func (m *MockAuthUseCase) SetCSRFForUser(ctx context.Context, sessionID uuid.UUID, token string) error {
+func (m *MockAuthUseCase) SetCSRFForUser(ctx context.Context, sessionID uuid.UUID) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetCSRFForUser", ctx, sessionID, token)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "SetCSRFForUser", ctx, sessionID)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // SetCSRFForUser indicates an expected call of SetCSRFForUser.
-func (mr *MockAuthUseCaseMockRecorder) SetCSRFForUser(ctx, sessionID, token any) *gomock.Call {
+func (mr *MockAuthUseCaseMockRecorder) SetCSRFForUser(ctx, sessionID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCSRFForUser", reflect.TypeOf((*MockAuthUseCase)(nil).SetCSRFForUser), ctx, sessionID, token)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCSRFForUser", reflect.TypeOf((*MockAuthUseCase)(nil).SetCSRFForUser), ctx, sessionID)
 }

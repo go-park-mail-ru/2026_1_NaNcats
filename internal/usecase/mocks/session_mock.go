@@ -102,15 +102,16 @@ func (mr *MockSessionUseCaseMockRecorder) GetCSRF(ctx, sessionID any) *gomock.Ca
 }
 
 // SetCSRF mocks base method.
-func (m *MockSessionUseCase) SetCSRF(ctx context.Context, sessionID uuid.UUID, token string) error {
+func (m *MockSessionUseCase) SetCSRF(ctx context.Context, sessionID uuid.UUID) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetCSRF", ctx, sessionID, token)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "SetCSRF", ctx, sessionID)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // SetCSRF indicates an expected call of SetCSRF.
-func (mr *MockSessionUseCaseMockRecorder) SetCSRF(ctx, sessionID, token any) *gomock.Call {
+func (mr *MockSessionUseCaseMockRecorder) SetCSRF(ctx, sessionID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCSRF", reflect.TypeOf((*MockSessionUseCase)(nil).SetCSRF), ctx, sessionID, token)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCSRF", reflect.TypeOf((*MockSessionUseCase)(nil).SetCSRF), ctx, sessionID)
 }

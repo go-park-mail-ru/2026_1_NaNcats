@@ -44,8 +44,8 @@ func TestAuthHandler_Register(t *testing.T) {
 					Register(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(mockUser, mockSess, nil)
 				m.EXPECT().
-					SetCSRFForUser(gomock.Any(), sessID, gomock.Any()).
-					Return(nil)
+					SetCSRFForUser(gomock.Any(), sessID).
+					Return("test-csrf-token", nil)
 			},
 			expectedStatus: http.StatusCreated,
 		},
@@ -191,8 +191,8 @@ func TestAuthHandler_Login(t *testing.T) {
 					Login(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(mockUser, mockSess, nil)
 				m.EXPECT().
-					SetCSRFForUser(gomock.Any(), sessID, gomock.Any()).
-					Return(nil)
+					SetCSRFForUser(gomock.Any(), sessID).
+					Return("test-csrf-token", nil)
 			},
 			expectedStatus: http.StatusOK,
 		},

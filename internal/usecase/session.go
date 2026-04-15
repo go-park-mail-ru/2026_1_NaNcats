@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/csrf"
 )
 
 //go:generate mockgen -destination=mocks/session_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase SessionUseCase
@@ -18,7 +19,7 @@ type SessionUseCase interface {
 	Check(ctx context.Context, id uuid.UUID) (domain.Session, error)
 	// бизнес-логика для удаления сессии, просто вызывает удаление из repository.session
 	Destroy(ctx context.Context, id uuid.UUID) error
-	SetCSRF(ctx context.Context, sessionID uuid.UUID, token string) error
+	SetCSRF(ctx context.Context, sessionID uuid.UUID) (string, error)
 	GetCSRF(ctx context.Context, sessionID uuid.UUID) (string, error)
 }
 
@@ -82,10 +83,32 @@ func (u *sessionUseCase) Destroy(ctx context.Context, id uuid.UUID) error {
 	return u.sessionRepo.Delete(ctx, id)
 }
 
-func (u *sessionUseCase) SetCSRF(ctx context.Context, sessionID uuid.UUID, token string) error {
-	return u.sessionRepo.SetCSRF(ctx, sessionID, token)
+func (u *sessionUseCase) SetCSRF(ctx context.Context, sessionID uuid.UUID) (string, error) {
+	csrfToken, err := csrf.GenerateToken()
+	if err != nil {
+		return "", err
+	}
+
+	err = u.sessionRepo.SetCSRF(ctx, sessionID, csrfToken)
+	if err != nil {
+		return "", err
+	}
+
+	return csrfToken, nil
 }
 
 func (u *sessionUseCase) GetCSRF(ctx context.Context, sessionID uuid.UUID) (string, error) {
-	return u.sessionRepo.GetCSRF(ctx, sessionID)
+	token, err := u.sessionRepo.GetCSRF(ctx, sessionID)
+	if err != nil {
+		return "", err
+	}
+
+	if token == "" {
+		token, err = u.SetCSRF(ctx, sessionID)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return token, nil
 }

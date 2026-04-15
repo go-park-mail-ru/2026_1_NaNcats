@@ -99,6 +99,10 @@ func (r *sessionRepo) GetCSRF(ctx context.Context, id uuid.UUID) (string, error)
 	mkey := "csrf:" + id.String()
 	token, err := redis.String(conn.Do("GET", mkey))
 	if err != nil {
+		if err == redis.ErrNil {
+			// значит ключа просто нет
+			return "", nil
+		}
 		return "", err
 	}
 
