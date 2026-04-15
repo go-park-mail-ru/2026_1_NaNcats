@@ -12,7 +12,8 @@ import (
 	"github.com/mailru/easyjson"
 )
 
-const CSRFTokenTTL = 3600 // захардкодил, потом добавлю конфиг
+const CSRFTokenTTL = 3600
+
 type sessionRepo struct {
 	redisPool *redis.Pool
 }

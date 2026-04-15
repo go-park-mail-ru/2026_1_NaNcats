@@ -12,7 +12,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/api_clients/yookassa"
 )
 
-//go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase OrderUseCase
+//go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/order OrderUseCase
 type OrderUseCase interface {
 	CreateOrder(ctx context.Context, userID int, req domain.CreateOrderInput) (string, string, error)
 	GetOrders(ctx context.Context, userID int) ([]domain.Order, error)

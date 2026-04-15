@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-//go:generate mockgen -destination=mocks/user_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase UserUseCase
+//go:generate mockgen -destination=mocks/user_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/user UserUseCase
 type UserUseCase interface {
 	Create(ctx context.Context, user domain.User) (int, error)
 	GetByID(ctx context.Context, userID int) (domain.User, error)

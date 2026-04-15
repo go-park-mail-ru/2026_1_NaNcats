@@ -8,7 +8,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
 )
 
-//go:generate mockgen -destination=mocks/dish_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase DishUseCase
+//go:generate mockgen -destination=mocks/dish_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/restaurant DishUseCase
 type DishUseCase interface {
 	GetDishesByRestaurantBrandID(ctx context.Context, restaurantBrandID, limit, offset int) ([]domain.Dish, error)
 }

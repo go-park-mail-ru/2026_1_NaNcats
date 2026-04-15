@@ -11,7 +11,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/csrf"
 )
 
-//go:generate mockgen -destination=mocks/session_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase SessionUseCase
+//go:generate mockgen -destination=mocks/session_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/auth SessionUseCase
 type SessionUseCase interface {
 	// бизнес-логика создания сессии для пользователя, вовзращает sessionID
 	Create(ctx context.Context, userID int, userAgent string) (domain.Session, error)
