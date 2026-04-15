@@ -1,4 +1,4 @@
-package domain
+package logger
 
 import "context"
 
@@ -6,8 +6,6 @@ type Field struct {
 	Key   string
 	Value any
 }
-
-// Конструкторы полей (удобно использовать в коде)
 
 func String(key, val string) Field  { return Field{Key: key, Value: val} }
 func Int(key string, val int) Field { return Field{Key: key, Value: val} }

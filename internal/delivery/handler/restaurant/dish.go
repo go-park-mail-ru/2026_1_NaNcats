@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	restaurant "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/restaurant"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 )
 
@@ -27,10 +27,10 @@ type DishesResponse struct {
 
 type dishHandler struct {
 	dishUC restaurant.DishUseCase
-	logger domain.Logger
+	logger logger.Logger
 }
 
-func NewDishHandler(duc restaurant.DishUseCase, logger domain.Logger) *dishHandler {
+func NewDishHandler(duc restaurant.DishUseCase, logger logger.Logger) *dishHandler {
 	return &dishHandler{
 		dishUC: duc,
 		logger: logger,
@@ -61,8 +61,8 @@ func (h *dishHandler) GetDishesByRestaurantBrandID(w http.ResponseWriter, r *htt
 			limit = val
 		} else {
 			l.Debug("invalid limit query parameter, using default",
-				domain.String("input", qLimit),
-				domain.Int("default", limit),
+				logger.String("input", qLimit),
+				logger.Int("default", limit),
 			)
 		}
 	}
@@ -72,8 +72,8 @@ func (h *dishHandler) GetDishesByRestaurantBrandID(w http.ResponseWriter, r *htt
 			offset = val
 		} else {
 			l.Debug("invalid offset query parameter, using default",
-				domain.String("input", qOffset),
-				domain.Int("default", offset),
+				logger.String("input", qOffset),
+				logger.Int("default", offset),
 			)
 		}
 	}
@@ -81,7 +81,7 @@ func (h *dishHandler) GetDishesByRestaurantBrandID(w http.ResponseWriter, r *htt
 	restaurantBrandIDStr := r.PathValue("id")
 	restaurantBrandID, err := strconv.Atoi(restaurantBrandIDStr)
 	if err != nil || restaurantBrandID <= 0 {
-		l.Debug("invalid restaurant brand id path parameter", domain.String("input", restaurantBrandIDStr))
+		l.Debug("invalid restaurant brand id path parameter", logger.String("input", restaurantBrandIDStr))
 		response.Error(w, http.StatusBadRequest, "Invalid restaurant brand id")
 		return
 	}
@@ -89,9 +89,9 @@ func (h *dishHandler) GetDishesByRestaurantBrandID(w http.ResponseWriter, r *htt
 	dishes, err := h.dishUC.GetDishesByRestaurantBrandID(ctx, restaurantBrandID, limit, offset)
 	if err != nil {
 		l.Error("failed to get dishes list", err,
-			domain.Int("restaurant_brand_id", restaurantBrandID),
-			domain.Int("limit", limit),
-			domain.Int("offset", offset),
+			logger.Int("restaurant_brand_id", restaurantBrandID),
+			logger.Int("limit", limit),
+			logger.Int("offset", offset),
 		)
 		response.Error(w, http.StatusInternalServerError, "Get dishes list error")
 		return
@@ -109,10 +109,10 @@ func (h *dishHandler) GetDishesByRestaurantBrandID(w http.ResponseWriter, r *htt
 	}
 
 	l.Debug("successfully fetched dishes",
-		domain.Int("count", len(dto)),
-		domain.Int("restaurant_brand_id", restaurantBrandID),
-		domain.Int("limit", limit),
-		domain.Int("offset", offset),
+		logger.Int("count", len(dto)),
+		logger.Int("restaurant_brand_id", restaurantBrandID),
+		logger.Int("limit", limit),
+		logger.Int("offset", offset),
 	)
 
 	response.JSON(w, http.StatusOK, DishesResponse{Dishes: dto})

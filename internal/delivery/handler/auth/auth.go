@@ -11,6 +11,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	auth "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/auth"
 	user "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/user"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/validatorutil"
@@ -55,11 +56,11 @@ type CSRFResponse struct {
 type authHandler struct {
 	authUC   auth.AuthUseCase
 	userUC   user.UserUseCase
-	logger   domain.Logger
+	logger   logger.Logger
 	validate *validator.Validate
 }
 
-func NewAuthHandler(auc auth.AuthUseCase, uuc user.UserUseCase, logger domain.Logger, v *validator.Validate) *authHandler {
+func NewAuthHandler(auc auth.AuthUseCase, uuc user.UserUseCase, logger logger.Logger, v *validator.Validate) *authHandler {
 	return &authHandler{
 		authUC:   auc,
 		userUC:   uuc,
@@ -93,7 +94,7 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	if err = h.validate.Struct(curRequest); err != nil {
 		errMsg := validatorutil.FormatValidationError(err)
-		l.Warn("registration validation failed", domain.String("error", errMsg))
+		l.Warn("registration validation failed", logger.String("error", errMsg))
 		response.Error(w, http.StatusBadRequest, errMsg)
 		return
 	}
@@ -111,23 +112,23 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 		switch {
 		// Клиентские ошибки (400 Bad Request)
 		case errors.Is(err, domain.ErrInvalidEmail), errors.Is(err, domain.ErrInvalidPassword):
-			l.Warn("registration business validation failed", domain.String("email", curRequest.Email), domain.String("error", err.Error()))
+			l.Warn("registration business validation failed", logger.String("email", curRequest.Email), logger.String("error", err.Error()))
 			response.Error(w, http.StatusBadRequest, err.Error())
 
 		// Ошибка конфликта (409 Conflict)
 		case errors.Is(err, domain.ErrEmailAlreadyExists):
-			l.Info("registration conflict: email already exists", domain.String("email", curRequest.Email))
+			l.Info("registration conflict: email already exists", logger.String("email", curRequest.Email))
 			response.Error(w, http.StatusConflict, err.Error())
 
 		// Системные ошибки (500 Internal Server Error)
 		default:
-			l.Error("registration failed unexpectedly", err, domain.String("email", curRequest.Email))
+			l.Error("registration failed unexpectedly", err, logger.String("email", curRequest.Email))
 			response.Error(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
 	}
 
-	l.Info("user registered successfully", domain.Int("user_id", createdUser.ID), domain.String("email", createdUser.Email))
+	l.Info("user registered successfully", logger.Int("user_id", createdUser.ID), logger.String("email", createdUser.Email))
 
 	csrfToken, err := h.authUC.SetCSRFForUser(ctx, createdSession.ID)
 	if err != nil {
@@ -167,14 +168,14 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 	curRequest := LoginRequest{}
 	err := request.JSON(r, &curRequest)
 	if err != nil {
-		l.Warn("failed to decode login request", domain.String("error", err.Error()))
+		l.Warn("failed to decode login request", logger.String("error", err.Error()))
 		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err = h.validate.Struct(curRequest); err != nil {
 		errMsg := validatorutil.FormatValidationError(err)
-		l.Warn("login validation failed", domain.String("error", errMsg))
+		l.Warn("login validation failed", logger.String("error", errMsg))
 		response.Error(w, http.StatusBadRequest, errMsg)
 		return
 	}
@@ -190,16 +191,16 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrInvalidCredentials):
-			l.Info("login failed: invalid credentials", domain.String("email", curRequest.Login))
+			l.Info("login failed: invalid credentials", logger.String("email", curRequest.Login))
 			response.Error(w, http.StatusUnauthorized, "Invalid email or password")
 		default:
-			l.Error("login failed unexpectedly", err, domain.String("email", curRequest.Login))
+			l.Error("login failed unexpectedly", err, logger.String("email", curRequest.Login))
 			response.Error(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
 	}
 
-	l.Info("user logged in successfully", domain.Int("user_id", loggedUser.ID), domain.String("email", loggedUser.Email))
+	l.Info("user logged in successfully", logger.Int("user_id", loggedUser.ID), logger.String("email", loggedUser.Email))
 
 	csrfToken, err := h.authUC.SetCSRFForUser(ctx, createdSession.ID)
 	if err != nil {
@@ -240,11 +241,11 @@ func (h *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	sessionID, err := uuid.Parse(cookie.Value)
 	if err != nil {
-		l.Warn("logout: invalid session token format", domain.String("token_value", cookie.Value))
+		l.Warn("logout: invalid session token format", logger.String("token_value", cookie.Value))
 	} else {
 		err = h.authUC.Logout(ctx, sessionID)
 		if err != nil {
-			l.Debug("logout: session not found in database or already expired", domain.String("session_id", sessionID.String()))
+			l.Debug("logout: session not found in database or already expired", logger.String("session_id", sessionID.String()))
 		}
 	}
 
@@ -277,12 +278,12 @@ func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 
 	loggedUser, err := h.userUC.GetByID(ctx, userID)
 	if err != nil {
-		l.Error("get profile failed for authenticated user", err, domain.Int("user_id", userID))
+		l.Error("get profile failed for authenticated user", err, logger.Int("user_id", userID))
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
-	l.Debug("profile retrieved successfully", domain.Int("user_id", loggedUser.ID))
+	l.Debug("profile retrieved successfully", logger.Int("user_id", loggedUser.ID))
 
 	resp := LoginResponse{
 		Name:      loggedUser.Name,

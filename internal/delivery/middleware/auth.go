@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	auth "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/auth"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 	"github.com/google/uuid"
 )
@@ -15,10 +16,10 @@ import (
 // нужен для защиты приватных эндпоинтов от forbidden/unauthorized сессий
 type AuthMiddleware struct {
 	sessionUC auth.SessionUseCase
-	logger    domain.Logger
+	logger    logger.Logger
 }
 
-func NewAuthMiddleware(suc auth.SessionUseCase, logger domain.Logger) *AuthMiddleware {
+func NewAuthMiddleware(suc auth.SessionUseCase, logger logger.Logger) *AuthMiddleware {
 	return &AuthMiddleware{
 		sessionUC: suc,
 		logger:    logger,
@@ -39,7 +40,7 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 
 		sessionID, err := uuid.Parse(cookie.Value)
 		if err != nil {
-			l.Warn("logout: invalid session token format", domain.String("token_value", cookie.Value))
+			l.Warn("logout: invalid session token format", logger.String("token_value", cookie.Value))
 			response.Error(w, http.StatusUnauthorized, "Invalid session")
 			return
 		}
@@ -48,15 +49,15 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 		if err != nil {
 			if errors.Is(err, domain.ErrSessionNotFound) || errors.Is(err, domain.ErrSessionExpired) {
 				l.Info("auth: unauthorized access attempt",
-					domain.String("session_id", sessionID.String()),
-					domain.String("reason", err.Error()),
+					logger.String("session_id", sessionID.String()),
+					logger.String("reason", err.Error()),
 				)
 				response.Error(w, http.StatusUnauthorized, "Invalid or expired session")
 				return
 			}
 
 			l.Error("auth: session service critical failure", err,
-				domain.String("session_id", sessionID.String()),
+				logger.String("session_id", sessionID.String()),
 			)
 
 			response.Error(w, http.StatusInternalServerError, "Internal server error")
@@ -66,11 +67,11 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 		currentUserAgent := r.UserAgent()
 		if session.UserAgent != currentUserAgent {
 			l.Warn("session user-agent mismatch - potential hijacking attempt",
-				domain.String("session_id", sessionID.String()),
-				domain.Int("user_id", session.UserID),
-				domain.String("expected", session.UserAgent),
-				domain.String("actual", currentUserAgent),
-				domain.String("ip", r.RemoteAddr),
+				logger.String("session_id", sessionID.String()),
+				logger.Int("user_id", session.UserID),
+				logger.String("expected", session.UserAgent),
+				logger.String("actual", currentUserAgent),
+				logger.String("ip", r.RemoteAddr),
 			)
 			m.sessionUC.Destroy(r.Context(), sessionID)
 			return

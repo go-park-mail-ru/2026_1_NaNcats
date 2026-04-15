@@ -9,6 +9,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	order "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/order"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 	"github.com/mailru/easyjson"
 )
@@ -41,10 +42,10 @@ type OrderHistoryResponse struct {
 
 type orderHandler struct {
 	orderUC order.OrderUseCase
-	logger  domain.Logger
+	logger  logger.Logger
 }
 
-func NewOrderHandler(ouc order.OrderUseCase, l domain.Logger) *orderHandler {
+func NewOrderHandler(ouc order.OrderUseCase, l logger.Logger) *orderHandler {
 	return &orderHandler{
 		orderUC: ouc,
 		logger:  l,
@@ -78,13 +79,13 @@ func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	var req CreateOrderRequest
 	if err = easyjson.UnmarshalFromReader(r.Body, &req); err != nil {
-		l.Warn("failed to decode create order request", domain.Int("user_id", userID), domain.String("error", err.Error()))
+		l.Warn("failed to decode create order request", logger.Int("user_id", userID), logger.String("error", err.Error()))
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
 	if req.AddressID == "" || req.RestaurantBranchID == 0 {
-		l.Warn("create order request validation failed", domain.Int("user_id", userID))
+		l.Warn("create order request validation failed", logger.Int("user_id", userID))
 		response.Error(w, http.StatusBadRequest, "Bad request")
 		return
 	}
@@ -102,22 +103,22 @@ func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	orderPublicID, confirmationURL, err := h.orderUC.CreateOrder(ctx, userID, input)
 	if err != nil {
 		if errors.Is(err, domain.ErrCartIsEmpty) {
-			l.Warn("order creation failed: cart is empty", domain.Int("user_id", userID))
+			l.Warn("order creation failed: cart is empty", logger.Int("user_id", userID))
 			response.Error(w, http.StatusBadRequest, "Cart is empty")
 		} else if errors.Is(err, domain.ErrAddressNotFound) {
-			l.Warn("order creation failed: address not found", domain.Int("user_id", userID), domain.String("address_id", req.AddressID))
+			l.Warn("order creation failed: address not found", logger.Int("user_id", userID), logger.String("address_id", req.AddressID))
 			response.Error(w, http.StatusNotFound, "Address not found")
 		} else {
-			l.Error("order creation failed unexpectedly", err, domain.Int("user_id", userID))
+			l.Error("order creation failed unexpectedly", err, logger.Int("user_id", userID))
 			response.Error(w, http.StatusInternalServerError, "Something went wrong")
 		}
 		return
 	}
 
 	l.Info("order created successfully",
-		domain.Int("user_id", userID),
-		domain.String("order_id", orderPublicID),
-		domain.Any("payment_required", confirmationURL != ""),
+		logger.Int("user_id", userID),
+		logger.String("order_id", orderPublicID),
+		logger.Any("payment_required", confirmationURL != ""),
 	)
 
 	response.JSON(w, http.StatusOK, CreateOrderResponse{
@@ -139,7 +140,7 @@ func (h *orderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 
 	orders, err := h.orderUC.GetOrders(ctx, userID)
 	if err != nil {
-		l.Error("failed to fetch user orders", err, domain.Int("user_id", userID))
+		l.Error("failed to fetch user orders", err, logger.Int("user_id", userID))
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -156,7 +157,7 @@ func (h *orderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	l.Debug("successfully fetched user orders", domain.Int("user_id", userID), domain.Int("count", len(resp)))
+	l.Debug("successfully fetched user orders", logger.Int("user_id", userID), logger.Int("count", len(resp)))
 
 	response.JSON(w, http.StatusOK, resp)
 }

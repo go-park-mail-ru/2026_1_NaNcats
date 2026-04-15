@@ -3,18 +3,18 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	auth "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/auth"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 	"github.com/google/uuid"
 )
 
 type CSRFMiddleware struct {
 	sessionUC auth.SessionUseCase
-	logger    domain.Logger
+	logger    logger.Logger
 }
 
-func NewCSRFMiddleware(suc auth.SessionUseCase, l domain.Logger) *CSRFMiddleware {
+func NewCSRFMiddleware(suc auth.SessionUseCase, l logger.Logger) *CSRFMiddleware {
 	return &CSRFMiddleware{
 		sessionUC: suc,
 		logger:    l,
@@ -40,7 +40,7 @@ func (m *CSRFMiddleware) Check(next http.Handler) http.Handler {
 
 		sessionID, err := uuid.Parse(cookie.Value)
 		if err != nil {
-			l.Warn("csrf: invalid session token format", domain.String("token_value", cookie.Value))
+			l.Warn("csrf: invalid session token format", logger.String("token_value", cookie.Value))
 			response.Error(w, http.StatusUnauthorized, "Invalid session")
 			return
 		}
@@ -53,13 +53,13 @@ func (m *CSRFMiddleware) Check(next http.Handler) http.Handler {
 
 		expectedToken, err := m.sessionUC.GetCSRF(ctx, sessionID)
 		if err != nil {
-			l.Error("csrf: validation failed", err, domain.String("session_id", sessionID.String()))
+			l.Error("csrf: validation failed", err, logger.String("session_id", sessionID.String()))
 			response.Error(w, http.StatusForbidden, "Invalid or expired CSRF token")
 			return
 		}
 
 		if clientToken != expectedToken {
-			l.Warn("csrf: token mismatch", domain.String("session_id", sessionID.String()))
+			l.Warn("csrf: token mismatch", logger.String("session_id", sessionID.String()))
 			response.Error(w, http.StatusForbidden, "CSRF token mismatch")
 			return
 		}

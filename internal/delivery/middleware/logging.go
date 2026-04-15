@@ -4,15 +4,15 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
 )
 
 // Мидлваря для access логов
 type LoggingMiddleware struct {
-	logger domain.Logger
+	logger logger.Logger
 }
 
-func NewLoggingMiddleware(logger domain.Logger) *LoggingMiddleware {
+func NewLoggingMiddleware(logger logger.Logger) *LoggingMiddleware {
 	return &LoggingMiddleware{
 		logger: logger,
 	}
@@ -45,12 +45,12 @@ func (m *LoggingMiddleware) Handler(next http.Handler) http.Handler {
 		userAgent := r.UserAgent()
 
 		m.logger.WithContext(r.Context()).Info("request finished",
-			domain.Int("status", wrapped.statusCode),
-			domain.String("duration", duration.String()),
-			domain.String("method", r.Method),
-			domain.String("path", r.URL.Path),
-			domain.String("user_agent", userAgent),
-			domain.String("ip", r.RemoteAddr),
+			logger.Int("status", wrapped.statusCode),
+			logger.String("duration", duration.String()),
+			logger.String("method", r.Method),
+			logger.String("path", r.URL.Path),
+			logger.String("user_agent", userAgent),
+			logger.String("ip", r.RemoteAddr),
 		)
 	})
 }

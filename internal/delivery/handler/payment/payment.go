@@ -10,6 +10,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	payment "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/payment"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/api_clients/yookassa"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 	"github.com/mailru/easyjson"
 )
@@ -25,10 +26,10 @@ type PaymentMethodResponse struct {
 
 type paymentHandler struct {
 	paymentUC payment.PaymentUseCase
-	logger    domain.Logger
+	logger    logger.Logger
 }
 
-func NewPaymentHandler(puc payment.PaymentUseCase, logger domain.Logger) *paymentHandler {
+func NewPaymentHandler(puc payment.PaymentUseCase, logger logger.Logger) *paymentHandler {
 	return &paymentHandler{
 		paymentUC: puc,
 		logger:    logger,
@@ -62,12 +63,12 @@ func (h *paymentHandler) InitiateCardBinding(w http.ResponseWriter, r *http.Requ
 
 	confirmationURL, err := h.paymentUC.InitiateCardBinding(ctx, userID)
 	if err != nil {
-		l.Error("failed to initiate card binding", err, domain.Int("user_id", userID))
+		l.Error("failed to initiate card binding", err, logger.Int("user_id", userID))
 		response.Error(w, http.StatusInternalServerError, "failed to initiate payment method binding")
 		return
 	}
 
-	l.Debug("card binding initiated", domain.Int("user_id", userID))
+	l.Debug("card binding initiated", logger.Int("user_id", userID))
 
 	response.JSON(w, http.StatusOK, BindingResponse{
 		ConfirmationURL: confirmationURL,
@@ -96,7 +97,7 @@ func (h *paymentHandler) GetUserCards(w http.ResponseWriter, r *http.Request) {
 
 	cards, err := h.paymentUC.GetUserCards(ctx, userID)
 	if err != nil {
-		l.Error("failed to get users cards", err, domain.Int("user_id", userID))
+		l.Error("failed to get users cards", err, logger.Int("user_id", userID))
 		response.Error(w, http.StatusInternalServerError, "failed to get payment methods")
 		return
 	}
@@ -105,7 +106,7 @@ func (h *paymentHandler) GetUserCards(w http.ResponseWriter, r *http.Request) {
 		cards = make([]domain.PaymentMethod, 0)
 	}
 
-	l.Debug("successfully fetched user cards", domain.Int("user_id", userID), domain.Int("count", len(cards)))
+	l.Debug("successfully fetched user cards", logger.Int("user_id", userID), logger.Int("count", len(cards)))
 
 	resp := make([]PaymentMethodResponse, 0, len(cards))
 	for _, card := range cards {
@@ -147,16 +148,16 @@ func (h *paymentHandler) DeleteCard(w http.ResponseWriter, r *http.Request) {
 	err := h.paymentUC.DeleteCard(ctx, cardID, userID)
 	if err != nil {
 		if errors.Is(err, domain.ErrPaymentMethodNotFound) {
-			l.Warn("card not found for deletion", domain.Int("user_id", userID), domain.String("card_id", cardID))
+			l.Warn("card not found for deletion", logger.Int("user_id", userID), logger.String("card_id", cardID))
 			response.Error(w, http.StatusNotFound, "card not found")
 			return
 		}
-		l.Error("failed to delete card", err, domain.Int("user_id", userID), domain.String("card_id", cardID))
+		l.Error("failed to delete card", err, logger.Int("user_id", userID), logger.String("card_id", cardID))
 		response.Error(w, http.StatusInternalServerError, "failed to delete payment method")
 		return
 	}
 
-	l.Info("card deleted successfully", domain.Int("user_id", userID), domain.String("card_id", cardID))
+	l.Info("card deleted successfully", logger.Int("user_id", userID), logger.String("card_id", cardID))
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -185,16 +186,16 @@ func (h *paymentHandler) SetDefaultCard(w http.ResponseWriter, r *http.Request) 
 	err := h.paymentUC.SetDefaultCard(ctx, cardID, userID)
 	if err != nil {
 		if errors.Is(err, domain.ErrPaymentMethodNotFound) {
-			l.Warn("card not found to set as default", domain.Int("user_id", userID), domain.String("card_id", cardID))
+			l.Warn("card not found to set as default", logger.Int("user_id", userID), logger.String("card_id", cardID))
 			response.Error(w, http.StatusNotFound, "card not found")
 			return
 		}
-		l.Error("failed to set default card", err, domain.Int("user_id", userID), domain.String("card_id", cardID))
+		l.Error("failed to set default card", err, logger.Int("user_id", userID), logger.String("card_id", cardID))
 		response.Error(w, http.StatusInternalServerError, "failed to set default payment method")
 		return
 	}
 
-	l.Info("default card updated", domain.Int("user_id", userID), domain.String("card_id", cardID))
+	l.Info("default card updated", logger.Int("user_id", userID), logger.String("card_id", cardID))
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -214,7 +215,7 @@ func (h *paymentHandler) YookassaWebhook(w http.ResponseWriter, r *http.Request)
 
 	var notification yookassa.WebhookNotification
 	if err := easyjson.UnmarshalFromReader(r.Body, &notification); err != nil {
-		l.Warn("invalid webhook payload from yookassa", domain.String("error", err.Error()))
+		l.Warn("invalid webhook payload from yookassa", logger.String("error", err.Error()))
 		response.Error(w, http.StatusBadRequest, "invalid payload")
 		return
 	}
@@ -231,9 +232,9 @@ func (h *paymentHandler) YookassaWebhook(w http.ResponseWriter, r *http.Request)
 
 		err := h.paymentUC.ProcessPaymentMethodWebhook(ctx, &methodObj)
 		if err != nil {
-			l.Error("failed to process payment method webhook", err, domain.String("payment_id", methodObj.ID))
+			l.Error("failed to process payment method webhook", err, logger.String("payment_id", methodObj.ID))
 		} else {
-			l.Info("payment method activated via webhook", domain.String("payment_id", methodObj.ID))
+			l.Info("payment method activated via webhook", logger.String("payment_id", methodObj.ID))
 		}
 	case "payment.succeeded", "payment.canceled":
 		var paymentObj yookassa.WebhookPaymentObject
@@ -245,9 +246,9 @@ func (h *paymentHandler) YookassaWebhook(w http.ResponseWriter, r *http.Request)
 
 		err := h.paymentUC.ProcessPaymentWebhook(ctx, &paymentObj)
 		if err != nil {
-			l.Error("failed to process payment webhook", err, domain.String("payment_id", paymentObj.ID), domain.String("event", notification.Event))
+			l.Error("failed to process payment webhook", err, logger.String("payment_id", paymentObj.ID), logger.String("event", notification.Event))
 		} else {
-			l.Info("payment status updated via webhook", domain.String("payment_id", paymentObj.ID), domain.String("event", notification.Event))
+			l.Info("payment status updated via webhook", logger.String("payment_id", paymentObj.ID), logger.String("event", notification.Event))
 		}
 	}
 

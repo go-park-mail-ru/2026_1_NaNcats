@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -17,10 +17,10 @@ const (
 
 // Трейсер походов в базу данных. Автоматизирует написание логов о походах в БД
 type DBTracer struct {
-	logger domain.Logger
+	logger logger.Logger
 }
 
-func NewDBTracer(logger domain.Logger) *DBTracer {
+func NewDBTracer(logger logger.Logger) *DBTracer {
 	return &DBTracer{
 		logger: logger,
 	}
@@ -50,14 +50,14 @@ func (t *DBTracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, data pgx.Trac
 
 	if data.Err != nil {
 		l.Error("sql query failed", data.Err,
-			domain.String("sql", sqlQuery),
-			domain.String("duration", duration.String()),
+			logger.String("sql", sqlQuery),
+			logger.String("duration", duration.String()),
 		)
 		return
 	}
 
 	l.Debug("sql query successful",
-		domain.String("sql", sqlQuery),
-		domain.String("duration", duration.String()),
+		logger.String("sql", sqlQuery),
+		logger.String("duration", duration.String()),
 	)
 }

@@ -78,7 +78,7 @@ func main() {
 		log.Fatalf("Connot start without logger: %v", err)
 	}
 
-	// Оборачиваем его в адаптер, который реализует domain.Logger
+	// Оборачиваем его в адаптер, который реализует logger.Logger
 	appLogger := infrastructureLogger.NewLoggerAdapter(rawLogger)
 
 	ctx := context.Background()
@@ -254,9 +254,9 @@ func main() {
 	}
 
 	appLogger.Info("starting server",
-		domain.String("port", port),
-		domain.String("read_timeout", "10s"),
-		domain.String("write_timeout", "10s"),
+		logger.String("port", port),
+		logger.String("read_timeout", "10s"),
+		logger.String("write_timeout", "10s"),
 	)
 
 	err = server.ListenAndServe()

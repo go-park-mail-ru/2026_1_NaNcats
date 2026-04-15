@@ -8,6 +8,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	address "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/address"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 )
@@ -78,10 +79,10 @@ func mapAddressToResponse(a domain.Address) AddressResponse {
 
 type addressHandler struct {
 	usecase address.AddressUseCase
-	logger  domain.Logger
+	logger  logger.Logger
 }
 
-func NewAddressHandler(u address.AddressUseCase, l domain.Logger) *addressHandler {
+func NewAddressHandler(u address.AddressUseCase, l logger.Logger) *addressHandler {
 	return &addressHandler{usecase: u, logger: l}
 }
 
@@ -110,7 +111,7 @@ func (h *addressHandler) AddAddress(w http.ResponseWriter, r *http.Request) {
 
 	var req AddressRequest
 	if err := request.JSON(r, &req); err != nil {
-		l.Warn("failed to decode add address request", domain.Int("user_id", userID), domain.String("error", err.Error()))
+		l.Warn("failed to decode add address request", logger.Int("user_id", userID), logger.String("error", err.Error()))
 		response.Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
@@ -131,12 +132,12 @@ func (h *addressHandler) AddAddress(w http.ResponseWriter, r *http.Request) {
 
 	id, err := h.usecase.AddAddress(ctx, userID, addr)
 	if err != nil {
-		l.Error("failed to add address to database", err, domain.Int("user_id", userID))
+		l.Error("failed to add address to database", err, logger.Int("user_id", userID))
 		response.Error(w, http.StatusInternalServerError, "failed to save address")
 		return
 	}
 
-	l.Info("address added successfully", domain.Int("user_id", userID), domain.String("address_id", id))
+	l.Info("address added successfully", logger.Int("user_id", userID), logger.String("address_id", id))
 
 	response.JSON(w, http.StatusCreated, CreateAddressResponse{ID: id})
 }
@@ -163,12 +164,12 @@ func (h *addressHandler) GetAddresses(w http.ResponseWriter, r *http.Request) {
 
 	addresses, err := h.usecase.GetMyAddresses(ctx, userID)
 	if err != nil {
-		l.Error("failed to fetch addresses", err, domain.Int("user_id", userID))
+		l.Error("failed to fetch addresses", err, logger.Int("user_id", userID))
 		response.Error(w, http.StatusInternalServerError, "failed to fetch addresses")
 		return
 	}
 
-	l.Debug("fetched user addresses", domain.Int("user_id", userID), domain.Int("count", len(addresses)))
+	l.Debug("fetched user addresses", logger.Int("user_id", userID), logger.Int("count", len(addresses)))
 
 	resp := make([]AddressResponse, 0, len(addresses))
 	for _, addr := range addresses {
@@ -200,12 +201,12 @@ func (h *addressHandler) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 
 	addressPublicID := r.PathValue("id")
 	if err := h.usecase.DeleteAddress(ctx, userID, addressPublicID); err != nil {
-		l.Error("failed to delete address", err, domain.Int("user_id", userID), domain.String("address_id", addressPublicID))
+		l.Error("failed to delete address", err, logger.Int("user_id", userID), logger.String("address_id", addressPublicID))
 		response.Error(w, http.StatusInternalServerError, "failed to delete address")
 		return
 	}
 
-	l.Info("address deleted successfully", domain.Int("user_id", userID), domain.String("address_id", addressPublicID))
+	l.Info("address deleted successfully", logger.Int("user_id", userID), logger.String("address_id", addressPublicID))
 
 	response.JSON(w, http.StatusOK, MessageResponse{Message: "deleted"})
 }
@@ -238,7 +239,7 @@ func (h *addressHandler) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 
 	var req AddressRequest
 	if err := request.JSON(r, &req); err != nil {
-		l.Warn("failed to decode update address request", domain.Int("user_id", userID), domain.String("address_id", idStr), domain.String("error", err.Error()))
+		l.Warn("failed to decode update address request", logger.Int("user_id", userID), logger.String("address_id", idStr), logger.String("error", err.Error()))
 		response.Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
@@ -260,12 +261,12 @@ func (h *addressHandler) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 
 	err = h.usecase.UpdateAddress(ctx, userID, addr)
 	if err != nil {
-		l.Error("failed to update address in database", err, domain.Int("user_id", userID), domain.String("address_id", idStr))
+		l.Error("failed to update address in database", err, logger.Int("user_id", userID), logger.String("address_id", idStr))
 		response.Error(w, http.StatusInternalServerError, "failed to update address")
 		return
 	}
 
-	l.Info("address updated successfully", domain.Int("user_id", userID), domain.String("address_id", idStr))
+	l.Info("address updated successfully", logger.Int("user_id", userID), logger.String("address_id", idStr))
 
 	response.JSON(w, http.StatusOK, MessageResponse{Message: "address updated successfully"})
 }

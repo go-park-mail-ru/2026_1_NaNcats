@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	restaurant "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/restaurant"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 )
 
@@ -28,10 +28,10 @@ type RestaurantBrandsResponse struct {
 
 type restaurantBrandHandler struct {
 	restaurantBrandUC restaurant.RestaurantBrandUseCase
-	logger            domain.Logger
+	logger            logger.Logger
 }
 
-func NewRestaurantBrandHandler(rbuc restaurant.RestaurantBrandUseCase, logger domain.Logger) *restaurantBrandHandler {
+func NewRestaurantBrandHandler(rbuc restaurant.RestaurantBrandUseCase, logger logger.Logger) *restaurantBrandHandler {
 	return &restaurantBrandHandler{
 		restaurantBrandUC: rbuc,
 		logger:            logger,
@@ -61,8 +61,8 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 			limit = val
 		} else {
 			l.Debug("invalid limit query parameter, using default",
-				domain.String("input", qLimit),
-				domain.Int("default", limit),
+				logger.String("input", qLimit),
+				logger.Int("default", limit),
 			)
 		}
 	}
@@ -72,8 +72,8 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 			offset = val
 		} else {
 			l.Debug("invalid offset query parameter, using default",
-				domain.String("input", qOffset),
-				domain.Int("default", offset),
+				logger.String("input", qOffset),
+				logger.Int("default", offset),
 			)
 		}
 	}
@@ -81,8 +81,8 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 	restaurantBrandsList, err := h.restaurantBrandUC.GetRestaurantBrandsList(ctx, limit, offset)
 	if err != nil {
 		l.Error("failed to get restaurant brand list", err,
-			domain.Int("limit", limit),
-			domain.Int("offset", offset),
+			logger.Int("limit", limit),
+			logger.Int("offset", offset),
 		)
 		response.Error(w, http.StatusInternalServerError, "Get restaurant brand list error")
 		return
@@ -103,9 +103,9 @@ func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, 
 	}
 
 	l.Debug("successfully fetched restaurant brands",
-		domain.Int("count", len(dtoList)),
-		domain.Int("limit", limit),
-		domain.Int("offset", offset),
+		logger.Int("count", len(dtoList)),
+		logger.Int("limit", limit),
+		logger.Int("offset", offset),
 	)
 
 	resp := RestaurantBrandsResponse{
@@ -121,19 +121,19 @@ func (h *restaurantBrandHandler) GetRestaurantBrandByID(w http.ResponseWriter, r
 	idStr := r.PathValue("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		l.Warn("invalid restaurant id format", domain.String("id_str", idStr))
+		l.Warn("invalid restaurant id format", logger.String("id_str", idStr))
 		response.Error(w, http.StatusBadRequest, "Invalid ID format")
 		return
 	}
 
 	brand, err := h.restaurantBrandUC.GetRestaurantBrandByID(ctx, id)
 	if err != nil {
-		l.Warn("restaurant not found", domain.Int("id", id))
+		l.Warn("restaurant not found", logger.Int("id", id))
 		response.Error(w, http.StatusNotFound, "Restaurant not found")
 		return
 	}
 
-	l.Debug("successfully fetched restaurant brand", domain.Int("id", id))
+	l.Debug("successfully fetched restaurant brand", logger.Int("id", id))
 
 	response.JSON(w, http.StatusOK, RestaurantBrandResponse{
 		ID:          strconv.Itoa(brand.ID),
