@@ -118,7 +118,7 @@ func (p *paymentUseCase) ProcessPaymentWebhook(ctx context.Context, payment *yoo
 	var newStatus string
 	switch payment.Status {
 	case "succeeded":
-		newStatus = "paid"
+		newStatus = "finished"
 	case "canceled":
 		newStatus = "canceled"
 	default:
