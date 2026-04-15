@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
+	auth "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/auth"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 	"github.com/google/uuid"
 )
@@ -14,11 +14,11 @@ import (
 // мидлвар авторизации:
 // нужен для защиты приватных эндпоинтов от forbidden/unauthorized сессий
 type AuthMiddleware struct {
-	sessionUC usecase.SessionUseCase
+	sessionUC auth.SessionUseCase
 	logger    domain.Logger
 }
 
-func NewAuthMiddleware(suc usecase.SessionUseCase, logger domain.Logger) *AuthMiddleware {
+func NewAuthMiddleware(suc auth.SessionUseCase, logger domain.Logger) *AuthMiddleware {
 	return &AuthMiddleware{
 		sessionUC: suc,
 		logger:    logger,

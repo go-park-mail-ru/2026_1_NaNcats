@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
 	address "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/address"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
@@ -67,7 +66,7 @@ type addressHandler struct {
 	logger  domain.Logger
 }
 
-func NewAddressHandler(u usecase.AddressUseCase, l domain.Logger) *addressHandler {
+func NewAddressHandler(u address.AddressUseCase, l domain.Logger) *addressHandler {
 	return &addressHandler{usecase: u, logger: l}
 }
 

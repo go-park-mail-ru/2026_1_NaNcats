@@ -4,17 +4,17 @@ import (
 	"net/http"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase"
+	auth "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/auth"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
 	"github.com/google/uuid"
 )
 
 type CSRFMiddleware struct {
-	sessionUC usecase.SessionUseCase
+	sessionUC auth.SessionUseCase
 	logger    domain.Logger
 }
 
-func NewCSRFMiddleware(suc usecase.SessionUseCase, l domain.Logger) *CSRFMiddleware {
+func NewCSRFMiddleware(suc auth.SessionUseCase, l domain.Logger) *CSRFMiddleware {
 	return &CSRFMiddleware{
 		sessionUC: suc,
 		logger:    l,

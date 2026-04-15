@@ -4,7 +4,6 @@ package restaurant
 
 import (
 	json "encoding/json"
-
 	easyjson "github.com/mailru/easyjson"
 	jlexer "github.com/mailru/easyjson/jlexer"
 	jwriter "github.com/mailru/easyjson/jwriter"
@@ -18,7 +17,7 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(in *jlexer.Lexer, out *RestaurantBrandsResponse) {
+func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerRestaurant(in *jlexer.Lexer, out *RestaurantBrandsResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -69,7 +68,7 @@ func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHand
 		in.Consumed()
 	}
 }
-func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(out *jwriter.Writer, in RestaurantBrandsResponse) {
+func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerRestaurant(out *jwriter.Writer, in RestaurantBrandsResponse) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -95,27 +94,27 @@ func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHand
 // MarshalJSON supports json.Marshaler interface
 func (v RestaurantBrandsResponse) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(&w, v)
+	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerRestaurant(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v RestaurantBrandsResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(w, v)
+	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerRestaurant(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *RestaurantBrandsResponse) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(&r, v)
+	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerRestaurant(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *RestaurantBrandsResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(l, v)
+	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerRestaurant(l, v)
 }
-func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler1(in *jlexer.Lexer, out *RestaurantBrandResponse) {
+func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerRestaurant1(in *jlexer.Lexer, out *RestaurantBrandResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -175,7 +174,7 @@ func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHand
 		in.Consumed()
 	}
 }
-func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler1(out *jwriter.Writer, in RestaurantBrandResponse) {
+func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerRestaurant1(out *jwriter.Writer, in RestaurantBrandResponse) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -215,23 +214,23 @@ func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHand
 // MarshalJSON supports json.Marshaler interface
 func (v RestaurantBrandResponse) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler1(&w, v)
+	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerRestaurant1(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v RestaurantBrandResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler1(w, v)
+	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerRestaurant1(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *RestaurantBrandResponse) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler1(&r, v)
+	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerRestaurant1(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *RestaurantBrandResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler1(l, v)
+	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerRestaurant1(l, v)
 }

@@ -4,7 +4,6 @@ package address
 
 import (
 	json "encoding/json"
-
 	easyjson "github.com/mailru/easyjson"
 	jlexer "github.com/mailru/easyjson/jlexer"
 	jwriter "github.com/mailru/easyjson/jwriter"
@@ -18,7 +17,236 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(in *jlexer.Lexer, out *AddressRequest) {
+func easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerAddress(in *jlexer.Lexer, out *LocationResponse) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		switch key {
+		case "address_text":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.AddressText = string(in.String())
+			}
+		case "latitude":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.Latitude = float64(in.Float64())
+			}
+		case "longitude":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.Longitude = float64(in.Float64())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerAddress(out *jwriter.Writer, in LocationResponse) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"address_text\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.AddressText))
+	}
+	{
+		const prefix string = ",\"latitude\":"
+		out.RawString(prefix)
+		out.Float64(float64(in.Latitude))
+	}
+	{
+		const prefix string = ",\"longitude\":"
+		out.RawString(prefix)
+		out.Float64(float64(in.Longitude))
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v LocationResponse) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerAddress(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v LocationResponse) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerAddress(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *LocationResponse) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerAddress(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *LocationResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerAddress(l, v)
+}
+func easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerAddress1(in *jlexer.Lexer, out *AddressResponse) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		switch key {
+		case "id":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.ID = string(in.String())
+			}
+		case "location":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				(out.Location).UnmarshalEasyJSON(in)
+			}
+		case "apartment":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.Apartment = string(in.String())
+			}
+		case "entrance":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.Entrance = string(in.String())
+			}
+		case "floor":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.Floor = string(in.String())
+			}
+		case "door_code":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.DoorCode = string(in.String())
+			}
+		case "courier_comment":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.CourierComment = string(in.String())
+			}
+		case "label":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.Label = string(in.String())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerAddress1(out *jwriter.Writer, in AddressResponse) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"id\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.ID))
+	}
+	{
+		const prefix string = ",\"location\":"
+		out.RawString(prefix)
+		(in.Location).MarshalEasyJSON(out)
+	}
+	{
+		const prefix string = ",\"apartment\":"
+		out.RawString(prefix)
+		out.String(string(in.Apartment))
+	}
+	{
+		const prefix string = ",\"entrance\":"
+		out.RawString(prefix)
+		out.String(string(in.Entrance))
+	}
+	{
+		const prefix string = ",\"floor\":"
+		out.RawString(prefix)
+		out.String(string(in.Floor))
+	}
+	{
+		const prefix string = ",\"door_code\":"
+		out.RawString(prefix)
+		out.String(string(in.DoorCode))
+	}
+	{
+		const prefix string = ",\"courier_comment\":"
+		out.RawString(prefix)
+		out.String(string(in.CourierComment))
+	}
+	{
+		const prefix string = ",\"label\":"
+		out.RawString(prefix)
+		out.String(string(in.Label))
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v AddressResponse) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerAddress1(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v AddressResponse) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerAddress1(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *AddressResponse) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerAddress1(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *AddressResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerAddress1(l, v)
+}
+func easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerAddress2(in *jlexer.Lexer, out *AddressRequest) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -96,7 +324,7 @@ func easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHand
 		in.Consumed()
 	}
 }
-func easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(out *jwriter.Writer, in AddressRequest) {
+func easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerAddress2(out *jwriter.Writer, in AddressRequest) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -151,23 +379,23 @@ func easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHand
 // MarshalJSON supports json.Marshaler interface
 func (v AddressRequest) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(&w, v)
+	easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerAddress2(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v AddressRequest) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(w, v)
+	easyjsonF4fdf71eEncodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerAddress2(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *AddressRequest) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(&r, v)
+	easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerAddress2(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *AddressRequest) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandler(l, v)
+	easyjsonF4fdf71eDecodeGithubComGoParkMailRu20261NaNcatsInternalDeliveryHandlerAddress2(l, v)
 }
