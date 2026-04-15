@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"html"
 	"io"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
@@ -37,6 +38,8 @@ func NewUserUseCase(ur repository.UserRepository, fs repository.FileStorage, dau
 
 // создаем юзера
 func (u *userUseCase) Create(ctx context.Context, user domain.User) (int, error) {
+	user.Name = html.EscapeString(user.Name)
+	user.Email = html.EscapeString(user.Email)
 	id, err := u.userRepo.CreateUser(ctx, user)
 	if err != nil {
 		return 0, err
@@ -61,6 +64,7 @@ func (u *userUseCase) GetByID(ctx context.Context, userID int) (domain.User, err
 
 // возвращает юзера по переданной почте
 func (u *userUseCase) GetByEmail(ctx context.Context, email string) (domain.User, error) {
+	email = html.EscapeString(email)
 	user, err := u.userRepo.GetUserByEmail(ctx, email)
 	if err != nil {
 		return domain.User{}, err
@@ -85,6 +89,15 @@ func (u *userUseCase) Check(ctx context.Context, userID int) (bool, error) {
 
 // обновляет поля юзера
 func (u *userUseCase) UpdateProfile(ctx context.Context, userID int, name, email *string) error {
+	if name != nil {
+		escapedName := html.EscapeString(*name)
+		name = &escapedName
+	}
+	if email != nil {
+		escapedEmail := html.EscapeString(*email)
+		email = &escapedEmail
+	}
+
 	return u.userRepo.UpdateProfile(ctx, userID, name, email)
 }
 

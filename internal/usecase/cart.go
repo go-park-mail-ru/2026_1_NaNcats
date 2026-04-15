@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"html"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
@@ -51,11 +52,11 @@ func (u *cartUseCase) UpdateCart(ctx context.Context, userID int, cartData domai
 	}
 
 	dishIDs := make([]int, len(cartData.Items))
-
 	for ind, item := range cartData.Items {
 		if item.Quantity <= 0 {
 			return domain.ErrInvalidQuantity
 		}
+		cartData.Items[ind].Name = html.EscapeString(cartData.Items[ind].Name)
 		dishIDs[ind] = item.DishID
 	}
 
