@@ -80,13 +80,21 @@ func (r *addressRepo) CreateAddress(ctx context.Context, userID int, addr domain
 
 func (r *addressRepo) GetAddressesByUserID(ctx context.Context, userID int) ([]domain.Address, error) {
 	query := `
-		SELECT a.public_id, l.address_text, ST_Y(l.coordinate::geometry) as lat, ST_X(l.coordinate::geometry) as lon,
-		       COALESCE(a.apartment, ''), COALESCE(a.entrance, ''), COALESCE(a.floor_level, ''), 
-			   COALESCE(a.door_code, ''), COALESCE(a.courier_comment, ''), COALESCE(a.label, '')
-		FROM "client_address" a
-		JOIN "location" l ON a.location_id = l.id
-		WHERE a.client_account_id = $1 AND a.is_active = true
-		ORDER BY a.created_at DESC;`
+        SELECT 
+            a.public_id, 
+            l.address_text, 
+            ST_Y(l.coordinate::geometry) as lat, 
+            ST_X(l.coordinate::geometry) as lon,
+            COALESCE(a.apartment, '') AS apartment, 
+            COALESCE(a.entrance, '') AS entrance, 
+            COALESCE(a.floor_level, '') AS floor_level, 
+            COALESCE(a.door_code, '') AS door_code, 
+            COALESCE(a.courier_comment, '') AS courier_comment, 
+            COALESCE(a.label, '') AS label
+        FROM "client_address" a
+        JOIN "location" l ON a.location_id = l.id
+        WHERE a.client_account_id = $1 AND a.is_active = true
+        ORDER BY a.created_at DESC;`
 
 	rows, err := r.pool.Query(ctx, query, userID)
 	if err != nil {
