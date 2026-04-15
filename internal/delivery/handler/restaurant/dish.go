@@ -1,4 +1,4 @@
-package handler
+package restaurant
 
 //go:generate easyjson $GOFILE
 

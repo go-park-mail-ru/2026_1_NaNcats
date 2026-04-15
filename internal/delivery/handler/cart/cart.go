@@ -1,4 +1,4 @@
-package handler
+package cart
 
 //go:generate easyjson $GOFILE
 

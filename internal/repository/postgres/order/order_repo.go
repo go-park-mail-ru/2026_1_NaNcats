@@ -1,4 +1,4 @@
-package postgres
+package order
 
 import (
 	"context"

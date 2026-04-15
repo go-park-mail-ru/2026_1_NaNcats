@@ -1,4 +1,4 @@
-package handler
+package payment
 
 //go:generate easyjson $GOFILE
 

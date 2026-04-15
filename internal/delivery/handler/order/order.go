@@ -1,4 +1,4 @@
-package handler
+package order
 
 //go:generate easyjson $GOFILE
 
