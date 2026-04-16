@@ -5,12 +5,12 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Контракт, чтобы ошибку можно было перевести в grpc
+// Контракт, чтобы ошибку можно было перевести в gRPC
 type StatusCoder interface {
 	GRPCStatus() codes.Code
 }
 
-// Превращает ошибку Go в ошибку GRPC
+// Превращает ошибку Go в ошибку gRPC
 func ToGRPCError(err error) error {
 	if err == nil {
 		return nil
