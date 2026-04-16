@@ -1,9 +1,9 @@
-CREATE TYPE order_status AS ENUM('in_progress', 'waiting', 'delivering', 'finished', 'canceled');
-CREATE TYPE courier_status AS ENUM('offline', 'waiting', 'delivering');
+-- CREATE TYPE order_status AS ENUM('in_progress', 'waiting', 'delivering', 'finished', 'canceled');
+-- CREATE TYPE courier_status AS ENUM('offline', 'waiting', 'delivering');
 
-CREATE EXTENSION IF NOT EXISTS postgis;
+-- CREATE EXTENSION IF NOT EXISTS postgis;
 
-CREATE TABLE "user" (
+-- CREATE TABLE "user" (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 		
 	name TEXT NOT NULL
@@ -24,7 +24,7 @@ CREATE TABLE "user" (
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
-CREATE TABLE "owner_profile" (
+-- CREATE TABLE "owner_profile" (
 	account_id INT PRIMARY KEY,
 	
 	CONSTRAINT fk_owner_profile_user
@@ -33,7 +33,7 @@ CREATE TABLE "owner_profile" (
 		ON DELETE CASCADE
 );
 
-CREATE TABLE "restaurant_brand" (
+-- CREATE TABLE "restaurant_brand" (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	owner_profile_id INT NOT NULL,
 	
@@ -57,7 +57,7 @@ CREATE TABLE "restaurant_brand" (
 		ON DELETE RESTRICT
 );
 
-CREATE TABLE "category" (
+-- CREATE TABLE "category" (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
 	name TEXT NOT NULL UNIQUE,
@@ -66,7 +66,7 @@ CREATE TABLE "category" (
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
-CREATE TABLE "location" (
+-- CREATE TABLE "location" (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
 	address_text TEXT NOT NULL,
@@ -77,7 +77,7 @@ CREATE TABLE "location" (
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
-CREATE TABLE "client_profile" (
+-- CREATE TABLE "client_profile" (
 	account_id INT PRIMARY KEY,
 	
 	bonus_balance BIGINT DEFAULT 0
@@ -103,7 +103,7 @@ CREATE TABLE "client_profile" (
 		ON DELETE SET NULL
 );
 
-CREATE TABLE "courier_profile" (
+-- CREATE TABLE "courier_profile" (
 	account_id INT PRIMARY KEY,
 	
 	status courier_status NOT NULL,
@@ -151,7 +151,7 @@ CREATE TABLE "promocode" (
 		ON DELETE CASCADE
 );
 
-CREATE TABLE "restaurant_branch" (
+-- CREATE TABLE "restaurant_branch" (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
 	restaurant_brand_id INT NOT NULL,
@@ -174,7 +174,7 @@ CREATE TABLE "restaurant_branch" (
 		ON DELETE RESTRICT
 );
 
-CREATE TABLE "dish" (
+-- CREATE TABLE "dish" (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
 	restaurant_brand_id INT NOT NULL,
@@ -199,7 +199,7 @@ CREATE TABLE "dish" (
 		ON DELETE RESTRICT
 );
 
-CREATE TABLE "client_address" (
+-- CREATE TABLE "client_address" (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	public_id UUID DEFAULT gen_random_uuid() UNIQUE NOT NULL,
 	
@@ -235,7 +235,7 @@ CREATE TABLE "client_address" (
 		ON DELETE CASCADE
 );
 
-CREATE TABLE "order" (
+-- CREATE TABLE "order" (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	public_id UUID DEFAULT gen_random_uuid() UNIQUE NOT NULL,
 	
@@ -281,7 +281,7 @@ CREATE TABLE "order" (
 		ON DELETE RESTRICT
 );
 
-CREATE TABLE "order_review" (
+-- CREATE TABLE "order_review" (
 	order_id INT PRIMARY KEY,
 	restaurant_rating INT NOT NULL
 		CHECK (restaurant_rating >= 1 AND restaurant_rating <= 5),
@@ -299,7 +299,7 @@ CREATE TABLE "order_review" (
 		ON DELETE CASCADE
 );
 
-CREATE TABLE "order_dish" (
+-- CREATE TABLE "order_dish" (
 	order_id INT,
 	dish_id INT,
 	PRIMARY KEY (order_id, dish_id),
@@ -380,7 +380,7 @@ CREATE TABLE "promocode_usage" (
 		ON DELETE SET NULL
 );
 
-CREATE TABLE "restaurant_brand_category" (
+-- CREATE TABLE "restaurant_brand_category" (
 	restaurant_brand_id INT,
 	category_id INT,
 	PRIMARY KEY (restaurant_brand_id, category_id),
@@ -396,7 +396,7 @@ CREATE TABLE "restaurant_brand_category" (
 		ON DELETE RESTRICT
 );
 
-CREATE TABLE "dish_category" (
+-- CREATE TABLE "dish_category" (
 	dish_id INT,
 	category_id INT,
 	PRIMARY KEY (dish_id, category_id),
@@ -412,7 +412,7 @@ CREATE TABLE "dish_category" (
 		ON DELETE RESTRICT
 );
 
-CREATE TABLE "cart" (
+-- CREATE TABLE "cart" (
 	client_account_id INT PRIMARY KEY,
 	restaurant_brand_id INT NOT NULL,
 	
@@ -429,7 +429,7 @@ CREATE TABLE "cart" (
 		ON DELETE CASCADE
 );
 
-CREATE TABLE "cart_dish" (
+-- CREATE TABLE "cart_dish" (
 	cart_id INT,
 	dish_id INT,
 	PRIMARY KEY (cart_id, dish_id),
@@ -590,7 +590,7 @@ CREATE TABLE "user_achievement" (
 		ON DELETE CASCADE
 );
 
-CREATE TABLE "payment_method" (
+-- CREATE TABLE "payment_method" (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	user_id INT NOT NULL,
 

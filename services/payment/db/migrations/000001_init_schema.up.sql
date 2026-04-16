@@ -1,0 +1,15 @@
+CREATE TABLE "payment_method" (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	user_id INT NOT NULL,
+
+	external_id TEXT NOT NULL UNIQUE,
+
+	last4 TEXT NOT NULL
+		CHECK (char_length(last4) = 4),
+	card_type TEXT NOT NULL,
+	issuer_name TEXT,
+
+	is_default BOOLEAN DEFAULT FALSE NOT NULL,
+
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+);
