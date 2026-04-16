@@ -4,8 +4,8 @@ package logger
 import (
 	"context"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/common"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"go.uber.org/zap"
 )
 
@@ -18,7 +18,7 @@ func NewLoggerAdapter(zapLog *logger.ZapLogger) logger.Logger {
 }
 
 func (a *LoggerAdapter) WithContext(ctx context.Context) logger.Logger {
-	reqID, ok := ctx.Value(middleware.RequestIDKey).(string)
+	reqID, ok := ctx.Value(common.RequestIDKey).(string)
 	if !ok || reqID == "" {
 		return a
 	}
