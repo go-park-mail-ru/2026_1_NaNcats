@@ -11,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
 )
 
 type s3Storage struct {
@@ -20,7 +19,7 @@ type s3Storage struct {
 	region string
 }
 
-func NewS3Storage(ctx context.Context, keyID, secretKey, bucket, region string) (repository.FileStorage, error) {
+func NewS3Storage(ctx context.Context, keyID, secretKey, bucket, region string) (FileStorage, error) {
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion(region),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(keyID, secretKey, "")),
