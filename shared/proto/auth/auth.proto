@@ -12,9 +12,9 @@ service AuthService {
   // Метод для регистрации
   rpc Register (RegisterRequest) returns (AuthResponse);
   // Метод для входа в аккаунт
-  rpc Login (RegisterRequest) returns (AuthResponse);
+  rpc Login (LoginRequest) returns (AuthResponse);
   // Метод для выхода из аккаунты
-  rpc Logout (RegisterRequest) returns (google.protobuf.Empty);
+  rpc Logout (LogoutRequest) returns (google.protobuf.Empty);
   // Метод для проверки сессии
   rpc CheckSession (CheckSessionRequest) returns (google.protobuf.Empty);
   // Метод для получения CSRF токена
