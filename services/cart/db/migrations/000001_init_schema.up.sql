@@ -1,6 +1,10 @@
+CREATE TYPE cart_status AS ENUM('active', 'locked');
+
 CREATE TABLE "cart" (
 	client_account_id INT PRIMARY KEY,
 	restaurant_brand_id INT NOT NULL,
+
+	status cart_status NOT NULL DEFAULT "active",
 	
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 );

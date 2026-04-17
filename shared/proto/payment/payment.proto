@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package payment;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/payment";
+
+// Микросервис оплаты
+service PaymentService {
+  // Метод создания платежа
+  rpc CreatePayment (CreatePaymentRequest) returns (CreatePaymentResponse);
+  // Метод привязки карты
+  rpc InitiateCardBinding (InitiateCardBindingRequest) returns (InitiateCardBindingResponse);
+  // Метод получения карт пользователя
+  rpc GetUserCards (GetUserCardsRequest) returns (GetUserCardsResponse);
+  // Метод установки дефолтной карты
+  rpc SetDefaultCard (ChangeCardRequest) returns (google.protobuf.Empty);
+  // Метод удаления карты
+  rpc DeleteCard (ChangeCardRequest) returns (google.protobuf.Empty);
+  // Вебхук для обработки привязки карты
+  rpc ProcessPaymentMethodWebhook (ProcessPaymentMethodWebhookRequest) returns (google.protobuf.Empty);
+  // Вебхук для создания платежа
+  rpc ProcessPaymentWebhook (ProcessPaymentWebhookRequest) returns (google.protobuf.Empty);
+}
+
+
+message CreatePaymentRequest {
+  int64 user_id = 1;
+  int64 total_cost = 2;
+  string payment_method_id = 3;
+}
+
+message CreatePaymentResponse {
+  string confirmation_url = 1;
+}
+
+message InitiateCardBindingRequest {
+  int64 user_id = 1;
+  string idempotency_key = 2;
+}
+
+message InitiateCardBindingResponse {
+  string confirmation_url = 1;
+}
+
+message PaymentMethod {
+  int64 id = 1;
+  int64 user_id = 2;
+  string external_id = 3;
+  string card_type = 4;
+  string last4 = 5;
+  string issuer_name = 6;
+  bool is_default = 7;
+}
+
+message GetUserCardsRequest {
+  int64 user_id = 1;
+}
+
+message GetUserCardsResponse {
+  int64 user_id = 1;
+  repeated PaymentMethod cards = 2;
+}
+
+message ChangeCardRequest {
+  int64 user_id = 1;
+  int64 card_id = 2;
+  string idempotency_key = 3;
+}
+
+message ProcessPaymentMethodWebhookRequest {
+  string id = 1;
+  string status = 2;
+  bool saved = 3;
+  string type = 4;
+  CardInfo card = 5;
+  string idempotency_key = 6;
+}
+
+message CardInfo {
+  string last4 = 1;
+  string card_type = 2;
+  string issuer_name = 3;
+}
+
+message ProcessPaymentWebhookRequest {
+  string id = 1;
+  string status = 2;
+  string idempotency_key = 3;
+}

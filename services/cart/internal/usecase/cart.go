@@ -12,10 +12,14 @@ import (
 type CartUseCase interface {
 	GetCart(ctx context.Context, userID int) (domain.Cart, int64, error) // Возвращает карту, полную стоимость коризины и ошибку
 	UpdateCart(ctx context.Context, userID int, cartData domain.Cart) error
+	LockCart(ctx context.Context, userID int64) error
+	UnlockCart(ctx context.Context, userID int64) error
+	ClearCart(ctx context.Context, userID int64) error
 }
 
 type cartUseCase struct {
-	cartRepo           repository.CartRepository
+	cartRepo repository.CartRepository
+	// TODO: убрать dishRepo
 	dishRepo           repository.DishRepository
 	defaultFoodLogoURL string
 }
@@ -76,4 +80,16 @@ func (u *cartUseCase) UpdateCart(ctx context.Context, userID int, cartData domai
 	}
 
 	return u.cartRepo.UpdateCart(ctx, userID, cartData.RestaurantBrandID, cartData.Items)
+}
+
+func (u *cartUseCase) LockCart(ctx context.Context, userID int64) error {
+	return u.cartRepo.LockCart(ctx, userID)
+}
+
+func (u *cartUseCase) UnlockCart(ctx context.Context, userID int64) error {
+	return u.cartRepo.UnlockCart(ctx, userID)
+}
+
+func (u *cartUseCase) ClearCart(ctx context.Context, userID int64) error {
+	return u.cartRepo.ClearCart(ctx, userID)
 }

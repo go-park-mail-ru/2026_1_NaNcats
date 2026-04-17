@@ -97,6 +97,7 @@ func (r *cartRepo) GetCartByUserID(ctx context.Context, userID int) (domain.Cart
 	return cart, nil
 }
 
+// TODO: сделать обновление доступным только при статусе 'active'
 func (r *cartRepo) UpdateCart(ctx context.Context, userID int, resID int, items []domain.CartItem) error {
 	batch := &pgx.Batch{}
 	batch.Queue(`
@@ -143,4 +144,15 @@ func (r *cartRepo) ClearCart(ctx context.Context, userId int) error {
 	`
 	_, err := r.pool.Exec(ctx, query, userId)
 	return err
+}
+
+// TODO: Написать реализацию методов ниже,
+// * LockCart должен менять status на 'locked'
+// * UnlockCart - на 'active'
+func (r *cartRepo) LockCart(ctx context.Context, userID int64) error {
+	return nil
+}
+
+func (r *cartRepo) UnlockCart(ctx context.Context, userID int64) error {
+	return nil
 }

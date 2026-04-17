@@ -12,6 +12,7 @@ import (
 
 //go:generate mockgen -destination=mocks/payment_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/payment PaymentUseCase
 type PaymentUseCase interface {
+	// TODO: добавить метод CreatePayment, сейчас эта логика реализована в order.go в слое usecase, нужно вынести сюда
 	InitiateCardBinding(ctx context.Context, userID int) (string, error)
 	GetUserCards(ctx context.Context, userID int) ([]domain.PaymentMethod, error)
 	SetDefaultCard(ctx context.Context, cardID string, userID int) error
@@ -23,7 +24,7 @@ type PaymentUseCase interface {
 type paymentUseCase struct {
 	paymentRepo    repository.PaymentRepository
 	cacheRepo      repository.PaymentCacheRepository
-	orderRepo      repository.OrderRepository
+	orderRepo      repository.OrderRepository // удалить
 	yookassaClient *yookassa.Client
 	returnURL      string
 }

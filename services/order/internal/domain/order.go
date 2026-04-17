@@ -16,7 +16,7 @@ type Order struct {
 	Items              []OrderDish
 	CreatedAt          time.Time
 	RestaurantName     string
-	RestaurantLogoURL  string
+	RestaurantLogoURL  string // удалить
 }
 
 type OrderDish struct {

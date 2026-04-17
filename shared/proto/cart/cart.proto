@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package cart;
+
+import "google/protobuf/empty.proto";
+
+option go_package = "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/cart";
+
+// Микросервис корзниы
+service CartService {
+  // Метод для получения товаров из корзины
+  rpc GetCart (GetCartRequest) returns (GetCartResponse);
+  // Метод для обновления содержимого корзины
+  rpc UpdateCart (UpdateCartRequest) returns (google.protobuf.Empty);
+  // Метод для блокировки корзины
+  rpc LockCart (CartOperationRequest) returns (google.protobuf.Empty);
+  // Метод для разблокировки корзины
+  rpc UnlockCart (CartOperationRequest) returns (google.protobuf.Empty);
+  // Метод для очистки корзины
+  rpc ClearCart (CartOperationRequest) returns (google.protobuf.Empty);
+}
+
+message CartOperationRequest {
+  int64 user_id = 1;
+  string idempotency_key = 2;
+}
+
+message CartItem {
+  int64 dish_id = 1;
+  int32 quantity = 2;
+}
+
+message Cart {
+  int64 restaurant_brand_id = 1;
+  repeated CartItem items = 2;
+}
+
+message GetCartRequest {
+  int64 user_id = 1;
+}
+
+message GetCartResponse {
+  Cart cart = 1;
+}
+
+message UpdateCartRequest {
+  int64 user_id = 1;
+  Cart cart_data = 2;
+  string idempotency_key = 3;
+}
