@@ -9,7 +9,7 @@ MAIN_PKG = ./cmd/api/main.go
 COVERAGE_FILE = coverage.out
 COVERAGE_HTML = coverage.html
 
-.PHONY: all run build clean test gen cover migrate-create migrate-up migrate-down swagger
+.PHONY: all run build clean test gen cover migrate-create migrate-up migrate-down swagger proto
 
 # Команда по умолчанию
 all: run
@@ -26,10 +26,24 @@ build:
 clean:
 	rm -f $(APP_NAME)
 	rm -f $(COVERAGE_FILE)
+	find shared/proto -name "*.pb.go" -type f -delete
 
 # Генерация моков
 gen:
 	go generate ./...
+
+# Генерация proto файлов
+proto:
+	protoc -I shared/proto \
+			--go_out=shared/proto --go_opt=paths=source_relative \
+			--go-grpc_out=shared/proto --go-grpc_opt=paths=source_relative \
+			shared/proto/address/address.proto \
+			shared/proto/auth/auth.proto \
+			shared/proto/cart/cart.proto \
+			shared/proto/order/order.proto \
+			shared/proto/payment/payment.proto \
+			shared/proto/restaurant/restaurant.proto \
+			shared/proto/user/user.proto
 
 # Тестирование с правильным подсчетом покрытия
 test:
@@ -39,7 +53,7 @@ test:
 
 	@echo "\nОчистка покрытия от моков...\n"
 # Удаляем все строчки, где есть слово "mock", из файла покрытия
-	grep -Ev "mock|main.go|tracer.go|migrator.go|_easyjson" $(COVERAGE_FILE) > coverage_clean.out
+	grep -Ev "mock|main.go|tracer.go|migrator.go|_easyjson|\.pb\.go" $(COVERAGE_FILE) > coverage_clean.out
 	mv coverage_clean.out $(COVERAGE_FILE)
 
 	@echo "\nИтоговое покрытие кода:\n"
