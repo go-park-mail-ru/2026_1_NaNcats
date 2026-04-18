@@ -435,13 +435,12 @@ func (x *DeleteAddressRequest) GetIdempotencyKey() string {
 }
 
 type UpdateAddressRequest struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	UserId          int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	AddressPublicId string                 `protobuf:"bytes,2,opt,name=address_public_id,json=addressPublicId,proto3" json:"address_public_id,omitempty"`
-	Address         *Address               `protobuf:"bytes,3,opt,name=address,proto3" json:"address,omitempty"`
-	IdempotencyKey  string                 `protobuf:"bytes,4,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	UserId         int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Address        *Address               `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`
+	IdempotencyKey string                 `protobuf:"bytes,3,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *UpdateAddressRequest) Reset() {
@@ -479,13 +478,6 @@ func (x *UpdateAddressRequest) GetUserId() int64 {
 		return x.UserId
 	}
 	return 0
-}
-
-func (x *UpdateAddressRequest) GetAddressPublicId() string {
-	if x != nil {
-		return x.AddressPublicId
-	}
-	return ""
 }
 
 func (x *UpdateAddressRequest) GetAddress() *Address {
@@ -533,12 +525,11 @@ const file_address_address_proto_rawDesc = "" +
 	"\x14DeleteAddressRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12*\n" +
 	"\x11address_public_id\x18\x02 \x01(\tR\x0faddressPublicId\x12'\n" +
-	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey\"\xb0\x01\n" +
+	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey\"\x84\x01\n" +
 	"\x14UpdateAddressRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12*\n" +
-	"\x11address_public_id\x18\x02 \x01(\tR\x0faddressPublicId\x12*\n" +
-	"\aaddress\x18\x03 \x01(\v2\x10.address.AddressR\aaddress\x12'\n" +
-	"\x0fidempotency_key\x18\x04 \x01(\tR\x0eidempotencyKey2\xba\x02\n" +
+	"\aaddress\x18\x02 \x01(\v2\x10.address.AddressR\aaddress\x12'\n" +
+	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey2\xba\x02\n" +
 	"\x0eAddressService\x12E\n" +
 	"\n" +
 	"AddAddress\x12\x1a.address.AddAddressRequest\x1a\x1b.address.AddAddressResponse\x12Q\n" +

@@ -62,7 +62,6 @@ message DeleteAddressRequest {
 
 message UpdateAddressRequest {
   int64 user_id = 1;
-  string address_public_id = 2;
-  Address address = 3;
-  string idempotency_key = 4;
+  Address address = 2;
+  string idempotency_key = 3;
 }

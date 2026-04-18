@@ -1,4 +1,4 @@
-package address
+package usecase
 
 import (
 	"context"
@@ -10,10 +10,10 @@ import (
 
 //go:generate mockgen -destination=mocks/address_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/address AddressUseCase
 type AddressUseCase interface {
-	AddAddress(ctx context.Context, userID int, addr domain.Address) (string, error)
-	GetMyAddresses(ctx context.Context, userID int) ([]domain.Address, error)
-	DeleteAddress(ctx context.Context, userID int, addressPublicID string) error
-	UpdateAddress(ctx context.Context, userID int, addr domain.Address) error
+	AddAddress(ctx context.Context, userID int64, addr domain.Address) (string, error)
+	GetMyAddresses(ctx context.Context, userID int64) ([]domain.Address, error)
+	DeleteAddress(ctx context.Context, userID int64, addressPublicID string) error
+	UpdateAddress(ctx context.Context, userID int64, addr domain.Address) error
 }
 
 type addressUseCase struct {
@@ -24,7 +24,7 @@ func NewAddressUseCase(r repository.AddressRepository) AddressUseCase {
 	return &addressUseCase{repo: r}
 }
 
-func (u *addressUseCase) AddAddress(ctx context.Context, userID int, addr domain.Address) (string, error) {
+func (u *addressUseCase) AddAddress(ctx context.Context, userID int64, addr domain.Address) (string, error) {
 	createAddr := domain.Address{
 		PublicID: addr.PublicID,
 		Location: domain.Location{
@@ -44,15 +44,15 @@ func (u *addressUseCase) AddAddress(ctx context.Context, userID int, addr domain
 	return u.repo.CreateAddress(ctx, userID, createAddr)
 }
 
-func (u *addressUseCase) GetMyAddresses(ctx context.Context, userID int) ([]domain.Address, error) {
+func (u *addressUseCase) GetMyAddresses(ctx context.Context, userID int64) ([]domain.Address, error) {
 	return u.repo.GetAddressesByUserID(ctx, userID)
 }
 
-func (u *addressUseCase) DeleteAddress(ctx context.Context, userID int, addressPublicID string) error {
+func (u *addressUseCase) DeleteAddress(ctx context.Context, userID int64, addressPublicID string) error {
 	return u.repo.DeleteAddress(ctx, userID, addressPublicID)
 }
 
-func (u *addressUseCase) UpdateAddress(ctx context.Context, userID int, addr domain.Address) error {
+func (u *addressUseCase) UpdateAddress(ctx context.Context, userID int64, addr domain.Address) error {
 	updateAddr := domain.Address{
 		PublicID: addr.PublicID,
 		Location: domain.Location{
