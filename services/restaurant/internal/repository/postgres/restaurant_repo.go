@@ -2,18 +2,19 @@ package restaurant
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
 	"github.com/jackc/pgx/v5"
-
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
 )
 
 type restaurantBrandDB struct {
-	ID             int       `db:"id"`
-	OwnerProfileID int       `db:"owner_profile_id"`
+	ID             int64     `db:"id"`
+	OwnerProfileID int64     `db:"owner_profile_id"`
 	Name           string    `db:"name"`
 	Description    *string   `db:"description"`
 	PromotionTier  int       `db:"promotion_tier"`
@@ -62,13 +63,13 @@ func (r *restaurantBrandRepo) GetRestaurantBrandsList(ctx context.Context, limit
 	`
 	rows, err := r.pool.Query(ctx, query, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("query restaurant brands list: %w", err)
 	}
 	defer rows.Close()
 
 	dbRestaurantBrands, err := pgx.CollectRows(rows, pgx.RowToStructByName[restaurantBrandDB])
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("scan restaurant brands rows: %w", err)
 	}
 
 	domainRestaurantBrands := make([]domain.RestaurantBrand, 0, len(dbRestaurantBrands))
@@ -91,7 +92,11 @@ func (r *restaurantBrandRepo) GetByID(ctx context.Context, id int64) (domain.Res
 		&rb.PromotionTier, &rb.LogoURL, &rb.CreatedAt, &rb.UpdatedAt,
 	)
 	if err != nil {
-		return domain.RestaurantBrand{}, err
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.RestaurantBrand{}, domain.ErrRestaurantNotFound
+		}
+		return domain.RestaurantBrand{}, fmt.Errorf("get restaurant by id [%d]: %w", id, err)
+
 	}
 	return rb.toDomain(), nil
 }

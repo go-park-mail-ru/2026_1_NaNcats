@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/domain"
 	"github.com/pashagolub/pgxmock/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,7 +15,7 @@ import (
 func TestDishRepo_GetDishesByRestaurantBrandID(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
-	brandID := 1
+	var brandID int64 = 1
 	limit := 10
 	offset := 0
 
@@ -76,7 +76,7 @@ func TestDishRepo_GetDishesByRestaurantBrandID(t *testing.T) {
 
 func TestDishRepo_GetDishByID(t *testing.T) {
 	ctx := context.Background()
-	dishID := 42
+	var dishID int64 = 42
 	now := time.Now()
 	dbErr := errors.New("db error")
 

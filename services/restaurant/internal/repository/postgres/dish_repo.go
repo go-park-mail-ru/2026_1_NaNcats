@@ -3,13 +3,13 @@ package restaurant
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
 	"github.com/jackc/pgx/v5"
-
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
 )
 
 type dishDB struct {
@@ -72,13 +72,13 @@ func (r *dishRepo) GetDishesByRestaurantBrandID(ctx context.Context, restaurantB
 
 	rows, err := r.pool.Query(ctx, query, restaurantBrandID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("postgres query error: %w", err)
 	}
 	defer rows.Close()
 
 	dbDishes, err := pgx.CollectRows(rows, pgx.RowToStructByName[dishDB])
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("mapping dishes: %w", err)
 	}
 
 	dishes := make([]domain.Dish, 0, len(dbDishes))
@@ -104,7 +104,7 @@ func (r *dishRepo) GetDishByID(ctx context.Context, DishID int64) (domain.Dish, 
 
 	rows, err := r.pool.Query(ctx, query, DishID)
 	if err != nil {
-		return domain.Dish{}, err
+		return domain.Dish{}, fmt.Errorf("query dish by id: %w", err)
 	}
 
 	dbDish, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[dishDB])
@@ -113,7 +113,7 @@ func (r *dishRepo) GetDishByID(ctx context.Context, DishID int64) (domain.Dish, 
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.Dish{}, domain.ErrDishNotFound
 		}
-		return domain.Dish{}, err
+		return domain.Dish{}, fmt.Errorf("scan dish row: %w", err)
 	}
 
 	return dbDish.toDomain(), nil
@@ -135,12 +135,12 @@ func (r *dishRepo) GetDishesByIDs(ctx context.Context, ids []int64) ([]domain.Di
 
 	rows, err := r.pool.Query(ctx, query, ids)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("query dishes by ids: %w", err)
 	}
 
 	dbDishes, err := pgx.CollectRows(rows, pgx.RowToStructByName[dishDB])
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("scan dishes rows: %w", err)
 	}
 
 	dishes := make([]domain.Dish, 0, len(dbDishes))
