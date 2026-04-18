@@ -5,9 +5,10 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/address/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/address/internal/usecase"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/grpcutil"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/address"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -60,14 +61,14 @@ func NewAddressHandler(uc usecase.AddressUseCase) *AddressHandler {
 
 func (h *AddressHandler) AddAddress(ctx context.Context, req *pb.AddAddressRequest) (*pb.AddAddressResponse, error) {
 	if req.Address == nil {
-		return nil, status.Error(codes.InvalidArgument, "address is required")
+		return nil, errutil.New("address is required", codes.InvalidArgument)
 	}
 
 	domainAddr := mapPBToDomainAddress(req.Address)
 
 	addressPublicID, err := h.usecase.AddAddress(ctx, req.UserId, domainAddr, req.IdempotencyKey)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to add address: %v", err)
+		return nil, grpcutil.ToGRPCError(err)
 	}
 
 	return &pb.AddAddressResponse{
@@ -78,7 +79,7 @@ func (h *AddressHandler) AddAddress(ctx context.Context, req *pb.AddAddressReque
 func (h *AddressHandler) GetMyAddresses(ctx context.Context, req *pb.GetMyAddressesRequest) (*pb.GetMyAddressesResponse, error) {
 	domainAddresses, err := h.usecase.GetMyAddresses(ctx, req.UserId)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get addresses: %v", err)
+		return nil, grpcutil.ToGRPCError(err)
 	}
 
 	pbAddreses := make([]*pb.Address, 0, len(domainAddresses))
@@ -94,7 +95,7 @@ func (h *AddressHandler) GetMyAddresses(ctx context.Context, req *pb.GetMyAddres
 func (h *AddressHandler) DeleteAddress(ctx context.Context, req *pb.DeleteAddressRequest) (*emptypb.Empty, error) {
 	err := h.usecase.DeleteAddress(ctx, req.UserId, req.AddressPublicId, req.IdempotencyKey)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to delete address: %v", err)
+		return nil, grpcutil.ToGRPCError(err)
 	}
 
 	return &emptypb.Empty{}, nil
@@ -102,14 +103,14 @@ func (h *AddressHandler) DeleteAddress(ctx context.Context, req *pb.DeleteAddres
 
 func (h *AddressHandler) UpdateAddress(ctx context.Context, req *pb.UpdateAddressRequest) (*emptypb.Empty, error) {
 	if req.Address == nil {
-		return nil, status.Error(codes.InvalidArgument, "address is required")
+		return nil, errutil.New("address is required", codes.InvalidArgument)
 	}
 
 	domainAddress := mapPBToDomainAddress(req.Address)
 
 	err := h.usecase.UpdateAddress(ctx, req.UserId, domainAddress, req.IdempotencyKey)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update address: %v", err)
+		return nil, grpcutil.ToGRPCError(err)
 	}
 
 	return &emptypb.Empty{}, nil
