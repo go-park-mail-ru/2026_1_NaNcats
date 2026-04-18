@@ -3,9 +3,9 @@ package user
 import (
 	"context"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
 )
 
 type clientProfileRepo struct {
