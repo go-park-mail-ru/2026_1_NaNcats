@@ -25,8 +25,8 @@ func UnaryClientUserIDKey() grpc.UnaryClientInterceptor {
 		invoker grpc.UnaryInvoker,
 		opts ...grpc.CallOption,
 	) error {
-		if userID, ok := ctx.Value(common.UserIDKey).(int); ok {
-			md := metadata.Pairs(mdUserIDKey, strconv.Itoa(userID))
+		if userID, ok := ctx.Value(common.UserIDKey).(int64); ok {
+			md := metadata.Pairs(mdUserIDKey, strconv.FormatInt(userID, 10))
 			ctx = metadata.NewOutgoingContext(ctx, md)
 		}
 
@@ -41,7 +41,7 @@ func UnaryServerInterceptorIDKey() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		if md, ok := metadata.FromIncomingContext(ctx); ok {
 			if ids := md.Get(mdUserIDKey); len(ids) > 0 {
-				userID, err := strconv.Atoi(ids[0])
+				userID, err := strconv.ParseInt(ids[0], 10, 64)
 				if err != nil {
 					return nil, status.Error(codes.InvalidArgument, "malformed user-id in metadata")
 				}

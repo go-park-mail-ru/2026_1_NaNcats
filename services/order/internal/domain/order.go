@@ -3,12 +3,12 @@ package domain
 import "time"
 
 type Order struct {
-	ID                 int
+	ID                 int64
 	PublicID           string
-	ClientID           int
-	CourierID          *int
+	ClientID           int64
+	CourierID          *int64
 	RestaurantBranchID int
-	ClientAddressID    int
+	ClientAddressID    int64
 	TotalCost          int64
 	Status             string
 	PaymentMethodID    string
@@ -20,15 +20,15 @@ type Order struct {
 }
 
 type OrderDish struct {
-	DishID   int
+	DishID   int64
 	Quantity int
 	Price    int64
 }
 
 type CreateOrderInput struct {
-	UserID             int
+	UserID             int64
 	AddressPublicID    string
-	RestaurantBranchID int
+	RestaurantBranchID int64
 	PaymentMethodID    string
 	DeliveryCost       int64
 	ServiceFee         int64

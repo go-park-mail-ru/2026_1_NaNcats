@@ -1,8 +1,8 @@
 package domain
 
 type PaymentMethod struct {
-	ID         int
-	UserID     int
+	ID         int64
+	UserID     int64
 	ExternalID string
 	CardType   string
 	Last4      string

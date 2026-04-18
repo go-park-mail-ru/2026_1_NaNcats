@@ -6,8 +6,8 @@ import (
 
 // Сущность ресторанного бренда
 type RestaurantBrand struct {
-	ID             int
-	OwnerProfileID int
+	ID             int64
+	OwnerProfileID int64
 	Name           string
 	Description    string
 	PromotionTier  int

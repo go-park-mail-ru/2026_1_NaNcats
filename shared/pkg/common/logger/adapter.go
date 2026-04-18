@@ -37,6 +37,8 @@ func (a *LoggerAdapter) toZap(fields []logger.Field) []zap.Field {
 			res[i] = zap.String(f.Key, v)
 		case int:
 			res[i] = zap.Int(f.Key, v)
+		case int64:
+			res[i] = zap.Int64(f.Key, v)
 		case error:
 			res[i] = zap.NamedError(f.Key, v)
 		default:

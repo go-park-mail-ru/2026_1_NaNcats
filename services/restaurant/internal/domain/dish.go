@@ -6,8 +6,8 @@ import (
 
 // Блюдо/позиция ресторана
 type Dish struct {
-	ID                int
-	RestaurantBrandID int
+	ID                int64
+	RestaurantBrandID int64
 	Name              string
 	Description       string
 	ImageURL          string
