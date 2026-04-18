@@ -1,16 +1,16 @@
 CREATE TYPE order_status AS ENUM('in_progress', 'waiting', 'delivering', 'finished', 'canceled');
 
 CREATE TABLE "order" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	public_id UUID DEFAULT gen_random_uuid() UNIQUE NOT NULL,
 	
-	client_account_id INT NOT NULL,
-	courier_account_id INT,
-	restaurant_branch_id INT NOT NULL,
-	client_address_id INT NOT NULL,
+	client_account_id BIGINT NOT NULL,
+	courier_account_id BIGINT,
+	restaurant_branch_id BIGINT NOT NULL,
+	client_address_id BIGINT NOT NULL,
 	total_cost BIGINT
 		CHECK (total_cost >= 1000000), -- 1 рубль
-	promocode_id INT,
+	promocode_id BIGINT,
 
 	payment_method_id TEXT,
 	yookassa_payment_id TEXT,
@@ -22,7 +22,7 @@ CREATE TABLE "order" (
 );
 
 CREATE TABLE "order_review" (
-	order_id INT PRIMARY KEY,
+	order_id BIGINT PRIMARY KEY,
 	restaurant_rating INT NOT NULL
 		CHECK (restaurant_rating >= 1 AND restaurant_rating <= 5),
 	courier_rating INT
@@ -40,8 +40,8 @@ CREATE TABLE "order_review" (
 );
 
 CREATE TABLE "order_dish" (
-	order_id INT,
-	dish_id INT,
+	order_id BIGINT,
+	dish_id BIGINT,
 	PRIMARY KEY (order_id, dish_id),
 	
 	quantity INT NOT NULL

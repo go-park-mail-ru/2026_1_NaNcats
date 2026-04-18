@@ -4,7 +4,7 @@
 -- CREATE EXTENSION IF NOT EXISTS postgis;
 
 -- CREATE TABLE "user" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 		
 	name TEXT NOT NULL
 		CHECK (char_length(name) >= 1 AND char_length(name) <= 39),
@@ -25,7 +25,7 @@
 );
 
 -- CREATE TABLE "owner_profile" (
-	account_id INT PRIMARY KEY,
+	account_id BIGINT PRIMARY KEY,
 	
 	CONSTRAINT fk_owner_profile_user
 		FOREIGN KEY (account_id)
@@ -34,8 +34,8 @@
 );
 
 -- CREATE TABLE "restaurant_brand" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	owner_profile_id INT NOT NULL,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	owner_profile_id BIGINT NOT NULL,
 	
 	name TEXT UNIQUE NOT NULL
 		CHECK (char_length(name) <= 60),
@@ -58,7 +58,7 @@
 );
 
 -- CREATE TABLE "category" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
 	name TEXT NOT NULL UNIQUE,
 	
@@ -67,7 +67,7 @@
 );
 
 -- CREATE TABLE "location" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
 	address_text TEXT NOT NULL,
 	
@@ -78,11 +78,11 @@
 );
 
 -- CREATE TABLE "client_profile" (
-	account_id INT PRIMARY KEY,
+	account_id BIGINT PRIMARY KEY,
 	
 	bonus_balance BIGINT DEFAULT 0
 		CHECK (bonus_balance >= 0),
-	bonus_category_id INT,
+	bonus_category_id BIGINT,
 	bonus_category_expires_at TIMESTAMP WITH TIME ZONE,
 	bonus_expires_at TIMESTAMP WITH TIME ZONE,
 	
@@ -104,7 +104,7 @@
 );
 
 -- CREATE TABLE "courier_profile" (
-	account_id INT PRIMARY KEY,
+	account_id BIGINT PRIMARY KEY,
 	
 	status courier_status NOT NULL,
 	
@@ -115,8 +115,8 @@
 );
 
 CREATE TABLE "promocode" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	user_id INT, -- NULL, если промокод не для конкретного юзера
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	user_id BIGINT, -- NULL, если промокод не для конкретного юзера
 	
 	code TEXT NOT NULL UNIQUE
 		CHECK (char_length(code) >= 2 AND char_length(code) <= 50),
@@ -152,10 +152,10 @@ CREATE TABLE "promocode" (
 );
 
 -- CREATE TABLE "restaurant_branch" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
-	restaurant_brand_id INT NOT NULL,
-	location_id INT NOT NULL,
+	restaurant_brand_id BIGINT NOT NULL,
+	location_id BIGINT NOT NULL,
 	
 	open_time TIME,
 	close_time TIME,
@@ -175,9 +175,9 @@ CREATE TABLE "promocode" (
 );
 
 -- CREATE TABLE "dish" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
-	restaurant_brand_id INT NOT NULL,
+	restaurant_brand_id BIGINT NOT NULL,
 	
 	name TEXT NOT NULL
 		CHECK (char_length(name) <= 50),
@@ -200,11 +200,11 @@ CREATE TABLE "promocode" (
 );
 
 -- CREATE TABLE "client_address" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	public_id UUID DEFAULT gen_random_uuid() UNIQUE NOT NULL,
 	
-	location_id INT NOT NULL,
-	client_account_id INT NOT NULL,
+	location_id BIGINT NOT NULL,
+	client_account_id BIGINT NOT NULL,
 	
 	apartment TEXT
 		CHECK (char_length(apartment) <= 30),
@@ -236,16 +236,16 @@ CREATE TABLE "promocode" (
 );
 
 -- CREATE TABLE "order" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	public_id UUID DEFAULT gen_random_uuid() UNIQUE NOT NULL,
 	
-	client_account_id INT NOT NULL,
-	courier_account_id INT,
-	restaurant_branch_id INT NOT NULL,
-	client_address_id INT NOT NULL,
+	client_account_id BIGINT NOT NULL,
+	courier_account_id BIGINT,
+	restaurant_branch_id BIGINT NOT NULL,
+	client_address_id BIGINT NOT NULL,
 	total_cost BIGINT
 		CHECK (total_cost >= 1000000), -- 1 рубль
-	promocode_id INT,
+	promocode_id BIGINT,
 
 	payment_method_id TEXT,
 	yookassa_payment_id TEXT,
@@ -282,7 +282,7 @@ CREATE TABLE "promocode" (
 );
 
 -- CREATE TABLE "order_review" (
-	order_id INT PRIMARY KEY,
+	order_id BIGINT PRIMARY KEY,
 	restaurant_rating INT NOT NULL
 		CHECK (restaurant_rating >= 1 AND restaurant_rating <= 5),
 	courier_rating INT
@@ -300,8 +300,8 @@ CREATE TABLE "promocode" (
 );
 
 -- CREATE TABLE "order_dish" (
-	order_id INT,
-	dish_id INT,
+	order_id BIGINT,
+	dish_id BIGINT,
 	PRIMARY KEY (order_id, dish_id),
 	
 	quantity INT NOT NULL
@@ -323,8 +323,8 @@ CREATE TABLE "promocode" (
 );
 
 CREATE TABLE "promocode_restaurant_brand" (
-	promocode_id INT,
-	restaurant_brand_id INT,
+	promocode_id BIGINT,
+	restaurant_brand_id BIGINT,
 	PRIMARY KEY (promocode_id, restaurant_brand_id),
 	
 	CONSTRAINT fk_promocode_restaurant_brand_promocode
@@ -339,8 +339,8 @@ CREATE TABLE "promocode_restaurant_brand" (
 );
 
 CREATE TABLE "promocode_category" (
-	promocode_id INT,
-	category_id INT,
+	promocode_id BIGINT,
+	category_id BIGINT,
 	PRIMARY KEY (promocode_id, category_id),
 	
 	CONSTRAINT fk_promocode_category_promocode
@@ -355,11 +355,11 @@ CREATE TABLE "promocode_category" (
 );
 
 CREATE TABLE "promocode_usage" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	promocode_id INT NOT NULL,
-	order_id INT,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	promocode_id BIGINT NOT NULL,
+	order_id BIGINT,
 	
-	client_account_id INT,
+	client_account_id BIGINT,
 	UNIQUE (promocode_id, client_account_id),
 	
 	used_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -381,8 +381,8 @@ CREATE TABLE "promocode_usage" (
 );
 
 -- CREATE TABLE "restaurant_brand_category" (
-	restaurant_brand_id INT,
-	category_id INT,
+	restaurant_brand_id BIGINT,
+	category_id BIGINT,
 	PRIMARY KEY (restaurant_brand_id, category_id),
 	
 	CONSTRAINT fk_restaurant_brand_category_restaurant_brand
@@ -397,8 +397,8 @@ CREATE TABLE "promocode_usage" (
 );
 
 -- CREATE TABLE "dish_category" (
-	dish_id INT,
-	category_id INT,
+	dish_id BIGINT,
+	category_id BIGINT,
 	PRIMARY KEY (dish_id, category_id),
 	
 	CONSTRAINT fk_dish_category_dish
@@ -413,8 +413,8 @@ CREATE TABLE "promocode_usage" (
 );
 
 -- CREATE TABLE "cart" (
-	client_account_id INT PRIMARY KEY,
-	restaurant_brand_id INT NOT NULL,
+	client_account_id BIGINT PRIMARY KEY,
+	restaurant_brand_id BIGINT NOT NULL,
 	
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	
@@ -430,8 +430,8 @@ CREATE TABLE "promocode_usage" (
 );
 
 -- CREATE TABLE "cart_dish" (
-	cart_id INT,
-	dish_id INT,
+	cart_id BIGINT,
+	dish_id BIGINT,
 	PRIMARY KEY (cart_id, dish_id),
 	
 	quantity INT NOT NULL
@@ -452,7 +452,7 @@ CREATE TABLE "promocode_usage" (
 );
 
 CREATE TABLE "wordle_word" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	word TEXT NOT NULL UNIQUE
 		CHECK (char_length(word) = 5 AND word = LOWER(word)),
 		
@@ -473,7 +473,7 @@ CREATE TABLE "wordle_daily" (
 
 -- игровая сессия юзера за какой-то день
 CREATE TABLE "wordle_game" (
-	user_id INT NOT NULL,
+	user_id BIGINT NOT NULL,
 	game_date DATE NOT NULL,
 	PRIMARY KEY(user_id, game_date),
 	
@@ -498,7 +498,7 @@ CREATE TABLE "wordle_game" (
 
 -- история угадываний
 CREATE TABLE "wordle_guess" (
-	user_id INT NOT NULL,
+	user_id BIGINT NOT NULL,
 	guess_date DATE NOT NULL,
 	attempt_num INT NOT NULL
 		CHECK (attempt_num >= 1 AND attempt_num <= 6),
@@ -516,7 +516,7 @@ CREATE TABLE "wordle_guess" (
 );
 
 CREATE TABLE "wordle_streak" (
-	user_id INT PRIMARY KEY,
+	user_id BIGINT PRIMARY KEY,
 	
 	current_streak INT NOT NULL DEFAULT 0,
 	last_played DATE, -- NULL если ещё не играл вообще
@@ -534,9 +534,9 @@ CREATE TABLE "wordle_streak" (
 -- на странице ожидания заказа. Я её добавил, чтобы потом не
 -- геморно было это делать
 CREATE TABLE "game_session" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	user_id INT NOT NULL,
-	order_id INT,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	user_id BIGINT NOT NULL,
+	order_id BIGINT,
 	
 	game_type TEXT NOT NULL, -- 'fruit_ninja', 'blockblast' и т.п., потом придумаем это
 	score INT NOT NULL 
@@ -557,7 +557,7 @@ CREATE TABLE "game_session" (
 );
 
 CREATE TABLE "achievement" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	code TEXT NOT NULL UNIQUE,
 	
 	name TEXT NOT NULL
@@ -573,8 +573,8 @@ CREATE TABLE "achievement" (
 );
 
 CREATE TABLE "user_achievement" (
-	achievement_id INT,
-	user_id INT,
+	achievement_id BIGINT,
+	user_id BIGINT,
 	PRIMARY KEY(achievement_id, user_id),
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -591,8 +591,8 @@ CREATE TABLE "user_achievement" (
 );
 
 -- CREATE TABLE "payment_method" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	user_id INT NOT NULL,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	user_id BIGINT NOT NULL,
 
 	external_id TEXT NOT NULL UNIQUE,
 

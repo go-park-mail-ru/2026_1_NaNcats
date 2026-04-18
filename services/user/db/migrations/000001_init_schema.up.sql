@@ -1,7 +1,7 @@
 CREATE TYPE courier_status AS ENUM('offline', 'waiting', 'delivering');
 
 CREATE TABLE "user" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 		
 	name TEXT NOT NULL
 		CHECK (char_length(name) >= 1 AND char_length(name) <= 39),
@@ -22,7 +22,7 @@ CREATE TABLE "user" (
 );
 
 CREATE TABLE "owner_profile" (
-	account_id INT PRIMARY KEY,
+	account_id BIGINT PRIMARY KEY,
 	
 	CONSTRAINT fk_owner_profile_user
 		FOREIGN KEY (account_id)
@@ -31,11 +31,11 @@ CREATE TABLE "owner_profile" (
 );
 
 CREATE TABLE "client_profile" (
-	account_id INT PRIMARY KEY,
+	account_id BIGINT PRIMARY KEY,
 	
 	bonus_balance BIGINT DEFAULT 0
 		CHECK (bonus_balance >= 0),
-	bonus_category_id INT,
+	bonus_category_id BIGINT,
 	bonus_category_expires_at TIMESTAMP WITH TIME ZONE,
 	bonus_expires_at TIMESTAMP WITH TIME ZONE,
 	
@@ -52,7 +52,7 @@ CREATE TABLE "client_profile" (
 );
 
 CREATE TABLE "courier_profile" (
-	account_id INT PRIMARY KEY,
+	account_id BIGINT PRIMARY KEY,
 	
 	status courier_status NOT NULL,
 	

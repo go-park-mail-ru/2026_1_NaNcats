@@ -1,6 +1,6 @@
 CREATE TABLE "restaurant_brand" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	owner_profile_id INT NOT NULL,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	owner_profile_id BIGINT NOT NULL,
 	
 	name TEXT UNIQUE NOT NULL
 		CHECK (char_length(name) <= 60),
@@ -18,10 +18,10 @@ CREATE TABLE "restaurant_brand" (
 );
 
 CREATE TABLE "restaurant_branch" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
-	restaurant_brand_id INT NOT NULL,
-	location_id INT NOT NULL,
+	restaurant_brand_id BIGINT NOT NULL,
+	location_id BIGINT NOT NULL,
 	
 	open_time TIME,
 	close_time TIME,
@@ -36,9 +36,9 @@ CREATE TABLE "restaurant_branch" (
 );
 
 CREATE TABLE "dish" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
-	restaurant_brand_id INT NOT NULL,
+	restaurant_brand_id BIGINT NOT NULL,
 	
 	name TEXT NOT NULL
 		CHECK (char_length(name) <= 50),
@@ -61,7 +61,7 @@ CREATE TABLE "dish" (
 );
 
 CREATE TABLE "category" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
 	name TEXT NOT NULL UNIQUE,
 	
@@ -70,8 +70,8 @@ CREATE TABLE "category" (
 );
 
 CREATE TABLE "restaurant_brand_category" (
-	restaurant_brand_id INT,
-	category_id INT,
+	restaurant_brand_id BIGINT,
+	category_id BIGINT,
 	PRIMARY KEY (restaurant_brand_id, category_id),
 	
 	CONSTRAINT fk_restaurant_brand_category_restaurant_brand
@@ -86,8 +86,8 @@ CREATE TABLE "restaurant_brand_category" (
 );
 
 CREATE TABLE "dish_category" (
-	dish_id INT,
-	category_id INT,
+	dish_id BIGINT,
+	category_id BIGINT,
 	PRIMARY KEY (dish_id, category_id),
 	
 	CONSTRAINT fk_dish_category_dish

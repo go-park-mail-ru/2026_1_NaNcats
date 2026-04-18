@@ -1,8 +1,8 @@
 CREATE TYPE cart_status AS ENUM('active', 'locked');
 
 CREATE TABLE "cart" (
-	client_account_id INT PRIMARY KEY,
-	restaurant_brand_id INT NOT NULL,
+	client_account_id BIGINT PRIMARY KEY,
+	restaurant_brand_id BIGINT NOT NULL,
 
 	status cart_status NOT NULL DEFAULT "active",
 	
@@ -10,8 +10,8 @@ CREATE TABLE "cart" (
 );
 
 CREATE TABLE "cart_dish" (
-	cart_id INT,
-	dish_id INT,
+	cart_id BIGINT,
+	dish_id BIGINT,
 	PRIMARY KEY (cart_id, dish_id),
 	
 	quantity INT NOT NULL

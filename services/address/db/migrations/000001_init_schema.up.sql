@@ -1,7 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS postgis;
 
 CREATE TABLE "location" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	
 	address_text TEXT NOT NULL,
 	
@@ -14,11 +14,11 @@ CREATE TABLE "location" (
 );
 
 CREATE TABLE "client_address" (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	public_id UUID DEFAULT gen_random_uuid() UNIQUE NOT NULL,
 	
-	location_id INT NOT NULL,
-	client_account_id INT NOT NULL,
+	location_id BIGINT NOT NULL,
+	client_account_id BIGINT NOT NULL,
 	
 	apartment TEXT
 		CHECK (char_length(apartment) <= 30),
