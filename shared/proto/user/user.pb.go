@@ -30,8 +30,7 @@ type User struct {
 	Email         string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
 	Role          string                 `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
 	AvatarUrl     string                 `protobuf:"bytes,5,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	PasswordHash  string                 `protobuf:"bytes,6,opt,name=password_hash,json=passwordHash,proto3" json:"password_hash,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -101,18 +100,11 @@ func (x *User) GetAvatarUrl() string {
 	return ""
 }
 
-func (x *User) GetCreatedAt() *timestamppb.Timestamp {
+func (x *User) GetPasswordHash() string {
 	if x != nil {
-		return x.CreatedAt
+		return x.PasswordHash
 	}
-	return nil
-}
-
-func (x *User) GetUpdatedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.UpdatedAt
-	}
-	return nil
+	return ""
 }
 
 type ClientProfile struct {
@@ -220,6 +212,7 @@ type CreateUserRequest struct {
 	Name           string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Email          string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
 	IdempotencyKey string                 `protobuf:"bytes,3,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	PasswordHash   string                 `protobuf:"bytes,4,opt,name=password_hash,json=passwordHash,proto3" json:"password_hash,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -271,6 +264,13 @@ func (x *CreateUserRequest) GetEmail() string {
 func (x *CreateUserRequest) GetIdempotencyKey() string {
 	if x != nil {
 		return x.IdempotencyKey
+	}
+	return ""
+}
+
+func (x *CreateUserRequest) GetPasswordHash() string {
+	if x != nil {
+		return x.PasswordHash
 	}
 	return ""
 }
@@ -959,18 +959,15 @@ var File_user_user_proto protoreflect.FileDescriptor
 
 const file_user_user_proto_rawDesc = "" +
 	"\n" +
-	"\x0fuser/user.proto\x12\x04user\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xe9\x01\n" +
+	"\x0fuser/user.proto\x12\x04user\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x98\x01\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
 	"\x05email\x18\x03 \x01(\tR\x05email\x12\x12\n" +
 	"\x04role\x18\x04 \x01(\tR\x04role\x12\x1d\n" +
 	"\n" +
-	"avatar_url\x18\x05 \x01(\tR\tavatarUrl\x129\n" +
-	"\n" +
-	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
-	"\n" +
-	"updated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xe8\x03\n" +
+	"avatar_url\x18\x05 \x01(\tR\tavatarUrl\x12#\n" +
+	"\rpassword_hash\x18\x06 \x01(\tR\fpasswordHash\"\xe8\x03\n" +
 	"\rClientProfile\x12\x1d\n" +
 	"\n" +
 	"account_id\x18\x01 \x01(\x03R\taccountId\x12#\n" +
@@ -981,11 +978,12 @@ const file_user_user_proto_rawDesc = "" +
 	"\fstreak_count\x18\x06 \x01(\x05R\vstreakCount\x12B\n" +
 	"\x0flast_order_date\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\rlastOrderDate\x12H\n" +
 	"\x12premium_expires_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x10premiumExpiresAtB\x14\n" +
-	"\x12_bonus_category_id\"f\n" +
+	"\x12_bonus_category_id\"\x8b\x01\n" +
 	"\x11CreateUserRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12'\n" +
-	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey\"-\n" +
+	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey\x12#\n" +
+	"\rpassword_hash\x18\x04 \x01(\tR\fpasswordHash\"-\n" +
 	"\x12CreateUserResponse\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\"^\n" +
 	"\x1aCreateClientProfileRequest\x12\x17\n" +
@@ -1076,38 +1074,36 @@ var file_user_user_proto_goTypes = []any{
 	(*emptypb.Empty)(nil),              // 18: google.protobuf.Empty
 }
 var file_user_user_proto_depIdxs = []int32{
-	17, // 0: user.User.created_at:type_name -> google.protobuf.Timestamp
-	17, // 1: user.User.updated_at:type_name -> google.protobuf.Timestamp
-	17, // 2: user.ClientProfile.bonus_category_expires_at:type_name -> google.protobuf.Timestamp
-	17, // 3: user.ClientProfile.bonus_expires_at:type_name -> google.protobuf.Timestamp
-	17, // 4: user.ClientProfile.last_order_date:type_name -> google.protobuf.Timestamp
-	17, // 5: user.ClientProfile.premium_expires_at:type_name -> google.protobuf.Timestamp
-	0,  // 6: user.GetUserResponse.user:type_name -> user.User
-	0,  // 7: user.GetUserProfileResponse.user:type_name -> user.User
-	1,  // 8: user.GetUserProfileResponse.profile:type_name -> user.ClientProfile
-	2,  // 9: user.UserService.CreateUser:input_type -> user.CreateUserRequest
-	4,  // 10: user.UserService.CreateClientProfile:input_type -> user.CreateClientProfileRequest
-	5,  // 11: user.UserService.UpdateProfile:input_type -> user.UpdateProfileRequest
-	6,  // 12: user.UserService.UpdateAvatar:input_type -> user.UpdateAvatarRequest
-	8,  // 13: user.UserService.DeleteAvatar:input_type -> user.DeleteAvatarRequest
-	10, // 14: user.UserService.GetByID:input_type -> user.GetUserByIDRequest
-	11, // 15: user.UserService.GetByEmail:input_type -> user.GetUserByEmailRequest
-	13, // 16: user.UserService.CheckUserExists:input_type -> user.CheckUserExistsRequest
-	15, // 17: user.UserService.GetUserProfile:input_type -> user.GetUserProfileRequest
-	3,  // 18: user.UserService.CreateUser:output_type -> user.CreateUserResponse
-	18, // 19: user.UserService.CreateClientProfile:output_type -> google.protobuf.Empty
-	18, // 20: user.UserService.UpdateProfile:output_type -> google.protobuf.Empty
-	7,  // 21: user.UserService.UpdateAvatar:output_type -> user.UpdateAvatarResponse
-	9,  // 22: user.UserService.DeleteAvatar:output_type -> user.DeleteAvatarResponse
-	12, // 23: user.UserService.GetByID:output_type -> user.GetUserResponse
-	12, // 24: user.UserService.GetByEmail:output_type -> user.GetUserResponse
-	14, // 25: user.UserService.CheckUserExists:output_type -> user.CheckUserExistsResponse
-	16, // 26: user.UserService.GetUserProfile:output_type -> user.GetUserProfileResponse
-	18, // [18:27] is the sub-list for method output_type
-	9,  // [9:18] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	17, // 0: user.ClientProfile.bonus_category_expires_at:type_name -> google.protobuf.Timestamp
+	17, // 1: user.ClientProfile.bonus_expires_at:type_name -> google.protobuf.Timestamp
+	17, // 2: user.ClientProfile.last_order_date:type_name -> google.protobuf.Timestamp
+	17, // 3: user.ClientProfile.premium_expires_at:type_name -> google.protobuf.Timestamp
+	0,  // 4: user.GetUserResponse.user:type_name -> user.User
+	0,  // 5: user.GetUserProfileResponse.user:type_name -> user.User
+	1,  // 6: user.GetUserProfileResponse.profile:type_name -> user.ClientProfile
+	2,  // 7: user.UserService.CreateUser:input_type -> user.CreateUserRequest
+	4,  // 8: user.UserService.CreateClientProfile:input_type -> user.CreateClientProfileRequest
+	5,  // 9: user.UserService.UpdateProfile:input_type -> user.UpdateProfileRequest
+	6,  // 10: user.UserService.UpdateAvatar:input_type -> user.UpdateAvatarRequest
+	8,  // 11: user.UserService.DeleteAvatar:input_type -> user.DeleteAvatarRequest
+	10, // 12: user.UserService.GetByID:input_type -> user.GetUserByIDRequest
+	11, // 13: user.UserService.GetByEmail:input_type -> user.GetUserByEmailRequest
+	13, // 14: user.UserService.CheckUserExists:input_type -> user.CheckUserExistsRequest
+	15, // 15: user.UserService.GetUserProfile:input_type -> user.GetUserProfileRequest
+	3,  // 16: user.UserService.CreateUser:output_type -> user.CreateUserResponse
+	18, // 17: user.UserService.CreateClientProfile:output_type -> google.protobuf.Empty
+	18, // 18: user.UserService.UpdateProfile:output_type -> google.protobuf.Empty
+	7,  // 19: user.UserService.UpdateAvatar:output_type -> user.UpdateAvatarResponse
+	9,  // 20: user.UserService.DeleteAvatar:output_type -> user.DeleteAvatarResponse
+	12, // 21: user.UserService.GetByID:output_type -> user.GetUserResponse
+	12, // 22: user.UserService.GetByEmail:output_type -> user.GetUserResponse
+	14, // 23: user.UserService.CheckUserExists:output_type -> user.CheckUserExistsResponse
+	16, // 24: user.UserService.GetUserProfile:output_type -> user.GetUserProfileResponse
+	16, // [16:25] is the sub-list for method output_type
+	7,  // [7:16] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_user_user_proto_init() }

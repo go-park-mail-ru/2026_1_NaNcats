@@ -1,10 +1,9 @@
-package user
+package usecase
 
 import (
 	"bytes"
 	"context"
 	"errors"
-	"io"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/repository"
@@ -22,7 +21,7 @@ type UserUseCase interface {
 	GetByEmail(ctx context.Context, email string) (domain.User, error)
 	Check(ctx context.Context, userID int64) (bool, error)
 	UpdateProfile(ctx context.Context, userID int64, name, email *string, idempotencyKey string) error
-	UpdateAvatar(ctx context.Context, userID int64, file io.Reader, idempotencyKey string) (string, error)
+	UpdateAvatar(ctx context.Context, userID int64, imageData []byte, idempotencyKey string) (string, error)
 	DeleteAvatar(ctx context.Context, userID int64, idempotencyKey string) (string, error)
 }
 
