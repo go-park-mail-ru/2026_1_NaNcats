@@ -1,12 +1,12 @@
-package address
+package postgres
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/address/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/address/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -48,29 +48,49 @@ func NewAddressRepo(pool postgres.PgxPool) repository.AddressRepository {
 	return &addressRepo{pool: pool}
 }
 
-func (r *addressRepo) CreateAddress(ctx context.Context, userID int, addr domain.Address) (string, error) {
+func (r *addressRepo) CreateAddress(ctx context.Context, userID int64, addr domain.Address, idempotencyKey string) (string, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return "", err
 	}
 	defer tx.Rollback(ctx)
 
+	locationQuery := `
+		INSERT INTO "location" (address_text, coordinate, idempotency_key)
+		VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $4)
+		ON CONFLICT (idempotency_key) DO UPDATE
+		SET idempotency_key = EXCLUDED.idempotency_key
+		RETURNING id;`
+
+	clientAddressQuery := `
+		INSERT INTO "client_address" (location_id, client_account_id, apartment, entrance, floor_level, door_code, courier_comment, label, idempotency_key)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		ON CONFLICT (idempotency_key) DO UPDATE
+		SET idempotency_key = EXCLUDED.idempotency_key
+		RETURNING public_id;
+		`
+
 	var locationID int
-	err = tx.QueryRow(ctx, `
-		INSERT INTO "location" (address_text, coordinate)
-		VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326))
-		RETURNING id`,
-		addr.Location.AddressText, addr.Location.Longitude, addr.Location.Latitude).Scan(&locationID)
+	err = tx.QueryRow(ctx, locationQuery,
+		addr.Location.AddressText,
+		addr.Location.Longitude,
+		addr.Location.Latitude,
+		idempotencyKey).Scan(&locationID)
 	if err != nil {
 		return "", fmt.Errorf("insert location failed: %w", err)
 	}
 
 	var addressPublicID string
-	err = tx.QueryRow(ctx, `
-		INSERT INTO "client_address" (location_id, client_account_id, apartment, entrance, floor_level, door_code, courier_comment, label)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING public_id`,
-		locationID, userID, addr.Apartment, addr.Entrance, addr.Floor, addr.DoorCode, addr.CourierComment, addr.Label).Scan(&addressPublicID)
+	err = tx.QueryRow(ctx, clientAddressQuery,
+		locationID,
+		userID,
+		addr.Apartment,
+		addr.Entrance,
+		addr.Floor,
+		addr.DoorCode,
+		addr.CourierComment,
+		addr.Label,
+		idempotencyKey).Scan(&addressPublicID)
 	if err != nil {
 		return "", fmt.Errorf("insert address failed: %w", err)
 	}
@@ -78,7 +98,7 @@ func (r *addressRepo) CreateAddress(ctx context.Context, userID int, addr domain
 	return addressPublicID, tx.Commit(ctx)
 }
 
-func (r *addressRepo) GetAddressesByUserID(ctx context.Context, userID int) ([]domain.Address, error) {
+func (r *addressRepo) GetAddressesByUserID(ctx context.Context, userID int64) ([]domain.Address, error) {
 	query := `
         SELECT 
             a.public_id, 
@@ -115,11 +135,11 @@ func (r *addressRepo) GetAddressesByUserID(ctx context.Context, userID int) ([]d
 	return result, nil
 }
 
-func (r *addressRepo) DeleteAddress(ctx context.Context, userID int, publicID string) error {
+func (r *addressRepo) DeleteAddress(ctx context.Context, userID int64, publicID string) error {
 	query := `
 		UPDATE "client_address"
 		SET is_active = false
-		WHERE public_id = $1 AND client_account_id = $2
+		WHERE public_id = $1 AND client_account_id = $2;
 	`
 
 	res, err := r.pool.Exec(ctx, query, publicID, userID)
@@ -127,13 +147,14 @@ func (r *addressRepo) DeleteAddress(ctx context.Context, userID int, publicID st
 		return err
 	}
 	if res.RowsAffected() == 0 {
+		// TODO: сделать что-то с этой ошибкой
 		return domain.ErrEmptyDBQuery
 	}
 
 	return nil
 }
 
-func (r *addressRepo) UpdateAddress(ctx context.Context, userID int, addr domain.Address) error {
+func (r *addressRepo) UpdateAddress(ctx context.Context, userID int64, addr domain.Address) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -186,13 +207,14 @@ func (r *addressRepo) UpdateAddress(ctx context.Context, userID int, addr domain
 	}
 
 	if result.RowsAffected() == 0 {
+		// TODO: сделать что-то с этой ошибкой
 		return domain.ErrAddressNotFound
 	}
 
 	return tx.Commit(ctx)
 }
 
-func (r *addressRepo) GetInternalIDByPublicID(ctx context.Context, userID int, publicID string) (int, error) {
+func (r *addressRepo) GetInternalIDByPublicID(ctx context.Context, userID int64, publicID string) (int, error) {
 	query := `
 		SELECT id FROM "client_address"
 		WHERE public_id = $1 AND client_account_id = $2;

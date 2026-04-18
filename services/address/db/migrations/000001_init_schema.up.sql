@@ -6,6 +6,8 @@ CREATE TABLE "location" (
 	address_text TEXT NOT NULL,
 	
 	coordinate GEOGRAPHY(Point, 4326) NOT NULL,
+
+	idempotency_key TEXT,
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
@@ -32,6 +34,8 @@ CREATE TABLE "client_address" (
 		CHECK (char_length(label) <= 60),
 
 	is_active BOOLEAN DEFAULT true NOT NULL,
+
+	idempotency_key TEXT,
 		
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,

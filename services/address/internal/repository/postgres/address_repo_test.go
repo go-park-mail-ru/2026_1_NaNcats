@@ -1,4 +1,4 @@
-package address
+package postgres
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/address/internal/domain"
 	"github.com/pashagolub/pgxmock/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

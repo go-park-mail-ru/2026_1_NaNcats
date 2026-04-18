@@ -1,7 +1,7 @@
 package domain
 
 type Address struct {
-	ID             int
+	ID             int64
 	PublicID       string
 	Location       Location
 	Apartment      string
