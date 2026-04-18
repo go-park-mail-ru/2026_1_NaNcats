@@ -97,7 +97,7 @@ func (r *paymentRepo) Delete(ctx context.Context, cardID string, userID int) err
 	return nil
 }
 
-func (r *paymentRepo) GetByUserID(ctx context.Context, userID int) ([]domain.PaymentMethod, error) {
+func (r *paymentRepo) GetByUserID(ctx context.Context, userID int64) ([]domain.PaymentMethod, error) {
 	query := `
 		SELECT id, user_id, external_id, card_type, last4, issuer_name, is_default
 		FROM "payment_method" WHERE user_id = $1
@@ -123,7 +123,7 @@ func (r *paymentRepo) GetByUserID(ctx context.Context, userID int) ([]domain.Pay
 	return domainPaymentMethods, nil
 }
 
-func (r *paymentRepo) SetDefault(ctx context.Context, cardID string, userID int) error {
+func (r *paymentRepo) SetDefault(ctx context.Context, cardID string, userID int64) error {
 	query := `
 		UPDATE "payment_method"
 		SET is_default = (external_id = $1)

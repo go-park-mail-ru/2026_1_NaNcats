@@ -13,8 +13,8 @@ import (
 )
 
 type dishDB struct {
-	ID                int       `db:"id"`
-	RestaurantBrandID int       `db:"restaurant_brand_id"`
+	ID                int64     `db:"id"`
+	RestaurantBrandID int64     `db:"restaurant_brand_id"`
 	Name              string    `db:"name"`
 	Description       *string   `db:"description"`
 	ImageURL          *string   `db:"image_url"`
@@ -53,7 +53,7 @@ func NewDishRepo(pool postgres.PgxPool) repository.DishRepository {
 	return &dishRepo{pool: pool}
 }
 
-func (r *dishRepo) GetDishesByRestaurantBrandID(ctx context.Context, restaurantBrandID, limit, offset int) ([]domain.Dish, error) {
+func (r *dishRepo) GetDishesByRestaurantBrandID(ctx context.Context, restaurantBrandID int64, limit, offset int) ([]domain.Dish, error) {
 	query := `
 		SELECT
 			id,
@@ -88,7 +88,7 @@ func (r *dishRepo) GetDishesByRestaurantBrandID(ctx context.Context, restaurantB
 	return dishes, nil
 }
 
-func (r *dishRepo) GetDishByID(ctx context.Context, DishID int) (domain.Dish, error) {
+func (r *dishRepo) GetDishByID(ctx context.Context, DishID int64) (domain.Dish, error) {
 	query := `
 		SELECT id,
 			restaurant_brand_id,
@@ -119,7 +119,7 @@ func (r *dishRepo) GetDishByID(ctx context.Context, DishID int) (domain.Dish, er
 	return dbDish.toDomain(), nil
 }
 
-func (r *dishRepo) GetDishesByIDs(ctx context.Context, ids []int) ([]domain.Dish, error) {
+func (r *dishRepo) GetDishesByIDs(ctx context.Context, ids []int64) ([]domain.Dish, error) {
 	query := `
 		SELECT id,
 			restaurant_brand_id,

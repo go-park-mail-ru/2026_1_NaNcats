@@ -3,7 +3,7 @@ package domain
 import "time"
 
 type CartItem struct {
-	DishID   int
+	DishID   int64
 	Quantity int
 	Name     string
 	Price    int64
@@ -12,7 +12,7 @@ type CartItem struct {
 
 type Cart struct {
 	Items             []CartItem
-	UserID            int
-	RestaurantBrandID int
+	UserID            int64
+	RestaurantBrandID int64
 	UpdatedAt         time.Time
 }

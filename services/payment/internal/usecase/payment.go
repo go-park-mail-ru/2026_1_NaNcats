@@ -13,10 +13,10 @@ import (
 //go:generate mockgen -destination=mocks/payment_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/payment PaymentUseCase
 type PaymentUseCase interface {
 	// TODO: добавить метод CreatePayment, сейчас эта логика реализована в order.go в слое usecase, нужно вынести сюда
-	InitiateCardBinding(ctx context.Context, userID int) (string, error)
-	GetUserCards(ctx context.Context, userID int) ([]domain.PaymentMethod, error)
-	SetDefaultCard(ctx context.Context, cardID string, userID int) error
-	DeleteCard(ctx context.Context, cardID string, userID int) error
+	InitiateCardBinding(ctx context.Context, userID int64) (string, error)
+	GetUserCards(ctx context.Context, userID int64) ([]domain.PaymentMethod, error)
+	SetDefaultCard(ctx context.Context, cardID string, userID int64) error
+	DeleteCard(ctx context.Context, cardID string, userID int64) error
 	ProcessPaymentMethodWebhook(ctx context.Context, paymentMethod *yookassa.WebhookPaymentMethodObject) error
 	ProcessPaymentWebhook(ctx context.Context, payment *yookassa.WebhookPaymentObject) error
 }
@@ -65,15 +65,15 @@ func (p *paymentUseCase) InitiateCardBinding(ctx context.Context, userID int) (s
 	return resp.Confirmation.ConfirmationURL, nil
 }
 
-func (p *paymentUseCase) GetUserCards(ctx context.Context, userID int) ([]domain.PaymentMethod, error) {
+func (p *paymentUseCase) GetUserCards(ctx context.Context, userID int64) ([]domain.PaymentMethod, error) {
 	return p.paymentRepo.GetByUserID(ctx, userID)
 }
 
-func (p *paymentUseCase) SetDefaultCard(ctx context.Context, cardID string, userID int) error {
+func (p *paymentUseCase) SetDefaultCard(ctx context.Context, cardID string, userID int64) error {
 	return p.paymentRepo.SetDefault(ctx, cardID, userID)
 }
 
-func (p *paymentUseCase) DeleteCard(ctx context.Context, cardID string, userID int) error {
+func (p *paymentUseCase) DeleteCard(ctx context.Context, cardID string, userID int64) error {
 	return p.paymentRepo.Delete(ctx, cardID, userID)
 }
 

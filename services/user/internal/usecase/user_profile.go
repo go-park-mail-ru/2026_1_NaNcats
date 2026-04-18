@@ -21,7 +21,7 @@ func NewUserProfileUseCase(uuc UserUseCase) UserProfileUseCase {
 	}
 }
 
-func (up *userProfileUseCase) GetUserProfile(ctx context.Context, userID int) (domain.User, error) {
+func (up *userProfileUseCase) GetUserProfile(ctx context.Context, userID int64) (domain.User, error) {
 	// этот метод будет масштабироваться, сюда ещё добавлю Get платежных методов, локаций и элементов геймификации
 	user, err := up.userUC.GetByID(ctx, userID)
 	if err != nil {

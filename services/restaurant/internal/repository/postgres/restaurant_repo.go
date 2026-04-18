@@ -79,7 +79,7 @@ func (r *restaurantBrandRepo) GetRestaurantBrandsList(ctx context.Context, limit
 	return domainRestaurantBrands, nil
 }
 
-func (r *restaurantBrandRepo) GetByID(ctx context.Context, id int) (domain.RestaurantBrand, error) {
+func (r *restaurantBrandRepo) GetByID(ctx context.Context, id int64) (domain.RestaurantBrand, error) {
 	query := `
 		SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at
 		FROM "restaurant_brand"

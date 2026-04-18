@@ -10,8 +10,8 @@ import (
 
 //go:generate mockgen -destination=mocks/cart_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/cart CartUseCase
 type CartUseCase interface {
-	GetCart(ctx context.Context, userID int) (domain.Cart, int64, error) // Возвращает карту, полную стоимость коризины и ошибку
-	UpdateCart(ctx context.Context, userID int, cartData domain.Cart) error
+	GetCart(ctx context.Context, userID int64) (domain.Cart, int64, error) // Возвращает карту, полную стоимость коризины и ошибку
+	UpdateCart(ctx context.Context, userID int64, cartData domain.Cart) error
 	LockCart(ctx context.Context, userID int64) error
 	UnlockCart(ctx context.Context, userID int64) error
 	ClearCart(ctx context.Context, userID int64) error

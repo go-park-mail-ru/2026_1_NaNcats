@@ -7,7 +7,7 @@ type Order struct {
 	PublicID           string
 	ClientID           int64
 	CourierID          *int64
-	RestaurantBranchID int
+	RestaurantBranchID int64
 	ClientAddressID    int64
 	TotalCost          int64
 	Status             string

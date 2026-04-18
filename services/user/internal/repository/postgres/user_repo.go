@@ -24,7 +24,7 @@ func NewUserRepo(pool postgres.PgxPool) repository.UserRepository {
 	}
 }
 
-func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (int, error) {
+func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (int64, error) {
 	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
 
 	query := `
@@ -33,7 +33,7 @@ func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (int, error
 		RETURNING id;
 	`
 
-	var lastInsertedID int
+	var lastInsertedID int64
 	err := r.pool.QueryRow(ctx, query,
 		user.Name,
 		user.Email,
@@ -82,7 +82,7 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 	return user, nil
 }
 
-func (r *userRepo) GetUserByID(ctx context.Context, id int) (domain.User, error) {
+func (r *userRepo) GetUserByID(ctx context.Context, id int64) (domain.User, error) {
 	query := `
 		SELECT id, name, email, password_hash, user_role, COALESCE(avatar_url, '')
 		FROM "user"
@@ -110,7 +110,7 @@ func (r *userRepo) GetUserByID(ctx context.Context, id int) (domain.User, error)
 	return user, nil
 }
 
-func (r *userRepo) CheckUserByID(ctx context.Context, userID int) (bool, error) {
+func (r *userRepo) CheckUserByID(ctx context.Context, userID int64) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM "user" WHERE id = $1);`
 
 	var isExists bool
@@ -123,7 +123,7 @@ func (r *userRepo) CheckUserByID(ctx context.Context, userID int) (bool, error) 
 	return isExists, nil
 }
 
-func (r *userRepo) UpdateProfile(ctx context.Context, userID int, name, email *string) error {
+func (r *userRepo) UpdateProfile(ctx context.Context, userID int64, name, email *string) error {
 	query := `UPDATE "user" SET `
 	var setClauses []string
 	var args []any
@@ -182,7 +182,7 @@ func (r *userRepo) UpdateProfile(ctx context.Context, userID int, name, email *s
 	return nil
 }
 
-func (r *userRepo) UpdateAvatarURL(ctx context.Context, userID int, newAvatarURL string) error {
+func (r *userRepo) UpdateAvatarURL(ctx context.Context, userID int64, newAvatarURL string) error {
 	query := `UPDATE "user" SET "avatar_url" = $1 WHERE id = $2`
 
 	tag, err := r.pool.Exec(ctx, query, newAvatarURL, userID)

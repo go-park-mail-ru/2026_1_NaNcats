@@ -13,13 +13,13 @@ import (
 
 //go:generate mockgen -destination=mocks/user_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/user UserUseCase
 type UserUseCase interface {
-	Create(ctx context.Context, user domain.User) (int, error)
-	GetByID(ctx context.Context, userID int) (domain.User, error)
+	Create(ctx context.Context, user domain.User) (int64, error)
+	GetByID(ctx context.Context, userID int64) (domain.User, error)
 	GetByEmail(ctx context.Context, email string) (domain.User, error)
-	Check(ctx context.Context, userID int) (bool, error)
-	UpdateProfile(ctx context.Context, userID int, name, email *string) error
-	UpdateAvatar(ctx context.Context, userID int, file io.Reader) (string, error)
-	DeleteAvatar(ctx context.Context, userID int) (string, error)
+	Check(ctx context.Context, userID int64) (bool, error)
+	UpdateProfile(ctx context.Context, userID int64, name, email *string) error
+	UpdateAvatar(ctx context.Context, userID int64, file io.Reader) (string, error)
+	DeleteAvatar(ctx context.Context, userID int64) (string, error)
 }
 
 type userUseCase struct {
@@ -37,7 +37,7 @@ func NewUserUseCase(ur repository.UserRepository, fs repository.FileStorage, dau
 }
 
 // создаем юзера
-func (u *userUseCase) Create(ctx context.Context, user domain.User) (int, error) {
+func (u *userUseCase) Create(ctx context.Context, user domain.User) (int64, error) {
 	user.Name = html.EscapeString(user.Name)
 	user.Email = html.EscapeString(user.Email)
 	id, err := u.userRepo.CreateUser(ctx, user)
@@ -49,7 +49,7 @@ func (u *userUseCase) Create(ctx context.Context, user domain.User) (int, error)
 }
 
 // возвращает юзера по переданному userID
-func (u *userUseCase) GetByID(ctx context.Context, userID int) (domain.User, error) {
+func (u *userUseCase) GetByID(ctx context.Context, userID int64) (domain.User, error) {
 	user, err := u.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
 		return domain.User{}, err
@@ -78,7 +78,7 @@ func (u *userUseCase) GetByEmail(ctx context.Context, email string) (domain.User
 }
 
 // проверяет существует ли юзер
-func (u *userUseCase) Check(ctx context.Context, userID int) (bool, error) {
+func (u *userUseCase) Check(ctx context.Context, userID int64) (bool, error) {
 	isExists, err := u.userRepo.CheckUserByID(ctx, userID)
 	if err != nil {
 		return false, err
@@ -88,7 +88,7 @@ func (u *userUseCase) Check(ctx context.Context, userID int) (bool, error) {
 }
 
 // обновляет поля юзера
-func (u *userUseCase) UpdateProfile(ctx context.Context, userID int, name, email *string) error {
+func (u *userUseCase) UpdateProfile(ctx context.Context, userID int64, name, email *string) error {
 	if name != nil {
 		escapedName := html.EscapeString(*name)
 		name = &escapedName
@@ -101,7 +101,7 @@ func (u *userUseCase) UpdateProfile(ctx context.Context, userID int, name, email
 	return u.userRepo.UpdateProfile(ctx, userID, name, email)
 }
 
-func (u *userUseCase) UpdateAvatar(ctx context.Context, userID int, file io.Reader) (string, error) {
+func (u *userUseCase) UpdateAvatar(ctx context.Context, userID int64, file io.Reader) (string, error) {
 	user, err := u.GetByID(ctx, userID)
 	if err != nil {
 		return "", err
@@ -137,7 +137,7 @@ func (u *userUseCase) UpdateAvatar(ctx context.Context, userID int, file io.Read
 	return newAvatarURL, nil
 }
 
-func (u *userUseCase) DeleteAvatar(ctx context.Context, userID int) (string, error) {
+func (u *userUseCase) DeleteAvatar(ctx context.Context, userID int64) (string, error) {
 	user, err := u.GetByID(ctx, userID)
 	if err != nil {
 		return "", err

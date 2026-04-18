@@ -11,10 +11,10 @@ import (
 )
 
 type cartItemDB struct {
-	RestaurantID int       `db:"restaurant_brand_id"`
+	RestaurantID int64     `db:"restaurant_brand_id"`
 	UpdatedAt    time.Time `db:"updated_at"`
 	// Поля из left должны быть указателями чтобы обработать null (пустую корзину)
-	DishID   *int    `db:"dish_id"`
+	DishID   *int64  `db:"dish_id"`
 	Quantity *int    `db:"quantity"`
 	Name     *string `db:"name"`
 	Price    *int64  `db:"price"`
@@ -51,7 +51,7 @@ func NewCartRepo(pool postgres.PgxPool) repository.CartRepository {
 	}
 }
 
-func (r *cartRepo) GetCartByUserID(ctx context.Context, userID int) (domain.Cart, error) {
+func (r *cartRepo) GetCartByUserID(ctx context.Context, userID int64) (domain.Cart, error) {
 	query := `
 		SELECT 
 			c.restaurant_brand_id,
@@ -98,7 +98,7 @@ func (r *cartRepo) GetCartByUserID(ctx context.Context, userID int) (domain.Cart
 }
 
 // TODO: сделать обновление доступным только при статусе 'active'
-func (r *cartRepo) UpdateCart(ctx context.Context, userID int, resID int, items []domain.CartItem) error {
+func (r *cartRepo) UpdateCart(ctx context.Context, userID int64, resID int64, items []domain.CartItem) error {
 	batch := &pgx.Batch{}
 	batch.Queue(`
 		INSERT INTO cart (client_account_id, restaurant_brand_id, updated_at)
@@ -138,11 +138,11 @@ func (r *cartRepo) UpdateCart(ctx context.Context, userID int, resID int, items 
 	return nil
 }
 
-func (r *cartRepo) ClearCart(ctx context.Context, userId int) error {
+func (r *cartRepo) ClearCart(ctx context.Context, userID int64) error {
 	query := `
 		DELETE FROM cart WHERE client_account_id = $1
 	`
-	_, err := r.pool.Exec(ctx, query, userId)
+	_, err := r.pool.Exec(ctx, query, userID)
 	return err
 }
 

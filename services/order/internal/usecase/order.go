@@ -14,8 +14,8 @@ import (
 
 //go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/order OrderUseCase
 type OrderUseCase interface {
-	CreateOrder(ctx context.Context, userID int, req domain.CreateOrderInput) (string, string, error)
-	GetOrders(ctx context.Context, userID int) ([]domain.Order, error)
+	CreateOrder(ctx context.Context, userID int64, req domain.CreateOrderInput) (string, string, error)
+	GetOrders(ctx context.Context, userID int64) ([]domain.Order, error)
 }
 
 type orderUseCase struct {
@@ -36,7 +36,7 @@ func NewOrderUseCase(or repository.OrderRepository, ar repository.AddressReposit
 	}
 }
 
-func (o *orderUseCase) CreateOrder(ctx context.Context, userID int, req domain.CreateOrderInput) (string, string, error) {
+func (o *orderUseCase) CreateOrder(ctx context.Context, userID int64, req domain.CreateOrderInput) (string, string, error) {
 	// 1. Получаем стоимость ТОЛЬКО товаров в корзине
 	cart, cartTotalCost, err := o.cartUC.GetCart(ctx, userID)
 	if err != nil {
@@ -113,7 +113,7 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, userID int, req domain.C
 	return orderPublicID, confirmationURL, nil
 }
 
-func (o *orderUseCase) GetOrders(ctx context.Context, userID int) ([]domain.Order, error) {
+func (o *orderUseCase) GetOrders(ctx context.Context, userID int64) ([]domain.Order, error) {
 	orders, err := o.orderRepo.GetOrdersByUserID(ctx, userID)
 	if err != nil {
 		return []domain.Order{}, err

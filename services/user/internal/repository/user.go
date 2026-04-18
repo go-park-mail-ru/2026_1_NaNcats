@@ -15,11 +15,11 @@ type UserRepository interface {
 	// метод нахождения пользователя по email'у, возвращает юзера
 	GetUserByEmail(ctx context.Context, email string) (domain.User, error)
 	// метод нахождения пользователей по id, возвращает юзера
-	GetUserByID(ctx context.Context, id int) (domain.User, error)
+	GetUserByID(ctx context.Context, id int64) (domain.User, error)
 	// метод для проверки существования юзера по ID
-	CheckUserByID(ctx context.Context, userID int) (bool, error)
+	CheckUserByID(ctx context.Context, userID int64) (bool, error)
 	// метод для обновления полей юзера
-	UpdateProfile(ctx context.Context, userID int, name, email *string) error
+	UpdateProfile(ctx context.Context, userID int64, name, email *string) error
 	// метод для обновления URL аватара
-	UpdateAvatarURL(ctx context.Context, userID int, newAvatarURL string) error
+	UpdateAvatarURL(ctx context.Context, userID int64, newAvatarURL string) error
 }

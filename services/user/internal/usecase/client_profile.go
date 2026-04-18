@@ -8,7 +8,7 @@ import (
 
 //go:generate mockgen -destination=mocks/client_profile_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/user ClientProfileUseCase
 type ClientProfileUseCase interface {
-	CreateProfile(ctx context.Context, accountID int) error
+	CreateProfile(ctx context.Context, accountID int64) error
 }
 
 type clientProfileUseCase struct {
@@ -19,6 +19,6 @@ func NewClientProfileUseCase(r repository.ClientProfileRepository) ClientProfile
 	return &clientProfileUseCase{repo: r}
 }
 
-func (u *clientProfileUseCase) CreateProfile(ctx context.Context, accountID int) error {
+func (u *clientProfileUseCase) CreateProfile(ctx context.Context, accountID int64) error {
 	return u.repo.Create(ctx, accountID)
 }

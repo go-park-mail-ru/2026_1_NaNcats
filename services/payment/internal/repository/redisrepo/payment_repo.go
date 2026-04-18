@@ -20,7 +20,7 @@ func NewPaymentCacheRepo(pool *redis.Pool) repository.PaymentCacheRepository {
 	}
 }
 
-func (r *paymentCacheRepo) SetPendingBinding(ctx context.Context, paymentID string, userID int, ttl time.Duration) error {
+func (r *paymentCacheRepo) SetPendingBinding(ctx context.Context, paymentID string, userID int64, ttl time.Duration) error {
 	conn := r.redisPool.Get()
 	defer conn.Close()
 
