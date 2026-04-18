@@ -25,12 +25,14 @@ func NewUserRepo(pool postgres.PgxPool) repository.UserRepository {
 	}
 }
 
-func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (int64, error) {
+func (r *userRepo) CreateUser(ctx context.Context, user domain.User, idempotencyKey string) (int64, error) {
 	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
 
 	query := `
-		INSERT INTO "user" (name, email, password_hash, user_role)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO "user" (name, email, password_hash, user_role, idempotency_key)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (idempotency_key) DO UPDATE 
+		SET idempotency_key = EXCLUDED.idempotency_key
 		RETURNING id;
 	`
 
@@ -40,6 +42,7 @@ func (r *userRepo) CreateUser(ctx context.Context, user domain.User) (int64, err
 		user.Email,
 		user.PasswordHash,
 		"client",
+		idempotencyKey,
 	).Scan(&lastInsertedID)
 
 	if err != nil {

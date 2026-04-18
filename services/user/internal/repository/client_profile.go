@@ -7,6 +7,6 @@ import (
 )
 
 type ClientProfileRepository interface {
-	Create(ctx context.Context, accountID int64) error
+	Create(ctx context.Context, accountID int64, idempotencyKey string) error
 	GetByAccountID(ctx context.Context, accountID int64) (domain.ClientProfile, error)
 }

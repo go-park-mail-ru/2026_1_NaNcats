@@ -11,7 +11,7 @@ import (
 //go:generate mockgen -destination=mocks/user_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository UserRepository
 type UserRepository interface {
 	// метод создания юзера в репозитории, возвращает userID
-	CreateUser(ctx context.Context, user domain.User) (int64, error)
+	CreateUser(ctx context.Context, user domain.User, idempotencyKey string) (int64, error)
 	// метод нахождения пользователя по email'у, возвращает юзера
 	GetUserByEmail(ctx context.Context, email string) (domain.User, error)
 	// метод нахождения пользователей по id, возвращает юзера
