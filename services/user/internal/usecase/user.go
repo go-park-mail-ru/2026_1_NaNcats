@@ -8,27 +8,28 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/repository"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/imageutil"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/s3"
 	"github.com/google/uuid"
 )
 
 //go:generate mockgen -destination=mocks/user_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/user UserUseCase
 type UserUseCase interface {
-	Create(ctx context.Context, user domain.User) (int64, error)
+	Create(ctx context.Context, user domain.User, idempotencyKey string) (int64, error)
 	GetByID(ctx context.Context, userID int64) (domain.User, error)
 	GetByEmail(ctx context.Context, email string) (domain.User, error)
 	Check(ctx context.Context, userID int64) (bool, error)
-	UpdateProfile(ctx context.Context, userID int64, name, email *string) error
-	UpdateAvatar(ctx context.Context, userID int64, file io.Reader) (string, error)
-	DeleteAvatar(ctx context.Context, userID int64) (string, error)
+	UpdateProfile(ctx context.Context, userID int64, name, email *string, idempotencyKey string) error
+	UpdateAvatar(ctx context.Context, userID int64, file io.Reader, idempotencyKey string) (string, error)
+	DeleteAvatar(ctx context.Context, userID int64, idempotencyKey string) (string, error)
 }
 
 type userUseCase struct {
 	userRepo         repository.UserRepository
-	fileStorage      repository.FileStorage
+	fileStorage      s3.FileStorage
 	defaultAvatarURL string
 }
 
-func NewUserUseCase(ur repository.UserRepository, fs repository.FileStorage, daurl string) UserUseCase {
+func NewUserUseCase(ur repository.UserRepository, fs s3.FileStorage, daurl string) UserUseCase {
 	return &userUseCase{
 		userRepo:         ur,
 		fileStorage:      fs,
@@ -37,7 +38,7 @@ func NewUserUseCase(ur repository.UserRepository, fs repository.FileStorage, dau
 }
 
 // создаем юзера
-func (u *userUseCase) Create(ctx context.Context, user domain.User) (int64, error) {
+func (u *userUseCase) Create(ctx context.Context, user domain.User, idempotencyKey string) (int64, error) {
 	user.Name = html.EscapeString(user.Name)
 	user.Email = html.EscapeString(user.Email)
 	id, err := u.userRepo.CreateUser(ctx, user)
@@ -88,7 +89,7 @@ func (u *userUseCase) Check(ctx context.Context, userID int64) (bool, error) {
 }
 
 // обновляет поля юзера
-func (u *userUseCase) UpdateProfile(ctx context.Context, userID int64, name, email *string) error {
+func (u *userUseCase) UpdateProfile(ctx context.Context, userID int64, name, email *string, idempotencyKey string) error {
 	if name != nil {
 		escapedName := html.EscapeString(*name)
 		name = &escapedName
@@ -101,7 +102,7 @@ func (u *userUseCase) UpdateProfile(ctx context.Context, userID int64, name, ema
 	return u.userRepo.UpdateProfile(ctx, userID, name, email)
 }
 
-func (u *userUseCase) UpdateAvatar(ctx context.Context, userID int64, file io.Reader) (string, error) {
+func (u *userUseCase) UpdateAvatar(ctx context.Context, userID int64, file io.Reader, idempotencyKey string) (string, error) {
 	user, err := u.GetByID(ctx, userID)
 	if err != nil {
 		return "", err
@@ -137,7 +138,7 @@ func (u *userUseCase) UpdateAvatar(ctx context.Context, userID int64, file io.Re
 	return newAvatarURL, nil
 }
 
-func (u *userUseCase) DeleteAvatar(ctx context.Context, userID int64) (string, error) {
+func (u *userUseCase) DeleteAvatar(ctx context.Context, userID int64, idempotencyKey string) (string, error) {
 	user, err := u.GetByID(ctx, userID)
 	if err != nil {
 		return "", err
