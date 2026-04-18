@@ -2,27 +2,31 @@ CREATE TYPE courier_status AS ENUM('offline', 'waiting', 'delivering');
 
 CREATE TABLE "user" (
 	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-		
+	
 	name TEXT NOT NULL
 		CHECK (char_length(name) >= 1 AND char_length(name) <= 39),
-		
+	
 	email TEXT NOT NULL UNIQUE
 		CHECK (email = LOWER(email)),
-		
+	
 	password_hash TEXT NOT NULL,
-		
+	
 	user_role TEXT NOT NULL
 		CHECK (user_role IN ('client', 'courier', 'owner')),
 	
 	avatar_url TEXT
 		CHECK (char_length(avatar_url) <= 2048),
-		
+	
+	idempotency_key TEXT,
+	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
 CREATE TABLE "owner_profile" (
 	account_id BIGINT PRIMARY KEY,
+
+	idempotency_key TEXT,
 	
 	CONSTRAINT fk_owner_profile_user
 		FOREIGN KEY (account_id)
@@ -44,6 +48,8 @@ CREATE TABLE "client_profile" (
 	
 	last_order_date TIMESTAMP WITH TIME ZONE,
 	premium_expires_at TIMESTAMP WITH TIME ZONE,
+
+	idempotency_key TEXT,
 	
 	CONSTRAINT fk_client_profile_user
 		FOREIGN KEY (account_id)
@@ -55,6 +61,8 @@ CREATE TABLE "courier_profile" (
 	account_id BIGINT PRIMARY KEY,
 	
 	status courier_status NOT NULL,
+
+	idempotency_key TEXT,
 	
 	CONSTRAINT fk_courier_profile_user
 		FOREIGN KEY (account_id)
