@@ -33,7 +33,7 @@ func mapDomainToPBClientProfile(u domain.ClientProfile) *pb.ClientProfile {
 
 	if u.BonusCategoryID != nil {
 		id := *u.BonusCategoryID
-		pbProfile.BonusCategoryId = &id // В proto3 optional поля мапятся как указатели
+		pbProfile.BonusCategoryId = &id
 	}
 
 	if u.BonusCategoryExpiresAt != nil {
