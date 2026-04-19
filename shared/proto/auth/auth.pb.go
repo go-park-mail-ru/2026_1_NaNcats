@@ -28,7 +28,8 @@ type Session struct {
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	UserId        int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	UserAgent     string                 `protobuf:"bytes,3,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
-	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	Role          string                 `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
+	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -84,6 +85,13 @@ func (x *Session) GetUserAgent() string {
 	return ""
 }
 
+func (x *Session) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
 func (x *Session) GetExpiresAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.ExpiresAt
@@ -91,31 +99,29 @@ func (x *Session) GetExpiresAt() *timestamppb.Timestamp {
 	return nil
 }
 
-type RegisterRequest struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	Email          string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	Password       string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
-	Name           string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	UserAgent      string                 `protobuf:"bytes,4,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
-	IdempotencyKey string                 `protobuf:"bytes,5,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+type IssueSessionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Role          string                 `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
+	UserAgent     string                 `protobuf:"bytes,3,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-func (x *RegisterRequest) Reset() {
-	*x = RegisterRequest{}
+func (x *IssueSessionRequest) Reset() {
+	*x = IssueSessionRequest{}
 	mi := &file_auth_auth_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RegisterRequest) String() string {
+func (x *IssueSessionRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RegisterRequest) ProtoMessage() {}
+func (*IssueSessionRequest) ProtoMessage() {}
 
-func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
+func (x *IssueSessionRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_auth_auth_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -127,54 +133,39 @@ func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RegisterRequest.ProtoReflect.Descriptor instead.
-func (*RegisterRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use IssueSessionRequest.ProtoReflect.Descriptor instead.
+func (*IssueSessionRequest) Descriptor() ([]byte, []int) {
 	return file_auth_auth_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *RegisterRequest) GetEmail() string {
+func (x *IssueSessionRequest) GetUserId() int64 {
 	if x != nil {
-		return x.Email
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *IssueSessionRequest) GetRole() string {
+	if x != nil {
+		return x.Role
 	}
 	return ""
 }
 
-func (x *RegisterRequest) GetPassword() string {
-	if x != nil {
-		return x.Password
-	}
-	return ""
-}
-
-func (x *RegisterRequest) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *RegisterRequest) GetUserAgent() string {
+func (x *IssueSessionRequest) GetUserAgent() string {
 	if x != nil {
 		return x.UserAgent
 	}
 	return ""
 }
 
-func (x *RegisterRequest) GetIdempotencyKey() string {
-	if x != nil {
-		return x.IdempotencyKey
-	}
-	return ""
-}
-
 type LoginRequest struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	Email          string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	Password       string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
-	UserAgent      string                 `protobuf:"bytes,3,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
-	IdempotencyKey string                 `protobuf:"bytes,4,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+	UserAgent     string                 `protobuf:"bytes,3,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *LoginRequest) Reset() {
@@ -228,16 +219,9 @@ func (x *LoginRequest) GetUserAgent() string {
 	return ""
 }
 
-func (x *LoginRequest) GetIdempotencyKey() string {
-	if x != nil {
-		return x.IdempotencyKey
-	}
-	return ""
-}
-
 type AuthResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Session       *Session               `protobuf:"bytes,2,opt,name=session,proto3" json:"session,omitempty"`
+	Session       *Session               `protobuf:"bytes,1,opt,name=session,proto3" json:"session,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -280,11 +264,10 @@ func (x *AuthResponse) GetSession() *Session {
 }
 
 type LogoutRequest struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	SessionId      string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	IdempotencyKey string                 `protobuf:"bytes,2,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *LogoutRequest) Reset() {
@@ -320,13 +303,6 @@ func (*LogoutRequest) Descriptor() ([]byte, []int) {
 func (x *LogoutRequest) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
-	}
-	return ""
-}
-
-func (x *LogoutRequest) GetIdempotencyKey() string {
-	if x != nil {
-		return x.IdempotencyKey
 	}
 	return ""
 }
@@ -375,17 +351,68 @@ func (x *CheckSessionRequest) GetSessionId() string {
 	return ""
 }
 
+type CheckSessionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Role          string                 `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckSessionResponse) Reset() {
+	*x = CheckSessionResponse{}
+	mi := &file_auth_auth_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckSessionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckSessionResponse) ProtoMessage() {}
+
+func (x *CheckSessionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_auth_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckSessionResponse.ProtoReflect.Descriptor instead.
+func (*CheckSessionResponse) Descriptor() ([]byte, []int) {
+	return file_auth_auth_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *CheckSessionResponse) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *CheckSessionResponse) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
 type CSRFRequest struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	SessionId      string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	IdempotencyKey string                 `protobuf:"bytes,2,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CSRFRequest) Reset() {
 	*x = CSRFRequest{}
-	mi := &file_auth_auth_proto_msgTypes[6]
+	mi := &file_auth_auth_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -397,7 +424,7 @@ func (x *CSRFRequest) String() string {
 func (*CSRFRequest) ProtoMessage() {}
 
 func (x *CSRFRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_auth_proto_msgTypes[6]
+	mi := &file_auth_auth_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -410,19 +437,12 @@ func (x *CSRFRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CSRFRequest.ProtoReflect.Descriptor instead.
 func (*CSRFRequest) Descriptor() ([]byte, []int) {
-	return file_auth_auth_proto_rawDescGZIP(), []int{6}
+	return file_auth_auth_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CSRFRequest) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
-	}
-	return ""
-}
-
-func (x *CSRFRequest) GetIdempotencyKey() string {
-	if x != nil {
-		return x.IdempotencyKey
 	}
 	return ""
 }
@@ -436,7 +456,7 @@ type CSRFResponse struct {
 
 func (x *CSRFResponse) Reset() {
 	*x = CSRFResponse{}
-	mi := &file_auth_auth_proto_msgTypes[7]
+	mi := &file_auth_auth_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -448,7 +468,7 @@ func (x *CSRFResponse) String() string {
 func (*CSRFResponse) ProtoMessage() {}
 
 func (x *CSRFResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_auth_proto_msgTypes[7]
+	mi := &file_auth_auth_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -461,7 +481,7 @@ func (x *CSRFResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CSRFResponse.ProtoReflect.Descriptor instead.
 func (*CSRFResponse) Descriptor() ([]byte, []int) {
-	return file_auth_auth_proto_rawDescGZIP(), []int{7}
+	return file_auth_auth_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *CSRFResponse) GetToken() string {
@@ -475,47 +495,46 @@ var File_auth_auth_proto protoreflect.FileDescriptor
 
 const file_auth_auth_proto_rawDesc = "" +
 	"\n" +
-	"\x0fauth/auth.proto\x12\x04auth\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x8c\x01\n" +
+	"\x0fauth/auth.proto\x12\x04auth\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa0\x01\n" +
 	"\aSession\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x1d\n" +
 	"\n" +
-	"user_agent\x18\x03 \x01(\tR\tuserAgent\x129\n" +
+	"user_agent\x18\x03 \x01(\tR\tuserAgent\x12\x12\n" +
+	"\x04role\x18\x04 \x01(\tR\x04role\x129\n" +
 	"\n" +
-	"expires_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"\x9f\x01\n" +
-	"\x0fRegisterRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x12\n" +
-	"\x04name\x18\x03 \x01(\tR\x04name\x12\x1d\n" +
+	"expires_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"a\n" +
+	"\x13IssueSessionRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x12\n" +
+	"\x04role\x18\x02 \x01(\tR\x04role\x12\x1d\n" +
 	"\n" +
-	"user_agent\x18\x04 \x01(\tR\tuserAgent\x12'\n" +
-	"\x0fidempotency_key\x18\x05 \x01(\tR\x0eidempotencyKey\"\x88\x01\n" +
+	"user_agent\x18\x03 \x01(\tR\tuserAgent\"_\n" +
 	"\fLoginRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x1d\n" +
 	"\n" +
-	"user_agent\x18\x03 \x01(\tR\tuserAgent\x12'\n" +
-	"\x0fidempotency_key\x18\x04 \x01(\tR\x0eidempotencyKey\"7\n" +
+	"user_agent\x18\x03 \x01(\tR\tuserAgent\"7\n" +
 	"\fAuthResponse\x12'\n" +
-	"\asession\x18\x02 \x01(\v2\r.auth.SessionR\asession\"W\n" +
+	"\asession\x18\x01 \x01(\v2\r.auth.SessionR\asession\".\n" +
 	"\rLogoutRequest\x12\x1d\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\x12'\n" +
-	"\x0fidempotency_key\x18\x02 \x01(\tR\x0eidempotencyKey\"4\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"4\n" +
 	"\x13CheckSessionRequest\x12\x1d\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\"U\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"C\n" +
+	"\x14CheckSessionResponse\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x12\n" +
+	"\x04role\x18\x02 \x01(\tR\x04role\",\n" +
 	"\vCSRFRequest\x12\x1d\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\x12'\n" +
-	"\x0fidempotency_key\x18\x02 \x01(\tR\x0eidempotencyKey\"$\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"$\n" +
 	"\fCSRFResponse\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token2\xd3\x02\n" +
-	"\vAuthService\x125\n" +
-	"\bRegister\x12\x15.auth.RegisterRequest\x1a\x12.auth.AuthResponse\x12/\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token2\xdf\x02\n" +
+	"\vAuthService\x12=\n" +
+	"\fIssueSession\x12\x19.auth.IssueSessionRequest\x1a\x12.auth.AuthResponse\x12/\n" +
 	"\x05Login\x12\x12.auth.LoginRequest\x1a\x12.auth.AuthResponse\x125\n" +
-	"\x06Logout\x12\x13.auth.LogoutRequest\x1a\x16.google.protobuf.Empty\x12A\n" +
-	"\fCheckSession\x12\x19.auth.CheckSessionRequest\x1a\x16.google.protobuf.Empty\x120\n" +
+	"\x06Logout\x12\x13.auth.LogoutRequest\x1a\x16.google.protobuf.Empty\x12E\n" +
+	"\fCheckSession\x12\x19.auth.CheckSessionRequest\x1a\x1a.auth.CheckSessionResponse\x120\n" +
 	"\aGetCSRF\x12\x11.auth.CSRFRequest\x1a\x12.auth.CSRFResponse\x120\n" +
 	"\aSetCSRF\x12\x11.auth.CSRFRequest\x1a\x12.auth.CSRFResponseB=Z;github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/authb\x06proto3"
 
@@ -531,39 +550,40 @@ func file_auth_auth_proto_rawDescGZIP() []byte {
 	return file_auth_auth_proto_rawDescData
 }
 
-var file_auth_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_auth_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_auth_auth_proto_goTypes = []any{
 	(*Session)(nil),               // 0: auth.Session
-	(*RegisterRequest)(nil),       // 1: auth.RegisterRequest
+	(*IssueSessionRequest)(nil),   // 1: auth.IssueSessionRequest
 	(*LoginRequest)(nil),          // 2: auth.LoginRequest
 	(*AuthResponse)(nil),          // 3: auth.AuthResponse
 	(*LogoutRequest)(nil),         // 4: auth.LogoutRequest
 	(*CheckSessionRequest)(nil),   // 5: auth.CheckSessionRequest
-	(*CSRFRequest)(nil),           // 6: auth.CSRFRequest
-	(*CSRFResponse)(nil),          // 7: auth.CSRFResponse
-	(*timestamppb.Timestamp)(nil), // 8: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),         // 9: google.protobuf.Empty
+	(*CheckSessionResponse)(nil),  // 6: auth.CheckSessionResponse
+	(*CSRFRequest)(nil),           // 7: auth.CSRFRequest
+	(*CSRFResponse)(nil),          // 8: auth.CSRFResponse
+	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),         // 10: google.protobuf.Empty
 }
 var file_auth_auth_proto_depIdxs = []int32{
-	8, // 0: auth.Session.expires_at:type_name -> google.protobuf.Timestamp
-	0, // 1: auth.AuthResponse.session:type_name -> auth.Session
-	1, // 2: auth.AuthService.Register:input_type -> auth.RegisterRequest
-	2, // 3: auth.AuthService.Login:input_type -> auth.LoginRequest
-	4, // 4: auth.AuthService.Logout:input_type -> auth.LogoutRequest
-	5, // 5: auth.AuthService.CheckSession:input_type -> auth.CheckSessionRequest
-	6, // 6: auth.AuthService.GetCSRF:input_type -> auth.CSRFRequest
-	6, // 7: auth.AuthService.SetCSRF:input_type -> auth.CSRFRequest
-	3, // 8: auth.AuthService.Register:output_type -> auth.AuthResponse
-	3, // 9: auth.AuthService.Login:output_type -> auth.AuthResponse
-	9, // 10: auth.AuthService.Logout:output_type -> google.protobuf.Empty
-	9, // 11: auth.AuthService.CheckSession:output_type -> google.protobuf.Empty
-	7, // 12: auth.AuthService.GetCSRF:output_type -> auth.CSRFResponse
-	7, // 13: auth.AuthService.SetCSRF:output_type -> auth.CSRFResponse
-	8, // [8:14] is the sub-list for method output_type
-	2, // [2:8] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	9,  // 0: auth.Session.expires_at:type_name -> google.protobuf.Timestamp
+	0,  // 1: auth.AuthResponse.session:type_name -> auth.Session
+	1,  // 2: auth.AuthService.IssueSession:input_type -> auth.IssueSessionRequest
+	2,  // 3: auth.AuthService.Login:input_type -> auth.LoginRequest
+	4,  // 4: auth.AuthService.Logout:input_type -> auth.LogoutRequest
+	5,  // 5: auth.AuthService.CheckSession:input_type -> auth.CheckSessionRequest
+	7,  // 6: auth.AuthService.GetCSRF:input_type -> auth.CSRFRequest
+	7,  // 7: auth.AuthService.SetCSRF:input_type -> auth.CSRFRequest
+	3,  // 8: auth.AuthService.IssueSession:output_type -> auth.AuthResponse
+	3,  // 9: auth.AuthService.Login:output_type -> auth.AuthResponse
+	10, // 10: auth.AuthService.Logout:output_type -> google.protobuf.Empty
+	6,  // 11: auth.AuthService.CheckSession:output_type -> auth.CheckSessionResponse
+	8,  // 12: auth.AuthService.GetCSRF:output_type -> auth.CSRFResponse
+	8,  // 13: auth.AuthService.SetCSRF:output_type -> auth.CSRFResponse
+	8,  // [8:14] is the sub-list for method output_type
+	2,  // [2:8] is the sub-list for method input_type
+	2,  // [2:2] is the sub-list for extension type_name
+	2,  // [2:2] is the sub-list for extension extendee
+	0,  // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_auth_auth_proto_init() }
@@ -577,7 +597,7 @@ func file_auth_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_auth_auth_proto_rawDesc), len(file_auth_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

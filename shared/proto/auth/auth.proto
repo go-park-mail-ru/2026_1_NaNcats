@@ -9,14 +9,14 @@ option go_package = "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/auth
 
 // Сервис авторизации
 service AuthService {
-  // Метод для регистрации
-  rpc Register (RegisterRequest) returns (AuthResponse);
+  // Метод для выдачи сессии
+  rpc IssueSession (IssueSessionRequest) returns (AuthResponse);
   // Метод для входа в аккаунт
   rpc Login (LoginRequest) returns (AuthResponse);
   // Метод для выхода из аккаунты
   rpc Logout (LogoutRequest) returns (google.protobuf.Empty);
   // Метод для проверки сессии
-  rpc CheckSession (CheckSessionRequest) returns (google.protobuf.Empty);
+  rpc CheckSession (CheckSessionRequest) returns (CheckSessionResponse);
   // Метод для получения CSRF токена
   rpc GetCSRF (CSRFRequest) returns (CSRFResponse);
   // Метод для создания CSRF токена
@@ -27,41 +27,42 @@ message Session {
   string id = 1;
   int64 user_id = 2;
   string user_agent = 3;
-  google.protobuf.Timestamp expires_at = 4;
+  string role = 4;
+  google.protobuf.Timestamp expires_at = 5;
 }
 
 
-message RegisterRequest {
-  string email = 1;
-  string password = 2;
-  string name = 3;
-  string user_agent = 4;
-  string idempotency_key = 5;
+message IssueSessionRequest {
+  int64 user_id = 1;
+  string role = 2;
+  string user_agent = 3;
 }
 
 message LoginRequest {
   string email = 1;
   string password = 2;
   string user_agent = 3;
-  string idempotency_key = 4;
 }
 
 message AuthResponse {
-  Session session = 2;
+  Session session = 1;
 }
 
 message LogoutRequest {
   string session_id = 1;
-  string idempotency_key = 2;
 }
 
 message CheckSessionRequest {
   string session_id = 1;
 }
 
+message CheckSessionResponse {
+  int64 user_id = 1;
+  string role = 2; 
+}
+
 message CSRFRequest {
   string session_id = 1;
-  string idempotency_key = 2;
 }
 
 message CSRFResponse {

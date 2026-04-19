@@ -211,8 +211,8 @@ type CreateUserRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Name           string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Email          string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	IdempotencyKey string                 `protobuf:"bytes,3,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
-	PasswordHash   string                 `protobuf:"bytes,4,opt,name=password_hash,json=passwordHash,proto3" json:"password_hash,omitempty"`
+	PasswordHash   string                 `protobuf:"bytes,3,opt,name=password_hash,json=passwordHash,proto3" json:"password_hash,omitempty"`
+	IdempotencyKey string                 `protobuf:"bytes,4,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -261,16 +261,16 @@ func (x *CreateUserRequest) GetEmail() string {
 	return ""
 }
 
-func (x *CreateUserRequest) GetIdempotencyKey() string {
+func (x *CreateUserRequest) GetPasswordHash() string {
 	if x != nil {
-		return x.IdempotencyKey
+		return x.PasswordHash
 	}
 	return ""
 }
 
-func (x *CreateUserRequest) GetPasswordHash() string {
+func (x *CreateUserRequest) GetIdempotencyKey() string {
 	if x != nil {
-		return x.PasswordHash
+		return x.IdempotencyKey
 	}
 	return ""
 }
@@ -981,9 +981,9 @@ const file_user_user_proto_rawDesc = "" +
 	"\x12_bonus_category_id\"\x8b\x01\n" +
 	"\x11CreateUserRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
-	"\x05email\x18\x02 \x01(\tR\x05email\x12'\n" +
-	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey\x12#\n" +
-	"\rpassword_hash\x18\x04 \x01(\tR\fpasswordHash\"-\n" +
+	"\x05email\x18\x02 \x01(\tR\x05email\x12#\n" +
+	"\rpassword_hash\x18\x03 \x01(\tR\fpasswordHash\x12'\n" +
+	"\x0fidempotency_key\x18\x04 \x01(\tR\x0eidempotencyKey\"-\n" +
 	"\x12CreateUserResponse\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\"^\n" +
 	"\x1aCreateClientProfileRequest\x12\x17\n" +

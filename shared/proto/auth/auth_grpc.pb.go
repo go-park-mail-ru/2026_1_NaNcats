@@ -20,7 +20,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthService_Register_FullMethodName     = "/auth.AuthService/Register"
+	AuthService_IssueSession_FullMethodName = "/auth.AuthService/IssueSession"
 	AuthService_Login_FullMethodName        = "/auth.AuthService/Login"
 	AuthService_Logout_FullMethodName       = "/auth.AuthService/Logout"
 	AuthService_CheckSession_FullMethodName = "/auth.AuthService/CheckSession"
@@ -34,14 +34,14 @@ const (
 //
 // Сервис авторизации
 type AuthServiceClient interface {
-	// Метод для регистрации
-	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*AuthResponse, error)
+	// Метод для выдачи сессии
+	IssueSession(ctx context.Context, in *IssueSessionRequest, opts ...grpc.CallOption) (*AuthResponse, error)
 	// Метод для входа в аккаунт
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*AuthResponse, error)
 	// Метод для выхода из аккаунты
 	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Метод для проверки сессии
-	CheckSession(ctx context.Context, in *CheckSessionRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	CheckSession(ctx context.Context, in *CheckSessionRequest, opts ...grpc.CallOption) (*CheckSessionResponse, error)
 	// Метод для получения CSRF токена
 	GetCSRF(ctx context.Context, in *CSRFRequest, opts ...grpc.CallOption) (*CSRFResponse, error)
 	// Метод для создания CSRF токена
@@ -56,10 +56,10 @@ func NewAuthServiceClient(cc grpc.ClientConnInterface) AuthServiceClient {
 	return &authServiceClient{cc}
 }
 
-func (c *authServiceClient) Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*AuthResponse, error) {
+func (c *authServiceClient) IssueSession(ctx context.Context, in *IssueSessionRequest, opts ...grpc.CallOption) (*AuthResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AuthResponse)
-	err := c.cc.Invoke(ctx, AuthService_Register_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, AuthService_IssueSession_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -86,9 +86,9 @@ func (c *authServiceClient) Logout(ctx context.Context, in *LogoutRequest, opts 
 	return out, nil
 }
 
-func (c *authServiceClient) CheckSession(ctx context.Context, in *CheckSessionRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *authServiceClient) CheckSession(ctx context.Context, in *CheckSessionRequest, opts ...grpc.CallOption) (*CheckSessionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(CheckSessionResponse)
 	err := c.cc.Invoke(ctx, AuthService_CheckSession_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -122,14 +122,14 @@ func (c *authServiceClient) SetCSRF(ctx context.Context, in *CSRFRequest, opts .
 //
 // Сервис авторизации
 type AuthServiceServer interface {
-	// Метод для регистрации
-	Register(context.Context, *RegisterRequest) (*AuthResponse, error)
+	// Метод для выдачи сессии
+	IssueSession(context.Context, *IssueSessionRequest) (*AuthResponse, error)
 	// Метод для входа в аккаунт
 	Login(context.Context, *LoginRequest) (*AuthResponse, error)
 	// Метод для выхода из аккаунты
 	Logout(context.Context, *LogoutRequest) (*emptypb.Empty, error)
 	// Метод для проверки сессии
-	CheckSession(context.Context, *CheckSessionRequest) (*emptypb.Empty, error)
+	CheckSession(context.Context, *CheckSessionRequest) (*CheckSessionResponse, error)
 	// Метод для получения CSRF токена
 	GetCSRF(context.Context, *CSRFRequest) (*CSRFResponse, error)
 	// Метод для создания CSRF токена
@@ -144,8 +144,8 @@ type AuthServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAuthServiceServer struct{}
 
-func (UnimplementedAuthServiceServer) Register(context.Context, *RegisterRequest) (*AuthResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Register not implemented")
+func (UnimplementedAuthServiceServer) IssueSession(context.Context, *IssueSessionRequest) (*AuthResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method IssueSession not implemented")
 }
 func (UnimplementedAuthServiceServer) Login(context.Context, *LoginRequest) (*AuthResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Login not implemented")
@@ -153,7 +153,7 @@ func (UnimplementedAuthServiceServer) Login(context.Context, *LoginRequest) (*Au
 func (UnimplementedAuthServiceServer) Logout(context.Context, *LogoutRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method Logout not implemented")
 }
-func (UnimplementedAuthServiceServer) CheckSession(context.Context, *CheckSessionRequest) (*emptypb.Empty, error) {
+func (UnimplementedAuthServiceServer) CheckSession(context.Context, *CheckSessionRequest) (*CheckSessionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CheckSession not implemented")
 }
 func (UnimplementedAuthServiceServer) GetCSRF(context.Context, *CSRFRequest) (*CSRFResponse, error) {
@@ -183,20 +183,20 @@ func RegisterAuthServiceServer(s grpc.ServiceRegistrar, srv AuthServiceServer) {
 	s.RegisterService(&AuthService_ServiceDesc, srv)
 }
 
-func _AuthService_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RegisterRequest)
+func _AuthService_IssueSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IssueSessionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AuthServiceServer).Register(ctx, in)
+		return srv.(AuthServiceServer).IssueSession(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AuthService_Register_FullMethodName,
+		FullMethod: AuthService_IssueSession_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServiceServer).Register(ctx, req.(*RegisterRequest))
+		return srv.(AuthServiceServer).IssueSession(ctx, req.(*IssueSessionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -299,8 +299,8 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*AuthServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Register",
-			Handler:    _AuthService_Register_Handler,
+			MethodName: "IssueSession",
+			Handler:    _AuthService_IssueSession_Handler,
 		},
 		{
 			MethodName: "Login",
