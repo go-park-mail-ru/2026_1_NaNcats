@@ -10,6 +10,9 @@ service RestaurantService {
   rpc GetRestaurantBrandsList (GetRestaurantBrandsListRequest) returns (GetRestaurantBrandsListResponse);
   // Метод получения ресторана по ID
   rpc GetRestaurantBrandByID (GetRestaurantBrandByIDRequest) returns (GetRestaurantBrandByIDResponse);
+  // Метод пакетного получения логотипов (для истории заказов)
+  rpc GetRestaurantLogos (GetRestaurantLogosRequest) returns (GetRestaurantLogosResponse);
+
   // Метод получения блюд из ресторана по его ID
   rpc GetDishesByRestaurantBrandID (GetDishesByRestaurantBrandIDRequest) returns (GetDishesByRestaurantBrandIDResponse);
   // Метод получения блюд по их ID
@@ -50,6 +53,14 @@ message GetRestaurantBrandByIDRequest {
 
 message GetRestaurantBrandByIDResponse {
   RestaurantBrand restaurant_brand = 1;
+}
+
+message GetRestaurantLogosRequest {
+  repeated int64 brand_ids = 1;
+}
+
+message GetRestaurantLogosResponse {
+  map<int64, string> logos = 1;
 }
 
 message GetDishesByRestaurantBrandIDRequest {
