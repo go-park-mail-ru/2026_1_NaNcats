@@ -128,16 +128,19 @@ func (r *cartRepo) UpdateCart(ctx context.Context, userID int64, resID int64, it
 	}
 
 	br := tx.SendBatch(ctx, batch)
+	defer br.Close()
 
 	for i := 0; i < batch.Len(); i++ {
 		_, execErr := br.Exec()
 		if execErr != nil {
-			br.Close()
 			return fmt.Errorf("cart batch execution failed at step %d: %w", i, execErr)
 		}
 	}
 
-	br.Close()
+	if err := br.Close(); err != nil {
+		return fmt.Errorf("close batch results: %w", err)
+	}
+
 	return tx.Commit(ctx)
 }
 
