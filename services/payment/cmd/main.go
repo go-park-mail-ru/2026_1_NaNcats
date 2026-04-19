@@ -8,13 +8,16 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/gomodule/redigo/redis"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/api_clients/yookassa"
 	infrastructureLogger "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/common/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/interceptors"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
@@ -26,8 +29,8 @@ import (
 	paymentGrpcClient "github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/infrastructure/grpc_client"
 	paymentDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/delivery/grpc"
 	paymentPG "github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/repository/postgres"
+	paymentRedis "github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/repository/redisrepo"
 	paymentUseCase "github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/usecase"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/api_clients/yookassa"
 )
 
 func main() {
@@ -58,6 +61,23 @@ func main() {
 	defer pool.Close()
 	appLogger.Info("Connected to PostgreSQL")
 
+	redisURL := getEnv("REDIS_URL", "redis://localhost:6379/0")
+	redisPool := &redis.Pool{
+		MaxIdle:     10,
+		IdleTimeout: 60 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			return redis.DialURL(redisURL)
+		},
+	}
+	defer redisPool.Close()
+
+	conn := redisPool.Get()
+	if _, err := conn.Do("PING"); err != nil {
+		appLogger.Fatal("Failed to connect to Redis", err)
+	}
+	conn.Close()
+	appLogger.Info("Connected to Redis")
+
 	orderAddr := getEnv("ORDER_SERVICE_ADDR", "localhost:50057")
 	orderConn, err := grpc.NewClient(
 		orderAddr,
@@ -74,13 +94,22 @@ func main() {
 
 	shopID := os.Getenv("YOOKASSA_SHOP_ID")
 	secretKey := os.Getenv("YOOKASSA_SECRET_KEY")
-	if shopID == "" || secretKey == "" {
-		appLogger.Fatal("Yookassa credentials missing", errors.New("check YOOKASSA_SHOP_ID and YOOKASSA_SECRET_KEY"))
+	returnURL := os.Getenv("YOOKASSA_RETURN_URL")
+	if shopID == "" || secretKey == "" || returnURL == "" {
+		appLogger.Fatal("Yookassa config missing", errors.New("check YOOKASSA_SHOP_ID, YOOKASSA_SECRET_KEY, YOOKASSA_RETURN_URL"))
 	}
-	yookassaClient := yookassa.NewYookassaClient(shopID, secretKey)
+	yookassaClient := yookassa.NewClient(shopID, secretKey)
 
 	paymentRepo := paymentPG.NewPaymentRepo(pool)
-	paymentUC := paymentUseCase.NewPaymentUseCase(paymentRepo, orderClient, yookassaClient)
+	cacheRepo := paymentRedis.NewPaymentCacheRepo(redisPool)
+
+	paymentUC := paymentUseCase.NewPaymentUseCase(
+		paymentRepo,
+		cacheRepo,
+		orderClient,
+		yookassaClient,
+		returnURL,
+	)
 	paymentHandler := paymentDelivery.NewPaymentHandler(paymentUC)
 
 	port := getEnv("GRPC_PORT", "50056")
