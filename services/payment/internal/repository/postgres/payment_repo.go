@@ -50,14 +50,16 @@ func NewPaymentRepo(pool postgres.PgxPool) repository.PaymentRepository {
 	}
 }
 
-func (r *paymentRepo) Create(ctx context.Context, method domain.PaymentMethod) (int, error) {
+func (r *paymentRepo) Create(ctx context.Context, method domain.PaymentMethod, idempotencyKey string) (int64, error) {
 	query := `
 		INSERT INTO "payment_method" (user_id, external_id, card_type, last4, issuer_name, is_default)
 		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (idempotency_key) DO UPDATE 
+		SET idempotency_key = EXCLUDED.idempotency_key
 		RETURNING id;
 	`
 
-	var lastInsertedID int
+	var lastInsertedID int64
 	err := r.pool.QueryRow(ctx, query,
 		method.UserID,
 		method.ExternalID,
@@ -78,7 +80,7 @@ func (r *paymentRepo) Create(ctx context.Context, method domain.PaymentMethod) (
 	return lastInsertedID, nil
 }
 
-func (r *paymentRepo) Delete(ctx context.Context, cardID string, userID int) error {
+func (r *paymentRepo) Delete(ctx context.Context, cardID string, userID int64) error {
 	query := `
 		DELETE FROM "payment_method"
 		WHERE external_id = $1 AND user_id = $2

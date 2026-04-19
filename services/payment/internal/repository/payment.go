@@ -8,7 +8,7 @@ import (
 )
 
 type PaymentRepository interface {
-	Create(ctx context.Context, method domain.PaymentMethod) (int64, error)
+	Create(ctx context.Context, method domain.PaymentMethod, idempotencyKey string) (int64, error)
 	Delete(ctx context.Context, cardID string, userID int64) error
 	GetByUserID(ctx context.Context, userID int64) ([]domain.PaymentMethod, error)
 	SetDefault(ctx context.Context, cardID string, userID int64) error
