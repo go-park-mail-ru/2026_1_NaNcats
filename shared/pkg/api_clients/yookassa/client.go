@@ -29,7 +29,7 @@ func NewClient(shopID, secretKey string) *Client {
 	}
 }
 
-func (c *Client) CreatePayment(ctx context.Context, req CreatePaymentRequest) (*PaymentResponse, error) {
+func (c *Client) CreatePayment(ctx context.Context, req CreatePaymentRequest, idempotencyKey string) (*PaymentResponse, error) {
 	data, err := easyjson.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal yookassa request: %w", err)
@@ -42,7 +42,7 @@ func (c *Client) CreatePayment(ctx context.Context, req CreatePaymentRequest) (*
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Idempotence-Key", uuid.NewString())
+	httpReq.Header.Set("Idempotence-Key", idempotencyKey)
 	httpReq.SetBasicAuth(c.shopID, c.secretKey)
 
 	resp, err := c.client.Do(httpReq)
