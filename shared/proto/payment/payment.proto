@@ -25,6 +25,28 @@ service PaymentService {
 }
 
 
+message PaymentMethod {
+  int64 id = 1;
+  int64 user_id = 2;
+  string external_id = 3;
+  string first6 = 4;
+  string last4 = 5;
+  string expiry_month = 6;
+  string expiry_year = 7;
+  string card_type = 8;
+  string issuer_name = 9;
+  bool is_default = 10;
+}
+
+message CardInfo {
+  string first6 = 1;
+  string last4 = 2;
+  string expiry_month = 3;
+  string expiry_year = 4;
+  string card_type = 5;
+  string issuer_name = 6;
+}
+
 message CreatePaymentRequest {
   int64 amount = 1;
   string payment_method_id = 2;
@@ -43,16 +65,6 @@ message InitiateCardBindingRequest {
 
 message InitiateCardBindingResponse {
   string confirmation_url = 1;
-}
-
-message PaymentMethod {
-  int64 id = 1;
-  int64 user_id = 2;
-  string external_id = 3;
-  string card_type = 4;
-  string last4 = 5;
-  string issuer_name = 6;
-  bool is_default = 7;
 }
 
 message GetUserCardsRequest {
@@ -76,12 +88,6 @@ message ProcessPaymentMethodWebhookRequest {
   bool saved = 3;
   string type = 4;
   CardInfo card = 5;
-}
-
-message CardInfo {
-  string last4 = 1;
-  string card_type = 2;
-  string issuer_name = 3;
 }
 
 message ProcessPaymentWebhookRequest {

@@ -14,13 +14,16 @@ import (
 )
 
 type paymentMethodDB struct {
-	ID         int64   `db:"id"`
-	UserID     int64   `db:"user_id"`
-	ExternalID string  `db:"external_id"`
-	CardType   string  `db:"card_type"`
-	Last4      string  `db:"last4"`
-	IssuerName *string `db:"issuer_name"`
-	IsDefault  bool    `db:"is_default"`
+	ID          int64   `db:"id"`
+	UserID      int64   `db:"user_id"`
+	ExternalID  string  `db:"external_id"`
+	First6      string  `db:"first6"`
+	Last4       string  `db:"last4"`
+	ExpiryMonth string  `db:"expiry_month"`
+	ExpiryYear  string  `db:"expiry_year"`
+	CardType    string  `db:"card_type"`
+	IssuerName  *string `db:"issuer_name"`
+	IsDefault   bool    `db:"is_default"`
 }
 
 func (p paymentMethodDB) toDomain() domain.PaymentMethod {
@@ -30,13 +33,16 @@ func (p paymentMethodDB) toDomain() domain.PaymentMethod {
 	}
 
 	return domain.PaymentMethod{
-		ID:         p.ID,
-		UserID:     p.UserID,
-		ExternalID: p.ExternalID,
-		CardType:   p.CardType,
-		Last4:      p.Last4,
-		IssuerName: issuerName,
-		IsDefault:  p.IsDefault,
+		ID:          p.ID,
+		UserID:      p.UserID,
+		ExternalID:  p.ExternalID,
+		First6:      p.First6,
+		Last4:       p.Last4,
+		ExpiryMonth: p.ExpiryMonth,
+		ExpiryYear:  p.ExpiryYear,
+		CardType:    p.CardType,
+		IssuerName:  issuerName,
+		IsDefault:   p.IsDefault,
 	}
 }
 
@@ -52,8 +58,9 @@ func NewPaymentRepo(pool postgres.PgxPool) repository.PaymentRepository {
 
 func (r *paymentRepo) Create(ctx context.Context, method domain.PaymentMethod, idempotencyKey string) (int64, error) {
 	query := `
-		INSERT INTO "payment_method" (user_id, external_id, card_type, last4, issuer_name, is_default)
-		VALUES ($1, $2, $3, $4, $5, $6)
+    	INSERT INTO "payment_method" 
+    	(user_id, external_id, first6, last4, expiry_month, expiry_year, card_type, issuer_name, is_default, idempotency_key)
+    	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		ON CONFLICT (idempotency_key) DO UPDATE 
 		SET idempotency_key = EXCLUDED.idempotency_key
 		RETURNING id;
@@ -63,10 +70,14 @@ func (r *paymentRepo) Create(ctx context.Context, method domain.PaymentMethod, i
 	err := r.pool.QueryRow(ctx, query,
 		method.UserID,
 		method.ExternalID,
-		method.CardType,
+		method.First6,
 		method.Last4,
+		method.ExpiryMonth,
+		method.ExpiryYear,
+		method.CardType,
 		method.IssuerName,
 		method.IsDefault,
+		idempotencyKey,
 	).Scan(&lastInsertedID)
 
 	if err != nil {
@@ -104,7 +115,7 @@ func (r *paymentRepo) Delete(ctx context.Context, cardID string, userID int64) e
 
 func (r *paymentRepo) GetByUserID(ctx context.Context, userID int64) ([]domain.PaymentMethod, error) {
 	query := `
-		SELECT id, user_id, external_id, card_type, last4, issuer_name, is_default
+		SELECT id, user_id, external_id, first6, last4, expiry_month, expiry_year, card_type, issuer_name, is_default
 		FROM "payment_method" WHERE user_id = $1
 		ORDER BY is_default DESC, created_at DESC;
 	`

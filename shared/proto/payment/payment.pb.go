@@ -22,6 +22,206 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type PaymentMethod struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	ExternalId    string                 `protobuf:"bytes,3,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
+	First6        string                 `protobuf:"bytes,4,opt,name=first6,proto3" json:"first6,omitempty"`
+	Last4         string                 `protobuf:"bytes,5,opt,name=last4,proto3" json:"last4,omitempty"`
+	ExpiryMonth   string                 `protobuf:"bytes,6,opt,name=expiry_month,json=expiryMonth,proto3" json:"expiry_month,omitempty"`
+	ExpiryYear    string                 `protobuf:"bytes,7,opt,name=expiry_year,json=expiryYear,proto3" json:"expiry_year,omitempty"`
+	CardType      string                 `protobuf:"bytes,8,opt,name=card_type,json=cardType,proto3" json:"card_type,omitempty"`
+	IssuerName    string                 `protobuf:"bytes,9,opt,name=issuer_name,json=issuerName,proto3" json:"issuer_name,omitempty"`
+	IsDefault     bool                   `protobuf:"varint,10,opt,name=is_default,json=isDefault,proto3" json:"is_default,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PaymentMethod) Reset() {
+	*x = PaymentMethod{}
+	mi := &file_payment_payment_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PaymentMethod) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PaymentMethod) ProtoMessage() {}
+
+func (x *PaymentMethod) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_payment_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PaymentMethod.ProtoReflect.Descriptor instead.
+func (*PaymentMethod) Descriptor() ([]byte, []int) {
+	return file_payment_payment_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *PaymentMethod) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *PaymentMethod) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *PaymentMethod) GetExternalId() string {
+	if x != nil {
+		return x.ExternalId
+	}
+	return ""
+}
+
+func (x *PaymentMethod) GetFirst6() string {
+	if x != nil {
+		return x.First6
+	}
+	return ""
+}
+
+func (x *PaymentMethod) GetLast4() string {
+	if x != nil {
+		return x.Last4
+	}
+	return ""
+}
+
+func (x *PaymentMethod) GetExpiryMonth() string {
+	if x != nil {
+		return x.ExpiryMonth
+	}
+	return ""
+}
+
+func (x *PaymentMethod) GetExpiryYear() string {
+	if x != nil {
+		return x.ExpiryYear
+	}
+	return ""
+}
+
+func (x *PaymentMethod) GetCardType() string {
+	if x != nil {
+		return x.CardType
+	}
+	return ""
+}
+
+func (x *PaymentMethod) GetIssuerName() string {
+	if x != nil {
+		return x.IssuerName
+	}
+	return ""
+}
+
+func (x *PaymentMethod) GetIsDefault() bool {
+	if x != nil {
+		return x.IsDefault
+	}
+	return false
+}
+
+type CardInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	First6        string                 `protobuf:"bytes,1,opt,name=first6,proto3" json:"first6,omitempty"`
+	Last4         string                 `protobuf:"bytes,2,opt,name=last4,proto3" json:"last4,omitempty"`
+	ExpiryMonth   string                 `protobuf:"bytes,3,opt,name=expiry_month,json=expiryMonth,proto3" json:"expiry_month,omitempty"`
+	ExpiryYear    string                 `protobuf:"bytes,4,opt,name=expiry_year,json=expiryYear,proto3" json:"expiry_year,omitempty"`
+	CardType      string                 `protobuf:"bytes,5,opt,name=card_type,json=cardType,proto3" json:"card_type,omitempty"`
+	IssuerName    string                 `protobuf:"bytes,6,opt,name=issuer_name,json=issuerName,proto3" json:"issuer_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CardInfo) Reset() {
+	*x = CardInfo{}
+	mi := &file_payment_payment_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CardInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CardInfo) ProtoMessage() {}
+
+func (x *CardInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_payment_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CardInfo.ProtoReflect.Descriptor instead.
+func (*CardInfo) Descriptor() ([]byte, []int) {
+	return file_payment_payment_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *CardInfo) GetFirst6() string {
+	if x != nil {
+		return x.First6
+	}
+	return ""
+}
+
+func (x *CardInfo) GetLast4() string {
+	if x != nil {
+		return x.Last4
+	}
+	return ""
+}
+
+func (x *CardInfo) GetExpiryMonth() string {
+	if x != nil {
+		return x.ExpiryMonth
+	}
+	return ""
+}
+
+func (x *CardInfo) GetExpiryYear() string {
+	if x != nil {
+		return x.ExpiryYear
+	}
+	return ""
+}
+
+func (x *CardInfo) GetCardType() string {
+	if x != nil {
+		return x.CardType
+	}
+	return ""
+}
+
+func (x *CardInfo) GetIssuerName() string {
+	if x != nil {
+		return x.IssuerName
+	}
+	return ""
+}
+
 type CreatePaymentRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Amount          int64                  `protobuf:"varint,1,opt,name=amount,proto3" json:"amount,omitempty"`
@@ -33,7 +233,7 @@ type CreatePaymentRequest struct {
 
 func (x *CreatePaymentRequest) Reset() {
 	*x = CreatePaymentRequest{}
-	mi := &file_payment_payment_proto_msgTypes[0]
+	mi := &file_payment_payment_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45,7 +245,7 @@ func (x *CreatePaymentRequest) String() string {
 func (*CreatePaymentRequest) ProtoMessage() {}
 
 func (x *CreatePaymentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_payment_payment_proto_msgTypes[0]
+	mi := &file_payment_payment_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +258,7 @@ func (x *CreatePaymentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreatePaymentRequest.ProtoReflect.Descriptor instead.
 func (*CreatePaymentRequest) Descriptor() ([]byte, []int) {
-	return file_payment_payment_proto_rawDescGZIP(), []int{0}
+	return file_payment_payment_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *CreatePaymentRequest) GetAmount() int64 {
@@ -92,7 +292,7 @@ type CreatePaymentResponse struct {
 
 func (x *CreatePaymentResponse) Reset() {
 	*x = CreatePaymentResponse{}
-	mi := &file_payment_payment_proto_msgTypes[1]
+	mi := &file_payment_payment_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -104,7 +304,7 @@ func (x *CreatePaymentResponse) String() string {
 func (*CreatePaymentResponse) ProtoMessage() {}
 
 func (x *CreatePaymentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_payment_payment_proto_msgTypes[1]
+	mi := &file_payment_payment_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -117,7 +317,7 @@ func (x *CreatePaymentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreatePaymentResponse.ProtoReflect.Descriptor instead.
 func (*CreatePaymentResponse) Descriptor() ([]byte, []int) {
-	return file_payment_payment_proto_rawDescGZIP(), []int{1}
+	return file_payment_payment_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CreatePaymentResponse) GetPaymentId() string {
@@ -144,7 +344,7 @@ type InitiateCardBindingRequest struct {
 
 func (x *InitiateCardBindingRequest) Reset() {
 	*x = InitiateCardBindingRequest{}
-	mi := &file_payment_payment_proto_msgTypes[2]
+	mi := &file_payment_payment_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -156,7 +356,7 @@ func (x *InitiateCardBindingRequest) String() string {
 func (*InitiateCardBindingRequest) ProtoMessage() {}
 
 func (x *InitiateCardBindingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_payment_payment_proto_msgTypes[2]
+	mi := &file_payment_payment_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -169,7 +369,7 @@ func (x *InitiateCardBindingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InitiateCardBindingRequest.ProtoReflect.Descriptor instead.
 func (*InitiateCardBindingRequest) Descriptor() ([]byte, []int) {
-	return file_payment_payment_proto_rawDescGZIP(), []int{2}
+	return file_payment_payment_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *InitiateCardBindingRequest) GetUserId() int64 {
@@ -195,7 +395,7 @@ type InitiateCardBindingResponse struct {
 
 func (x *InitiateCardBindingResponse) Reset() {
 	*x = InitiateCardBindingResponse{}
-	mi := &file_payment_payment_proto_msgTypes[3]
+	mi := &file_payment_payment_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -207,7 +407,7 @@ func (x *InitiateCardBindingResponse) String() string {
 func (*InitiateCardBindingResponse) ProtoMessage() {}
 
 func (x *InitiateCardBindingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_payment_payment_proto_msgTypes[3]
+	mi := &file_payment_payment_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -220,7 +420,7 @@ func (x *InitiateCardBindingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InitiateCardBindingResponse.ProtoReflect.Descriptor instead.
 func (*InitiateCardBindingResponse) Descriptor() ([]byte, []int) {
-	return file_payment_payment_proto_rawDescGZIP(), []int{3}
+	return file_payment_payment_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *InitiateCardBindingResponse) GetConfirmationUrl() string {
@@ -228,98 +428,6 @@ func (x *InitiateCardBindingResponse) GetConfirmationUrl() string {
 		return x.ConfirmationUrl
 	}
 	return ""
-}
-
-type PaymentMethod struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	UserId        int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	ExternalId    string                 `protobuf:"bytes,3,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
-	CardType      string                 `protobuf:"bytes,4,opt,name=card_type,json=cardType,proto3" json:"card_type,omitempty"`
-	Last4         string                 `protobuf:"bytes,5,opt,name=last4,proto3" json:"last4,omitempty"`
-	IssuerName    string                 `protobuf:"bytes,6,opt,name=issuer_name,json=issuerName,proto3" json:"issuer_name,omitempty"`
-	IsDefault     bool                   `protobuf:"varint,7,opt,name=is_default,json=isDefault,proto3" json:"is_default,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PaymentMethod) Reset() {
-	*x = PaymentMethod{}
-	mi := &file_payment_payment_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PaymentMethod) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PaymentMethod) ProtoMessage() {}
-
-func (x *PaymentMethod) ProtoReflect() protoreflect.Message {
-	mi := &file_payment_payment_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PaymentMethod.ProtoReflect.Descriptor instead.
-func (*PaymentMethod) Descriptor() ([]byte, []int) {
-	return file_payment_payment_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *PaymentMethod) GetId() int64 {
-	if x != nil {
-		return x.Id
-	}
-	return 0
-}
-
-func (x *PaymentMethod) GetUserId() int64 {
-	if x != nil {
-		return x.UserId
-	}
-	return 0
-}
-
-func (x *PaymentMethod) GetExternalId() string {
-	if x != nil {
-		return x.ExternalId
-	}
-	return ""
-}
-
-func (x *PaymentMethod) GetCardType() string {
-	if x != nil {
-		return x.CardType
-	}
-	return ""
-}
-
-func (x *PaymentMethod) GetLast4() string {
-	if x != nil {
-		return x.Last4
-	}
-	return ""
-}
-
-func (x *PaymentMethod) GetIssuerName() string {
-	if x != nil {
-		return x.IssuerName
-	}
-	return ""
-}
-
-func (x *PaymentMethod) GetIsDefault() bool {
-	if x != nil {
-		return x.IsDefault
-	}
-	return false
 }
 
 type GetUserCardsRequest struct {
@@ -331,7 +439,7 @@ type GetUserCardsRequest struct {
 
 func (x *GetUserCardsRequest) Reset() {
 	*x = GetUserCardsRequest{}
-	mi := &file_payment_payment_proto_msgTypes[5]
+	mi := &file_payment_payment_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -343,7 +451,7 @@ func (x *GetUserCardsRequest) String() string {
 func (*GetUserCardsRequest) ProtoMessage() {}
 
 func (x *GetUserCardsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_payment_payment_proto_msgTypes[5]
+	mi := &file_payment_payment_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -356,7 +464,7 @@ func (x *GetUserCardsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserCardsRequest.ProtoReflect.Descriptor instead.
 func (*GetUserCardsRequest) Descriptor() ([]byte, []int) {
-	return file_payment_payment_proto_rawDescGZIP(), []int{5}
+	return file_payment_payment_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetUserCardsRequest) GetUserId() int64 {
@@ -376,7 +484,7 @@ type GetUserCardsResponse struct {
 
 func (x *GetUserCardsResponse) Reset() {
 	*x = GetUserCardsResponse{}
-	mi := &file_payment_payment_proto_msgTypes[6]
+	mi := &file_payment_payment_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -388,7 +496,7 @@ func (x *GetUserCardsResponse) String() string {
 func (*GetUserCardsResponse) ProtoMessage() {}
 
 func (x *GetUserCardsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_payment_payment_proto_msgTypes[6]
+	mi := &file_payment_payment_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -401,7 +509,7 @@ func (x *GetUserCardsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserCardsResponse.ProtoReflect.Descriptor instead.
 func (*GetUserCardsResponse) Descriptor() ([]byte, []int) {
-	return file_payment_payment_proto_rawDescGZIP(), []int{6}
+	return file_payment_payment_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GetUserCardsResponse) GetUserId() int64 {
@@ -429,7 +537,7 @@ type ChangeCardRequest struct {
 
 func (x *ChangeCardRequest) Reset() {
 	*x = ChangeCardRequest{}
-	mi := &file_payment_payment_proto_msgTypes[7]
+	mi := &file_payment_payment_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -441,7 +549,7 @@ func (x *ChangeCardRequest) String() string {
 func (*ChangeCardRequest) ProtoMessage() {}
 
 func (x *ChangeCardRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_payment_payment_proto_msgTypes[7]
+	mi := &file_payment_payment_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -454,7 +562,7 @@ func (x *ChangeCardRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangeCardRequest.ProtoReflect.Descriptor instead.
 func (*ChangeCardRequest) Descriptor() ([]byte, []int) {
-	return file_payment_payment_proto_rawDescGZIP(), []int{7}
+	return file_payment_payment_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ChangeCardRequest) GetUserId() int64 {
@@ -491,7 +599,7 @@ type ProcessPaymentMethodWebhookRequest struct {
 
 func (x *ProcessPaymentMethodWebhookRequest) Reset() {
 	*x = ProcessPaymentMethodWebhookRequest{}
-	mi := &file_payment_payment_proto_msgTypes[8]
+	mi := &file_payment_payment_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -503,7 +611,7 @@ func (x *ProcessPaymentMethodWebhookRequest) String() string {
 func (*ProcessPaymentMethodWebhookRequest) ProtoMessage() {}
 
 func (x *ProcessPaymentMethodWebhookRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_payment_payment_proto_msgTypes[8]
+	mi := &file_payment_payment_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -516,7 +624,7 @@ func (x *ProcessPaymentMethodWebhookRequest) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use ProcessPaymentMethodWebhookRequest.ProtoReflect.Descriptor instead.
 func (*ProcessPaymentMethodWebhookRequest) Descriptor() ([]byte, []int) {
-	return file_payment_payment_proto_rawDescGZIP(), []int{8}
+	return file_payment_payment_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ProcessPaymentMethodWebhookRequest) GetId() string {
@@ -552,66 +660,6 @@ func (x *ProcessPaymentMethodWebhookRequest) GetCard() *CardInfo {
 		return x.Card
 	}
 	return nil
-}
-
-type CardInfo struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Last4         string                 `protobuf:"bytes,1,opt,name=last4,proto3" json:"last4,omitempty"`
-	CardType      string                 `protobuf:"bytes,2,opt,name=card_type,json=cardType,proto3" json:"card_type,omitempty"`
-	IssuerName    string                 `protobuf:"bytes,3,opt,name=issuer_name,json=issuerName,proto3" json:"issuer_name,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *CardInfo) Reset() {
-	*x = CardInfo{}
-	mi := &file_payment_payment_proto_msgTypes[9]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CardInfo) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CardInfo) ProtoMessage() {}
-
-func (x *CardInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_payment_payment_proto_msgTypes[9]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CardInfo.ProtoReflect.Descriptor instead.
-func (*CardInfo) Descriptor() ([]byte, []int) {
-	return file_payment_payment_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *CardInfo) GetLast4() string {
-	if x != nil {
-		return x.Last4
-	}
-	return ""
-}
-
-func (x *CardInfo) GetCardType() string {
-	if x != nil {
-		return x.CardType
-	}
-	return ""
-}
-
-func (x *CardInfo) GetIssuerName() string {
-	if x != nil {
-		return x.IssuerName
-	}
-	return ""
 }
 
 type ProcessPaymentWebhookRequest struct {
@@ -670,7 +718,32 @@ var File_payment_payment_proto protoreflect.FileDescriptor
 
 const file_payment_payment_proto_rawDesc = "" +
 	"\n" +
-	"\x15payment/payment.proto\x12\apayment\x1a\x1bgoogle/protobuf/empty.proto\"\x83\x01\n" +
+	"\x15payment/payment.proto\x12\apayment\x1a\x1bgoogle/protobuf/empty.proto\"\xa8\x02\n" +
+	"\rPaymentMethod\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x1f\n" +
+	"\vexternal_id\x18\x03 \x01(\tR\n" +
+	"externalId\x12\x16\n" +
+	"\x06first6\x18\x04 \x01(\tR\x06first6\x12\x14\n" +
+	"\x05last4\x18\x05 \x01(\tR\x05last4\x12!\n" +
+	"\fexpiry_month\x18\x06 \x01(\tR\vexpiryMonth\x12\x1f\n" +
+	"\vexpiry_year\x18\a \x01(\tR\n" +
+	"expiryYear\x12\x1b\n" +
+	"\tcard_type\x18\b \x01(\tR\bcardType\x12\x1f\n" +
+	"\vissuer_name\x18\t \x01(\tR\n" +
+	"issuerName\x12\x1d\n" +
+	"\n" +
+	"is_default\x18\n" +
+	" \x01(\bR\tisDefault\"\xba\x01\n" +
+	"\bCardInfo\x12\x16\n" +
+	"\x06first6\x18\x01 \x01(\tR\x06first6\x12\x14\n" +
+	"\x05last4\x18\x02 \x01(\tR\x05last4\x12!\n" +
+	"\fexpiry_month\x18\x03 \x01(\tR\vexpiryMonth\x12\x1f\n" +
+	"\vexpiry_year\x18\x04 \x01(\tR\n" +
+	"expiryYear\x12\x1b\n" +
+	"\tcard_type\x18\x05 \x01(\tR\bcardType\x12\x1f\n" +
+	"\vissuer_name\x18\x06 \x01(\tR\n" +
+	"issuerName\"\x83\x01\n" +
 	"\x14CreatePaymentRequest\x12\x16\n" +
 	"\x06amount\x18\x01 \x01(\x03R\x06amount\x12*\n" +
 	"\x11payment_method_id\x18\x02 \x01(\tR\x0fpaymentMethodId\x12'\n" +
@@ -683,18 +756,7 @@ const file_payment_payment_proto_rawDesc = "" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12'\n" +
 	"\x0fidempotency_key\x18\x02 \x01(\tR\x0eidempotencyKey\"H\n" +
 	"\x1bInitiateCardBindingResponse\x12)\n" +
-	"\x10confirmation_url\x18\x01 \x01(\tR\x0fconfirmationUrl\"\xcc\x01\n" +
-	"\rPaymentMethod\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x1f\n" +
-	"\vexternal_id\x18\x03 \x01(\tR\n" +
-	"externalId\x12\x1b\n" +
-	"\tcard_type\x18\x04 \x01(\tR\bcardType\x12\x14\n" +
-	"\x05last4\x18\x05 \x01(\tR\x05last4\x12\x1f\n" +
-	"\vissuer_name\x18\x06 \x01(\tR\n" +
-	"issuerName\x12\x1d\n" +
-	"\n" +
-	"is_default\x18\a \x01(\bR\tisDefault\".\n" +
+	"\x10confirmation_url\x18\x01 \x01(\tR\x0fconfirmationUrl\".\n" +
 	"\x13GetUserCardsRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\"]\n" +
 	"\x14GetUserCardsResponse\x12\x17\n" +
@@ -709,12 +771,7 @@ const file_payment_payment_proto_rawDesc = "" +
 	"\x06status\x18\x02 \x01(\tR\x06status\x12\x14\n" +
 	"\x05saved\x18\x03 \x01(\bR\x05saved\x12\x12\n" +
 	"\x04type\x18\x04 \x01(\tR\x04type\x12%\n" +
-	"\x04card\x18\x05 \x01(\v2\x11.payment.CardInfoR\x04card\"^\n" +
-	"\bCardInfo\x12\x14\n" +
-	"\x05last4\x18\x01 \x01(\tR\x05last4\x12\x1b\n" +
-	"\tcard_type\x18\x02 \x01(\tR\bcardType\x12\x1f\n" +
-	"\vissuer_name\x18\x03 \x01(\tR\n" +
-	"issuerName\"F\n" +
+	"\x04card\x18\x05 \x01(\v2\x11.payment.CardInfoR\x04card\"F\n" +
 	"\x1cProcessPaymentWebhookRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\tR\x06status2\xd3\x04\n" +
@@ -742,32 +799,32 @@ func file_payment_payment_proto_rawDescGZIP() []byte {
 
 var file_payment_payment_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_payment_payment_proto_goTypes = []any{
-	(*CreatePaymentRequest)(nil),               // 0: payment.CreatePaymentRequest
-	(*CreatePaymentResponse)(nil),              // 1: payment.CreatePaymentResponse
-	(*InitiateCardBindingRequest)(nil),         // 2: payment.InitiateCardBindingRequest
-	(*InitiateCardBindingResponse)(nil),        // 3: payment.InitiateCardBindingResponse
-	(*PaymentMethod)(nil),                      // 4: payment.PaymentMethod
-	(*GetUserCardsRequest)(nil),                // 5: payment.GetUserCardsRequest
-	(*GetUserCardsResponse)(nil),               // 6: payment.GetUserCardsResponse
-	(*ChangeCardRequest)(nil),                  // 7: payment.ChangeCardRequest
-	(*ProcessPaymentMethodWebhookRequest)(nil), // 8: payment.ProcessPaymentMethodWebhookRequest
-	(*CardInfo)(nil),                           // 9: payment.CardInfo
+	(*PaymentMethod)(nil),                      // 0: payment.PaymentMethod
+	(*CardInfo)(nil),                           // 1: payment.CardInfo
+	(*CreatePaymentRequest)(nil),               // 2: payment.CreatePaymentRequest
+	(*CreatePaymentResponse)(nil),              // 3: payment.CreatePaymentResponse
+	(*InitiateCardBindingRequest)(nil),         // 4: payment.InitiateCardBindingRequest
+	(*InitiateCardBindingResponse)(nil),        // 5: payment.InitiateCardBindingResponse
+	(*GetUserCardsRequest)(nil),                // 6: payment.GetUserCardsRequest
+	(*GetUserCardsResponse)(nil),               // 7: payment.GetUserCardsResponse
+	(*ChangeCardRequest)(nil),                  // 8: payment.ChangeCardRequest
+	(*ProcessPaymentMethodWebhookRequest)(nil), // 9: payment.ProcessPaymentMethodWebhookRequest
 	(*ProcessPaymentWebhookRequest)(nil),       // 10: payment.ProcessPaymentWebhookRequest
 	(*emptypb.Empty)(nil),                      // 11: google.protobuf.Empty
 }
 var file_payment_payment_proto_depIdxs = []int32{
-	4,  // 0: payment.GetUserCardsResponse.cards:type_name -> payment.PaymentMethod
-	9,  // 1: payment.ProcessPaymentMethodWebhookRequest.card:type_name -> payment.CardInfo
-	0,  // 2: payment.PaymentService.CreatePayment:input_type -> payment.CreatePaymentRequest
-	2,  // 3: payment.PaymentService.InitiateCardBinding:input_type -> payment.InitiateCardBindingRequest
-	5,  // 4: payment.PaymentService.GetUserCards:input_type -> payment.GetUserCardsRequest
-	7,  // 5: payment.PaymentService.SetDefaultCard:input_type -> payment.ChangeCardRequest
-	7,  // 6: payment.PaymentService.DeleteCard:input_type -> payment.ChangeCardRequest
-	8,  // 7: payment.PaymentService.ProcessPaymentMethodWebhook:input_type -> payment.ProcessPaymentMethodWebhookRequest
+	0,  // 0: payment.GetUserCardsResponse.cards:type_name -> payment.PaymentMethod
+	1,  // 1: payment.ProcessPaymentMethodWebhookRequest.card:type_name -> payment.CardInfo
+	2,  // 2: payment.PaymentService.CreatePayment:input_type -> payment.CreatePaymentRequest
+	4,  // 3: payment.PaymentService.InitiateCardBinding:input_type -> payment.InitiateCardBindingRequest
+	6,  // 4: payment.PaymentService.GetUserCards:input_type -> payment.GetUserCardsRequest
+	8,  // 5: payment.PaymentService.SetDefaultCard:input_type -> payment.ChangeCardRequest
+	8,  // 6: payment.PaymentService.DeleteCard:input_type -> payment.ChangeCardRequest
+	9,  // 7: payment.PaymentService.ProcessPaymentMethodWebhook:input_type -> payment.ProcessPaymentMethodWebhookRequest
 	10, // 8: payment.PaymentService.ProcessPaymentWebhook:input_type -> payment.ProcessPaymentWebhookRequest
-	1,  // 9: payment.PaymentService.CreatePayment:output_type -> payment.CreatePaymentResponse
-	3,  // 10: payment.PaymentService.InitiateCardBinding:output_type -> payment.InitiateCardBindingResponse
-	6,  // 11: payment.PaymentService.GetUserCards:output_type -> payment.GetUserCardsResponse
+	3,  // 9: payment.PaymentService.CreatePayment:output_type -> payment.CreatePaymentResponse
+	5,  // 10: payment.PaymentService.InitiateCardBinding:output_type -> payment.InitiateCardBindingResponse
+	7,  // 11: payment.PaymentService.GetUserCards:output_type -> payment.GetUserCardsResponse
 	11, // 12: payment.PaymentService.SetDefaultCard:output_type -> google.protobuf.Empty
 	11, // 13: payment.PaymentService.DeleteCard:output_type -> google.protobuf.Empty
 	11, // 14: payment.PaymentService.ProcessPaymentMethodWebhook:output_type -> google.protobuf.Empty

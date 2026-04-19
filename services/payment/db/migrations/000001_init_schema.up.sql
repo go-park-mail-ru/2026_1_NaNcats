@@ -4,8 +4,15 @@ CREATE TABLE "payment_method" (
 
 	external_id TEXT NOT NULL UNIQUE,
 
-	last4 TEXT NOT NULL
-		CHECK (char_length(last4) = 4),
+	first6 TEXT NOT NULL 
+        CHECK (char_length(first6) = 6),
+    last4 TEXT NOT NULL
+        CHECK (char_length(last4) = 4),
+    expiry_month TEXT NOT NULL
+        CHECK (char_length(expiry_month) = 2),
+    expiry_year TEXT NOT NULL
+        CHECK (char_length(expiry_year) = 4),
+	
 	card_type TEXT NOT NULL,
 	issuer_name TEXT,
 

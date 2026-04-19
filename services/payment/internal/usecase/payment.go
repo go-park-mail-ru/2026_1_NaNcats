@@ -1,4 +1,4 @@
-package payment
+package usecase
 
 import (
 	"context"
@@ -142,21 +142,19 @@ func (p *paymentUseCase) ProcessPaymentMethodWebhook(ctx context.Context, pm *yo
 		return errutil.Wrap("failed to find user_id for payment_method in cache", err, codes.NotFound)
 	}
 
-	issuer := ""
-	if pm.Card.IssuerName != "" {
-		issuer = pm.Card.IssuerName
-	}
-
 	domainPaymentMethod := domain.PaymentMethod{
-		UserID:     userID,
-		ExternalID: pm.ID,
-		CardType:   pm.Card.CardType,
-		Last4:      pm.Card.Last4,
-		IssuerName: issuer,
-		IsDefault:  false,
+		UserID:      userID,
+		ExternalID:  pm.ID,
+		First6:      pm.Card.First6,
+		Last4:       pm.Card.Last4,
+		ExpiryMonth: pm.Card.ExpiryMonth,
+		ExpiryYear:  pm.Card.ExpiryYear,
+		CardType:    pm.Card.CardType,
+		IssuerName:  pm.Card.IssuerName,
+		IsDefault:   false,
 	}
 
-	_, err = p.paymentRepo.Create(ctx, domainPaymentMethod)
+	_, err = p.paymentRepo.Create(ctx, domainPaymentMethod, pm.ID)
 	if err != nil {
 		return errutil.Wrap("failed to save payment method to db", err, codes.Internal)
 	}
