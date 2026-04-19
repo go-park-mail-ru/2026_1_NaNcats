@@ -24,9 +24,9 @@ const (
 
 type CreatePaymentRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	UserId          int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	TotalCost       int64                  `protobuf:"varint,2,opt,name=total_cost,json=totalCost,proto3" json:"total_cost,omitempty"`
-	PaymentMethodId string                 `protobuf:"bytes,3,opt,name=payment_method_id,json=paymentMethodId,proto3" json:"payment_method_id,omitempty"`
+	Amount          int64                  `protobuf:"varint,1,opt,name=amount,proto3" json:"amount,omitempty"`
+	PaymentMethodId string                 `protobuf:"bytes,2,opt,name=payment_method_id,json=paymentMethodId,proto3" json:"payment_method_id,omitempty"`
+	IdempotencyKey  string                 `protobuf:"bytes,3,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -61,16 +61,9 @@ func (*CreatePaymentRequest) Descriptor() ([]byte, []int) {
 	return file_payment_payment_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *CreatePaymentRequest) GetUserId() int64 {
+func (x *CreatePaymentRequest) GetAmount() int64 {
 	if x != nil {
-		return x.UserId
-	}
-	return 0
-}
-
-func (x *CreatePaymentRequest) GetTotalCost() int64 {
-	if x != nil {
-		return x.TotalCost
+		return x.Amount
 	}
 	return 0
 }
@@ -82,9 +75,17 @@ func (x *CreatePaymentRequest) GetPaymentMethodId() string {
 	return ""
 }
 
+func (x *CreatePaymentRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
 type CreatePaymentResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	ConfirmationUrl string                 `protobuf:"bytes,1,opt,name=confirmation_url,json=confirmationUrl,proto3" json:"confirmation_url,omitempty"`
+	PaymentId       string                 `protobuf:"bytes,1,opt,name=payment_id,json=paymentId,proto3" json:"payment_id,omitempty"`
+	ConfirmationUrl string                 `protobuf:"bytes,2,opt,name=confirmation_url,json=confirmationUrl,proto3" json:"confirmation_url,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -117,6 +118,13 @@ func (x *CreatePaymentResponse) ProtoReflect() protoreflect.Message {
 // Deprecated: Use CreatePaymentResponse.ProtoReflect.Descriptor instead.
 func (*CreatePaymentResponse) Descriptor() ([]byte, []int) {
 	return file_payment_payment_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *CreatePaymentResponse) GetPaymentId() string {
+	if x != nil {
+		return x.PaymentId
+	}
+	return ""
 }
 
 func (x *CreatePaymentResponse) GetConfirmationUrl() string {
@@ -413,7 +421,7 @@ func (x *GetUserCardsResponse) GetCards() []*PaymentMethod {
 type ChangeCardRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	UserId         int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	CardId         int64                  `protobuf:"varint,2,opt,name=card_id,json=cardId,proto3" json:"card_id,omitempty"`
+	CardId         string                 `protobuf:"bytes,2,opt,name=card_id,json=cardId,proto3" json:"card_id,omitempty"`
 	IdempotencyKey string                 `protobuf:"bytes,3,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -456,11 +464,11 @@ func (x *ChangeCardRequest) GetUserId() int64 {
 	return 0
 }
 
-func (x *ChangeCardRequest) GetCardId() int64 {
+func (x *ChangeCardRequest) GetCardId() string {
 	if x != nil {
 		return x.CardId
 	}
-	return 0
+	return ""
 }
 
 func (x *ChangeCardRequest) GetIdempotencyKey() string {
@@ -471,15 +479,14 @@ func (x *ChangeCardRequest) GetIdempotencyKey() string {
 }
 
 type ProcessPaymentMethodWebhookRequest struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Status         string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
-	Saved          bool                   `protobuf:"varint,3,opt,name=saved,proto3" json:"saved,omitempty"`
-	Type           string                 `protobuf:"bytes,4,opt,name=type,proto3" json:"type,omitempty"`
-	Card           *CardInfo              `protobuf:"bytes,5,opt,name=card,proto3" json:"card,omitempty"`
-	IdempotencyKey string                 `protobuf:"bytes,6,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	Saved         bool                   `protobuf:"varint,3,opt,name=saved,proto3" json:"saved,omitempty"`
+	Type          string                 `protobuf:"bytes,4,opt,name=type,proto3" json:"type,omitempty"`
+	Card          *CardInfo              `protobuf:"bytes,5,opt,name=card,proto3" json:"card,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ProcessPaymentMethodWebhookRequest) Reset() {
@@ -547,13 +554,6 @@ func (x *ProcessPaymentMethodWebhookRequest) GetCard() *CardInfo {
 	return nil
 }
 
-func (x *ProcessPaymentMethodWebhookRequest) GetIdempotencyKey() string {
-	if x != nil {
-		return x.IdempotencyKey
-	}
-	return ""
-}
-
 type CardInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Last4         string                 `protobuf:"bytes,1,opt,name=last4,proto3" json:"last4,omitempty"`
@@ -615,12 +615,11 @@ func (x *CardInfo) GetIssuerName() string {
 }
 
 type ProcessPaymentWebhookRequest struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Status         string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
-	IdempotencyKey string                 `protobuf:"bytes,3,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ProcessPaymentWebhookRequest) Reset() {
@@ -667,25 +666,19 @@ func (x *ProcessPaymentWebhookRequest) GetStatus() string {
 	return ""
 }
 
-func (x *ProcessPaymentWebhookRequest) GetIdempotencyKey() string {
-	if x != nil {
-		return x.IdempotencyKey
-	}
-	return ""
-}
-
 var File_payment_payment_proto protoreflect.FileDescriptor
 
 const file_payment_payment_proto_rawDesc = "" +
 	"\n" +
-	"\x15payment/payment.proto\x12\apayment\x1a\x1bgoogle/protobuf/empty.proto\"z\n" +
-	"\x14CreatePaymentRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x1d\n" +
+	"\x15payment/payment.proto\x12\apayment\x1a\x1bgoogle/protobuf/empty.proto\"\x83\x01\n" +
+	"\x14CreatePaymentRequest\x12\x16\n" +
+	"\x06amount\x18\x01 \x01(\x03R\x06amount\x12*\n" +
+	"\x11payment_method_id\x18\x02 \x01(\tR\x0fpaymentMethodId\x12'\n" +
+	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey\"a\n" +
+	"\x15CreatePaymentResponse\x12\x1d\n" +
 	"\n" +
-	"total_cost\x18\x02 \x01(\x03R\ttotalCost\x12*\n" +
-	"\x11payment_method_id\x18\x03 \x01(\tR\x0fpaymentMethodId\"B\n" +
-	"\x15CreatePaymentResponse\x12)\n" +
-	"\x10confirmation_url\x18\x01 \x01(\tR\x0fconfirmationUrl\"^\n" +
+	"payment_id\x18\x01 \x01(\tR\tpaymentId\x12)\n" +
+	"\x10confirmation_url\x18\x02 \x01(\tR\x0fconfirmationUrl\"^\n" +
 	"\x1aInitiateCardBindingRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12'\n" +
 	"\x0fidempotency_key\x18\x02 \x01(\tR\x0eidempotencyKey\"H\n" +
@@ -709,24 +702,22 @@ const file_payment_payment_proto_rawDesc = "" +
 	"\x05cards\x18\x02 \x03(\v2\x16.payment.PaymentMethodR\x05cards\"n\n" +
 	"\x11ChangeCardRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x17\n" +
-	"\acard_id\x18\x02 \x01(\x03R\x06cardId\x12'\n" +
-	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey\"\xc6\x01\n" +
+	"\acard_id\x18\x02 \x01(\tR\x06cardId\x12'\n" +
+	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey\"\x9d\x01\n" +
 	"\"ProcessPaymentMethodWebhookRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\tR\x06status\x12\x14\n" +
 	"\x05saved\x18\x03 \x01(\bR\x05saved\x12\x12\n" +
 	"\x04type\x18\x04 \x01(\tR\x04type\x12%\n" +
-	"\x04card\x18\x05 \x01(\v2\x11.payment.CardInfoR\x04card\x12'\n" +
-	"\x0fidempotency_key\x18\x06 \x01(\tR\x0eidempotencyKey\"^\n" +
+	"\x04card\x18\x05 \x01(\v2\x11.payment.CardInfoR\x04card\"^\n" +
 	"\bCardInfo\x12\x14\n" +
 	"\x05last4\x18\x01 \x01(\tR\x05last4\x12\x1b\n" +
 	"\tcard_type\x18\x02 \x01(\tR\bcardType\x12\x1f\n" +
 	"\vissuer_name\x18\x03 \x01(\tR\n" +
-	"issuerName\"o\n" +
+	"issuerName\"F\n" +
 	"\x1cProcessPaymentWebhookRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
-	"\x06status\x18\x02 \x01(\tR\x06status\x12'\n" +
-	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey2\xd3\x04\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status2\xd3\x04\n" +
 	"\x0ePaymentService\x12N\n" +
 	"\rCreatePayment\x12\x1d.payment.CreatePaymentRequest\x1a\x1e.payment.CreatePaymentResponse\x12`\n" +
 	"\x13InitiateCardBinding\x12#.payment.InitiateCardBindingRequest\x1a$.payment.InitiateCardBindingResponse\x12K\n" +
