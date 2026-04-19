@@ -11,5 +11,9 @@ CREATE TABLE "payment_method" (
 
 	is_default BOOLEAN DEFAULT FALSE NOT NULL,
 
+	idempotency_key TEXT UNIQUE,
+
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+
+	CONSTRAINT payment_method_user_id_external_id_key UNIQUE (user_id, external_id)
 );

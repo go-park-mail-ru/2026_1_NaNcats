@@ -71,8 +71,11 @@ func (r *paymentRepo) Create(ctx context.Context, method domain.PaymentMethod, i
 
 	if err != nil {
 		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation { // проверка на уникальность
-			return 0, domain.ErrPaymentMethodAlreadyExists
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			if pgErr.ConstraintName == "payment_method_user_id_external_id_key" {
+				return 0, domain.ErrPaymentMethodAlreadyExists
+			}
+			return 0, err
 		}
 		return 0, err
 	}
