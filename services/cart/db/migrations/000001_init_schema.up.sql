@@ -4,9 +4,9 @@ CREATE TABLE "cart" (
 	client_account_id BIGINT PRIMARY KEY,
 	restaurant_brand_id BIGINT NOT NULL,
 
-	status cart_status NOT NULL DEFAULT "active",
+	status cart_status NOT NULL DEFAULT 'active',
 	
-	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
 CREATE TABLE "cart_dish" (
@@ -23,5 +23,5 @@ CREATE TABLE "cart_dish" (
 	CONSTRAINT fk_cart_dish_cart
 		FOREIGN KEY (cart_id)
 		REFERENCES "cart"(client_account_id)
-		ON DELETE CASCADE,
+		ON DELETE CASCADE
 );

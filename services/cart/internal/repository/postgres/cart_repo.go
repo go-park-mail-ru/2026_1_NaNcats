@@ -84,17 +84,22 @@ func (r *cartRepo) GetCartByUserID(ctx context.Context, userID int64) (domain.Ca
 	return cart, nil
 }
 
-func (r *cartRepo) UpdateCart(ctx context.Context, userID int64, resID int64, items []domain.CartItem, idempotencyKey string) error {
+func (r *cartRepo) UpdateCart(ctx context.Context, userID int64, resID int64, items []domain.CartItem) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
 	var currentStatus string
-	err := r.pool.QueryRow(ctx, `SELECT status FROM "cart" WHERE client_account_id = $1`, userID).Scan(&currentStatus)
+	err = tx.QueryRow(ctx, `SELECT status FROM "cart" WHERE client_account_id = $1 FOR UPDATE`, userID).Scan(&currentStatus)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return fmt.Errorf("get cart status for update: %w", err)
 		}
-	} else {
-		if currentStatus == "locked" {
-			return fmt.Errorf("cannot update cart: status is 'locked' during payment processing")
-		}
+	}
+	if currentStatus == "locked" {
+		return fmt.Errorf("cannot update cart: status is 'locked' during payment processing")
 	}
 
 	batch := &pgx.Batch{}
@@ -103,8 +108,7 @@ func (r *cartRepo) UpdateCart(ctx context.Context, userID int64, resID int64, it
 		INSERT INTO "cart" (client_account_id, restaurant_brand_id, status, updated_at)
 		VALUES ($1, $2, 'active', NOW())
 		ON CONFLICT (client_account_id) 
-		DO UPDATE SET restaurant_brand_id = $2, updated_at = NOW()
-		WHERE "cart".status = 'active'`,
+		DO UPDATE SET restaurant_brand_id = $2, updated_at = NOW();`,
 		userID, resID)
 
 	batch.Queue(`DELETE FROM "cart_dish" WHERE cart_id = $1`, userID)
@@ -123,20 +127,21 @@ func (r *cartRepo) UpdateCart(ctx context.Context, userID int64, resID int64, it
 			userID, dishIDs, quantities)
 	}
 
-	br := r.pool.SendBatch(ctx, batch)
-	defer br.Close()
+	br := tx.SendBatch(ctx, batch)
 
 	for i := 0; i < batch.Len(); i++ {
 		_, execErr := br.Exec()
 		if execErr != nil {
+			br.Close()
 			return fmt.Errorf("cart batch execution failed at step %d: %w", i, execErr)
 		}
 	}
 
-	return nil
+	br.Close()
+	return tx.Commit(ctx)
 }
 
-func (r *cartRepo) ClearCart(ctx context.Context, userID int64, idempotencyKey string) error {
+func (r *cartRepo) ClearCart(ctx context.Context, userID int64) error {
 	query := `
 		DELETE FROM cart WHERE client_account_id = $1
 	`
@@ -146,7 +151,7 @@ func (r *cartRepo) ClearCart(ctx context.Context, userID int64, idempotencyKey s
 	return nil
 }
 
-func (r *cartRepo) LockCart(ctx context.Context, userID int64, idempotencyKey string) error {
+func (r *cartRepo) LockCart(ctx context.Context, userID int64) error {
 	query := `UPDATE "cart" SET status = 'locked', updated_at = NOW() WHERE client_account_id = $1`
 	res, err := r.pool.Exec(ctx, query, userID)
 	if err != nil {
@@ -158,7 +163,7 @@ func (r *cartRepo) LockCart(ctx context.Context, userID int64, idempotencyKey st
 	return nil
 }
 
-func (r *cartRepo) UnlockCart(ctx context.Context, userID int64, idempotencyKey string) error {
+func (r *cartRepo) UnlockCart(ctx context.Context, userID int64) error {
 	query := `UPDATE "cart" SET status = 'active', updated_at = NOW() WHERE client_account_id = $1`
 	res, err := r.pool.Exec(ctx, query, userID)
 	if err != nil {

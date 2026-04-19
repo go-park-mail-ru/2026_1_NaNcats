@@ -28,6 +28,9 @@ message CartOperationRequest {
 message CartItem {
   int64 dish_id = 1;
   int32 quantity = 2;
+  string name = 3;
+  int64 price = 4;
+  string image_url = 5;
 }
 
 message Cart {
@@ -41,6 +44,7 @@ message GetCartRequest {
 
 message GetCartResponse {
   Cart cart = 1;
+  int64 total_cost = 2;
 }
 
 message UpdateCartRequest {
