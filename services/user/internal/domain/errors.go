@@ -1,12 +1,15 @@
 package domain
 
-import "errors"
+import (
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
+	"google.golang.org/grpc/codes"
+)
 
 var (
-	ErrUserNotFound       = errors.New("user not found")
-	ErrEmailAlreadyExists = errors.New("user with this email already exists")
-	ErrInvalidInput       = errors.New("invalid input of data")
-	ErrInvalidImageExt    = errors.New("invalid image extension")
-	ErrImageNotFound      = errors.New("image not found")
-	ErrEmptyDBQuery       = errors.New("empty query to database")
+	ErrUserNotFound       = errutil.New("user not found", codes.NotFound)
+	ErrEmailAlreadyExists = errutil.New("user with this email already exists", codes.AlreadyExists)
+	ErrInvalidInput       = errutil.New("invalid input of data", codes.InvalidArgument)
+	ErrInvalidImageExt    = errutil.New("invalid image extension", codes.InvalidArgument)
+	ErrImageNotFound      = errutil.New("image not found", codes.NotFound)
+	ErrNoChangesProvided  = errutil.New("no changes provided", codes.InvalidArgument)
 )

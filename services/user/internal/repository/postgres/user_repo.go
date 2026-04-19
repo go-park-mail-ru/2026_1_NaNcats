@@ -147,7 +147,7 @@ func (r *userRepo) UpdateProfile(ctx context.Context, userID int64, name, email 
 
 	if argID == 1 {
 		// кто-то отправил пустой запрос, это не очень хорошо
-		return domain.ErrEmptyDBQuery
+		return domain.ErrNoChangesProvided
 	}
 
 	query += strings.Join(setClauses, ", ") + " WHERE id = $" + strconv.Itoa(argID)

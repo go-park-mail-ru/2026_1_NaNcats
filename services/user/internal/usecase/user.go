@@ -44,7 +44,7 @@ func (u *userUseCase) Create(ctx context.Context, user domain.User, idempotencyK
 	id, err := u.userRepo.CreateUser(ctx, user, idempotencyKey)
 	if err != nil {
 		if errors.Is(err, domain.ErrEmailAlreadyExists) {
-			return 0, errutil.New("email already exists", codes.AlreadyExists)
+			return 0, err
 		}
 		return 0, errutil.Wrap("failed to create user in db", err, codes.Internal)
 	}
@@ -57,7 +57,7 @@ func (u *userUseCase) GetByID(ctx context.Context, userID int64) (domain.User, e
 	user, err := u.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, domain.ErrUserNotFound) {
-			return domain.User{}, errutil.New("user not found", codes.NotFound)
+			return domain.User{}, err
 		}
 		return domain.User{}, errutil.Wrap("failed to get user from db", err, codes.Internal)
 	}
@@ -74,7 +74,7 @@ func (u *userUseCase) GetByEmail(ctx context.Context, email string) (domain.User
 	user, err := u.userRepo.GetUserByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, domain.ErrUserNotFound) {
-			return domain.User{}, errutil.New("user not found", codes.NotFound)
+			return domain.User{}, err
 		}
 		return domain.User{}, errutil.Wrap("failed to get user by email from db", err, codes.Internal)
 	}
@@ -101,10 +101,10 @@ func (u *userUseCase) UpdateProfile(ctx context.Context, userID int64, name, ema
 	err := u.userRepo.UpdateProfile(ctx, userID, name, email)
 	if err != nil {
 		if errors.Is(err, domain.ErrUserNotFound) {
-			return errutil.New("user not found", codes.NotFound)
+			return err
 		}
 		if errors.Is(err, domain.ErrEmailAlreadyExists) {
-			return errutil.New("email already taken", codes.AlreadyExists)
+			return err
 		}
 		return errutil.Wrap("failed to update user profile", err, codes.Internal)
 	}
@@ -123,7 +123,7 @@ func (u *userUseCase) UpdateAvatar(ctx context.Context, userID int64, imageData 
 
 	webpData, err := imageutil.ConvertToWebp(imageReader)
 	if err != nil {
-		return "", errutil.New("invalid image format", codes.InvalidArgument)
+		return "", domain.ErrInvalidImageExt
 	}
 
 	filename := "avatars/" + uuid.NewString() + ".webp"
@@ -166,9 +166,9 @@ func (u *userUseCase) DeleteAvatar(ctx context.Context, userID int64, idempotenc
 	err = u.userRepo.UpdateAvatarURL(ctx, userID, "")
 	if err != nil {
 		if errors.Is(err, domain.ErrUserNotFound) {
-			return u.defaultAvatarURL, errutil.New("user not found", codes.NotFound)
+			return "", err
 		}
-		return u.defaultAvatarURL, errutil.Wrap("failed to reset avatar in db", err, codes.Internal)
+		return "", errutil.Wrap("failed to reset avatar in db", err, codes.Internal)
 	}
 
 	go func(urlToDelete string) {
