@@ -2,38 +2,21 @@ syntax = "proto3";
 
 package order;
 
+import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/order";
 
-// Микросервис заказов
+// Микросервис управления заказами
 service OrderService {
-  // Метод создания заказа
+  // Метод создания нового заказа
   rpc CreateOrder (CreateOrderRequest) returns (CreateOrderResponse);
-  // Метод получения заказов
+  // Метод получения истории заказов пользователя
   rpc GetOrders (GetOrdersRequest) returns (GetOrdersResponse);
+  // Метод смены статус заказа
+  rpc UpdateOrderStatusByPaymentID (UpdateStatusRequest) returns (google.protobuf.Empty);
 }
 
-
-message CreateOrderRequest {
-  int64 user_id = 1;
-  string address_public_id = 2;
-  int64 restaurant_branch_id = 3;
-  string payment_method_id = 4;
-  string idempotency_key = 5;
-}
-
-message CreateOrderResponse {
-  string order_public_id = 1;
-  string confirmation_url = 2;
-}
-
-enum OrderStatus {
-  ORDER_STATUS_UNSPECIFIED = 0;
-  ORDER_STATUS_IN_PROGRESS = 1;
-  ORDER_STATUS_FINISHED = 2;
-  ORDER_STATUS_CANCELED = 3;
-}
 
 message OrderDish {
   int64 dish_id = 1;
@@ -42,19 +25,29 @@ message OrderDish {
 }
 
 message Order {
-  int64 id = 1;
-  string public_id = 2;
-  int64 client_id = 3;
-  optional int64 courier_id = 4;
-  int64 restaurant_branch_id = 5;
-  int64 client_address_id = 6;
-  int64 total_cost = 7;
-  OrderStatus status = 8;
-  string payment_method_id = 9;
-  string yookassa_payment_id = 10;
-  repeated OrderDish items = 11;
-  google.protobuf.Timestamp created_at = 12;
-  string restaurant_name = 13;
+  string public_id = 1;
+  string restaurant_name = 2;
+  string restaurant_logo_url = 3;
+  int64 total_cost = 4;
+  string status = 5;
+  google.protobuf.Timestamp created_at = 6;
+  repeated OrderDish items = 7;
+}
+
+
+message CreateOrderRequest {
+  int64 user_id = 1; 
+  string address_public_id = 2;
+  int64 restaurant_branch_id = 3;
+  string payment_method_id = 4;
+  int64 delivery_cost = 5;
+  int64 service_fee = 6;
+  string idempotency_key = 7;
+}
+
+message CreateOrderResponse {
+  string order_public_id = 1;
+  string confirmation_url = 2;
 }
 
 message GetOrdersRequest {
@@ -63,4 +56,10 @@ message GetOrdersRequest {
 
 message GetOrdersResponse {
   repeated Order orders = 1;
+}
+
+message UpdateStatusRequest {
+  string yookassa_payment_id = 1;
+  string status = 2;
+  string idempotency_key = 7;
 }

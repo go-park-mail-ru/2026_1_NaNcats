@@ -20,10 +20,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AddressService_AddAddress_FullMethodName     = "/address.AddressService/AddAddress"
-	AddressService_GetMyAddresses_FullMethodName = "/address.AddressService/GetMyAddresses"
-	AddressService_DeleteAddress_FullMethodName  = "/address.AddressService/DeleteAddress"
-	AddressService_UpdateAddress_FullMethodName  = "/address.AddressService/UpdateAddress"
+	AddressService_AddAddress_FullMethodName         = "/address.AddressService/AddAddress"
+	AddressService_GetMyAddresses_FullMethodName     = "/address.AddressService/GetMyAddresses"
+	AddressService_DeleteAddress_FullMethodName      = "/address.AddressService/DeleteAddress"
+	AddressService_UpdateAddress_FullMethodName      = "/address.AddressService/UpdateAddress"
+	AddressService_CheckAddressExists_FullMethodName = "/address.AddressService/CheckAddressExists"
 )
 
 // AddressServiceClient is the client API for AddressService service.
@@ -40,6 +41,8 @@ type AddressServiceClient interface {
 	DeleteAddress(ctx context.Context, in *DeleteAddressRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Метод изменения адреса
 	UpdateAddress(ctx context.Context, in *UpdateAddressRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Метод проверки адреса на сущестование
+	CheckAddressExists(ctx context.Context, in *CheckAddressExistsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type addressServiceClient struct {
@@ -90,6 +93,16 @@ func (c *addressServiceClient) UpdateAddress(ctx context.Context, in *UpdateAddr
 	return out, nil
 }
 
+func (c *addressServiceClient) CheckAddressExists(ctx context.Context, in *CheckAddressExistsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, AddressService_CheckAddressExists_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AddressServiceServer is the server API for AddressService service.
 // All implementations must embed UnimplementedAddressServiceServer
 // for forward compatibility.
@@ -104,6 +117,8 @@ type AddressServiceServer interface {
 	DeleteAddress(context.Context, *DeleteAddressRequest) (*emptypb.Empty, error)
 	// Метод изменения адреса
 	UpdateAddress(context.Context, *UpdateAddressRequest) (*emptypb.Empty, error)
+	// Метод проверки адреса на сущестование
+	CheckAddressExists(context.Context, *CheckAddressExistsRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedAddressServiceServer()
 }
 
@@ -125,6 +140,9 @@ func (UnimplementedAddressServiceServer) DeleteAddress(context.Context, *DeleteA
 }
 func (UnimplementedAddressServiceServer) UpdateAddress(context.Context, *UpdateAddressRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateAddress not implemented")
+}
+func (UnimplementedAddressServiceServer) CheckAddressExists(context.Context, *CheckAddressExistsRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method CheckAddressExists not implemented")
 }
 func (UnimplementedAddressServiceServer) mustEmbedUnimplementedAddressServiceServer() {}
 func (UnimplementedAddressServiceServer) testEmbeddedByValue()                        {}
@@ -219,6 +237,24 @@ func _AddressService_UpdateAddress_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AddressService_CheckAddressExists_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckAddressExistsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AddressServiceServer).CheckAddressExists(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AddressService_CheckAddressExists_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AddressServiceServer).CheckAddressExists(ctx, req.(*CheckAddressExistsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AddressService_ServiceDesc is the grpc.ServiceDesc for AddressService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -241,6 +277,10 @@ var AddressService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateAddress",
 			Handler:    _AddressService_UpdateAddress_Handler,
+		},
+		{
+			MethodName: "CheckAddressExists",
+			Handler:    _AddressService_CheckAddressExists_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

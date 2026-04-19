@@ -6,17 +6,19 @@ type Order struct {
 	ID                 int64
 	PublicID           string
 	ClientID           int64
-	CourierID          *int64
+	CourierID          int64
 	RestaurantBranchID int64
-	ClientAddressID    int64
+	ClientAddressID    string
 	TotalCost          int64
-	Status             string
+	PromocodeID        int64
+	RestaurantName     string
 	PaymentMethodID    string
 	YookassaPaymentID  string
+	Status             string
 	Items              []OrderDish
 	CreatedAt          time.Time
-	RestaurantName     string
-	RestaurantLogoURL  string // удалить
+	UpdatedAt          time.Time
+	RestaurantLogoURL  string
 }
 
 type OrderDish struct {
@@ -32,5 +34,4 @@ type CreateOrderInput struct {
 	PaymentMethodID    string
 	DeliveryCost       int64
 	ServiceFee         int64
-	TotalCost          int64
 }

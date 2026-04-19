@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -19,20 +20,23 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	OrderService_CreateOrder_FullMethodName = "/order.OrderService/CreateOrder"
-	OrderService_GetOrders_FullMethodName   = "/order.OrderService/GetOrders"
+	OrderService_CreateOrder_FullMethodName                  = "/order.OrderService/CreateOrder"
+	OrderService_GetOrders_FullMethodName                    = "/order.OrderService/GetOrders"
+	OrderService_UpdateOrderStatusByPaymentID_FullMethodName = "/order.OrderService/UpdateOrderStatusByPaymentID"
 )
 
 // OrderServiceClient is the client API for OrderService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// Микросервис заказов
+// Микросервис управления заказами
 type OrderServiceClient interface {
-	// Метод создания заказа
+	// Метод создания нового заказа
 	CreateOrder(ctx context.Context, in *CreateOrderRequest, opts ...grpc.CallOption) (*CreateOrderResponse, error)
-	// Метод получения заказов
+	// Метод получения истории заказов пользователя
 	GetOrders(ctx context.Context, in *GetOrdersRequest, opts ...grpc.CallOption) (*GetOrdersResponse, error)
+	// Метод смены статус заказа
+	UpdateOrderStatusByPaymentID(ctx context.Context, in *UpdateStatusRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type orderServiceClient struct {
@@ -63,16 +67,28 @@ func (c *orderServiceClient) GetOrders(ctx context.Context, in *GetOrdersRequest
 	return out, nil
 }
 
+func (c *orderServiceClient) UpdateOrderStatusByPaymentID(ctx context.Context, in *UpdateStatusRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, OrderService_UpdateOrderStatusByPaymentID_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OrderServiceServer is the server API for OrderService service.
 // All implementations must embed UnimplementedOrderServiceServer
 // for forward compatibility.
 //
-// Микросервис заказов
+// Микросервис управления заказами
 type OrderServiceServer interface {
-	// Метод создания заказа
+	// Метод создания нового заказа
 	CreateOrder(context.Context, *CreateOrderRequest) (*CreateOrderResponse, error)
-	// Метод получения заказов
+	// Метод получения истории заказов пользователя
 	GetOrders(context.Context, *GetOrdersRequest) (*GetOrdersResponse, error)
+	// Метод смены статус заказа
+	UpdateOrderStatusByPaymentID(context.Context, *UpdateStatusRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedOrderServiceServer()
 }
 
@@ -88,6 +104,9 @@ func (UnimplementedOrderServiceServer) CreateOrder(context.Context, *CreateOrder
 }
 func (UnimplementedOrderServiceServer) GetOrders(context.Context, *GetOrdersRequest) (*GetOrdersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetOrders not implemented")
+}
+func (UnimplementedOrderServiceServer) UpdateOrderStatusByPaymentID(context.Context, *UpdateStatusRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateOrderStatusByPaymentID not implemented")
 }
 func (UnimplementedOrderServiceServer) mustEmbedUnimplementedOrderServiceServer() {}
 func (UnimplementedOrderServiceServer) testEmbeddedByValue()                      {}
@@ -146,6 +165,24 @@ func _OrderService_GetOrders_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OrderService_UpdateOrderStatusByPaymentID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).UpdateOrderStatusByPaymentID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_UpdateOrderStatusByPaymentID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).UpdateOrderStatusByPaymentID(ctx, req.(*UpdateStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // OrderService_ServiceDesc is the grpc.ServiceDesc for OrderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -160,6 +197,10 @@ var OrderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetOrders",
 			Handler:    _OrderService_GetOrders_Handler,
+		},
+		{
+			MethodName: "UpdateOrderStatusByPaymentID",
+			Handler:    _OrderService_UpdateOrderStatusByPaymentID_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

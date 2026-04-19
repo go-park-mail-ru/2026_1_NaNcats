@@ -494,6 +494,58 @@ func (x *UpdateAddressRequest) GetIdempotencyKey() string {
 	return ""
 }
 
+type CheckAddressExistsRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	UserId          int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	AddressPublicId string                 `protobuf:"bytes,2,opt,name=address_public_id,json=addressPublicId,proto3" json:"address_public_id,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *CheckAddressExistsRequest) Reset() {
+	*x = CheckAddressExistsRequest{}
+	mi := &file_address_address_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckAddressExistsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckAddressExistsRequest) ProtoMessage() {}
+
+func (x *CheckAddressExistsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_address_address_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckAddressExistsRequest.ProtoReflect.Descriptor instead.
+func (*CheckAddressExistsRequest) Descriptor() ([]byte, []int) {
+	return file_address_address_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *CheckAddressExistsRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *CheckAddressExistsRequest) GetAddressPublicId() string {
+	if x != nil {
+		return x.AddressPublicId
+	}
+	return ""
+}
+
 var File_address_address_proto protoreflect.FileDescriptor
 
 const file_address_address_proto_rawDesc = "" +
@@ -529,13 +581,17 @@ const file_address_address_proto_rawDesc = "" +
 	"\x14UpdateAddressRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12*\n" +
 	"\aaddress\x18\x02 \x01(\v2\x10.address.AddressR\aaddress\x12'\n" +
-	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey2\xba\x02\n" +
+	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey\"`\n" +
+	"\x19CheckAddressExistsRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12*\n" +
+	"\x11address_public_id\x18\x02 \x01(\tR\x0faddressPublicId2\x8c\x03\n" +
 	"\x0eAddressService\x12E\n" +
 	"\n" +
 	"AddAddress\x12\x1a.address.AddAddressRequest\x1a\x1b.address.AddAddressResponse\x12Q\n" +
 	"\x0eGetMyAddresses\x12\x1e.address.GetMyAddressesRequest\x1a\x1f.address.GetMyAddressesResponse\x12F\n" +
 	"\rDeleteAddress\x12\x1d.address.DeleteAddressRequest\x1a\x16.google.protobuf.Empty\x12F\n" +
-	"\rUpdateAddress\x12\x1d.address.UpdateAddressRequest\x1a\x16.google.protobuf.EmptyB@Z>github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/addressb\x06proto3"
+	"\rUpdateAddress\x12\x1d.address.UpdateAddressRequest\x1a\x16.google.protobuf.Empty\x12P\n" +
+	"\x12CheckAddressExists\x12\".address.CheckAddressExistsRequest\x1a\x16.google.protobuf.EmptyB@Z>github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/addressb\x06proto3"
 
 var (
 	file_address_address_proto_rawDescOnce sync.Once
@@ -549,17 +605,18 @@ func file_address_address_proto_rawDescGZIP() []byte {
 	return file_address_address_proto_rawDescData
 }
 
-var file_address_address_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_address_address_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_address_address_proto_goTypes = []any{
-	(*Location)(nil),               // 0: address.Location
-	(*Address)(nil),                // 1: address.Address
-	(*AddAddressRequest)(nil),      // 2: address.AddAddressRequest
-	(*AddAddressResponse)(nil),     // 3: address.AddAddressResponse
-	(*GetMyAddressesRequest)(nil),  // 4: address.GetMyAddressesRequest
-	(*GetMyAddressesResponse)(nil), // 5: address.GetMyAddressesResponse
-	(*DeleteAddressRequest)(nil),   // 6: address.DeleteAddressRequest
-	(*UpdateAddressRequest)(nil),   // 7: address.UpdateAddressRequest
-	(*emptypb.Empty)(nil),          // 8: google.protobuf.Empty
+	(*Location)(nil),                  // 0: address.Location
+	(*Address)(nil),                   // 1: address.Address
+	(*AddAddressRequest)(nil),         // 2: address.AddAddressRequest
+	(*AddAddressResponse)(nil),        // 3: address.AddAddressResponse
+	(*GetMyAddressesRequest)(nil),     // 4: address.GetMyAddressesRequest
+	(*GetMyAddressesResponse)(nil),    // 5: address.GetMyAddressesResponse
+	(*DeleteAddressRequest)(nil),      // 6: address.DeleteAddressRequest
+	(*UpdateAddressRequest)(nil),      // 7: address.UpdateAddressRequest
+	(*CheckAddressExistsRequest)(nil), // 8: address.CheckAddressExistsRequest
+	(*emptypb.Empty)(nil),             // 9: google.protobuf.Empty
 }
 var file_address_address_proto_depIdxs = []int32{
 	0, // 0: address.Address.location:type_name -> address.Location
@@ -570,12 +627,14 @@ var file_address_address_proto_depIdxs = []int32{
 	4, // 5: address.AddressService.GetMyAddresses:input_type -> address.GetMyAddressesRequest
 	6, // 6: address.AddressService.DeleteAddress:input_type -> address.DeleteAddressRequest
 	7, // 7: address.AddressService.UpdateAddress:input_type -> address.UpdateAddressRequest
-	3, // 8: address.AddressService.AddAddress:output_type -> address.AddAddressResponse
-	5, // 9: address.AddressService.GetMyAddresses:output_type -> address.GetMyAddressesResponse
-	8, // 10: address.AddressService.DeleteAddress:output_type -> google.protobuf.Empty
-	8, // 11: address.AddressService.UpdateAddress:output_type -> google.protobuf.Empty
-	8, // [8:12] is the sub-list for method output_type
-	4, // [4:8] is the sub-list for method input_type
+	8, // 8: address.AddressService.CheckAddressExists:input_type -> address.CheckAddressExistsRequest
+	3, // 9: address.AddressService.AddAddress:output_type -> address.AddAddressResponse
+	5, // 10: address.AddressService.GetMyAddresses:output_type -> address.GetMyAddressesResponse
+	9, // 11: address.AddressService.DeleteAddress:output_type -> google.protobuf.Empty
+	9, // 12: address.AddressService.UpdateAddress:output_type -> google.protobuf.Empty
+	9, // 13: address.AddressService.CheckAddressExists:output_type -> google.protobuf.Empty
+	9, // [9:14] is the sub-list for method output_type
+	4, // [4:9] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name
 	4, // [4:4] is the sub-list for extension extendee
 	0, // [0:4] is the sub-list for field type_name
@@ -592,7 +651,7 @@ func file_address_address_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_address_address_proto_rawDesc), len(file_address_address_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

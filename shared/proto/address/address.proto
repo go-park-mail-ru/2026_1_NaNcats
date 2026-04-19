@@ -16,6 +16,8 @@ service AddressService {
   rpc DeleteAddress (DeleteAddressRequest) returns (google.protobuf.Empty);
   // Метод изменения адреса
   rpc UpdateAddress (UpdateAddressRequest) returns (google.protobuf.Empty);
+  // Метод проверки адреса на сущестование
+  rpc CheckAddressExists (CheckAddressExistsRequest) returns (google.protobuf.Empty);
 }
 
 
@@ -64,4 +66,9 @@ message UpdateAddressRequest {
   int64 user_id = 1;
   Address address = 2;
   string idempotency_key = 3;
+}
+
+message CheckAddressExistsRequest {
+  int64 user_id = 1;
+  string address_public_id = 2;
 }
