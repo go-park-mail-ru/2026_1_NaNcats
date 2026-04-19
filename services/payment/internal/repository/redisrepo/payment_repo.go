@@ -49,13 +49,16 @@ func (r *paymentCacheRepo) DeletePendingBinding(ctx context.Context, paymentID s
 	return nil
 }
 
-func (r *paymentCacheRepo) GetUserIDByPaymentID(ctx context.Context, paymentID string) (int, error) {
+func (r *paymentCacheRepo) GetUserIDByPaymentID(ctx context.Context, paymentID string) (int64, error) {
 	conn := r.redisPool.Get()
 	defer conn.Close()
 
 	mkey := "payment:" + paymentID
-	userID, err := redis.Int(conn.Do("GET", mkey))
+	userID, err := redis.Int64(conn.Do("GET", mkey))
 	if err != nil {
+		if err == redis.ErrNil {
+			return 0, domain.ErrUserIDNotFoundInCache
+		}
 		return 0, err
 	}
 

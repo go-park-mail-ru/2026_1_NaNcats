@@ -14,8 +14,8 @@ import (
 )
 
 type paymentMethodDB struct {
-	ID         int     `db:"id"`
-	UserID     int     `db:"user_id"`
+	ID         int64   `db:"id"`
+	UserID     int64   `db:"user_id"`
 	ExternalID string  `db:"external_id"`
 	CardType   string  `db:"card_type"`
 	Last4      string  `db:"last4"`
