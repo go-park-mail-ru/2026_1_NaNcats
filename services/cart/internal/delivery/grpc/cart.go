@@ -33,6 +33,9 @@ func mapDomainToPBCart(d domain.Cart) *pb.Cart {
 		items = append(items, &pb.CartItem{
 			DishId:   item.DishID,
 			Quantity: int32(item.Quantity),
+			Name:     item.Name,
+			Price:    item.Price,
+			ImageUrl: item.ImageURL,
 		})
 	}
 	return &pb.Cart{
@@ -53,13 +56,14 @@ func NewCartHandler(uc usecase.CartUseCase) *CartHandler {
 }
 
 func (h *CartHandler) GetCart(ctx context.Context, req *pb.GetCartRequest) (*pb.GetCartResponse, error) {
-	cart, _, err := h.usecase.GetCart(ctx, req.UserId)
+	cart, totalCost, err := h.usecase.GetCart(ctx, req.UserId)
 	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
 	}
 
 	return &pb.GetCartResponse{
-		Cart: mapDomainToPBCart(cart),
+		Cart:      mapDomainToPBCart(cart),
+		TotalCost: totalCost,
 	}, nil
 }
 

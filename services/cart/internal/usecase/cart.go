@@ -8,8 +8,12 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
-	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
 )
+
+//go:generate mockgen -destination=mocks/restaurant_client_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/usecase RestaurantClient
+type RestaurantClient interface {
+	GetDishesByIDs(ctx context.Context, dishIDs []int64) ([]domain.Dish, error)
+}
 
 //go:generate mockgen -destination=mocks/cart_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/cart CartUseCase
 type CartUseCase interface {
@@ -22,11 +26,11 @@ type CartUseCase interface {
 
 type cartUseCase struct {
 	cartRepo           repository.CartRepository
-	restaurantClient   pb.RestaurantServiceClient
+	restaurantClient   RestaurantClient
 	defaultFoodLogoURL string
 }
 
-func NewCartUseCase(cr repository.CartRepository, rc pb.RestaurantServiceClient, dflurl string) *cartUseCase {
+func NewCartUseCase(cr repository.CartRepository, rc RestaurantClient, dflurl string) *cartUseCase {
 	return &cartUseCase{
 		cartRepo:           cr,
 		restaurantClient:   rc,
@@ -49,20 +53,20 @@ func (u *cartUseCase) GetCart(ctx context.Context, userID int64) (domain.Cart, i
 		dishIDs = append(dishIDs, item.DishID)
 	}
 
-	resp, err := u.restaurantClient.GetDishesByIDs(ctx, &pb.GetDishesByIDsRequest{
-		DishIds: dishIDs,
-	})
+	dishes, err := u.restaurantClient.GetDishesByIDs(ctx, dishIDs)
 	if err != nil {
-		return domain.Cart{}, 0, err
+		return domain.Cart{}, 0, errutil.Wrap("failed to reach restaurant service", err, codes.Internal)
 	}
 
 	// Мапка для быстрого поиска данных о блюде
-	dishMap := make(map[int64]*pb.Dish)
-	for _, d := range resp.Dishes {
-		dishMap[d.Id] = d
+	dishMap := make(map[int64]domain.Dish)
+	for _, d := range dishes {
+		dishMap[d.ID] = d
 	}
 
 	var totalCost int64
+	validItems := make([]domain.CartItem, 0, len(cart.Items))
+
 	for i := range cart.Items {
 		dishInfo, ok := dishMap[cart.Items[i].DishID]
 		if !ok {
@@ -72,13 +76,17 @@ func (u *cartUseCase) GetCart(ctx context.Context, userID int64) (domain.Cart, i
 
 		cart.Items[i].Name = dishInfo.Name
 		cart.Items[i].Price = dishInfo.Price
-		cart.Items[i].ImageURL = dishInfo.ImageUrl
+		cart.Items[i].ImageURL = dishInfo.ImageURL
 		if cart.Items[i].ImageURL == "" {
 			cart.Items[i].ImageURL = u.defaultFoodLogoURL
 		}
 
 		totalCost += cart.Items[i].Price * int64(cart.Items[i].Quantity)
+
+		validItems = append(validItems, cart.Items[i])
 	}
+
+	cart.Items = validItems
 
 	return cart, totalCost, nil
 }
@@ -96,20 +104,18 @@ func (u *cartUseCase) UpdateCart(ctx context.Context, userID int64, cartData dom
 		dishIDs[ind] = item.DishID
 	}
 
-	resp, err := u.restaurantClient.GetDishesByIDs(ctx, &pb.GetDishesByIDsRequest{
-		DishIds: dishIDs,
-	})
+	dishes, err := u.restaurantClient.GetDishesByIDs(ctx, dishIDs)
 	if err != nil {
 		return errutil.Wrap("validation: failed to reach restaurant service", err, codes.Internal)
 	}
 
-	if len(resp.Dishes) != len(dishIDs) {
+	if len(dishes) != len(dishIDs) {
 		return domain.ErrDishNotFound
 	}
 
-	for _, d := range resp.Dishes {
-		if d.RestaurantBrandId != cartData.RestaurantBrandID {
-			return domain.ErrMultipleRestaurants
+	for _, d := range dishes {
+		if d.RestaurantBrandID != cartData.RestaurantBrandID {
+			return errutil.New("all items must be from the same restaurant", codes.InvalidArgument)
 		}
 	}
 

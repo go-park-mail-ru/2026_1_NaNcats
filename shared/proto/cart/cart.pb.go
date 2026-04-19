@@ -78,6 +78,9 @@ type CartItem struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	DishId        int64                  `protobuf:"varint,1,opt,name=dish_id,json=dishId,proto3" json:"dish_id,omitempty"`
 	Quantity      int32                  `protobuf:"varint,2,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Price         int64                  `protobuf:"varint,4,opt,name=price,proto3" json:"price,omitempty"`
+	ImageUrl      string                 `protobuf:"bytes,5,opt,name=image_url,json=imageUrl,proto3" json:"image_url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -124,6 +127,27 @@ func (x *CartItem) GetQuantity() int32 {
 		return x.Quantity
 	}
 	return 0
+}
+
+func (x *CartItem) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CartItem) GetPrice() int64 {
+	if x != nil {
+		return x.Price
+	}
+	return 0
+}
+
+func (x *CartItem) GetImageUrl() string {
+	if x != nil {
+		return x.ImageUrl
+	}
+	return ""
 }
 
 type Cart struct {
@@ -225,6 +249,7 @@ func (x *GetCartRequest) GetUserId() int64 {
 type GetCartResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Cart          *Cart                  `protobuf:"bytes,1,opt,name=cart,proto3" json:"cart,omitempty"`
+	TotalCost     int64                  `protobuf:"varint,2,opt,name=total_cost,json=totalCost,proto3" json:"total_cost,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -264,6 +289,13 @@ func (x *GetCartResponse) GetCart() *Cart {
 		return x.Cart
 	}
 	return nil
+}
+
+func (x *GetCartResponse) GetTotalCost() int64 {
+	if x != nil {
+		return x.TotalCost
+	}
+	return 0
 }
 
 type UpdateCartRequest struct {
@@ -333,18 +365,23 @@ const file_cart_cart_proto_rawDesc = "" +
 	"\x0fcart/cart.proto\x12\x04cart\x1a\x1bgoogle/protobuf/empty.proto\"X\n" +
 	"\x14CartOperationRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12'\n" +
-	"\x0fidempotency_key\x18\x02 \x01(\tR\x0eidempotencyKey\"?\n" +
+	"\x0fidempotency_key\x18\x02 \x01(\tR\x0eidempotencyKey\"\x86\x01\n" +
 	"\bCartItem\x12\x17\n" +
 	"\adish_id\x18\x01 \x01(\x03R\x06dishId\x12\x1a\n" +
-	"\bquantity\x18\x02 \x01(\x05R\bquantity\"\\\n" +
+	"\bquantity\x18\x02 \x01(\x05R\bquantity\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12\x14\n" +
+	"\x05price\x18\x04 \x01(\x03R\x05price\x12\x1b\n" +
+	"\timage_url\x18\x05 \x01(\tR\bimageUrl\"\\\n" +
 	"\x04Cart\x12.\n" +
 	"\x13restaurant_brand_id\x18\x01 \x01(\x03R\x11restaurantBrandId\x12$\n" +
 	"\x05items\x18\x02 \x03(\v2\x0e.cart.CartItemR\x05items\")\n" +
 	"\x0eGetCartRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\"1\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\"P\n" +
 	"\x0fGetCartResponse\x12\x1e\n" +
 	"\x04cart\x18\x01 \x01(\v2\n" +
-	".cart.CartR\x04cart\"~\n" +
+	".cart.CartR\x04cart\x12\x1d\n" +
+	"\n" +
+	"total_cost\x18\x02 \x01(\x03R\ttotalCost\"~\n" +
 	"\x11UpdateCartRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12'\n" +
 	"\tcart_data\x18\x02 \x01(\v2\n" +
