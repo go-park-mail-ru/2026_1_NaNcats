@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	infrastructureLogger "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/common/logger"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/interceptors"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
 	"github.com/joho/godotenv"
@@ -75,8 +76,12 @@ func main() {
 
 	addressHandler := addressDelivery.NewAddressHandler(addressUC)
 
-	// TODO: добавить gRPC Interceptor для логирования всех запросов
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			interceptors.UnaryServerRecovery(appLogger),
+			interceptors.UnaryServerLogging(appLogger),
+		),
+	)
 
 	pb.RegisterAddressServiceServer(grpcServer, addressHandler)
 	reflection.Register(grpcServer)
