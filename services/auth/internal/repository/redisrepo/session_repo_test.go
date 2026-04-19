@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/domain"
 	"github.com/gomodule/redigo/redis"
 	"github.com/google/uuid"
 	"github.com/mailru/easyjson"

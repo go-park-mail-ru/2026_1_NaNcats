@@ -18,7 +18,7 @@ type AuthUseCase interface {
 	IssueSession(ctx context.Context, userID int64, role, userAgent string) (domain.Session, error)
 	Login(ctx context.Context, email, password, userAgent string) (domain.Session, error)
 	Logout(ctx context.Context, sessionID uuid.UUID) error
-	CheckUserSession(ctx context.Context, sessionID uuid.UUID) (int64, error)
+	CheckUserSession(ctx context.Context, sessionID uuid.UUID) (int64, string, error)
 	SetCSRFForUser(ctx context.Context, sessionID uuid.UUID) (string, error)
 	GetCSRFBySessionID(ctx context.Context, sessionID uuid.UUID) (string, error)
 }
@@ -77,14 +77,14 @@ func (u *authUseCase) Logout(ctx context.Context, sessionID uuid.UUID) error {
 }
 
 // возвращает пользователя сессии, проверяя, существует ли сессия и пользователь сессии
-func (u *authUseCase) CheckUserSession(ctx context.Context, sessionID uuid.UUID) (int64, error) {
+func (u *authUseCase) CheckUserSession(ctx context.Context, sessionID uuid.UUID) (int64, string, error) {
 	session, err := u.sessionUC.Check(ctx, sessionID)
 	if err != nil {
 		// Ошибка уже обернута в SessionUseCase
-		return 0, err
+		return 0, "", err
 	}
 
-	return session.UserID, nil
+	return session.UserID, session.Role, nil
 }
 
 func (u *authUseCase) SetCSRFForUser(ctx context.Context, sessionID uuid.UUID) (string, error) {

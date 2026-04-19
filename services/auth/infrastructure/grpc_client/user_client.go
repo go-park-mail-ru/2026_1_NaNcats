@@ -4,6 +4,7 @@ import (
 	"context"
 
 	authDomain "github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/domain"
+	authUC "github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/usecase"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/user"
 )
 
@@ -11,7 +12,7 @@ type userClient struct {
 	client pb.UserServiceClient
 }
 
-func NewUserClient(uc pb.UserServiceClient) UserClient {
+func NewUserClient(uc pb.UserServiceClient) authUC.UserClient {
 	return &userClient{
 		client: uc,
 	}
