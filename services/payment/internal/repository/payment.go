@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/domain"
 )
 
 type PaymentRepository interface {

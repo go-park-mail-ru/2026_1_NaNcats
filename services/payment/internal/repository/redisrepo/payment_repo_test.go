@@ -1,4 +1,4 @@
-package payment
+package redisrepo
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/domain"
 	"github.com/gomodule/redigo/redis"
 	"github.com/rafaeljusto/redigomock/v3"
 	"github.com/stretchr/testify/assert"

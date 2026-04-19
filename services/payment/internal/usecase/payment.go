@@ -5,12 +5,17 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/api_clients/yookassa"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/api_clients/yookassa"
 )
 
 //go:generate mockgen -destination=mocks/payment_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/payment PaymentUseCase
+
+type OrderClient interface {
+	UpdateOrderStatus(ctx context.Context, paymentID string, status string) error
+}
+
 type PaymentUseCase interface {
 	// TODO: добавить метод CreatePayment, сейчас эта логика реализована в order.go в слое usecase, нужно вынести сюда
 	InitiateCardBinding(ctx context.Context, userID int64) (string, error)
@@ -24,7 +29,7 @@ type PaymentUseCase interface {
 type paymentUseCase struct {
 	paymentRepo    repository.PaymentRepository
 	cacheRepo      repository.PaymentCacheRepository
-	orderRepo      repository.OrderRepository // удалить
+	orderRepo      repository.OrderRepository // TODO: удалить
 	yookassaClient *yookassa.Client
 	returnURL      string
 }

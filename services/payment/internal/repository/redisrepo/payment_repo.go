@@ -1,12 +1,12 @@
-package payment
+package redisrepo
 
 import (
 	"context"
 	"fmt"
 	"time"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/repository"
 	"github.com/gomodule/redigo/redis"
 )
 

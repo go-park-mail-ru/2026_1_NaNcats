@@ -1,13 +1,13 @@
-package payment
+package postgres
 
 import (
 	"context"
 	"errors"
 	"fmt"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
