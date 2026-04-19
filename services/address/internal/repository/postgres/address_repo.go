@@ -147,8 +147,7 @@ func (r *addressRepo) DeleteAddress(ctx context.Context, userID int64, publicID 
 		return err
 	}
 	if res.RowsAffected() == 0 {
-		// TODO: сделать что-то с этой ошибкой
-		return domain.ErrEmptyDBQuery
+		return domain.ErrNoChangesProvided
 	}
 
 	return nil
