@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	repoMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/mocks"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/domain"
+	repoMocks "github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/repository/mocks"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )

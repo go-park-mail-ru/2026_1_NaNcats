@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/domain"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"

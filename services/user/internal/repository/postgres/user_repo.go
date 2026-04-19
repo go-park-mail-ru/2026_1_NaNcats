@@ -166,12 +166,6 @@ func (r *userRepo) UpdateProfile(ctx context.Context, userID int64, name, email 
 				}
 			case pgerrcode.CheckViolation:
 				return domain.ErrInvalidInput
-			case pgerrcode.SyntaxError:
-				return domain.ErrSQLSyntax
-			case pgerrcode.DeadlockDetected:
-				return domain.ErrSQLDeadlock
-			case pgerrcode.LockNotAvailable:
-				return domain.ErrSQLLockTimeout
 			default:
 				return err
 			}
@@ -197,16 +191,12 @@ func (r *userRepo) UpdateAvatarURL(ctx context.Context, userID int64, newAvatarU
 			switch pgErr.Code {
 			case pgerrcode.CheckViolation:
 				return domain.ErrInvalidInput
-			case pgerrcode.SyntaxError:
-				return domain.ErrSQLSyntax
-			case pgerrcode.DeadlockDetected:
-				return domain.ErrSQLDeadlock
-			case pgerrcode.LockNotAvailable:
-				return domain.ErrSQLLockTimeout
 			default:
 				return err
 			}
 		}
+
+		return err
 	}
 
 	if tag.RowsAffected() == 0 {
