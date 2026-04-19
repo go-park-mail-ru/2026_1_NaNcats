@@ -93,7 +93,7 @@ func (u *cartUseCase) GetCart(ctx context.Context, userID int64) (domain.Cart, i
 
 func (u *cartUseCase) UpdateCart(ctx context.Context, userID int64, cartData domain.Cart, idempotencyKey string) error {
 	if len(cartData.Items) == 0 {
-		return u.cartRepo.ClearCart(ctx, userID, idempotencyKey)
+		return u.cartRepo.ClearCart(ctx, userID)
 	}
 
 	dishIDs := make([]int64, len(cartData.Items))
@@ -119,17 +119,17 @@ func (u *cartUseCase) UpdateCart(ctx context.Context, userID int64, cartData dom
 		}
 	}
 
-	return u.cartRepo.UpdateCart(ctx, userID, cartData.RestaurantBrandID, cartData.Items, idempotencyKey)
+	return u.cartRepo.UpdateCart(ctx, userID, cartData.RestaurantBrandID, cartData.Items)
 }
 
 func (u *cartUseCase) LockCart(ctx context.Context, userID int64, idempotencyKey string) error {
-	return u.cartRepo.LockCart(ctx, userID, idempotencyKey)
+	return u.cartRepo.LockCart(ctx, userID)
 }
 
 func (u *cartUseCase) UnlockCart(ctx context.Context, userID int64, idempotencyKey string) error {
-	return u.cartRepo.UnlockCart(ctx, userID, idempotencyKey)
+	return u.cartRepo.UnlockCart(ctx, userID)
 }
 
 func (u *cartUseCase) ClearCart(ctx context.Context, userID int64, idempotencyKey string) error {
-	return u.cartRepo.ClearCart(ctx, userID, idempotencyKey)
+	return u.cartRepo.ClearCart(ctx, userID)
 }
