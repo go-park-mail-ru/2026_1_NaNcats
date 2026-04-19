@@ -16,7 +16,12 @@ func ToGRPCError(err error) error {
 		return nil
 	}
 
-	// Если ошибка реализует наш контракт
+	// Если ошибка уже пришла от gRPC
+	if _, ok := status.FromError(err); ok {
+		return err // Ошибка уже в правильном формате, просто пробрасываем
+	}
+
+	// Если ошибка реализует наш контракт (пришла из другого слоя)
 	if s, ok := err.(StatusCoder); ok {
 		return status.Error(s.GRPCStatus(), err.Error())
 	}

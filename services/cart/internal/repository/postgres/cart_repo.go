@@ -2,23 +2,22 @@ package cart
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/postgres"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
 	"github.com/jackc/pgx/v5"
 )
 
 type cartItemDB struct {
 	RestaurantID int64     `db:"restaurant_brand_id"`
 	UpdatedAt    time.Time `db:"updated_at"`
-	// Поля из left должны быть указателями чтобы обработать null (пустую корзину)
-	DishID   *int64  `db:"dish_id"`
-	Quantity *int    `db:"quantity"`
-	Name     *string `db:"name"`
-	Price    *int64  `db:"price"`
-	ImageURL *string `db:"image_url"`
+	// Указатели для обработки пустой корзины
+	DishID   *int64 `db:"dish_id"`
+	Quantity *int   `db:"quantity"`
 }
 
 func (r cartItemDB) toDomainItem() domain.CartItem {
@@ -28,15 +27,6 @@ func (r cartItemDB) toDomainItem() domain.CartItem {
 	}
 	if r.Quantity != nil {
 		item.Quantity = *r.Quantity
-	}
-	if r.Name != nil {
-		item.Name = *r.Name
-	}
-	if r.Price != nil {
-		item.Price = *r.Price
-	}
-	if r.ImageURL != nil {
-		item.ImageURL = *r.ImageURL
 	}
 	return item
 }
@@ -56,25 +46,22 @@ func (r *cartRepo) GetCartByUserID(ctx context.Context, userID int64) (domain.Ca
 		SELECT 
 			c.restaurant_brand_id,
 			c.updated_at,
+			c.status,
 			cd.dish_id,
-			cd.quantity,
-			d.name,
-			d.price,
-			d.image_url
-		FROM cart c
-		LEFT JOIN cart_dish cd ON c.client_account_id = cd.cart_id
-		LEFT JOIN dish d ON cd.dish_id = d.id
+			cd.quantity
+		FROM "cart" c
+		LEFT JOIN "cart_dish" cd ON c.client_account_id = cd.cart_id
 		WHERE c.client_account_id = $1
 	`
 
 	rows, err := r.pool.Query(ctx, query, userID)
 	if err != nil {
-		return domain.Cart{}, err
+		return domain.Cart{}, fmt.Errorf("query cart: %w", err)
 	}
 
 	dbRows, err := pgx.CollectRows(rows, pgx.RowToStructByName[cartItemDB])
 	if err != nil {
-		return domain.Cart{}, err
+		return domain.Cart{}, fmt.Errorf("scan cart rows: %w", err)
 	}
 
 	if len(dbRows) == 0 {
@@ -97,20 +84,33 @@ func (r *cartRepo) GetCartByUserID(ctx context.Context, userID int64) (domain.Ca
 	return cart, nil
 }
 
-// TODO: сделать обновление доступным только при статусе 'active'
-func (r *cartRepo) UpdateCart(ctx context.Context, userID int64, resID int64, items []domain.CartItem) error {
+func (r *cartRepo) UpdateCart(ctx context.Context, userID int64, resID int64, items []domain.CartItem, idempotencyKey string) error {
+	var currentStatus string
+	err := r.pool.QueryRow(ctx, `SELECT status FROM "cart" WHERE client_account_id = $1`, userID).Scan(&currentStatus)
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("get cart status for update: %w", err)
+		}
+	} else {
+		if currentStatus == "locked" {
+			return fmt.Errorf("cannot update cart: status is 'locked' during payment processing")
+		}
+	}
+
 	batch := &pgx.Batch{}
+
 	batch.Queue(`
-		INSERT INTO cart (client_account_id, restaurant_brand_id, updated_at)
-		VALUES ($1, $2, NOW())
+		INSERT INTO "cart" (client_account_id, restaurant_brand_id, status, updated_at)
+		VALUES ($1, $2, 'active', NOW())
 		ON CONFLICT (client_account_id) 
-		DO UPDATE SET restaurant_brand_id = $2, updated_at = NOW()`,
+		DO UPDATE SET restaurant_brand_id = $2, updated_at = NOW()
+		WHERE "cart".status = 'active'`,
 		userID, resID)
 
-	batch.Queue(`DELETE FROM cart_dish WHERE cart_id = $1`, userID)
+	batch.Queue(`DELETE FROM "cart_dish" WHERE cart_id = $1`, userID)
 
 	if len(items) > 0 {
-		dishIDs := make([]int, len(items))
+		dishIDs := make([]int64, len(items))
 		quantities := make([]int, len(items))
 		for i, item := range items {
 			dishIDs[i] = item.DishID
@@ -118,41 +118,54 @@ func (r *cartRepo) UpdateCart(ctx context.Context, userID int64, resID int64, it
 		}
 
 		batch.Queue(`
-			INSERT INTO cart_dish (cart_id, dish_id, quantity)
-			SELECT $1, unnest($2::int[]), unnest($3::int[])`,
+			INSERT INTO "cart_dish" (cart_id, dish_id, quantity, updated_at)
+			SELECT $1, unnest($2::bigint[]), unnest($3::int[]), NOW()`,
 			userID, dishIDs, quantities)
 	}
 
-	// Отправляем весь пакет в рамках одной транзакции
 	br := r.pool.SendBatch(ctx, batch)
 	defer br.Close()
 
-	// Нужно пройтись по результатам всех команд в батче, чтобы поймать ошибку
 	for i := 0; i < batch.Len(); i++ {
-		_, err := br.Exec()
-		if err != nil {
-			return err
+		_, execErr := br.Exec()
+		if execErr != nil {
+			return fmt.Errorf("cart batch execution failed at step %d: %w", i, execErr)
 		}
 	}
 
 	return nil
 }
 
-func (r *cartRepo) ClearCart(ctx context.Context, userID int64) error {
+func (r *cartRepo) ClearCart(ctx context.Context, userID int64, idempotencyKey string) error {
 	query := `
 		DELETE FROM cart WHERE client_account_id = $1
 	`
-	_, err := r.pool.Exec(ctx, query, userID)
-	return err
-}
-
-// TODO: Написать реализацию методов ниже,
-// * LockCart должен менять status на 'locked'
-// * UnlockCart - на 'active'
-func (r *cartRepo) LockCart(ctx context.Context, userID int64) error {
+	if _, err := r.pool.Exec(ctx, query, userID); err != nil {
+		return fmt.Errorf("clear cart: %w", err)
+	}
 	return nil
 }
 
-func (r *cartRepo) UnlockCart(ctx context.Context, userID int64) error {
+func (r *cartRepo) LockCart(ctx context.Context, userID int64, idempotencyKey string) error {
+	query := `UPDATE "cart" SET status = 'locked', updated_at = NOW() WHERE client_account_id = $1`
+	res, err := r.pool.Exec(ctx, query, userID)
+	if err != nil {
+		return fmt.Errorf("lock cart: %w", err)
+	}
+	if res.RowsAffected() == 0 {
+		return fmt.Errorf("cart not found")
+	}
+	return nil
+}
+
+func (r *cartRepo) UnlockCart(ctx context.Context, userID int64, idempotencyKey string) error {
+	query := `UPDATE "cart" SET status = 'active', updated_at = NOW() WHERE client_account_id = $1`
+	res, err := r.pool.Exec(ctx, query, userID)
+	if err != nil {
+		return fmt.Errorf("unlock cart: %w", err)
+	}
+	if res.RowsAffected() == 0 {
+		return fmt.Errorf("cart not found")
+	}
 	return nil
 }

@@ -37,7 +37,7 @@ func UnaryClientUserIDKey() grpc.UnaryClientInterceptor {
 // Сторона микросервисов
 
 // Достает userID из метаданных и кладет его в контекст Go
-func UnaryServerInterceptorIDKey() grpc.UnaryServerInterceptor {
+func UnaryServerUserIDKey() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		if md, ok := metadata.FromIncomingContext(ctx); ok {
 			if ids := md.Get(mdUserIDKey); len(ids) > 0 {
