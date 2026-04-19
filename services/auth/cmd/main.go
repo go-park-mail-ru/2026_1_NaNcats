@@ -29,7 +29,6 @@ import (
 func main() {
 	_ = godotenv.Load()
 
-	// 1. Инициализация логгера
 	logLevel := os.Getenv("LOG_LEVEL")
 	if logLevel == "" {
 		logLevel = "info"
@@ -73,10 +72,10 @@ func main() {
 	conn.Close()
 	appLogger.Info("Connected to Redis")
 
-	userConn, err := grpc.Dial(userServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		appLogger.Fatal("Failed to dial User Service", err)
-	}
+	userConn, err := grpc.NewClient(
+		userServiceAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
 	defer userConn.Close()
 
 	userGrpcClient := pbUser.NewUserServiceClient(userConn)

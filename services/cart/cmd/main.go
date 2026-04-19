@@ -15,6 +15,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
 	"github.com/joho/godotenv"
 
+	cartGrpcClient "github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/infrastructure/grpc_client"
 	cartDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/delivery/grpc"
 	cartPG "github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/repository/postgres"
 	cartUseCase "github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/usecase"
@@ -81,8 +82,10 @@ func main() {
 	}
 	defer resConn.Close()
 
-	restaurantClient := restaurantPb.NewRestaurantServiceClient(resConn)
+	restaurantGrpcClient := restaurantPb.NewRestaurantServiceClient(resConn)
 	appLogger.Info("Connected to Restaurant Service", logger.String("addr", restaurantAddr))
+
+	restaurantClient := cartGrpcClient.NewRestaurantClient(restaurantGrpcClient)
 
 	defaultFoodLogo := os.Getenv("DEFAULT_FOOD_LOGO_URL")
 
