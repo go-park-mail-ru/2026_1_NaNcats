@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	repoMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository/mocks"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/domain"
+	repoMocks "github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/repository/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"

@@ -6,15 +6,15 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/csrf"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/csrf"
 )
 
 //go:generate mockgen -destination=mocks/session_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/auth SessionUseCase
 type SessionUseCase interface {
 	// бизнес-логика создания сессии для пользователя, вовзращает sessionID
-	Create(ctx context.Context, userID int64, userAgent string) (domain.Session, error)
+	Create(ctx context.Context, userID int64, role, userAgent string) (domain.Session, error)
 	// проверяет, существует и не истек ли sessionID, возвращает айди юзера при успехе
 	Check(ctx context.Context, id uuid.UUID) (domain.Session, error)
 	// бизнес-логика для удаления сессии, просто вызывает удаление из repository.session
@@ -36,7 +36,7 @@ func NewSessionUseCase(sr repository.SessionRepository, ttl time.Duration) Sessi
 	}
 }
 
-func (u *sessionUseCase) Create(ctx context.Context, userID int64, userAgent string) (domain.Session, error) {
+func (u *sessionUseCase) Create(ctx context.Context, userID int64, role, userAgent string) (domain.Session, error) {
 	// бизнес-логика создания сессии
 	// возвращает sessionID созданной сессии и момент времени, когда истекает
 
@@ -49,6 +49,7 @@ func (u *sessionUseCase) Create(ctx context.Context, userID int64, userAgent str
 		ID:        sessionID,
 		UserID:    userID,
 		UserAgent: userAgent,
+		Role:      role,
 		ExpiresAt: expiresAt,
 	}
 

@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	ucMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/mocks"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/domain"
+	ucMocks "github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/usecase/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"

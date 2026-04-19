@@ -2,161 +2,89 @@ package auth
 
 import (
 	"context"
-	"fmt"
-	"net/mail"
 	"strings"
-	"time"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	user "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/user"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/password"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
+	passUtil "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/password"
 	"github.com/google/uuid"
+	"google.golang.org/grpc/codes"
 )
 
 // контракт бизнес-логики авторизации
 //
 //go:generate mockgen -destination=../mocks/auth_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/auth AuthUseCase
 type AuthUseCase interface {
-	Register(ctx context.Context, user domain.User, userAgent string) (domain.User, domain.Session, error)
-	Login(ctx context.Context, user domain.User, userAgent string) (domain.User, domain.Session, error)
+	IssueSession(ctx context.Context, userID int64, role, userAgent string) (domain.Session, error)
+	Login(ctx context.Context, email, password, userAgent string) (domain.Session, error)
 	Logout(ctx context.Context, sessionID uuid.UUID) error
-	CheckUserSession(ctx context.Context, sessionID uuid.UUID) (domain.User, error)
+	CheckUserSession(ctx context.Context, sessionID uuid.UUID) (int64, error)
 	SetCSRFForUser(ctx context.Context, sessionID uuid.UUID) (string, error)
 	GetCSRFBySessionID(ctx context.Context, sessionID uuid.UUID) (string, error)
 }
 
 // реализация контракта
 type authUseCase struct {
-	userUC          user.UserUseCase
-	sessionUC       SessionUseCase
-	clientProfileUC user.ClientProfileUseCase
+	userClient UserClient
+	sessionUC  SessionUseCase
 }
 
 // функция-конструктор бизнес-логики авторизации
-func NewAuthUseCase(uuc user.UserUseCase, suc SessionUseCase, cpuc user.ClientProfileUseCase) AuthUseCase {
+func NewAuthUseCase(uc UserClient, suc SessionUseCase) AuthUseCase {
 	return &authUseCase{
-		userUC:          uuc,
-		sessionUC:       suc,
-		clientProfileUC: cpuc,
+		userClient: uc,
+		sessionUC:  suc,
 	}
 }
 
-func isValidEmail(email string) bool {
-	if len(email) < 4 || len(email) > 254 {
-		return false
-	}
-
-	// Парсинг RFC 5322
-	addr, err := mail.ParseAddress(email)
+func (u *authUseCase) IssueSession(ctx context.Context, userID int64, role, userAgent string) (domain.Session, error) {
+	createdSession, err := u.sessionUC.Create(ctx, userID, role, userAgent)
 	if err != nil {
-		return false
+		return domain.Session{}, errutil.Wrap("failed to issue session", err, codes.Internal)
 	}
 
-	if strings.Contains(email, "..") {
-		return false
-	}
-
-	// Проверка всех символов на ASCII
-	for i := 0; i < len(email); i++ {
-		if email[i] > 127 {
-			return false
-		}
-	}
-
-	// mail.ParseAddress позволяет вводить "Name <test@test.com>"
-	// Нам же нужно, чтобы введенная строка была только email-ом
-	if addr.Address != email {
-		return false
-	}
-
-	return true
+	return createdSession, nil
 }
 
-// бизнес-логика регистрации
-func (u *authUseCase) Register(ctx context.Context, user domain.User, userAgent string) (domain.User, domain.Session, error) {
-	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
+func (u *authUseCase) Login(ctx context.Context, email, password, userAgent string) (domain.Session, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
 
-	if !isValidEmail(user.Email) {
-		return domain.User{}, domain.Session{}, domain.ErrInvalidEmail
-	}
-
-	// генерируем хешированный пароль
-	hashedPassword, err := password.HashPassword(user.PasswordHash, password.DefaultParams)
+	currUser, err := u.userClient.GetUserByEmail(ctx, email)
 	if err != nil {
-		return domain.User{}, domain.Session{}, fmt.Errorf("bcrypt failed: %w", err)
+		return domain.Session{}, errutil.New("invalid email or password", codes.Unauthenticated)
 	}
 
-	user.PasswordHash = string(hashedPassword)
-
-	user.CreatedAt = time.Now()
-	user.UpdatedAt = time.Now()
-
-	// вызов создания пользователя из репо
-	id, err := u.userUC.Create(ctx, user)
-	if err != nil {
-		return domain.User{}, domain.Session{}, err
-	}
-
-	user.ID = id
-
-	// создание профиля клиента
-	err = u.clientProfileUC.CreateProfile(ctx, user.ID)
-	if err != nil {
-		return domain.User{}, domain.Session{}, err
-	}
-
-	// вызов бизнес-логики по созданию сессии
-	createdSession, err := u.sessionUC.Create(ctx, user.ID, userAgent)
-	if err != nil {
-		return domain.User{}, domain.Session{}, err
-	}
-
-	return user, createdSession, nil
-}
-
-func (u *authUseCase) Login(ctx context.Context, user domain.User, userAgent string) (domain.User, domain.Session, error) {
-	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
-
-	currUser, err := u.userUC.GetByEmail(ctx, user.Email)
-	if err != nil {
-		return domain.User{}, domain.Session{}, domain.ErrInvalidCredentials
-	}
-
-	isValid, err := password.VerifyPassword(user.PasswordHash, currUser.PasswordHash)
+	isValid, err := passUtil.VerifyPassword(password, currUser.PasswordHash)
 	if err != nil || !isValid {
-		return domain.User{}, domain.Session{}, domain.ErrInvalidCredentials
+		return domain.Session{}, errutil.New("invalid email or password", codes.Unauthenticated)
 	}
 
-	createdSession, err := u.sessionUC.Create(ctx, currUser.ID, userAgent)
+	createdSession, err := u.sessionUC.Create(ctx, currUser.ID, currUser.Role, userAgent)
 	if err != nil {
-		return domain.User{}, domain.Session{}, fmt.Errorf("failed to create session: %w", err)
+		return domain.Session{}, errutil.Wrap("failed to create session", err, codes.Internal)
 	}
 
-	return currUser, createdSession, nil
+	return createdSession, nil
 }
 
 func (u *authUseCase) Logout(ctx context.Context, sessionID uuid.UUID) error {
 	err := u.sessionUC.Destroy(ctx, sessionID)
 	if err != nil {
-		return err
+		return errutil.Wrap("failed to destroy session", err, codes.Internal)
 	}
 
 	return nil
 }
 
 // возвращает пользователя сессии, проверяя, существует ли сессия и пользователь сессии
-func (u *authUseCase) CheckUserSession(ctx context.Context, sessionID uuid.UUID) (domain.User, error) {
+func (u *authUseCase) CheckUserSession(ctx context.Context, sessionID uuid.UUID) (int64, error) {
 	session, err := u.sessionUC.Check(ctx, sessionID)
 	if err != nil {
-		return domain.User{}, err
+		// Ошибка уже обернута в SessionUseCase
+		return 0, err
 	}
 
-	user, err := u.userUC.GetByID(ctx, session.UserID)
-	if err != nil {
-		return domain.User{}, err
-	}
-
-	return user, nil
+	return session.UserID, nil
 }
 
 func (u *authUseCase) SetCSRFForUser(ctx context.Context, sessionID uuid.UUID) (string, error) {
