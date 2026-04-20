@@ -14,8 +14,8 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/joho/godotenv"
 
-	grpcClient "github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/infrastructure/grpc_client"
 	authDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/delivery/grpc"
+	grpcClient "github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/infrastructure/grpc_client"
 	redisRepo "github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/repository/redisrepo"
 	authUsecase "github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/usecase"
 

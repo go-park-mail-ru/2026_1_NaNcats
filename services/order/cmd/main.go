@@ -26,8 +26,8 @@ import (
 	paymentPb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/payment"
 	restaurantPb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
 
-	orderGrpcClient "github.com/go-park-mail-ru/2026_1_NaNcats/services/order/infrastructure/grpc_client"
 	orderDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/delivery/grpc"
+	orderGrpcClient "github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/infrastructure/grpc_client"
 	orderPG "github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository/postgres"
 	orderUseCase "github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase"
 )

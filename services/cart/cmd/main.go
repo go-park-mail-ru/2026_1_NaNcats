@@ -15,8 +15,8 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
 	"github.com/joho/godotenv"
 
-	cartGrpcClient "github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/infrastructure/grpc_client"
 	cartDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/delivery/grpc"
+	cartGrpcClient "github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/infrastructure/grpc_client"
 	cartPG "github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/repository/postgres"
 	cartUseCase "github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/usecase"
 

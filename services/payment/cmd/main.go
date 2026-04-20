@@ -26,8 +26,8 @@ import (
 	orderPb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/order"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/payment"
 
-	paymentGrpcClient "github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/infrastructure/grpc_client"
 	paymentDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/delivery/grpc"
+	paymentGrpcClient "github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/infrastructure/grpc_client"
 	paymentPG "github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/repository/postgres"
 	paymentRedis "github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/repository/redisrepo"
 	paymentUseCase "github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/usecase"
