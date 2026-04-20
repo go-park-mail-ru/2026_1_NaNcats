@@ -1,32 +1,48 @@
 package errutil
 
-import "google.golang.org/grpc/codes"
+import (
+	"fmt"
+
+	"google.golang.org/grpc/codes"
+)
 
 type domainError struct {
+	slug    string
 	message string
 	code    codes.Code
 	cause   error
 }
 
 func (e domainError) Error() string {
-	return e.message
+	res := fmt.Sprintf("[%s] %s", e.slug, e.message)
+	if e.cause != nil {
+		res = fmt.Sprintf("%s: %v", res, e.cause)
+	}
+	return res
 }
 
 func (e domainError) GRPCStatus() codes.Code {
 	return e.code
 }
 
+// Возвращает машинный код ошибки
+func (e domainError) Slug() string {
+	return e.slug
+}
+
 // Создает базовую ошибку (для констант в domain)
-func New(msg string, code codes.Code) domainError {
+func New(slug, msg string, code codes.Code) domainError {
 	return domainError{
+		slug:    slug,
 		message: msg,
 		code:    code,
 	}
 }
 
 // Позволяет добавить контекст к существующей ошибке
-func Wrap(msg string, cause error, code codes.Code) domainError {
+func Wrap(slug, msg string, cause error, code codes.Code) domainError {
 	return domainError{
+		slug:    slug,
 		message: msg,
 		cause:   cause,
 		code:    code,

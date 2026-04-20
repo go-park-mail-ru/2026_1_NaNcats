@@ -27,7 +27,7 @@ func NewClientProfileUseCase(r repository.ClientProfileRepository) ClientProfile
 func (u *clientProfileUseCase) CreateProfile(ctx context.Context, accountID int64, idempotencyKey string) error {
 	err := u.repo.Create(ctx, accountID, idempotencyKey)
 	if err != nil {
-		return errutil.Wrap("failed to create client profile in db", err, codes.Internal)
+		return errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to create client profile in db", err, codes.Internal)
 	}
 
 	return nil
@@ -37,9 +37,9 @@ func (u *clientProfileUseCase) GetByAccountID(ctx context.Context, accountID int
 	profile, err := u.repo.GetByAccountID(ctx, accountID)
 	if err != nil {
 		if errors.Is(err, domain.ErrUserNotFound) {
-			return domain.ClientProfile{}, errutil.New("client profile not found", codes.NotFound)
+			return domain.ClientProfile{}, errutil.New("PROFILE_NOT_FOUND", "client profile not found", codes.NotFound)
 		}
-		return domain.ClientProfile{}, errutil.Wrap("failed to get client profile from db", err, codes.Internal)
+		return domain.ClientProfile{}, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to get client profile from db", err, codes.Internal)
 	}
 
 	return profile, nil

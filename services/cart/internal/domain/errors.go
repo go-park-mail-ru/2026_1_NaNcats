@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	ErrInvalidQuantity     = errutil.New("invalid dish quantity", codes.InvalidArgument)
-	ErrDishNotFound        = errutil.New("dish not found", codes.NotFound)
-	ErrMultipleRestaurants = errutil.New("restaurant is different in cart and dish", codes.InvalidArgument)
+	ErrInvalidQuantity     = errutil.New("INVALID_QUANTITY", "invalid dish quantity", codes.InvalidArgument)
+	ErrDishNotFound        = errutil.New("DISH_NOT_FOUND", "dish not found", codes.NotFound)
+	ErrMultipleRestaurants = errutil.New("MULTIPLE_RESTAURANTS", "restaurant is different in cart and dish", codes.InvalidArgument)
 )

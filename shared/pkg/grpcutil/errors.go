@@ -10,6 +10,11 @@ type StatusCoder interface {
 	GRPCStatus() codes.Code
 }
 
+// Интерфейс для чтения Слага
+type Slugger interface {
+	Slug() string
+}
+
 // Превращает ошибку Go в ошибку gRPC
 func ToGRPCError(err error) error {
 	if err == nil {
@@ -23,9 +28,16 @@ func ToGRPCError(err error) error {
 
 	// Если ошибка реализует наш контракт (пришла из другого слоя)
 	if s, ok := err.(StatusCoder); ok {
-		return status.Error(s.GRPCStatus(), err.Error())
+		message := err.Error()
+
+		// Если у ошибки есть слаг, мы отправляем СЛАГ в качестве сообщения gRPC!
+		if slugErr, ok := err.(Slugger); ok {
+			message = slugErr.Slug()
+		}
+
+		return status.Error(s.GRPCStatus(), message)
 	}
 
 	// Если это посторонняя ошибка
-	return status.Error(codes.Internal, "internal server error")
+	return status.Error(codes.Internal, "INTERNAL_SERVER_ERROR")
 }

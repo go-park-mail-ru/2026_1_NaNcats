@@ -40,7 +40,7 @@ func (r *sessionRepo) Create(ctx context.Context, session domain.Session, ttl ti
 		return err
 	}
 	if result != "OK" {
-		return errutil.New("failed to set session: redis result is not OK", codes.Internal)
+		return errutil.New("INTERNAL_SERVER_ERROR", "failed to set session: redis result is not OK", codes.Internal)
 	}
 
 	return nil
@@ -91,7 +91,7 @@ func (r *sessionRepo) SetCSRF(ctx context.Context, id uuid.UUID, token string) e
 		return err
 	}
 	if result != "OK" {
-		return errutil.New("failed to set csrf: redis result is not OK", codes.Internal)
+		return errutil.New("INTERNAL_SERVER_ERROR", "failed to set csrf: redis result is not OK", codes.Internal)
 	}
 
 	return nil

@@ -30,7 +30,7 @@ func NewDishUseCase(dr repository.DishRepository, dflurl string) DishUseCase {
 func (uc *dishUseCase) GetDishesByRestaurantBrandID(ctx context.Context, restaurantBrandID int64, limit, offset int) ([]domain.Dish, error) {
 	// Валидация входа
 	if restaurantBrandID <= 0 {
-		return nil, errutil.New("invalid restaurant_brand_id", codes.InvalidArgument)
+		return nil, errutil.New("INVALID_RESTAURANT_BRAND_ID", "invalid restaurant_brand_id", codes.InvalidArgument)
 	}
 
 	// Пагинация

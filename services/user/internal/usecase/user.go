@@ -46,7 +46,7 @@ func (u *userUseCase) Create(ctx context.Context, user domain.User, idempotencyK
 		if errors.Is(err, domain.ErrEmailAlreadyExists) {
 			return 0, err
 		}
-		return 0, errutil.Wrap("failed to create user in db", err, codes.Internal)
+		return 0, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to create user in db", err, codes.Internal)
 	}
 
 	return id, nil
@@ -59,7 +59,7 @@ func (u *userUseCase) GetByID(ctx context.Context, userID int64) (domain.User, e
 		if errors.Is(err, domain.ErrUserNotFound) {
 			return domain.User{}, err
 		}
-		return domain.User{}, errutil.Wrap("failed to get user from db", err, codes.Internal)
+		return domain.User{}, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to get user from db", err, codes.Internal)
 	}
 
 	if user.AvatarURL == "" {
@@ -76,7 +76,7 @@ func (u *userUseCase) GetByEmail(ctx context.Context, email string) (domain.User
 		if errors.Is(err, domain.ErrUserNotFound) {
 			return domain.User{}, err
 		}
-		return domain.User{}, errutil.Wrap("failed to get user by email from db", err, codes.Internal)
+		return domain.User{}, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to get user by email from db", err, codes.Internal)
 	}
 
 	if user.AvatarURL == "" {
@@ -90,7 +90,7 @@ func (u *userUseCase) GetByEmail(ctx context.Context, email string) (domain.User
 func (u *userUseCase) Check(ctx context.Context, userID int64) (bool, error) {
 	isExists, err := u.userRepo.CheckUserByID(ctx, userID)
 	if err != nil {
-		return false, errutil.Wrap("failed to check user existence in db", err, codes.Internal)
+		return false, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to check user existence in db", err, codes.Internal)
 	}
 
 	return isExists, nil
@@ -106,7 +106,7 @@ func (u *userUseCase) UpdateProfile(ctx context.Context, userID int64, name, ema
 		if errors.Is(err, domain.ErrEmailAlreadyExists) {
 			return err
 		}
-		return errutil.Wrap("failed to update user profile", err, codes.Internal)
+		return errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to update user profile", err, codes.Internal)
 	}
 
 	return nil
@@ -130,7 +130,7 @@ func (u *userUseCase) UpdateAvatar(ctx context.Context, userID int64, imageData 
 
 	newAvatarURL, err := u.fileStorage.UploadFile(ctx, webpData, filename, "image/webp")
 	if err != nil {
-		return "", errutil.Wrap("failed to upload to S3", err, codes.Internal)
+		return "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to upload to S3", err, codes.Internal)
 	}
 
 	err = u.userRepo.UpdateAvatarURL(ctx, userID, newAvatarURL)
@@ -138,7 +138,7 @@ func (u *userUseCase) UpdateAvatar(ctx context.Context, userID int64, imageData 
 		go func(urlToDelete string) {
 			_ = u.fileStorage.DeleteFile(context.Background(), urlToDelete)
 		}(newAvatarURL)
-		return "", errutil.Wrap("failed to update avatar in db", err, codes.Internal)
+		return "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to update avatar in db", err, codes.Internal)
 	}
 
 	if user.AvatarURL != u.defaultAvatarURL && user.AvatarURL != "" {
@@ -168,7 +168,7 @@ func (u *userUseCase) DeleteAvatar(ctx context.Context, userID int64, idempotenc
 		if errors.Is(err, domain.ErrUserNotFound) {
 			return "", err
 		}
-		return "", errutil.Wrap("failed to reset avatar in db", err, codes.Internal)
+		return "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to reset avatar in db", err, codes.Internal)
 	}
 
 	go func(urlToDelete string) {

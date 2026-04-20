@@ -6,6 +6,6 @@ import (
 )
 
 var (
-	ErrAddressNotFound   = errutil.New("address not found", codes.NotFound)
-	ErrNoChangesProvided = errutil.New("no changes provided", codes.InvalidArgument)
+	ErrAddressNotFound   = errutil.New("ADDRESS_NOT_FOUND", "address not found", codes.NotFound)
+	ErrNoChangesProvided = errutil.New("NO_CHANGES", "no changes provided", codes.InvalidArgument)
 )

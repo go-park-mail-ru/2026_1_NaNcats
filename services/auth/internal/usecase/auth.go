@@ -40,7 +40,7 @@ func NewAuthUseCase(uc UserClient, suc SessionUseCase) AuthUseCase {
 func (u *authUseCase) IssueSession(ctx context.Context, userID int64, role, userAgent string) (domain.Session, error) {
 	createdSession, err := u.sessionUC.Create(ctx, userID, role, userAgent)
 	if err != nil {
-		return domain.Session{}, errutil.Wrap("failed to issue session", err, codes.Internal)
+		return domain.Session{}, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to issue session", err, codes.Internal)
 	}
 
 	return createdSession, nil
@@ -51,17 +51,17 @@ func (u *authUseCase) Login(ctx context.Context, email, password, userAgent stri
 
 	currUser, err := u.userClient.GetUserByEmail(ctx, email)
 	if err != nil {
-		return domain.Session{}, errutil.New("invalid email or password", codes.Unauthenticated)
+		return domain.Session{}, errutil.New("INVALID_CREDENTIALS", "invalid email or password", codes.Unauthenticated)
 	}
 
 	isValid, err := passUtil.VerifyPassword(password, currUser.PasswordHash)
 	if err != nil || !isValid {
-		return domain.Session{}, errutil.New("invalid email or password", codes.Unauthenticated)
+		return domain.Session{}, errutil.New("INVALID_CREDENTIALS", "invalid email or password", codes.Unauthenticated)
 	}
 
 	createdSession, err := u.sessionUC.Create(ctx, currUser.ID, currUser.Role, userAgent)
 	if err != nil {
-		return domain.Session{}, errutil.Wrap("failed to create session", err, codes.Internal)
+		return domain.Session{}, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to create session", err, codes.Internal)
 	}
 
 	return createdSession, nil
@@ -70,7 +70,7 @@ func (u *authUseCase) Login(ctx context.Context, email, password, userAgent stri
 func (u *authUseCase) Logout(ctx context.Context, sessionID uuid.UUID) error {
 	err := u.sessionUC.Destroy(ctx, sessionID)
 	if err != nil {
-		return errutil.Wrap("failed to destroy session", err, codes.Internal)
+		return errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to destroy session", err, codes.Internal)
 	}
 
 	return nil

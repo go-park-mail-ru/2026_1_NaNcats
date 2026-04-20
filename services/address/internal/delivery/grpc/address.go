@@ -61,7 +61,7 @@ func NewAddressHandler(uc usecase.AddressUseCase) *AddressHandler {
 
 func (h *AddressHandler) AddAddress(ctx context.Context, req *pb.AddAddressRequest) (*pb.AddAddressResponse, error) {
 	if req.Address == nil {
-		return nil, errutil.New("address is required", codes.InvalidArgument)
+		return nil, errutil.New("ADDRESS_REQUIRED", "address is required", codes.InvalidArgument)
 	}
 
 	domainAddr := mapPBToDomainAddress(req.Address)
@@ -103,7 +103,7 @@ func (h *AddressHandler) DeleteAddress(ctx context.Context, req *pb.DeleteAddres
 
 func (h *AddressHandler) UpdateAddress(ctx context.Context, req *pb.UpdateAddressRequest) (*emptypb.Empty, error) {
 	if req.Address == nil {
-		return nil, errutil.New("address is required", codes.InvalidArgument)
+		return nil, errutil.New("ADDRESS_REQUIRED", "address is required", codes.InvalidArgument)
 	}
 
 	domainAddress := mapPBToDomainAddress(req.Address)

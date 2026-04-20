@@ -44,7 +44,7 @@ func (rb *restaurantBrandUseCase) GetRestaurantBrandsList(ctx context.Context, l
 
 func (rb *restaurantBrandUseCase) GetRestaurantBrandByID(ctx context.Context, id int64) (domain.RestaurantBrand, error) {
 	if id <= 0 {
-		return domain.RestaurantBrand{}, errutil.New("invalid restaurant id", codes.InvalidArgument)
+		return domain.RestaurantBrand{}, errutil.New("INVALID_RESTAURANT_BRAND_ID", "invalid restaurant brand id", codes.InvalidArgument)
 	}
 
 	restaurantBrand, err := rb.restaurantBrandRepo.GetByID(ctx, id)

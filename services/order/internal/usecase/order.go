@@ -61,15 +61,15 @@ func NewOrderUseCase(or repository.OrderRepository, ac AddressClient, cc CartCli
 func (o *orderUseCase) CreateOrder(ctx context.Context, userID int64, req domain.CreateOrderInput, idempotencyKey string) (string, string, error) {
 	cart, cartTotalCost, err := o.cartClient.GetCart(ctx, userID)
 	if err != nil {
-		return "", "", errutil.Wrap("failed to get cart", err, codes.Internal)
+		return "", "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to get cart", err, codes.Internal)
 	}
 	if len(cart.Items) == 0 {
-		return "", "", errutil.New("cart is empty", codes.InvalidArgument)
+		return "", "", errutil.New("CART_EMPTY", "cart is empty", codes.InvalidArgument)
 	}
 
 	err = o.addressClient.CheckAddressExists(ctx, userID, req.AddressPublicID)
 	if err != nil {
-		return "", "", errutil.Wrap("address not found or invalid", err, codes.NotFound)
+		return "", "", errutil.Wrap("ADDRESS_NOT_FOUND_OR_INVALID", "address not found or invalid", err, codes.NotFound)
 	}
 
 	items := make([]domain.OrderDish, 0, len(cart.Items))
@@ -85,7 +85,7 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, userID int64, req domain
 
 	resName, err := o.restaurantClient.GetRestaurantName(ctx, req.RestaurantBranchID)
 	if err != nil {
-		return "", "", errutil.Wrap("failed to get restaurant info", err, codes.Internal)
+		return "", "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to get restaurant info", err, codes.Internal)
 	}
 
 	order := domain.Order{
@@ -100,16 +100,16 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, userID int64, req domain
 
 	orderPublicID, err := o.orderRepo.CreateOrder(ctx, order, idempotencyKey)
 	if err != nil {
-		return "", "", errutil.Wrap("failed to create order in db", err, codes.Internal)
+		return "", "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to create order in db", err, codes.Internal)
 	}
 
 	paymentID, confirmationURL, err := o.paymentClient.CreatePayment(ctx, finalTotalCost, req.PaymentMethodID, idempotencyKey)
 	if err != nil {
-		return "", "", errutil.Wrap("failed to initialize payment", err, codes.Internal)
+		return "", "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to initialize payment", err, codes.Internal)
 	}
 
 	if err = o.orderRepo.SetYookassaID(ctx, orderPublicID, paymentID); err != nil {
-		return "", "", errutil.Wrap("failed to link yookassa ID to order", err, codes.Internal)
+		return "", "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to link yookassa ID to order", err, codes.Internal)
 	}
 
 	_ = o.cartClient.ClearCart(ctx, userID, idempotencyKey)
@@ -120,7 +120,7 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, userID int64, req domain
 func (o *orderUseCase) GetOrders(ctx context.Context, userID int64) ([]domain.Order, error) {
 	orders, err := o.orderRepo.GetOrdersByUserID(ctx, userID)
 	if err != nil {
-		return []domain.Order{}, errutil.Wrap("failed to get orders", err, codes.Internal)
+		return []domain.Order{}, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to get orders", err, codes.Internal)
 	}
 
 	if len(orders) == 0 {
@@ -162,7 +162,7 @@ func (o *orderUseCase) UpdateOrderStatusByPaymentID(ctx context.Context, payment
 	case "canceled":
 		newStatus = "canceled"
 	default:
-		return errutil.New("unknown payment status", codes.InvalidArgument)
+		return errutil.New("UNKNOWN_STATUS", "unknown payment status", codes.InvalidArgument)
 	}
 
 	return o.orderRepo.UpdateStatusByPaymentID(ctx, paymentID, newStatus)

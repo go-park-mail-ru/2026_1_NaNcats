@@ -55,7 +55,7 @@ func (u *cartUseCase) GetCart(ctx context.Context, userID int64) (domain.Cart, i
 
 	dishes, err := u.restaurantClient.GetDishesByIDs(ctx, dishIDs)
 	if err != nil {
-		return domain.Cart{}, 0, errutil.Wrap("failed to reach restaurant service", err, codes.Internal)
+		return domain.Cart{}, 0, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to reach restaurant service", err, codes.Internal)
 	}
 
 	// Мапка для быстрого поиска данных о блюде
@@ -106,7 +106,7 @@ func (u *cartUseCase) UpdateCart(ctx context.Context, userID int64, cartData dom
 
 	dishes, err := u.restaurantClient.GetDishesByIDs(ctx, dishIDs)
 	if err != nil {
-		return errutil.Wrap("validation: failed to reach restaurant service", err, codes.Internal)
+		return errutil.Wrap("INTERNAL_SERVER_ERROR", "validation: failed to reach restaurant service", err, codes.Internal)
 	}
 
 	if len(dishes) != len(dishIDs) {
@@ -115,7 +115,7 @@ func (u *cartUseCase) UpdateCart(ctx context.Context, userID int64, cartData dom
 
 	for _, d := range dishes {
 		if d.RestaurantBrandID != cartData.RestaurantBrandID {
-			return errutil.New("all items must be from the same restaurant", codes.InvalidArgument)
+			return domain.ErrMultipleRestaurants
 		}
 	}
 
