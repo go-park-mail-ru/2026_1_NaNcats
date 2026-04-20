@@ -1,0 +1,11 @@
+logger:
+  level: "debug"
+
+postgres:
+  url: "postgres://user:pass@localhost:5433/cart_db?sslmode=disable"
+
+grpc:
+  port: "50051"
+  timeout: "2s"
+
+default_food_logo_url: "https://nancats-bucket.storage.yandexcloud.net/foods/default-food-logo.webp"

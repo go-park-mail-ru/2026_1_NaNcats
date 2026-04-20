@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
@@ -16,22 +17,18 @@ type PostgresConfig struct {
 }
 
 type GRPCServerConfig struct {
-	Port    string `yaml:"port" env:"GRPC_PORT" env-default:"50051"`
+	Port    string `yaml:"port" env:"GRPC_PORT" env-required:"true"`
 	Timeout string `yaml:"timeout" env:"GRPC_TIMEOUT" env-default:"5s"`
 }
 
 type RedisConfig struct {
-	URL string `yaml:"url" env:"REDIS_URL" env-default:"redis://localhost:6379/0"`
-}
-
-// Здесь храним дефолтные слаги
-type ErrorConfig struct {
-	InternalSlug string `yaml:"internal_slug" env:"ERR_INTERNAL_SLUG" env-default:"INTERNAL_SERVER_ERROR"`
+	URL         string        `yaml:"url" env:"REDIS_URL" env-default:"redis://localhost:6379/0"`
+	MaxIdle     int           `yaml:"max_idle" env:"REDIS_MAX_IDLE" env-default:"10"`
+	IdleTimeout time.Duration `yaml:"idle_timeout" env:"REDIS_IDLE_TIMEOUT" env-default:"60s"`
 }
 
 // Универсальный загрузчик
 func MustLoad(cfg interface{}) {
-	// Путь к конфигу можно передать через переменную окружения CONFIG_PATH
 	configPath := os.Getenv("CONFIG_PATH")
 
 	if configPath != "" {
@@ -42,7 +39,6 @@ func MustLoad(cfg interface{}) {
 			log.Fatalf("cannot read config: %v", err)
 		}
 	} else {
-		// Если файла нет, пытаемся прочитать только из ENV
 		if err := cleanenv.ReadEnv(cfg); err != nil {
 			log.Fatalf("cannot read env: %v", err)
 		}

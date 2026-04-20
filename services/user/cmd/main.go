@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"log"
 	"net"
 	"os"
@@ -14,9 +13,9 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/s3"
-	"github.com/joho/godotenv"
 
 	userDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/delivery/grpc"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/infrastructure/config"
 	userPG "github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/repository/postgres"
 	userUsecase "github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/usecase"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/user"
@@ -27,40 +26,24 @@ import (
 )
 
 func main() {
-	_ = godotenv.Load()
+	cfg := config.Load()
 
-	logLevel := os.Getenv("LOG_LEVEL")
-	if logLevel == "" {
-		logLevel = "info"
-	}
-
-	rawLogger, err := logger.NewZapLogger(logLevel)
+	rawLogger, err := logger.NewZapLogger(cfg.Logger.Level)
 	if err != nil {
 		log.Fatalf("Cannot start without logger: %v", err)
 	}
 	appLogger := infrastructureLogger.NewLoggerAdapter(rawLogger)
 	appLogger.Info("Starting User microservice...")
 
-	port := os.Getenv("GRPC_PORT")
-	if port == "" {
-		port = "50052"
-	}
-
 	ctx := context.Background()
 
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		appLogger.Fatal("database connection string is missing", errors.New("DATABASE_URL env var is empty"))
-	}
-
-	config, err := pgxpool.ParseConfig(dbURL)
+	pgConfig, err := pgxpool.ParseConfig(cfg.Postgres.URL)
 	if err != nil {
-		appLogger.Fatal("config parsing failed", err)
+		appLogger.Fatal("database config parsing failed", err)
 	}
+	pgConfig.ConnConfig.Tracer = postgres.NewDBTracer(appLogger)
 
-	config.ConnConfig.Tracer = postgres.NewDBTracer(appLogger)
-
-	pool, err := pgxpool.NewWithConfig(ctx, config)
+	pool, err := pgxpool.NewWithConfig(ctx, pgConfig)
 	if err != nil {
 		appLogger.Fatal("database pool creation failed", err)
 	}
@@ -71,25 +54,22 @@ func main() {
 	}
 	appLogger.Info("Connected to PostgreSQL")
 
-	keyID := os.Getenv("S3_KEY_ID")
-	s3SecretKey := os.Getenv("S3_SECRET_KEY")
-	bucketName := "nancats-bucket"
-
-	s3Repo, err := s3.NewS3Storage(ctx, keyID, s3SecretKey, bucketName, "ru-central1")
+	s3Repo, err := s3.NewS3Storage(
+		ctx,
+		cfg.S3.KeyID,
+		cfg.S3.SecretKey,
+		cfg.S3.BucketName,
+		cfg.S3.Region,
+	)
 	if err != nil {
 		appLogger.Fatal("Failed to init S3", err)
 	}
-	appLogger.Info("Connected to S3 Storage")
-
-	defaultAvatarURL := os.Getenv("DEFAULT_AVATAR_URL")
-	if defaultAvatarURL == "" {
-		appLogger.Warn("DEFAULT_AVATAR_URL is empty, frontend might break when requesting default avatar")
-	}
+	appLogger.Info("Connected to S3 Storage", logger.String("bucket", cfg.S3.BucketName))
 
 	userRepo := userPG.NewUserRepo(pool)
 	clientProfileRepo := userPG.NewClientProfileRepo(pool)
 
-	userUC := userUsecase.NewUserUseCase(userRepo, s3Repo, defaultAvatarURL)
+	userUC := userUsecase.NewUserUseCase(userRepo, s3Repo, cfg.DefaultAvatarURL)
 	clientProfileUC := userUsecase.NewClientProfileUseCase(clientProfileRepo)
 
 	userHandler := userDelivery.NewUserHandler(userUC, clientProfileUC)
@@ -104,13 +84,13 @@ func main() {
 	pb.RegisterUserServiceServer(grpcServer, userHandler)
 	reflection.Register(grpcServer)
 
-	listener, err := net.Listen("tcp", ":"+port)
+	listener, err := net.Listen("tcp", ":"+cfg.GRPC.Port)
 	if err != nil {
 		appLogger.Fatal("Failed to listen port", err)
 	}
 
 	go func() {
-		appLogger.Info("User gRPC server is running", logger.String("port", port))
+		appLogger.Info("User gRPC server is running", logger.String("port", cfg.GRPC.Port))
 		if err := grpcServer.Serve(listener); err != nil {
 			appLogger.Fatal("Server failed", err)
 		}

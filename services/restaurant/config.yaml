@@ -1,0 +1,12 @@
+logger:
+  level: "debug"
+
+postgres:
+  url: "postgres://user:password@localhost:5438/restaurant_db?sslmode=disable"
+
+grpc:
+  port: "50053"
+  timeout: "5s"
+
+default_restaurant_logo_url: "https://nancats-bucket.storage.yandexcloud.net/restaurants/default-restaurant-logo.webp"
+default_food_logo_url: "https://nancats-bucket.storage.yandexcloud.net/foods/default-food-logo.webp"

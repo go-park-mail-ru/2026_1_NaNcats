@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"log"
 	"net"
 	"os"
@@ -10,7 +9,6 @@ import (
 	"syscall"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -27,33 +25,26 @@ import (
 	restaurantPb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
 
 	orderDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/delivery/grpc"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/infrastructure/config"
 	orderGrpcClient "github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/infrastructure/grpc_client"
 	orderPG "github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository/postgres"
 	orderUseCase "github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase"
 )
 
 func main() {
-	_ = godotenv.Load()
+	cfg := config.Load()
 
-	logLevel := os.Getenv("LOG_LEVEL")
-	if logLevel == "" {
-		logLevel = "info"
-	}
-	rawLogger, err := logger.NewZapLogger(logLevel)
+	rawLogger, err := logger.NewZapLogger(cfg.Logger.Level)
 	if err != nil {
 		log.Fatalf("Cannot start without logger: %v", err)
 	}
 	appLogger := infrastructureLogger.NewLoggerAdapter(rawLogger)
 	appLogger.Info("Starting Order microservice (Orchestrator)...")
 
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		appLogger.Fatal("database connection string is missing", errors.New("DATABASE_URL env var is empty"))
-	}
 	ctx := context.Background()
-	pgConfig, err := pgxpool.ParseConfig(dbURL)
+	pgConfig, err := pgxpool.ParseConfig(cfg.Postgres.URL)
 	if err != nil {
-		appLogger.Fatal("config parsing failed", err)
+		appLogger.Fatal("database config parsing failed", err)
 	}
 	pgConfig.ConnConfig.Tracer = postgres.NewDBTracer(appLogger)
 	pool, err := pgxpool.NewWithConfig(ctx, pgConfig)
@@ -67,18 +58,13 @@ func main() {
 	}
 	appLogger.Info("Connected to PostgreSQL")
 
-	addressAddr := getEnv("ADDRESS_SERVICE_ADDR", "localhost:50053")
-	cartAddr := getEnv("CART_SERVICE_ADDR", "localhost:50055")
-	paymentAddr := getEnv("PAYMENT_SERVICE_ADDR", "localhost:50056")
-	restaurantAddr := getEnv("RESTAURANT_SERVICE_ADDR", "localhost:50052")
-
-	addrConn := createGrpcConn(addressAddr, "Address", appLogger)
+	addrConn := createGrpcConn(cfg.AddressServiceAddr, "Address", appLogger)
 	defer addrConn.Close()
-	cartConn := createGrpcConn(cartAddr, "Cart", appLogger)
+	cartConn := createGrpcConn(cfg.CartServiceAddr, "Cart", appLogger)
 	defer cartConn.Close()
-	payConn := createGrpcConn(paymentAddr, "Payment", appLogger)
+	payConn := createGrpcConn(cfg.PaymentServiceAddr, "Payment", appLogger)
 	defer payConn.Close()
-	resConn := createGrpcConn(restaurantAddr, "Restaurant", appLogger)
+	resConn := createGrpcConn(cfg.RestaurantServiceAddr, "Restaurant", appLogger)
 	defer resConn.Close()
 
 	addressGrpcClient := addressPb.NewAddressServiceClient(addrConn)
@@ -93,8 +79,6 @@ func main() {
 	restaurantGrpcClient := restaurantPb.NewRestaurantServiceClient(resConn)
 	restaurantClient := orderGrpcClient.NewRestaurantClient(restaurantGrpcClient)
 
-	defaultLogo := os.Getenv("DEFAULT_RESTAURANT_LOGO_URL")
-
 	orderRepo := orderPG.NewOrderRepo(pool)
 	orderUC := orderUseCase.NewOrderUseCase(
 		orderRepo,
@@ -102,11 +86,10 @@ func main() {
 		cartClient,
 		paymentClient,
 		restaurantClient,
-		defaultLogo,
+		cfg.DefaultRestaurantLogoURL,
 	)
 	orderHandler := orderDelivery.NewOrderHandler(orderUC)
 
-	port := getEnv("GRPC_PORT", "50057")
 	grpcServer := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
 			interceptors.UnaryServerRecovery(appLogger),
@@ -117,13 +100,13 @@ func main() {
 	pb.RegisterOrderServiceServer(grpcServer, orderHandler)
 	reflection.Register(grpcServer)
 
-	listener, err := net.Listen("tcp", ":"+port)
+	listener, err := net.Listen("tcp", ":"+cfg.GRPC.Port)
 	if err != nil {
 		appLogger.Fatal("Failed to listen port", err)
 	}
 
 	go func() {
-		appLogger.Info("Order gRPC server is running", logger.String("port", port))
+		appLogger.Info("Order gRPC server is running", logger.String("port", cfg.GRPC.Port))
 		if err := grpcServer.Serve(listener); err != nil {
 			appLogger.Fatal("Server failed", err)
 		}
@@ -136,13 +119,6 @@ func main() {
 	appLogger.Info("Received shutdown signal, stopping gracefully...")
 	grpcServer.GracefulStop()
 	appLogger.Info("Order microservice stopped")
-}
-
-func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-	return fallback
 }
 
 func createGrpcConn(addr, serviceName string, appLogger logger.Logger) *grpc.ClientConn {

@@ -50,6 +50,12 @@ func Wrap(slug, msg string, cause error, code codes.Code) domainError {
 }
 
 // Если нужно быстро вернуть ошибку без создания переменной
-func Message(msg string) domainError {
-	return domainError{message: msg, code: codes.Internal}
+func Message(slug, msg string) domainError {
+	return domainError{slug: slug, message: msg, code: codes.Internal}
+}
+
+const InternalSlug = "INTERNAL_SERVER_ERROR"
+
+func Internal(msg string, err error) domainError {
+	return domainError{slug: InternalSlug, message: msg, code: codes.Internal}
 }

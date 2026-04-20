@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"log"
 	"net"
 	"os"
@@ -13,9 +12,9 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/interceptors"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
-	"github.com/joho/godotenv"
 
 	addressDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/address/internal/delivery/grpc"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/address/internal/infrastructure/config"
 	addressPG "github.com/go-park-mail-ru/2026_1_NaNcats/services/address/internal/repository/postgres"
 	addressUseCase "github.com/go-park-mail-ru/2026_1_NaNcats/services/address/internal/usecase"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/address"
@@ -26,14 +25,9 @@ import (
 )
 
 func main() {
-	_ = godotenv.Load()
+	cfg := config.Load()
 
-	logLevel := os.Getenv("LOG_LEVEL")
-	if logLevel == "" {
-		logLevel = "info"
-	}
-
-	rawLogger, err := logger.NewZapLogger(logLevel)
+	rawLogger, err := logger.NewZapLogger(cfg.Logger.Level)
 	if err != nil {
 		log.Fatalf("Cannot start without logger: %v", err)
 	}
@@ -41,26 +35,16 @@ func main() {
 	appLogger := infrastructureLogger.NewLoggerAdapter(rawLogger)
 	appLogger.Info("Starting Address microservice...")
 
-	port := os.Getenv("GRPC_PORT")
-	if port == "" {
-		port = "50051"
-	}
-
 	ctx := context.Background()
 
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		appLogger.Fatal("database connection string is missing", errors.New("DATABASE_URL env var is empty"))
-	}
-
-	config, err := pgxpool.ParseConfig(dbURL)
+	pgConfig, err := pgxpool.ParseConfig(cfg.Postgres.URL)
 	if err != nil {
 		appLogger.Fatal("config parsing failed", err)
 	}
 
-	config.ConnConfig.Tracer = postgres.NewDBTracer(appLogger)
+	pgConfig.ConnConfig.Tracer = postgres.NewDBTracer(appLogger)
 
-	pool, err := pgxpool.NewWithConfig(ctx, config)
+	pool, err := pgxpool.NewWithConfig(ctx, pgConfig)
 	if err != nil {
 		appLogger.Fatal("database pool creation failed", err)
 	}
@@ -73,7 +57,6 @@ func main() {
 
 	addressRepo := addressPG.NewAddressRepo(pool)
 	addressUC := addressUseCase.NewAddressUseCase(addressRepo)
-
 	addressHandler := addressDelivery.NewAddressHandler(addressUC)
 
 	grpcServer := grpc.NewServer(
@@ -86,13 +69,13 @@ func main() {
 	pb.RegisterAddressServiceServer(grpcServer, addressHandler)
 	reflection.Register(grpcServer)
 
-	listener, err := net.Listen("tcp", ":"+port)
+	listener, err := net.Listen("tcp", ":"+cfg.GRPC.Port)
 	if err != nil {
 		appLogger.Fatal("Failed to listen port", err)
 	}
 
 	go func() {
-		appLogger.Info("Address gRPC server is running", logger.String("port", port))
+		appLogger.Info("Address gRPC server is running", logger.String("port", cfg.GRPC.Port))
 		if err := grpcServer.Serve(listener); err != nil {
 			appLogger.Fatal("Server failed", err)
 		}

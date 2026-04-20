@@ -2,11 +2,13 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 //go:generate mockgen -destination=mocks/cart_client_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase CartClient
@@ -69,7 +71,13 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, userID int64, req domain
 
 	err = o.addressClient.CheckAddressExists(ctx, userID, req.AddressPublicID)
 	if err != nil {
-		return "", "", errutil.Wrap("ADDRESS_NOT_FOUND_OR_INVALID", "address not found or invalid", err, codes.NotFound)
+		st, ok := status.FromError(err)
+
+		if ok && st.Code() == codes.NotFound {
+			return "", "", errutil.New("ADDRESS_NOT_FOUND_OR_INVALID", "user provided bad address", codes.NotFound)
+		}
+
+		return "", "", fmt.Errorf("address service internal error: %w", err)
 	}
 
 	items := make([]domain.OrderDish, 0, len(cart.Items))

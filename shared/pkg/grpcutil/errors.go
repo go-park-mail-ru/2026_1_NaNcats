@@ -23,14 +23,13 @@ func ToGRPCError(err error) error {
 
 	// Если ошибка уже пришла от gRPC
 	if _, ok := status.FromError(err); ok {
-		return err // Ошибка уже в правильном формате, просто пробрасываем
+		return err
 	}
 
 	// Если ошибка реализует наш контракт (пришла из другого слоя)
 	if s, ok := err.(StatusCoder); ok {
 		message := err.Error()
 
-		// Если у ошибки есть слаг, мы отправляем СЛАГ в качестве сообщения gRPC!
 		if slugErr, ok := err.(Slugger); ok {
 			message = slugErr.Slug()
 		}
