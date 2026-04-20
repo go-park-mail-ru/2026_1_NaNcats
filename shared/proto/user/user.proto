@@ -53,7 +53,7 @@ message ClientProfile {
 message CreateUserRequest {
   string name = 1;
   string email = 2;
-  string password_hash = 3;
+  string password = 3;
   string idempotency_key = 4;
 }
 

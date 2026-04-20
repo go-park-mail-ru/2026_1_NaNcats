@@ -211,7 +211,7 @@ type CreateUserRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Name           string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Email          string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	PasswordHash   string                 `protobuf:"bytes,3,opt,name=password_hash,json=passwordHash,proto3" json:"password_hash,omitempty"`
+	Password       string                 `protobuf:"bytes,3,opt,name=password,proto3" json:"password,omitempty"`
 	IdempotencyKey string                 `protobuf:"bytes,4,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -261,9 +261,9 @@ func (x *CreateUserRequest) GetEmail() string {
 	return ""
 }
 
-func (x *CreateUserRequest) GetPasswordHash() string {
+func (x *CreateUserRequest) GetPassword() string {
 	if x != nil {
-		return x.PasswordHash
+		return x.Password
 	}
 	return ""
 }
@@ -978,11 +978,11 @@ const file_user_user_proto_rawDesc = "" +
 	"\fstreak_count\x18\x06 \x01(\x05R\vstreakCount\x12B\n" +
 	"\x0flast_order_date\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\rlastOrderDate\x12H\n" +
 	"\x12premium_expires_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x10premiumExpiresAtB\x14\n" +
-	"\x12_bonus_category_id\"\x8b\x01\n" +
+	"\x12_bonus_category_id\"\x82\x01\n" +
 	"\x11CreateUserRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
-	"\x05email\x18\x02 \x01(\tR\x05email\x12#\n" +
-	"\rpassword_hash\x18\x03 \x01(\tR\fpasswordHash\x12'\n" +
+	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1a\n" +
+	"\bpassword\x18\x03 \x01(\tR\bpassword\x12'\n" +
 	"\x0fidempotency_key\x18\x04 \x01(\tR\x0eidempotencyKey\"-\n" +
 	"\x12CreateUserResponse\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\"^\n" +

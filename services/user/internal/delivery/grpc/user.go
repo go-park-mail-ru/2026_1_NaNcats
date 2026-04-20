@@ -70,12 +70,11 @@ func NewUserHandler(uuc usecase.UserUseCase, cpuc usecase.ClientProfileUseCase) 
 
 func (h *UserHandler) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error) {
 	userToCreate := domain.User{
-		Name:         req.Name,
-		Email:        req.Email,
-		PasswordHash: req.PasswordHash,
+		Name:  req.Name,
+		Email: req.Email,
 	}
 
-	createdUserID, err := h.userUC.Create(ctx, userToCreate, req.IdempotencyKey)
+	createdUserID, err := h.userUC.Create(ctx, userToCreate, password, req.IdempotencyKey)
 	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
 	}

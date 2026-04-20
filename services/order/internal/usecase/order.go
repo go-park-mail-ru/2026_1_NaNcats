@@ -26,7 +26,7 @@ type AddressClient interface {
 }
 
 //go:generate mockgen -destination=mocks/restaurant_client_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase RestaurantClient
-type RestaurantClient interface { // TODO: реализовать эти методы в микросервисе ресторанов
+type RestaurantClient interface {
 	GetRestaurantName(ctx context.Context, branchID int64) (string, error)
 	GetLogosByBranchIDs(ctx context.Context, branchIDs []int64) (map[int64]string, error)
 }

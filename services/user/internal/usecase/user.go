@@ -9,6 +9,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/repository"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/imageutil"
+	passUtil "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/password"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/s3"
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
@@ -16,7 +17,7 @@ import (
 
 //go:generate mockgen -destination=mocks/user_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/user UserUseCase
 type UserUseCase interface {
-	Create(ctx context.Context, user domain.User, idempotencyKey string) (int64, error)
+	Create(ctx context.Context, user domain.User, password, idempotencyKey string) (int64, error)
 	GetByID(ctx context.Context, userID int64) (domain.User, error)
 	GetByEmail(ctx context.Context, email string) (domain.User, error)
 	Check(ctx context.Context, userID int64) (bool, error)
@@ -40,7 +41,13 @@ func NewUserUseCase(ur repository.UserRepository, fs s3.FileStorage, daurl strin
 }
 
 // создаем юзера
-func (u *userUseCase) Create(ctx context.Context, user domain.User, idempotencyKey string) (int64, error) {
+func (u *userUseCase) Create(ctx context.Context, user domain.User, password, idempotencyKey string) (int64, error) {
+	hashedPassword, err := passUtil.HashPassword(password, passUtil.DefaultParams)
+	if err != nil {
+		return 0, errutil.Wrap("failed to hash password", err, codes.Internal)
+	}
+	user.PasswordHash = hashedPassword
+
 	id, err := u.userRepo.CreateUser(ctx, user, idempotencyKey)
 	if err != nil {
 		if errors.Is(err, domain.ErrEmailAlreadyExists) {
