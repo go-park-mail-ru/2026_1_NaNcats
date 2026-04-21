@@ -11,14 +11,11 @@ const (
 	RequestIDKey contextKey = "requestID"
 	// ключ ID пользователя для контекста
 	UserIDKey contextKey = "userID"
+	// ключ Роли пользователя (добавлен для полноты картины)
+	RoleKey contextKey = "role"
 )
 
-func GetUserID(ctx context.Context) (int, error) {
-	// берем userID из контекста, который нам пришел из мидлвара AuthMiddleware
-	// Value возвращает any. Используем утверждение типа, чтобы Go знал что это uuid
-	if id, ok := ctx.Value(UserIDKey).(int); ok {
-		return id, nil
-	}
-	// если там не int или nil
-	return 0, ErrNoUserIDInContext
+func GetUserID(ctx context.Context) (int64, bool) {
+	id, ok := ctx.Value(UserIDKey).(int64)
+	return id, ok
 }

@@ -5,24 +5,22 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	auth "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/auth"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
-	"github.com/google/uuid"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/authclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
 )
 
 // мидлвар авторизации:
 // нужен для защиты приватных эндпоинтов от forbidden/unauthorized сессий
 type AuthMiddleware struct {
-	sessionUC auth.SessionUseCase
-	logger    logger.Logger
+	authClient authclient.AuthClient
+	logger     logger.Logger
 }
 
-func NewAuthMiddleware(suc auth.SessionUseCase, logger logger.Logger) *AuthMiddleware {
+func NewAuthMiddleware(ac authclient.AuthClient, l logger.Logger) *AuthMiddleware {
 	return &AuthMiddleware{
-		sessionUC: suc,
-		logger:    logger,
+		authClient: ac,
+		logger:     l,
 	}
 }
 
@@ -38,49 +36,27 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		sessionID, err := uuid.Parse(cookie.Value)
+		userID, role, err := m.authClient.CheckSession(ctx, cookie.Value)
 		if err != nil {
-			l.Warn("logout: invalid session token format", logger.String("token_value", cookie.Value))
-			response.Error(w, http.StatusUnauthorized, "Invalid session")
-			return
-		}
-
-		session, err := m.sessionUC.Check(ctx, sessionID)
-		if err != nil {
-			if errors.Is(err, domain.ErrSessionNotFound) || errors.Is(err, domain.ErrSessionExpired) {
-				l.Info("auth: unauthorized access attempt",
-					logger.String("session_id", sessionID.String()),
-					logger.String("reason", err.Error()),
+			if errors.Is(err, authclient.ErrSessionNotFound) {
+				l.Info("auth mw: unauthorized access attempt or expired session",
+					logger.String("session_id", cookie.Value),
 				)
 				response.Error(w, http.StatusUnauthorized, "Invalid or expired session")
 				return
 			}
 
-			l.Error("auth: session service critical failure", err,
-				logger.String("session_id", sessionID.String()),
+			l.Error("auth mw: auth service critical failure", err,
+				logger.String("session_id", cookie.Value),
 			)
-
 			response.Error(w, http.StatusInternalServerError, "Internal server error")
 			return
 		}
 
-		currentUserAgent := r.UserAgent()
-		if session.UserAgent != currentUserAgent {
-			l.Warn("session user-agent mismatch - potential hijacking attempt",
-				logger.String("session_id", sessionID.String()),
-				logger.Int("user_id", session.UserID),
-				logger.String("expected", session.UserAgent),
-				logger.String("actual", currentUserAgent),
-				logger.String("ip", r.RemoteAddr),
-			)
-			m.sessionUC.Destroy(r.Context(), sessionID)
-			return
-		}
+		ctxWithUser := context.WithValue(ctx, UserIDKey, userID)
+		ctxWithUser = context.WithValue(ctxWithUser, RoleKey, role)
 
-		// добавляем к контексту ctx ключ UserIDKey со значением userID
-		ctxWithUser := context.WithValue(ctx, UserIDKey, session.UserID)
-
-		// отдаем обработать запрос дальше
+		// Отдаем обработать запрос дальше
 		next.ServeHTTP(w, r.WithContext(ctxWithUser))
 	})
 }

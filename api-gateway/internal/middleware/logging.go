@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 )
 
 // Мидлваря для access логов
@@ -23,6 +23,7 @@ func NewLoggingMiddleware(logger logger.Logger) *LoggingMiddleware {
 type responseWriterWrapper struct {
 	http.ResponseWriter // встраивание, чтобы соответствовать интерфейсу ResponseWriter
 	statusCode          int
+	size                int
 }
 
 func (rw *responseWriterWrapper) WriteHeader(code int) {
@@ -30,11 +31,17 @@ func (rw *responseWriterWrapper) WriteHeader(code int) {
 	rw.ResponseWriter.WriteHeader(code)
 }
 
+func (rw *responseWriterWrapper) Write(b []byte) (int, error) {
+	size, err := rw.ResponseWriter.Write(b)
+	rw.size += size
+	return size, err
+}
+
 func (m *LoggingMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
-		wrapped := &responseWriterWrapper{w, http.StatusOK} // Создаем обертку
+		wrapped := &responseWriterWrapper{ResponseWriter: w, statusCode: http.StatusOK} // Создаем обертку
 
 		// передаем управление дальше, подменяя http.ResponseWriter на наш wrapped
 		next.ServeHTTP(wrapped, r)
@@ -44,12 +51,13 @@ func (m *LoggingMiddleware) Handler(next http.Handler) http.Handler {
 
 		userAgent := r.UserAgent()
 
-		m.logger.WithContext(r.Context()).Info("request finished",
+		m.logger.WithContext(r.Context()).Info("http request finished",
 			logger.Int("status", wrapped.statusCode),
+			logger.Int("size_bytes", wrapped.size),
 			logger.String("duration", duration.String()),
 			logger.String("method", r.Method),
 			logger.String("path", r.URL.Path),
-			logger.String("user_agent", userAgent),
+			logger.String("user_agent", r.UserAgent()),
 			logger.String("ip", r.RemoteAddr),
 		)
 	})

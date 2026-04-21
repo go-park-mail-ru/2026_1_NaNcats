@@ -32,9 +32,9 @@ func (m *CORSMiddleware) Handler(next http.Handler) http.Handler {
 			// разрешаем браузеру отправлять и получать куки
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
 			// заголовки, которые фронтенду разрешено присылать
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, Idempotency-Key")
 			// методы, которые разрешаем присылать фронтенду
-			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, PATCH")
 		}
 
 		// обработка preflight запросов - т.е. проверки браузера на cors

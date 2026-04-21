@@ -7,16 +7,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	auth "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/auth"
-	user "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/user"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/request"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/validatorutil"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/authclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/userclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/request"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/validatorutil"
 	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
 )
 
 //easyjson:json
@@ -53,19 +51,19 @@ type CSRFResponse struct {
 	Message   string `json:"message,omitempty"`
 }
 
-type authHandler struct {
-	authUC   auth.AuthUseCase
-	userUC   user.UserUseCase
-	logger   logger.Logger
-	validate *validator.Validate
+type AuthHandler struct {
+	authClient authclient.AuthClient
+	userClient userclient.UserClient
+	logger     logger.Logger
+	validate   *validator.Validate
 }
 
-func NewAuthHandler(auc auth.AuthUseCase, uuc user.UserUseCase, logger logger.Logger, v *validator.Validate) *authHandler {
-	return &authHandler{
-		authUC:   auc,
-		userUC:   uuc,
-		logger:   logger,
-		validate: v,
+func NewAuthHandler(ac authclient.AuthClient, uc userclient.UserClient, l logger.Logger, v *validator.Validate) *AuthHandler {
+	return &AuthHandler{
+		authClient: ac,
+		userClient: uc,
+		logger:     l,
+		validate:   v,
 	}
 }
 
@@ -81,72 +79,61 @@ func NewAuthHandler(auc auth.AuthUseCase, uuc user.UserUseCase, logger logger.Lo
 // @Failure			409		{object}  response.ErrorResponse	"Пользователь с такой почтой уже существует"
 // @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
 // @Router			/auth/register [post]
-func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
 
-	curRequest := RegisterRequest{}
-	err := request.JSON(r, &curRequest)
-	if err != nil {
+	idemKey := r.Header.Get("Idempotency-Key")
+	if idemKey == "" {
+		response.Error(w, http.StatusBadRequest, "Idempotency-Key header is required")
+		return
+	}
+
+	var reqDTO RegisterRequest
+	if err := request.JSON(r, &reqDTO); err != nil {
 		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err = h.validate.Struct(curRequest); err != nil {
+	if err := h.validate.Struct(reqDTO); err != nil {
 		errMsg := validatorutil.FormatValidationError(err)
-		l.Warn("registration validation failed", logger.String("error", errMsg))
 		response.Error(w, http.StatusBadRequest, errMsg)
 		return
 	}
 
-	userToCreate := domain.User{
-		Name:         curRequest.Name,
-		Email:        curRequest.Email,
-		PasswordHash: curRequest.Password,
-	}
-
-	userAgent := r.UserAgent()
-
-	createdUser, createdSession, err := h.authUC.Register(ctx, userToCreate, userAgent)
+	userResp, err := h.userClient.CreateUser(ctx, reqDTO.Name, reqDTO.Email, reqDTO.Password, idemKey)
 	if err != nil {
-		switch {
-		// Клиентские ошибки (400 Bad Request)
-		case errors.Is(err, domain.ErrInvalidEmail), errors.Is(err, domain.ErrInvalidPassword):
-			l.Warn("registration business validation failed", logger.String("email", curRequest.Email), logger.String("error", err.Error()))
-			response.Error(w, http.StatusBadRequest, err.Error())
-
-		// Ошибка конфликта (409 Conflict)
-		case errors.Is(err, domain.ErrEmailAlreadyExists):
-			l.Info("registration conflict: email already exists", logger.String("email", curRequest.Email))
-			response.Error(w, http.StatusConflict, err.Error())
-
-		// Системные ошибки (500 Internal Server Error)
-		default:
-			l.Error("registration failed unexpectedly", err, logger.String("email", curRequest.Email))
-			response.Error(w, http.StatusInternalServerError, "Internal server error")
+		if errors.Is(err, userclient.ErrEmailAlreadyExists) {
+			response.Error(w, http.StatusConflict, "Email already exists")
+			return
 		}
-		return
-	}
-
-	l.Info("user registered successfully", logger.Int("user_id", createdUser.ID), logger.String("email", createdUser.Email))
-
-	csrfToken, err := h.authUC.SetCSRFForUser(ctx, createdSession.ID)
-	if err != nil {
-		l.Error("failed to save csrf to redis", err)
+		l.Error("failed to create user", err)
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
-	response.SetCookie(w, "session_id", createdSession.ID.String(), createdSession.ExpiresAt)
-
-	resp := RegisterResponse{
-		Name:      createdUser.Name,
-		Email:     createdUser.Email,
-		CreatedAt: createdUser.CreatedAt,
-		CSRFToken: csrfToken,
+	session, err := h.authClient.IssueSession(ctx, userResp.ID, "user", r.UserAgent())
+	if err != nil {
+		l.Error("failed to issue session", err)
+		response.Error(w, http.StatusInternalServerError, "Internal server error")
+		return
 	}
 
-	response.JSON(w, http.StatusCreated, resp)
+	csrfToken, err := h.authClient.SetCSRF(ctx, session.Id)
+	if err != nil {
+		l.Error("failed to save csrf", err)
+		response.Error(w, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+
+	response.SetCookie(w, "session_id", session.Id, session.ExpiresAt.AsTime())
+
+	response.JSON(w, http.StatusCreated, RegisterResponse{
+		Name:      reqDTO.Name,
+		Email:     reqDTO.Email,
+		CreatedAt: userResp.CreatedAt,
+		CSRFToken: csrfToken,
+	})
 }
 
 // Login godoc
@@ -161,63 +148,54 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 // @Failure			401		{object}  response.ErrorResponse	"Неверный логин или пароль"
 // @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
 // @Router			/auth/login [post]
-func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
 
-	curRequest := LoginRequest{}
-	err := request.JSON(r, &curRequest)
-	if err != nil {
-		l.Warn("failed to decode login request", logger.String("error", err.Error()))
+	var reqDTO LoginRequest
+	if err := request.JSON(r, &reqDTO); err != nil {
 		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err = h.validate.Struct(curRequest); err != nil {
+	if err := h.validate.Struct(reqDTO); err != nil {
 		errMsg := validatorutil.FormatValidationError(err)
-		l.Warn("login validation failed", logger.String("error", errMsg))
 		response.Error(w, http.StatusBadRequest, errMsg)
 		return
 	}
 
-	userToLogin := domain.User{
-		Email:        curRequest.Login,
-		PasswordHash: curRequest.Password,
-	}
-
-	userAgent := r.UserAgent()
-
-	loggedUser, createdSession, err := h.authUC.Login(ctx, userToLogin, userAgent)
+	session, err := h.authClient.Login(ctx, reqDTO.Login, reqDTO.Password, r.UserAgent())
 	if err != nil {
-		switch {
-		case errors.Is(err, domain.ErrInvalidCredentials):
-			l.Info("login failed: invalid credentials", logger.String("email", curRequest.Login))
-			response.Error(w, http.StatusUnauthorized, "Invalid email or password")
-		default:
-			l.Error("login failed unexpectedly", err, logger.String("email", curRequest.Login))
-			response.Error(w, http.StatusInternalServerError, "Internal server error")
+		if errors.Is(err, authclient.ErrInvalidCredentials) {
+			response.Error(w, http.StatusUnauthorized, err.Error())
+			return
 		}
-		return
-	}
-
-	l.Info("user logged in successfully", logger.Int("user_id", loggedUser.ID), logger.String("email", loggedUser.Email))
-
-	csrfToken, err := h.authUC.SetCSRFForUser(ctx, createdSession.ID)
-	if err != nil {
-		l.Error("failed to save csrf to redis", err)
+		l.Error("login failed", err)
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
-	response.SetCookie(w, "session_id", createdSession.ID.String(), createdSession.ExpiresAt)
-
-	resp := LoginResponse{
-		Name:      loggedUser.Name,
-		AvatarURL: loggedUser.AvatarURL,
-		CSRFToken: csrfToken,
+	userResp, err := h.userClient.GetByID(ctx, session.UserId)
+	if err != nil {
+		l.Error("failed to fetch user profile after login", err)
+		response.Error(w, http.StatusInternalServerError, "Internal server error")
+		return
 	}
 
-	response.JSON(w, http.StatusOK, resp)
+	csrfToken, err := h.authClient.SetCSRF(ctx, session.Id)
+	if err != nil {
+		l.Error("failed to save csrf", err)
+		response.Error(w, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+
+	response.SetCookie(w, "session_id", session.Id, session.ExpiresAt.AsTime())
+
+	response.JSON(w, http.StatusOK, LoginResponse{
+		Name:      userResp.Name,
+		AvatarURL: userResp.AvatarURL,
+		CSRFToken: csrfToken,
+	})
 }
 
 // Logout godoc
@@ -228,31 +206,14 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 // @Produce			json
 // @Success			200		"Успешный выход"
 // @Router			/auth/logout [post]
-func (h *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	l := h.logger.WithContext(ctx)
-
+func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session_id")
-	if err != nil {
-		l.Debug("logout: no session cookie found, user already logged out")
-		response.JSON(w, http.StatusOK, nil)
-		return
-	}
-
-	sessionID, err := uuid.Parse(cookie.Value)
-	if err != nil {
-		l.Warn("logout: invalid session token format", logger.String("token_value", cookie.Value))
-	} else {
-		err = h.authUC.Logout(ctx, sessionID)
-		if err != nil {
-			l.Debug("logout: session not found in database or already expired", logger.String("session_id", sessionID.String()))
-		}
+	if err == nil && cookie.Value != "" {
+		_ = h.authClient.Logout(r.Context(), cookie.Value)
 	}
 
 	response.SetCookie(w, "session_id", "", time.Unix(0, 0))
-
-	l.Debug("logout: session cleared")
-	response.JSON(w, http.StatusOK, nil)
+	response.JSON(w, http.StatusOK, map[string]string{"message": "logged out"})
 }
 
 // GetMe godoc
@@ -265,32 +226,27 @@ func (h *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 // @Failure			401		{object}  response.ErrorResponse	"Неавторизован"
 // @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка"
 // @Router			/auth/me [get]
-func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
 
-	userID, err := middleware.GetUserID(ctx)
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	userResp, err := h.userClient.GetByID(ctx, userID)
 	if err != nil {
-		l.Error("auth middleware missed userID in context", err)
+		l.Error("failed to fetch profile for GetMe", err)
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
-	loggedUser, err := h.userUC.GetByID(ctx, userID)
-	if err != nil {
-		l.Error("get profile failed for authenticated user", err, logger.Int("user_id", userID))
-		response.Error(w, http.StatusInternalServerError, "Internal server error")
-		return
-	}
-
-	l.Debug("profile retrieved successfully", logger.Int("user_id", loggedUser.ID))
-
-	resp := LoginResponse{
-		Name:      loggedUser.Name,
-		AvatarURL: loggedUser.AvatarURL,
-	}
-
-	response.JSON(w, http.StatusOK, resp)
+	response.JSON(w, http.StatusOK, LoginResponse{
+		Name:      userResp.Name,
+		AvatarURL: userResp.AvatarURL,
+	})
 }
 
 // GetCSRF godoc
@@ -301,30 +257,22 @@ func (h *authHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 // @Success         200     {object}  CSRFResponse           "Успешное получение токена или сообщение об отсутствии сессии"
 // @Failure         500     {object}  response.ErrorResponse "Внутренняя ошибка сервера"
 // @Router          /csrf [get]
-func (h *authHandler) GetCSRF(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	l := h.logger.WithContext(ctx)
-
+func (h *AuthHandler) GetCSRF(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
-		l.Debug("get_csrf: no session cookie found")
 		response.JSON(w, http.StatusOK, CSRFResponse{Message: "no session"})
 		return
 	}
 
-	sessionID, err := uuid.Parse(cookie.Value)
+	csrfToken, err := h.authClient.GetCSRF(r.Context(), cookie.Value)
 	if err != nil {
-		l.Error("get_csrf: invalid uuid", err)
-		response.Error(w, http.StatusBadRequest, "Invalid session ID")
-		return
-	}
-
-	token, err := h.authUC.GetCSRFBySessionID(ctx, sessionID)
-	if err != nil {
-		h.logger.WithContext(ctx).Error("failed to get csrf", err)
+		if errors.Is(err, authclient.ErrSessionNotFound) {
+			response.Error(w, http.StatusUnauthorized, "Invalid session")
+			return
+		}
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
-	response.JSON(w, http.StatusOK, CSRFResponse{CSRFToken: token})
+	response.JSON(w, http.StatusOK, CSRFResponse{CSRFToken: csrfToken})
 }

@@ -1,23 +1,23 @@
 package middleware
 
 import (
+	"errors"
 	"net/http"
 
-	auth "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/auth"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
-	"github.com/google/uuid"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/authclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
 )
 
 type CSRFMiddleware struct {
-	sessionUC auth.SessionUseCase
-	logger    logger.Logger
+	authClient authclient.AuthClient
+	logger     logger.Logger
 }
 
-func NewCSRFMiddleware(suc auth.SessionUseCase, l logger.Logger) *CSRFMiddleware {
+func NewCSRFMiddleware(ac authclient.AuthClient, l logger.Logger) *CSRFMiddleware {
 	return &CSRFMiddleware{
-		sessionUC: suc,
-		logger:    l,
+		authClient: ac,
+		logger:     l,
 	}
 }
 
@@ -38,28 +38,26 @@ func (m *CSRFMiddleware) Check(next http.Handler) http.Handler {
 			return
 		}
 
-		sessionID, err := uuid.Parse(cookie.Value)
-		if err != nil {
-			l.Warn("csrf: invalid session token format", logger.String("token_value", cookie.Value))
-			response.Error(w, http.StatusUnauthorized, "Invalid session")
-			return
-		}
-
 		clientToken := r.Header.Get("X-CSRF-Token")
 		if clientToken == "" {
 			response.Error(w, http.StatusForbidden, "CSRF token missing")
 			return
 		}
 
-		expectedToken, err := m.sessionUC.GetCSRF(ctx, sessionID)
+		expectedToken, err := m.authClient.GetCSRF(ctx, cookie.Value)
 		if err != nil {
-			l.Error("csrf: validation failed", err, logger.String("session_id", sessionID.String()))
-			response.Error(w, http.StatusForbidden, "Invalid or expired CSRF token")
+			if errors.Is(err, authclient.ErrSessionNotFound) {
+				l.Warn("csrf: session not found in auth service", logger.String("session_id", cookie.Value))
+				response.Error(w, http.StatusForbidden, "Invalid or expired session")
+				return
+			}
+			l.Error("csrf: validation failed due to internal error", err)
+			response.Error(w, http.StatusInternalServerError, "Internal server error")
 			return
 		}
 
 		if clientToken != expectedToken {
-			l.Warn("csrf: token mismatch", logger.String("session_id", sessionID.String()))
+			l.Warn("csrf: token mismatch", logger.String("session_id", cookie.Value))
 			response.Error(w, http.StatusForbidden, "CSRF token mismatch")
 			return
 		}
