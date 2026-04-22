@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"time"
 
@@ -9,7 +10,9 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/repository"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/api_clients/yookassa"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type OrderClient interface {
@@ -34,15 +37,17 @@ type paymentUseCase struct {
 	orderClient    OrderClient
 	yookassaClient *yookassa.Client
 	returnURL      string
+	logger         logger.Logger
 }
 
-func NewPaymentUseCase(pr repository.PaymentRepository, cr repository.PaymentCacheRepository, oc OrderClient, yc *yookassa.Client, returnURL string) PaymentUseCase {
+func NewPaymentUseCase(pr repository.PaymentRepository, cr repository.PaymentCacheRepository, oc OrderClient, yc *yookassa.Client, returnURL string, l logger.Logger) PaymentUseCase {
 	return &paymentUseCase{
 		paymentRepo:    pr,
 		cacheRepo:      cr,
 		orderClient:    oc,
 		yookassaClient: yc,
 		returnURL:      returnURL,
+		logger:         l,
 	}
 }
 
@@ -71,7 +76,19 @@ func (p *paymentUseCase) CreatePayment(ctx context.Context, amount int64, paymen
 
 	paymentResponse, err := p.yookassaClient.CreatePayment(ctx, paymentRequest, idempotencyKey)
 	if err != nil {
-		return "", "", errutil.Wrap("", "failed to create payment in yookassa", err, codes.Internal)
+		switch {
+		case errors.Is(err, yookassa.ErrBadRequest):
+			return "", "", errutil.Wrap("PAYMENT_INVALID_DATA", "invalid payment data provided to provider", err, codes.InvalidArgument)
+
+		case errors.Is(err, yookassa.ErrNotFound):
+			return "", "", errutil.Wrap("PAYMENT_METHOD_NOT_FOUND", "provided payment method was not found in yookassa", err, codes.NotFound)
+
+		case errors.Is(err, yookassa.ErrUnauthorized):
+			return "", "", errutil.Wrap("PAYMENT_CONFIG_ERROR", "internal payment configuration error", err, codes.Internal)
+
+		default:
+			return "", "", errutil.Wrap("PAYMENT_PROVIDER_ERROR", "unexpected error from yookassa", err, codes.Internal)
+		}
 	}
 
 	var confirmationURL string
@@ -93,16 +110,23 @@ func (p *paymentUseCase) InitiateCardBinding(ctx context.Context, userID int64, 
 
 	resp, err := p.yookassaClient.CreatePaymentMethod(ctx, req, idempotencyKey)
 	if err != nil {
-		return "", errutil.Wrap("", "failed to initiate card binding", err, codes.Internal)
+		if errors.Is(err, yookassa.ErrBadRequest) {
+			return "", errutil.Wrap("BINDING_INVALID_CONFIG", "yookassa rejected binding request", err, codes.InvalidArgument)
+		}
+		if errors.Is(err, yookassa.ErrUnauthorized) {
+			return "", errutil.Wrap("BINDING_AUTH_ERROR", "payment service auth failure", err, codes.Internal)
+		}
+
+		return "", errutil.Wrap("BINDING_PROVIDER_ERROR", "failed to contact yookassa", err, codes.Internal)
 	}
 
 	if resp.Confirmation == nil || resp.Confirmation.ConfirmationURL == "" {
-		return "", errutil.New("", "empty confirmation url from payment provider", codes.Internal)
+		return "", errutil.New("BINDING_MALFORMED_RESPONSE", "empty confirmation url from yookassa", codes.Internal)
 	}
 
 	err = p.cacheRepo.SetPendingBinding(ctx, resp.ID, userID, 15*time.Minute)
 	if err != nil {
-		return "", errutil.Wrap("", "failed to save pending binding in cache", err, codes.Internal)
+		return "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to save pending binding state", err, codes.Internal)
 	}
 
 	return resp.Confirmation.ConfirmationURL, nil
@@ -111,7 +135,7 @@ func (p *paymentUseCase) InitiateCardBinding(ctx context.Context, userID int64, 
 func (p *paymentUseCase) GetUserCards(ctx context.Context, userID int64) ([]domain.PaymentMethod, error) {
 	methods, err := p.paymentRepo.GetByUserID(ctx, userID)
 	if err != nil {
-		return nil, errutil.Wrap("", "failed to get user cards", err, codes.Internal)
+		return nil, errutil.Wrap("PAYMENT_METHODS_FETCH_ERROR", "failed to retrieve cards from database", err, codes.Internal)
 	}
 	return methods, nil
 }
@@ -119,7 +143,15 @@ func (p *paymentUseCase) GetUserCards(ctx context.Context, userID int64) ([]doma
 func (p *paymentUseCase) SetDefaultCard(ctx context.Context, cardID string, userID int64, idempotencyKey string) error {
 	err := p.paymentRepo.SetDefault(ctx, cardID, userID)
 	if err != nil {
-		return errutil.Wrap("", "failed to set default card", err, codes.Internal)
+		if errors.Is(err, domain.ErrPaymentMethodNotFound) {
+			return err
+		}
+		return errutil.Wrap(
+			"SET_DEFAULT_CARD_FAILED",
+			"failed to set default card",
+			err,
+			codes.Internal,
+		)
 	}
 	return nil
 }
@@ -127,8 +159,12 @@ func (p *paymentUseCase) SetDefaultCard(ctx context.Context, cardID string, user
 func (p *paymentUseCase) DeleteCard(ctx context.Context, cardID string, userID int64, idempotencyKey string) error {
 	err := p.paymentRepo.Delete(ctx, cardID, userID)
 	if err != nil {
-		return errutil.Wrap("", "failed to delete card", err, codes.Internal)
+		if errors.Is(err, domain.ErrPaymentMethodNotFound) {
+			return err
+		}
+		return errutil.Wrap("CARD_DELETE_FAILED", "failed to delete card due to internal error", err, codes.Internal)
 	}
+
 	return nil
 }
 
@@ -139,7 +175,7 @@ func (p *paymentUseCase) ProcessPaymentMethodWebhook(ctx context.Context, pm *yo
 
 	userID, err := p.cacheRepo.GetUserIDByPaymentID(ctx, pm.ID)
 	if err != nil {
-		return errutil.Wrap("", "failed to find user_id for payment_method in cache", err, codes.NotFound)
+		return errutil.Wrap("WEBHOOK_CACHE_MISS", "payment context expired or not found in cache", err, codes.NotFound)
 	}
 
 	domainPaymentMethod := domain.PaymentMethod{
@@ -156,10 +192,19 @@ func (p *paymentUseCase) ProcessPaymentMethodWebhook(ctx context.Context, pm *yo
 
 	_, err = p.paymentRepo.Create(ctx, domainPaymentMethod, pm.ID)
 	if err != nil {
-		return errutil.Wrap("", "failed to save payment method to db", err, codes.Internal)
+		if errors.Is(err, domain.ErrPaymentMethodAlreadyExists) {
+			return nil
+		}
+		return errutil.Wrap("WEBHOOK_DATABASE_ERROR", "failed to save payment method to db", err, codes.Internal)
 	}
 
 	_ = p.cacheRepo.DeletePendingBinding(ctx, pm.ID)
+	if err != nil {
+		p.logger.WithContext(ctx).Warn("failed to delete pending binding from cache",
+			logger.String("payment_id", pm.ID),
+			logger.Err(err),
+		)
+	}
 
 	return nil
 }
@@ -181,7 +226,21 @@ func (p *paymentUseCase) ProcessPaymentWebhook(ctx context.Context, payment *yoo
 
 	err := p.orderClient.UpdateOrderStatus(ctx, payment.ID, newStatus)
 	if err != nil {
-		return errutil.Wrap("", "failed to notify order service about payment status", err, codes.Internal)
+		st, ok := status.FromError(err)
+
+		if ok && st.Code() == codes.NotFound {
+			p.logger.WithContext(ctx).Error("order not found for incoming payment", err,
+				logger.String("payment_id", payment.ID),
+			)
+			return nil
+		}
+		return errutil.Wrap(
+			"ORDER_SERVICE_UPDATE_FAILED",
+			"failed to notify order service about payment status",
+			err,
+			codes.Unavailable,
+		)
+
 	}
 
 	return nil

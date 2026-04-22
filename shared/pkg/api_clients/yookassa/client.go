@@ -3,6 +3,7 @@ package yookassa
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -28,6 +29,12 @@ func NewClient(shopID, secretKey string) *Client {
 	}
 }
 
+var (
+	ErrBadRequest   = errors.New("yookassa: bad request (invalid data)")
+	ErrUnauthorized = errors.New("yookassa: unauthorized (check shop_id/secret_key)")
+	ErrNotFound     = errors.New("yookassa: object not found")
+)
+
 func (c *Client) CreatePayment(ctx context.Context, req CreatePaymentRequest, idempotencyKey string) (*PaymentResponse, error) {
 	data, err := easyjson.Marshal(req)
 	if err != nil {
@@ -51,7 +58,17 @@ func (c *Client) CreatePayment(ctx context.Context, req CreatePaymentRequest, id
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("yookassa API returned error status: %d", resp.StatusCode)
+		switch resp.StatusCode {
+		case http.StatusBadRequest:
+			return nil, ErrBadRequest
+		case http.StatusUnauthorized, http.StatusForbidden:
+			return nil, ErrUnauthorized
+		case http.StatusNotFound:
+			return nil, ErrNotFound
+		default:
+			return nil, fmt.Errorf("yookassa returned error status: %d", resp.StatusCode)
+		}
+
 	}
 
 	var yookassaResponse PaymentResponse

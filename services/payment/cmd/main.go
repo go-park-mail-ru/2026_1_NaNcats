@@ -95,6 +95,7 @@ func main() {
 		orderClient,
 		yookassaClient,
 		cfg.Yookassa.ReturnURL,
+		appLogger,
 	)
 	paymentHandler := paymentDelivery.NewPaymentHandler(paymentUC)
 
