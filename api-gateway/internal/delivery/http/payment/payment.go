@@ -241,7 +241,6 @@ func (h *PaymentHandler) YookassaWebhook(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		// Защита от nil поинтера (так как Card - указатель в ваших моделях)
 		if methodObj.Card == nil {
 			l.Warn("card object is nil in webhook")
 			w.WriteHeader(http.StatusOK)

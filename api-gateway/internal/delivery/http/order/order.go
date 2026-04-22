@@ -20,7 +20,6 @@ type CreateOrderRequest struct {
 	PaymentMethodID    string `json:"payment_method_id,omitempty"`
 	DeliveryCost       int64  `json:"delivery_cost"`
 	ServiceFee         int64  `json:"service_fee"`
-	// TotalCost удален, так как бэкенд (OrderService) теперь считает сумму сам
 }
 
 //easyjson:json

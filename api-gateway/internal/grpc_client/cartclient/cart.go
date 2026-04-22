@@ -14,7 +14,6 @@ var (
 	ErrInternal    = errors.New("internal server error")
 )
 
-// Чистые структуры для возврата в хэндлер (чтобы скрыть Protobuf)
 type Item struct {
 	DishID   int64
 	Quantity int32
@@ -32,8 +31,6 @@ type Cart struct {
 type CartClient interface {
 	GetCart(ctx context.Context, userID int64) (*Cart, error)
 	UpdateCart(ctx context.Context, userID, restaurantID int64, items []Item, idempotencyKey string) error
-	// Lock/Unlock/Clear обычно нужны для внутреннего общения сервисов (Order -> Cart),
-	// но если захочешь вынести очистку на фронт, можно добавить и сюда.
 }
 
 type cartClient struct {

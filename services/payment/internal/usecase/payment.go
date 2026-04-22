@@ -198,7 +198,7 @@ func (p *paymentUseCase) ProcessPaymentMethodWebhook(ctx context.Context, pm *yo
 		return errutil.Wrap("WEBHOOK_DATABASE_ERROR", "failed to save payment method to db", err, codes.Internal)
 	}
 
-	_ = p.cacheRepo.DeletePendingBinding(ctx, pm.ID)
+	err = p.cacheRepo.DeletePendingBinding(ctx, pm.ID)
 	if err != nil {
 		p.logger.WithContext(ctx).Warn("failed to delete pending binding from cache",
 			logger.String("payment_id", pm.ID),

@@ -46,7 +46,6 @@ func (r *cartRepo) GetCartByUserID(ctx context.Context, userID int64) (domain.Ca
 		SELECT 
 			c.restaurant_brand_id,
 			c.updated_at,
-			c.status,
 			cd.dish_id,
 			cd.quantity
 		FROM "cart" c

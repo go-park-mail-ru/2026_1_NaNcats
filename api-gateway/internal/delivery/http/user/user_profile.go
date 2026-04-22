@@ -14,8 +14,6 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
 )
 
-// --- DTO ---
-
 //easyjson:json
 type UserProfileUpdateRequest struct {
 	Name  *string `json:"name" example:"Андрей"`
@@ -163,7 +161,6 @@ func (h *UserProfileHandler) UpdateAvatar(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Ограничиваем размер прямо в шлюзе (5 MB)
 	if err := r.ParseMultipartForm(5 << 20); err != nil {
 		response.Error(w, http.StatusBadRequest, "file is too large (max 5MB)")
 		return
