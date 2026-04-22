@@ -17,7 +17,7 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjson42239ddeDecodeGithubComGoParkMailRu20261NaNcatsPkgResponse(in *jlexer.Lexer, out *ErrorResponse) {
+func easyjson42239ddeDecodeGithubComGoParkMailRu20261NaNcatsSharedPkgResponse(in *jlexer.Lexer, out *ErrorResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -53,7 +53,7 @@ func easyjson42239ddeDecodeGithubComGoParkMailRu20261NaNcatsPkgResponse(in *jlex
 		in.Consumed()
 	}
 }
-func easyjson42239ddeEncodeGithubComGoParkMailRu20261NaNcatsPkgResponse(out *jwriter.Writer, in ErrorResponse) {
+func easyjson42239ddeEncodeGithubComGoParkMailRu20261NaNcatsSharedPkgResponse(out *jwriter.Writer, in ErrorResponse) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -73,23 +73,23 @@ func easyjson42239ddeEncodeGithubComGoParkMailRu20261NaNcatsPkgResponse(out *jwr
 // MarshalJSON supports json.Marshaler interface
 func (v ErrorResponse) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson42239ddeEncodeGithubComGoParkMailRu20261NaNcatsPkgResponse(&w, v)
+	easyjson42239ddeEncodeGithubComGoParkMailRu20261NaNcatsSharedPkgResponse(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v ErrorResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson42239ddeEncodeGithubComGoParkMailRu20261NaNcatsPkgResponse(w, v)
+	easyjson42239ddeEncodeGithubComGoParkMailRu20261NaNcatsSharedPkgResponse(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ErrorResponse) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson42239ddeDecodeGithubComGoParkMailRu20261NaNcatsPkgResponse(&r, v)
+	easyjson42239ddeDecodeGithubComGoParkMailRu20261NaNcatsSharedPkgResponse(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *ErrorResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson42239ddeDecodeGithubComGoParkMailRu20261NaNcatsPkgResponse(l, v)
+	easyjson42239ddeDecodeGithubComGoParkMailRu20261NaNcatsSharedPkgResponse(l, v)
 }

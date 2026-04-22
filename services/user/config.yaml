@@ -2,7 +2,7 @@ logger:
   level: "debug"
 
 postgres:
-  url: "postgres://user:password@localhost:5439/user_db?sslmode=disable"
+  url: "postgres://user:password@localhost:5432/user_db?sslmode=disable"
 
 grpc:
   port: "50052"

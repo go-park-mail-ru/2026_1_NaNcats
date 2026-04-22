@@ -1,16 +1,16 @@
 package address
 
+/*
 //go:generate easyjson $GOFILE
 
 import (
 	"net/http"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	address "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/address"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/request"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/address/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/request"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
 )
 
 //easyjson:json
@@ -270,3 +270,4 @@ func (h *addressHandler) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 
 	response.JSON(w, http.StatusOK, MessageResponse{Message: "address updated successfully"})
 }
+*/

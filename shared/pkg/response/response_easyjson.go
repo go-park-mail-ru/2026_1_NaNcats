@@ -17,7 +17,7 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjson6ff3ac1dDecodeGithubComGoParkMailRu20261NaNcatsPkgResponse(in *jlexer.Lexer, out *MessageResponse) {
+func easyjson6ff3ac1dDecodeGithubComGoParkMailRu20261NaNcatsSharedPkgResponse(in *jlexer.Lexer, out *MessageResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -47,7 +47,7 @@ func easyjson6ff3ac1dDecodeGithubComGoParkMailRu20261NaNcatsPkgResponse(in *jlex
 		in.Consumed()
 	}
 }
-func easyjson6ff3ac1dEncodeGithubComGoParkMailRu20261NaNcatsPkgResponse(out *jwriter.Writer, in MessageResponse) {
+func easyjson6ff3ac1dEncodeGithubComGoParkMailRu20261NaNcatsSharedPkgResponse(out *jwriter.Writer, in MessageResponse) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -62,23 +62,23 @@ func easyjson6ff3ac1dEncodeGithubComGoParkMailRu20261NaNcatsPkgResponse(out *jwr
 // MarshalJSON supports json.Marshaler interface
 func (v MessageResponse) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson6ff3ac1dEncodeGithubComGoParkMailRu20261NaNcatsPkgResponse(&w, v)
+	easyjson6ff3ac1dEncodeGithubComGoParkMailRu20261NaNcatsSharedPkgResponse(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v MessageResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson6ff3ac1dEncodeGithubComGoParkMailRu20261NaNcatsPkgResponse(w, v)
+	easyjson6ff3ac1dEncodeGithubComGoParkMailRu20261NaNcatsSharedPkgResponse(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *MessageResponse) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson6ff3ac1dDecodeGithubComGoParkMailRu20261NaNcatsPkgResponse(&r, v)
+	easyjson6ff3ac1dDecodeGithubComGoParkMailRu20261NaNcatsSharedPkgResponse(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *MessageResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson6ff3ac1dDecodeGithubComGoParkMailRu20261NaNcatsPkgResponse(l, v)
+	easyjson6ff3ac1dDecodeGithubComGoParkMailRu20261NaNcatsSharedPkgResponse(l, v)
 }

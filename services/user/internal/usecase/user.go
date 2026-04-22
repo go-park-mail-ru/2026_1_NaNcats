@@ -44,7 +44,7 @@ func NewUserUseCase(ur repository.UserRepository, fs s3.FileStorage, daurl strin
 func (u *userUseCase) Create(ctx context.Context, user domain.User, password, idempotencyKey string) (int64, error) {
 	hashedPassword, err := passUtil.HashPassword(password, passUtil.DefaultParams)
 	if err != nil {
-		return 0, errutil.Wrap("failed to hash password", err, codes.Internal)
+		return 0, errutil.Wrap("HASH_PASSWORD_FAILED", "failed to hash password", err, codes.Internal)
 	}
 	user.PasswordHash = hashedPassword
 

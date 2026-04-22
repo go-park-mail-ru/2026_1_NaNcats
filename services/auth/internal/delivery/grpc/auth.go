@@ -61,7 +61,7 @@ func (h *AuthHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Auth
 func (h *AuthHandler) Logout(ctx context.Context, req *pb.LogoutRequest) (*emptypb.Empty, error) {
 	sessionID, err := uuid.Parse(req.SessionId)
 	if err != nil {
-		wrappedErr := errutil.Wrap("invalid session id format", err, codes.InvalidArgument)
+		wrappedErr := errutil.Wrap("INVALID_ID_SESSION_FORMAT", "invalid session id format", err, codes.InvalidArgument)
 		return nil, grpcutil.ToGRPCError(wrappedErr)
 	}
 
@@ -76,7 +76,7 @@ func (h *AuthHandler) Logout(ctx context.Context, req *pb.LogoutRequest) (*empty
 func (h *AuthHandler) CheckSession(ctx context.Context, req *pb.CheckSessionRequest) (*pb.CheckSessionResponse, error) {
 	sessionID, err := uuid.Parse(req.SessionId)
 	if err != nil {
-		wrappedErr := errutil.Wrap("invalid session id format", err, codes.InvalidArgument)
+		wrappedErr := errutil.Wrap("INVALID_ID_SESSION_FORMAT", "invalid session id format", err, codes.InvalidArgument)
 		return nil, grpcutil.ToGRPCError(wrappedErr)
 	}
 
@@ -94,7 +94,7 @@ func (h *AuthHandler) CheckSession(ctx context.Context, req *pb.CheckSessionRequ
 func (h *AuthHandler) GetCSRF(ctx context.Context, req *pb.CSRFRequest) (*pb.CSRFResponse, error) {
 	sessionID, err := uuid.Parse(req.SessionId)
 	if err != nil {
-		wrappedErr := errutil.Wrap("invalid session id format", err, codes.InvalidArgument)
+		wrappedErr := errutil.Wrap("INVALID_ID_SESSION_FORMAT", "invalid session id format", err, codes.InvalidArgument)
 		return nil, grpcutil.ToGRPCError(wrappedErr)
 	}
 
@@ -111,7 +111,7 @@ func (h *AuthHandler) GetCSRF(ctx context.Context, req *pb.CSRFRequest) (*pb.CSR
 func (h *AuthHandler) SetCSRF(ctx context.Context, req *pb.CSRFRequest) (*pb.CSRFResponse, error) {
 	sessionID, err := uuid.Parse(req.SessionId)
 	if err != nil {
-		wrappedErr := errutil.Wrap("invalid session id format", err, codes.InvalidArgument)
+		wrappedErr := errutil.Wrap("INVALID_ID_SESSION_FORMAT", "invalid session id format", err, codes.InvalidArgument)
 		return nil, grpcutil.ToGRPCError(wrappedErr)
 	}
 

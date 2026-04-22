@@ -112,7 +112,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := h.authClient.IssueSession(ctx, userResp.ID, "user", r.UserAgent())
+	session, err := h.authClient.IssueSession(ctx, userResp, "user", r.UserAgent())
 	if err != nil {
 		l.Error("failed to issue session", err)
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
@@ -131,7 +131,6 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusCreated, RegisterResponse{
 		Name:      reqDTO.Name,
 		Email:     reqDTO.Email,
-		CreatedAt: userResp.CreatedAt,
 		CSRFToken: csrfToken,
 	})
 }
@@ -193,7 +192,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	response.JSON(w, http.StatusOK, LoginResponse{
 		Name:      userResp.Name,
-		AvatarURL: userResp.AvatarURL,
+		AvatarURL: userResp.AvatarUrl,
 		CSRFToken: csrfToken,
 	})
 }
@@ -245,7 +244,7 @@ func (h *AuthHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 
 	response.JSON(w, http.StatusOK, LoginResponse{
 		Name:      userResp.Name,
-		AvatarURL: userResp.AvatarURL,
+		AvatarURL: userResp.AvatarUrl,
 	})
 }
 

@@ -1,14 +1,14 @@
 package restaurant
 
+/*
 //go:generate easyjson $GOFILE
 
 import (
 	"net/http"
 	"strconv"
 
-	restaurant "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/restaurant"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
 )
 
 //easyjson:json
@@ -117,3 +117,4 @@ func (h *dishHandler) GetDishesByRestaurantBrandID(w http.ResponseWriter, r *htt
 
 	response.JSON(w, http.StatusOK, DishesResponse{Dishes: dto})
 }
+*/

@@ -7,6 +7,8 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
     volumes:
       # сохраняет таблицы и данные пользователей
       - postgres_data:/var/lib/postgresql/data
@@ -21,6 +23,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: redis_db
+    ports:
+      - "6379:6379"
     restart: always
     
   backend:

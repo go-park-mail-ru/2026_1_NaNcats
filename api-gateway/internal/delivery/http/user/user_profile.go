@@ -7,8 +7,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/api_gateway/internal/grpc_client/userclient"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/api_gateway/internal/middleware"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/userclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"

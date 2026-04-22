@@ -1,5 +1,6 @@
 package payment
 
+/*
 //go:generate easyjson $GOFILE
 
 import (
@@ -254,3 +255,4 @@ func (h *paymentHandler) YookassaWebhook(w http.ResponseWriter, r *http.Request)
 
 	w.WriteHeader(http.StatusOK)
 }
+*/

@@ -1,5 +1,6 @@
 package address
 
+/*
 import (
 	"bytes"
 	"context"
@@ -200,3 +201,4 @@ func TestAddressHandler_UpdateAddress(t *testing.T) {
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 }
+*/

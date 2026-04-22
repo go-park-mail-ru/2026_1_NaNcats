@@ -6,6 +6,6 @@ import (
 )
 
 var (
-	ErrSessionNotFound = errutil.New("session not found", codes.NotFound)
-	ErrSessionExpired  = errutil.New("session expired", codes.Unauthenticated)
+	ErrSessionNotFound = errutil.New("SESSION_NOT_FOUND", "session not found", codes.NotFound)
+	ErrSessionExpired  = errutil.New("SESSION_NOT_EXPIRED", "session expired", codes.Unauthenticated)
 )

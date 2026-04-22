@@ -1,5 +1,6 @@
 package restaurant
 
+/*
 //go:generate easyjson $GOFILE
 
 import (
@@ -142,3 +143,4 @@ func (h *restaurantBrandHandler) GetRestaurantBrandByID(w http.ResponseWriter, r
 		LogoURL:     brand.LogoURL,
 	})
 }
+*/

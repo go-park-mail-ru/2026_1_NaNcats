@@ -1,5 +1,6 @@
 package cart
 
+/*
 //go:generate easyjson $GOFILE
 
 import (
@@ -173,3 +174,4 @@ func (h *cartHandler) UpdateCart(w http.ResponseWriter, r *http.Request) {
 
 	response.JSON(w, http.StatusOK, nil)
 }
+*/

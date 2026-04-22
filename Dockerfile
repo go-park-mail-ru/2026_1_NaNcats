@@ -15,7 +15,7 @@ COPY . .
 
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    CGO_ENABLED=1 GOOS=linux go build -o main ./cmd/api
+    CGO_ENABLED=1 GOOS=linux go build -o main ./api-gateway/cmd/api
 
 FROM alpine:latest
 WORKDIR /app
