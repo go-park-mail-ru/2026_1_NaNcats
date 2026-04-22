@@ -49,7 +49,7 @@ CREATE TABLE "client_profile" (
 	last_order_date TIMESTAMP WITH TIME ZONE,
 	premium_expires_at TIMESTAMP WITH TIME ZONE,
 
-	idempotency_key TEXT,
+	idempotency_key TEXT UNIQUE,
 	
 	CONSTRAINT fk_client_profile_user
 		FOREIGN KEY (account_id)
@@ -62,7 +62,7 @@ CREATE TABLE "courier_profile" (
 	
 	status courier_status NOT NULL,
 
-	idempotency_key TEXT,
+	idempotency_key TEXT UNIQUE,
 	
 	CONSTRAINT fk_courier_profile_user
 		FOREIGN KEY (account_id)

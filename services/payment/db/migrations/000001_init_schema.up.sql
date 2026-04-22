@@ -18,7 +18,7 @@ CREATE TABLE "payment_method" (
 
 	is_default BOOLEAN DEFAULT FALSE NOT NULL,
 
-	idempotency_key TEXT UNIQUE,
+	idempotency_key TEXT UNIQUE UNIQUE,
 
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 

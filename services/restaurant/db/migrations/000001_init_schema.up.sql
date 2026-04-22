@@ -13,7 +13,7 @@ CREATE TABLE "restaurant_brand" (
 	logo_url TEXT
 		CHECK (char_length(logo_url) <= 2048),
 
-	idempotency_key TEXT,
+	idempotency_key TEXT UNIQUE,
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
@@ -28,7 +28,7 @@ CREATE TABLE "restaurant_branch" (
 	open_time TIME,
 	close_time TIME,
 
-	idempotency_key TEXT,
+	idempotency_key TEXT UNIQUE,
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -55,7 +55,7 @@ CREATE TABLE "dish" (
 	price BIGINT NOT NULL
 		CHECK (price >= 1000000), -- 1 рубль
 
-	idempotency_key TEXT,
+	idempotency_key TEXT UNIQUE,
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -71,7 +71,7 @@ CREATE TABLE "category" (
 	
 	name TEXT NOT NULL UNIQUE,
 
-	idempotency_key TEXT,
+	idempotency_key TEXT UNIQUE,
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
@@ -82,7 +82,7 @@ CREATE TABLE "restaurant_brand_category" (
 	category_id BIGINT,
 	PRIMARY KEY (restaurant_brand_id, category_id),
 
-	idempotency_key TEXT,
+	idempotency_key TEXT UNIQUE,
 	
 	CONSTRAINT fk_restaurant_brand_category_restaurant_brand
 		FOREIGN KEY (restaurant_brand_id)
@@ -100,7 +100,7 @@ CREATE TABLE "dish_category" (
 	category_id BIGINT,
 	PRIMARY KEY (dish_id, category_id),
 
-	idempotency_key TEXT,
+	idempotency_key TEXT UNIQUE,
 	
 	CONSTRAINT fk_dish_category_dish
 		FOREIGN KEY (dish_id)
