@@ -1,18 +1,16 @@
 package payment
 
-/*
 //go:generate easyjson $GOFILE
 
 import (
 	"errors"
 	"net/http"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	payment "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/payment"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/api_clients/yookassa"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/paymentclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/api_clients/yookassa"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
 	"github.com/mailru/easyjson"
 )
 
@@ -25,21 +23,21 @@ type PaymentMethodResponse struct {
 	IsDefault  bool   `json:"is_default"`
 }
 
-type paymentHandler struct {
-	paymentUC payment.PaymentUseCase
-	logger    logger.Logger
-}
-
-func NewPaymentHandler(puc payment.PaymentUseCase, logger logger.Logger) *paymentHandler {
-	return &paymentHandler{
-		paymentUC: puc,
-		logger:    logger,
-	}
-}
-
 //easyjson:json
 type BindingResponse struct {
 	ConfirmationURL string `json:"confirmation_url"`
+}
+
+type PaymentHandler struct {
+	paymentClient paymentclient.PaymentClient
+	logger        logger.Logger
+}
+
+func NewPaymentHandler(pc paymentclient.PaymentClient, l logger.Logger) *PaymentHandler {
+	return &PaymentHandler{
+		paymentClient: pc,
+		logger:        l,
+	}
 }
 
 // InitiateCardBinding godoc
@@ -51,25 +49,28 @@ type BindingResponse struct {
 // @Failure			401		{object}	map[string]string "Пользователь не авторизован"
 // @Failure			500		{object}	map[string]string "Внутренняя ошибка сервера"
 // @Router			/profile/cards/bind [post]
-func (h *paymentHandler) InitiateCardBinding(w http.ResponseWriter, r *http.Request) {
+func (h *PaymentHandler) InitiateCardBinding(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
 
-	userID, err := middleware.GetUserID(ctx)
-	if err != nil {
-		l.Error("failed to get user_id from context", err)
-		response.Error(w, http.StatusInternalServerError, "Internal server error")
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
-	confirmationURL, err := h.paymentUC.InitiateCardBinding(ctx, userID)
+	idemKey := r.Header.Get("Idempotency-Key")
+	if idemKey == "" {
+		response.Error(w, http.StatusBadRequest, "Idempotency-Key header is required")
+		return
+	}
+
+	confirmationURL, err := h.paymentClient.InitiateCardBinding(ctx, userID, idemKey)
 	if err != nil {
-		l.Error("failed to initiate card binding", err, logger.Int("user_id", userID))
+		l.Error("failed to initiate card binding via grpc", err)
 		response.Error(w, http.StatusInternalServerError, "failed to initiate payment method binding")
 		return
 	}
-
-	l.Debug("card binding initiated", logger.Int("user_id", userID))
 
 	response.JSON(w, http.StatusOK, BindingResponse{
 		ConfirmationURL: confirmationURL,
@@ -85,34 +86,27 @@ func (h *paymentHandler) InitiateCardBinding(w http.ResponseWriter, r *http.Requ
 // @Failure			401		{object}	map[string]string "Пользователь не авторизован"
 // @Failure			500		{object}	map[string]string "Внутренняя ошибка сервера"
 // @Router			/profile/cards [get]
-func (h *paymentHandler) GetUserCards(w http.ResponseWriter, r *http.Request) {
+func (h *PaymentHandler) GetUserCards(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
 
-	userID, ok := ctx.Value(middleware.UserIDKey).(int)
+	userID, ok := middleware.GetUserID(ctx)
 	if !ok {
-		l.Warn("unauthorized access to get cards")
-		response.Error(w, http.StatusUnauthorized, "unauthorized")
+		response.Error(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
-	cards, err := h.paymentUC.GetUserCards(ctx, userID)
+	cards, err := h.paymentClient.GetUserCards(ctx, userID)
 	if err != nil {
-		l.Error("failed to get users cards", err, logger.Int("user_id", userID))
+		l.Error("failed to get users cards via grpc", err)
 		response.Error(w, http.StatusInternalServerError, "failed to get payment methods")
 		return
 	}
 
-	if cards == nil {
-		cards = make([]domain.PaymentMethod, 0)
-	}
-
-	l.Debug("successfully fetched user cards", logger.Int("user_id", userID), logger.Int("count", len(cards)))
-
 	resp := make([]PaymentMethodResponse, 0, len(cards))
 	for _, card := range cards {
 		resp = append(resp, PaymentMethodResponse{
-			ID:         card.ExternalID,
+			ID:         card.ID,
 			CardType:   card.CardType,
 			Last4:      card.Last4,
 			IssuerName: card.IssuerName,
@@ -134,32 +128,40 @@ func (h *paymentHandler) GetUserCards(w http.ResponseWriter, r *http.Request) {
 // @Failure			404		{object}	map[string]string "Карта не найдена"
 // @Failure			500		{object}	map[string]string "Внутренняя ошибка сервера"
 // @Router			/profile/cards/{id} [delete]
-func (h *paymentHandler) DeleteCard(w http.ResponseWriter, r *http.Request) {
+func (h *PaymentHandler) DeleteCard(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
 
-	userID, ok := ctx.Value(middleware.UserIDKey).(int)
+	userID, ok := middleware.GetUserID(ctx)
 	if !ok {
-		l.Warn("unauthorized access to delete card")
-		response.Error(w, http.StatusUnauthorized, "unauthorized")
+		response.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	idemKey := r.Header.Get("Idempotency-Key")
+	if idemKey == "" {
+		response.Error(w, http.StatusBadRequest, "Idempotency-Key header is required")
 		return
 	}
 
 	cardID := r.PathValue("id")
-	err := h.paymentUC.DeleteCard(ctx, cardID, userID)
+	if cardID == "" {
+		response.Error(w, http.StatusBadRequest, "Card ID is required")
+		return
+	}
+
+	err := h.paymentClient.DeleteCard(ctx, userID, cardID, idemKey)
 	if err != nil {
-		if errors.Is(err, domain.ErrPaymentMethodNotFound) {
-			l.Warn("card not found for deletion", logger.Int("user_id", userID), logger.String("card_id", cardID))
+		if errors.Is(err, paymentclient.ErrPaymentMethodNotFound) {
 			response.Error(w, http.StatusNotFound, "card not found")
 			return
 		}
-		l.Error("failed to delete card", err, logger.Int("user_id", userID), logger.String("card_id", cardID))
+		l.Error("failed to delete card via grpc", err)
 		response.Error(w, http.StatusInternalServerError, "failed to delete payment method")
 		return
 	}
 
-	l.Info("card deleted successfully", logger.Int("user_id", userID), logger.String("card_id", cardID))
-	w.WriteHeader(http.StatusOK)
+	response.JSON(w, http.StatusOK, map[string]string{"message": "deleted"})
 }
 
 // SetDefaultCard godoc
@@ -172,32 +174,40 @@ func (h *paymentHandler) DeleteCard(w http.ResponseWriter, r *http.Request) {
 // @Failure			401		{object}	map[string]string "Пользователь не авторизован"
 // @Failure			404		{object}	map[string]string "Карта не найдена"
 // @Failure			500		{object}	map[string]string "Внутренняя ошибка сервера"
-func (h *paymentHandler) SetDefaultCard(w http.ResponseWriter, r *http.Request) {
+func (h *PaymentHandler) SetDefaultCard(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
 
-	userID, ok := ctx.Value(middleware.UserIDKey).(int)
+	userID, ok := middleware.GetUserID(ctx)
 	if !ok {
-		l.Warn("unauthorized access to set default card")
-		response.Error(w, http.StatusUnauthorized, "unauthorized")
+		response.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	idemKey := r.Header.Get("Idempotency-Key")
+	if idemKey == "" {
+		response.Error(w, http.StatusBadRequest, "Idempotency-Key header is required")
 		return
 	}
 
 	cardID := r.PathValue("id")
-	err := h.paymentUC.SetDefaultCard(ctx, cardID, userID)
+	if cardID == "" {
+		response.Error(w, http.StatusBadRequest, "Card ID is required")
+		return
+	}
+
+	err := h.paymentClient.SetDefaultCard(ctx, userID, cardID, idemKey)
 	if err != nil {
-		if errors.Is(err, domain.ErrPaymentMethodNotFound) {
-			l.Warn("card not found to set as default", logger.Int("user_id", userID), logger.String("card_id", cardID))
+		if errors.Is(err, paymentclient.ErrPaymentMethodNotFound) {
 			response.Error(w, http.StatusNotFound, "card not found")
 			return
 		}
-		l.Error("failed to set default card", err, logger.Int("user_id", userID), logger.String("card_id", cardID))
+		l.Error("failed to set default card via grpc", err)
 		response.Error(w, http.StatusInternalServerError, "failed to set default payment method")
 		return
 	}
 
-	l.Info("default card updated", logger.Int("user_id", userID), logger.String("card_id", cardID))
-	w.WriteHeader(http.StatusOK)
+	response.JSON(w, http.StatusOK, map[string]string{"message": "default card updated"})
 }
 
 // YookassaWebhook godoc
@@ -210,7 +220,7 @@ func (h *paymentHandler) SetDefaultCard(w http.ResponseWriter, r *http.Request) 
 // @Success			200
 // @Failure			400		{object}	map[string]string "Неверный формат данных"
 // @Router			/webhooks/yookassa [post]
-func (h *paymentHandler) YookassaWebhook(w http.ResponseWriter, r *http.Request) {
+func (h *PaymentHandler) YookassaWebhook(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
 
@@ -227,16 +237,31 @@ func (h *paymentHandler) YookassaWebhook(w http.ResponseWriter, r *http.Request)
 		var methodObj yookassa.WebhookPaymentMethodObject
 		if err := easyjson.Unmarshal(notification.Object, &methodObj); err != nil {
 			l.Error("failed to parse payment_method object from webhook", err)
+			w.WriteHeader(http.StatusOK) // Отдаем 200, чтобы ЮКасса не спамила ретраями
+			return
+		}
+
+		// Защита от nil поинтера (так как Card - указатель в ваших моделях)
+		if methodObj.Card == nil {
+			l.Warn("card object is nil in webhook")
 			w.WriteHeader(http.StatusOK)
 			return
 		}
 
-		err := h.paymentUC.ProcessPaymentMethodWebhook(ctx, &methodObj)
-		if err != nil {
-			l.Error("failed to process payment method webhook", err, logger.String("payment_id", methodObj.ID))
-		} else {
-			l.Info("payment method activated via webhook", logger.String("payment_id", methodObj.ID))
+		cardInfo := paymentclient.CardInfo{
+			First6:      methodObj.Card.First6,
+			Last4:       methodObj.Card.Last4,
+			ExpiryMonth: methodObj.Card.ExpiryMonth,
+			ExpiryYear:  methodObj.Card.ExpiryYear,
+			CardType:    methodObj.Card.CardType,
+			IssuerName:  methodObj.Card.IssuerName,
 		}
+
+		err := h.paymentClient.ProcessPaymentMethodWebhook(ctx, methodObj.ID, methodObj.Status, methodObj.Type, methodObj.Saved, cardInfo)
+		if err != nil {
+			l.Error("grpc error processing payment method webhook", err)
+		}
+
 	case "payment.succeeded", "payment.canceled":
 		var paymentObj yookassa.WebhookPaymentObject
 		if err := easyjson.Unmarshal(notification.Object, &paymentObj); err != nil {
@@ -245,14 +270,11 @@ func (h *paymentHandler) YookassaWebhook(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		err := h.paymentUC.ProcessPaymentWebhook(ctx, &paymentObj)
+		err := h.paymentClient.ProcessPaymentWebhook(ctx, paymentObj.ID, paymentObj.Status)
 		if err != nil {
-			l.Error("failed to process payment webhook", err, logger.String("payment_id", paymentObj.ID), logger.String("event", notification.Event))
-		} else {
-			l.Info("payment status updated via webhook", logger.String("payment_id", paymentObj.ID), logger.String("event", notification.Event))
+			l.Error("grpc error processing payment webhook", err)
 		}
 	}
 
 	w.WriteHeader(http.StatusOK)
 }
-*/

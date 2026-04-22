@@ -1,13 +1,13 @@
 package address
 
-/*
 //go:generate easyjson $GOFILE
 
 import (
+	"errors"
 	"net/http"
 
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/addressclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/services/address/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
@@ -60,7 +60,7 @@ type MessageResponse struct {
 	Message string `json:"message"`
 }
 
-func mapAddressToResponse(a domain.Address) AddressResponse {
+func mapAddressToResponse(a addressclient.Address) AddressResponse {
 	return AddressResponse{
 		ID: a.PublicID,
 		Location: LocationResponse{
@@ -77,13 +77,16 @@ func mapAddressToResponse(a domain.Address) AddressResponse {
 	}
 }
 
-type addressHandler struct {
-	usecase address.AddressUseCase
-	logger  logger.Logger
+type AddressHandler struct {
+	addressClient addressclient.AddressClient
+	logger        logger.Logger
 }
 
-func NewAddressHandler(u address.AddressUseCase, l logger.Logger) *addressHandler {
-	return &addressHandler{usecase: u, logger: l}
+func NewAddressHandler(ac addressclient.AddressClient, l logger.Logger) *AddressHandler {
+	return &AddressHandler{
+		addressClient: ac,
+		logger:        l,
+	}
 }
 
 // AddAddress godoc
@@ -98,26 +101,31 @@ func NewAddressHandler(u address.AddressUseCase, l logger.Logger) *addressHandle
 // @Failure			401		{object}  response.ErrorResponse	"Неавторизован"
 // @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
 // @Router			/profile/addresses [post]
-func (h *addressHandler) AddAddress(w http.ResponseWriter, r *http.Request) {
+func (h *AddressHandler) AddAddress(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
 
-	userID, err := middleware.GetUserID(ctx)
-	if err != nil {
-		l.Error("failed to get user_id from context", err)
-		response.Error(w, http.StatusInternalServerError, "Internal server error")
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	idemKey := r.Header.Get("Idempotency-Key")
+	if idemKey == "" {
+		response.Error(w, http.StatusBadRequest, "Idempotency-Key header is required")
 		return
 	}
 
 	var req AddressRequest
 	if err := request.JSON(r, &req); err != nil {
-		l.Warn("failed to decode add address request", logger.Int("user_id", userID), logger.String("error", err.Error()))
+		l.Warn("failed to decode add address request", logger.String("error", err.Error()))
 		response.Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
-	addr := domain.Address{
-		Location: domain.Location{
+	addr := addressclient.Address{
+		Location: addressclient.Location{
 			AddressText: req.AddressText,
 			Latitude:    req.Lat,
 			Longitude:   req.Lon,
@@ -130,14 +138,12 @@ func (h *addressHandler) AddAddress(w http.ResponseWriter, r *http.Request) {
 		Label:          req.Label,
 	}
 
-	id, err := h.usecase.AddAddress(ctx, userID, addr)
+	id, err := h.addressClient.AddAddress(ctx, userID, addr, idemKey)
 	if err != nil {
-		l.Error("failed to add address to database", err, logger.Int("user_id", userID))
+		l.Error("failed to add address via grpc", err)
 		response.Error(w, http.StatusInternalServerError, "failed to save address")
 		return
 	}
-
-	l.Info("address added successfully", logger.Int("user_id", userID), logger.String("address_id", id))
 
 	response.JSON(w, http.StatusCreated, CreateAddressResponse{ID: id})
 }
@@ -151,25 +157,22 @@ func (h *addressHandler) AddAddress(w http.ResponseWriter, r *http.Request) {
 // @Failure			401		{object}  response.ErrorResponse		"Неавторизован"
 // @Failure			500		{object}  response.ErrorResponse		"Внутренняя ошибка сервера"
 // @Router			/profile/addresses [get]
-func (h *addressHandler) GetAddresses(w http.ResponseWriter, r *http.Request) {
+func (h *AddressHandler) GetAddresses(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
 
-	userID, err := middleware.GetUserID(ctx)
-	if err != nil {
-		l.Error("failed to get user_id from context", err)
-		response.Error(w, http.StatusInternalServerError, "Internal server error")
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
-	addresses, err := h.usecase.GetMyAddresses(ctx, userID)
+	addresses, err := h.addressClient.GetMyAddresses(ctx, userID)
 	if err != nil {
-		l.Error("failed to fetch addresses", err, logger.Int("user_id", userID))
+		l.Error("failed to fetch addresses via grpc", err)
 		response.Error(w, http.StatusInternalServerError, "failed to fetch addresses")
 		return
 	}
-
-	l.Debug("fetched user addresses", logger.Int("user_id", userID), logger.Int("count", len(addresses)))
 
 	resp := make([]AddressResponse, 0, len(addresses))
 	for _, addr := range addresses {
@@ -188,25 +191,38 @@ func (h *addressHandler) GetAddresses(w http.ResponseWriter, r *http.Request) {
 // @Failure			401		{object}  response.ErrorResponse	"Неавторизован"
 // @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
 // @Router			/profile/addresses/{id} [delete]
-func (h *addressHandler) DeleteAddress(w http.ResponseWriter, r *http.Request) {
+func (h *AddressHandler) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
 
-	userID, err := middleware.GetUserID(ctx)
-	if err != nil {
-		l.Error("failed to get user_id from context", err)
-		response.Error(w, http.StatusInternalServerError, "Internal server error")
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	idemKey := r.Header.Get("Idempotency-Key")
+	if idemKey == "" {
+		response.Error(w, http.StatusBadRequest, "Idempotency-Key header is required")
 		return
 	}
 
 	addressPublicID := r.PathValue("id")
-	if err := h.usecase.DeleteAddress(ctx, userID, addressPublicID); err != nil {
-		l.Error("failed to delete address", err, logger.Int("user_id", userID), logger.String("address_id", addressPublicID))
-		response.Error(w, http.StatusInternalServerError, "failed to delete address")
+	if addressPublicID == "" {
+		response.Error(w, http.StatusBadRequest, "Address ID is required")
 		return
 	}
 
-	l.Info("address deleted successfully", logger.Int("user_id", userID), logger.String("address_id", addressPublicID))
+	err := h.addressClient.DeleteAddress(ctx, userID, addressPublicID, idemKey)
+	if err != nil {
+		if errors.Is(err, addressclient.ErrAddressNotFound) {
+			response.Error(w, http.StatusNotFound, "Address not found")
+			return
+		}
+		l.Error("failed to delete address via grpc", err)
+		response.Error(w, http.StatusInternalServerError, "failed to delete address")
+		return
+	}
 
 	response.JSON(w, http.StatusOK, MessageResponse{Message: "deleted"})
 }
@@ -224,29 +240,38 @@ func (h *addressHandler) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 // @Failure			401		{object}  response.ErrorResponse	"Неавторизован"
 // @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
 // @Router			/profile/addresses/{id} [patch]
-func (h *addressHandler) UpdateAddress(w http.ResponseWriter, r *http.Request) {
+func (h *AddressHandler) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
 
-	userID, err := middleware.GetUserID(ctx)
-	if err != nil {
-		l.Error("failed to get user_id from context", err)
-		response.Error(w, http.StatusInternalServerError, "Internal server error")
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
-	idStr := r.PathValue("id")
+	idemKey := r.Header.Get("Idempotency-Key")
+	if idemKey == "" {
+		response.Error(w, http.StatusBadRequest, "Idempotency-Key header is required")
+		return
+	}
+
+	addressPublicID := r.PathValue("id")
+	if addressPublicID == "" {
+		response.Error(w, http.StatusBadRequest, "Address ID is required")
+		return
+	}
 
 	var req AddressRequest
 	if err := request.JSON(r, &req); err != nil {
-		l.Warn("failed to decode update address request", logger.Int("user_id", userID), logger.String("address_id", idStr), logger.String("error", err.Error()))
+		l.Warn("failed to decode update address request", logger.String("error", err.Error()))
 		response.Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
-	addr := domain.Address{
-		PublicID: idStr,
-		Location: domain.Location{
+	addr := addressclient.Address{
+		PublicID: addressPublicID,
+		Location: addressclient.Location{
 			AddressText: req.AddressText,
 			Latitude:    req.Lat,
 			Longitude:   req.Lon,
@@ -259,15 +284,16 @@ func (h *addressHandler) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 		Label:          req.Label,
 	}
 
-	err = h.usecase.UpdateAddress(ctx, userID, addr)
+	err := h.addressClient.UpdateAddress(ctx, userID, addr, idemKey)
 	if err != nil {
-		l.Error("failed to update address in database", err, logger.Int("user_id", userID), logger.String("address_id", idStr))
+		if errors.Is(err, addressclient.ErrAddressNotFound) {
+			response.Error(w, http.StatusNotFound, "Address not found")
+			return
+		}
+		l.Error("failed to update address via grpc", err)
 		response.Error(w, http.StatusInternalServerError, "failed to update address")
 		return
 	}
 
-	l.Info("address updated successfully", logger.Int("user_id", userID), logger.String("address_id", idStr))
-
 	response.JSON(w, http.StatusOK, MessageResponse{Message: "address updated successfully"})
 }
-*/

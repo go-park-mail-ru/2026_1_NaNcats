@@ -6,22 +6,21 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	order "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/order"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
-	"github.com/mailru/easyjson"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/orderclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/request"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
 )
 
 //easyjson:json
 type CreateOrderRequest struct {
 	AddressID          string `json:"address_id"`
-	RestaurantBranchID int    `json:"branch_id"`
+	RestaurantBranchID int64  `json:"branch_id"`
 	PaymentMethodID    string `json:"payment_method_id,omitempty"`
 	DeliveryCost       int64  `json:"delivery_cost"`
 	ServiceFee         int64  `json:"service_fee"`
-	TotalCost          int64  `json:"total_cost"`
+	// TotalCost удален, так как бэкенд (OrderService) теперь считает сумму сам
 }
 
 //easyjson:json
@@ -40,15 +39,15 @@ type OrderHistoryResponse struct {
 	CreatedAt          string `json:"created_at"`
 }
 
-type orderHandler struct {
-	orderUC order.OrderUseCase
-	logger  logger.Logger
+type OrderHandler struct {
+	orderClient orderclient.OrderClient
+	logger      logger.Logger
 }
 
-func NewOrderHandler(ouc order.OrderUseCase, l logger.Logger) *orderHandler {
-	return &orderHandler{
-		orderUC: ouc,
-		logger:  l,
+func NewOrderHandler(oc orderclient.OrderClient, l logger.Logger) *OrderHandler {
+	return &OrderHandler{
+		orderClient: oc,
+		logger:      l,
 	}
 }
 
@@ -66,57 +65,58 @@ func NewOrderHandler(ouc order.OrderUseCase, l logger.Logger) *orderHandler {
 // @Failure      500    {object}  map[string]string   "Internal server error"
 // @Security     ApiKeyAuth
 // @Router       /api/orders [post]
-func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
+func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
 
-	userID, err := middleware.GetUserID(ctx)
-	if err != nil {
-		l.Error("failed to get user_id from context", err)
-		response.Error(w, http.StatusInternalServerError, "Internal server error")
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	idemKey := r.Header.Get("Idempotency-Key")
+	if idemKey == "" {
+		response.Error(w, http.StatusBadRequest, "Idempotency-Key header is required")
 		return
 	}
 
 	var req CreateOrderRequest
-	if err = easyjson.UnmarshalFromReader(r.Body, &req); err != nil {
-		l.Warn("failed to decode create order request", logger.Int("user_id", userID), logger.String("error", err.Error()))
-		response.Error(w, http.StatusInternalServerError, "Internal server error")
+	if err := request.JSON(r, &req); err != nil {
+		l.Warn("failed to decode create order request", logger.String("error", err.Error()))
+		response.Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if req.AddressID == "" || req.RestaurantBranchID == 0 {
-		l.Warn("create order request validation failed", logger.Int("user_id", userID))
-		response.Error(w, http.StatusBadRequest, "Bad request")
+		response.Error(w, http.StatusBadRequest, "address_id and branch_id are required")
 		return
 	}
 
-	input := domain.CreateOrderInput{
-		UserID:             userID,
+	input := orderclient.CreateOrderInput{
 		AddressPublicID:    req.AddressID,
 		RestaurantBranchID: req.RestaurantBranchID,
 		PaymentMethodID:    req.PaymentMethodID,
 		DeliveryCost:       req.DeliveryCost,
 		ServiceFee:         req.ServiceFee,
-		TotalCost:          req.TotalCost,
 	}
 
-	orderPublicID, confirmationURL, err := h.orderUC.CreateOrder(ctx, userID, input)
+	orderPublicID, confirmationURL, err := h.orderClient.CreateOrder(ctx, userID, input, idemKey)
 	if err != nil {
-		if errors.Is(err, domain.ErrCartIsEmpty) {
-			l.Warn("order creation failed: cart is empty", logger.Int("user_id", userID))
+		if errors.Is(err, orderclient.ErrCartIsEmpty) {
 			response.Error(w, http.StatusBadRequest, "Cart is empty")
-		} else if errors.Is(err, domain.ErrAddressNotFound) {
-			l.Warn("order creation failed: address not found", logger.Int("user_id", userID), logger.String("address_id", req.AddressID))
+			return
+		} else if errors.Is(err, orderclient.ErrAddressNotFound) {
 			response.Error(w, http.StatusNotFound, "Address not found")
-		} else {
-			l.Error("order creation failed unexpectedly", err, logger.Int("user_id", userID))
-			response.Error(w, http.StatusInternalServerError, "Something went wrong")
+			return
 		}
+
+		l.Error("order creation failed via grpc", err)
+		response.Error(w, http.StatusInternalServerError, "Something went wrong")
 		return
 	}
 
 	l.Info("order created successfully",
-		logger.Int("user_id", userID),
 		logger.String("order_id", orderPublicID),
 		logger.Any("payment_required", confirmationURL != ""),
 	)
@@ -127,20 +127,19 @@ func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *orderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
+func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
 
-	userID, err := middleware.GetUserID(ctx)
-	if err != nil {
-		l.Warn("unauthorized access to get orders")
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
 		response.Error(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
-	orders, err := h.orderUC.GetOrders(ctx, userID)
+	orders, err := h.orderClient.GetOrders(ctx, userID)
 	if err != nil {
-		l.Error("failed to fetch user orders", err, logger.Int("user_id", userID))
+		l.Error("failed to fetch user orders via grpc", err)
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -149,15 +148,13 @@ func (h *orderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 	for _, o := range orders {
 		resp = append(resp, OrderHistoryResponse{
 			OrderID:            o.PublicID,
-			RestaurantName:     o.PaymentMethodID,
+			RestaurantName:     o.RestaurantName,
 			RestaurantImageURL: o.RestaurantLogoURL,
 			TotalCost:          o.TotalCost,
 			Status:             o.Status,
 			CreatedAt:          o.CreatedAt.Format("02.01.2006"),
 		})
 	}
-
-	l.Debug("successfully fetched user orders", logger.Int("user_id", userID), logger.Int("count", len(resp)))
 
 	response.JSON(w, http.StatusOK, resp)
 }

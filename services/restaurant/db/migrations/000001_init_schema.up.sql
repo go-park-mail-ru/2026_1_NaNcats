@@ -16,7 +16,7 @@ CREATE TABLE "restaurant_brand" (
 	idempotency_key TEXT,
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
 CREATE TABLE "restaurant_branch" (
@@ -36,7 +36,7 @@ CREATE TABLE "restaurant_branch" (
 	CONSTRAINT fk_restaurant_branch_restaurant_brand
 		FOREIGN KEY (restaurant_brand_id)
 		REFERENCES "restaurant_brand"(id)
-		ON DELETE RESTRICT,
+		ON DELETE RESTRICT
 );
 
 CREATE TABLE "dish" (

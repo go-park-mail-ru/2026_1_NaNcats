@@ -17,7 +17,7 @@ CREATE TABLE "user" (
 	avatar_url TEXT
 		CHECK (char_length(avatar_url) <= 2048),
 	
-	idempotency_key TEXT,
+	idempotency_key TEXT UNIQUE,
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL

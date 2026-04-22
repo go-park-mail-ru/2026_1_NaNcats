@@ -1,50 +1,49 @@
 package cart
 
-/*
 //go:generate easyjson $GOFILE
 
 import (
 	"errors"
 	"net/http"
-	"os"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	cart "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/cart"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/request"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/cartclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/request"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
 )
 
+//easyjson:json
 type CartItemDTO struct {
-	DishID   int    `json:"dish_id"`
+	DishID   int64  `json:"dish_id"`
 	Name     string `json:"name,omitempty"`
 	Price    int64  `json:"price,omitempty"`
-	Quantity int    `json:"quantity"`
-	ImageURL string `json:"image_url"`
+	Quantity int32  `json:"quantity"`
+	ImageURL string `json:"image_url,omitempty"`
 }
 
+//easyjson:json
 type CartRequest struct {
-	RestaurantID int           `json:"restaurant_id"`
+	RestaurantID int64         `json:"restaurant_id"`
 	Items        []CartItemDTO `json:"items"`
 }
 
+//easyjson:json
 type CartResponse struct {
+	RestaurantBrandID int64         `json:"restaurant_id"`
 	Items             []CartItemDTO `json:"items"`
-	RestaurantBrandID int           `json:"restaurant_id"`
 	TotalCost         int64         `json:"total_cost"`
-	UpdatedAt         string        `json:"updated_at"`
 }
 
-type cartHandler struct {
-	cartUC cart.CartUseCase
-	logger logger.Logger
+type CartHandler struct {
+	cartClient cartclient.CartClient
+	logger     logger.Logger
 }
 
-func NewCartHandler(cuc cart.CartUseCase, l logger.Logger) *cartHandler {
-	return &cartHandler{
-		cartUC: cuc,
-		logger: l,
+func NewCartHandler(cc cartclient.CartClient, l logger.Logger) *CartHandler {
+	return &CartHandler{
+		cartClient: cc,
+		logger:     l,
 	}
 }
 
@@ -58,52 +57,38 @@ func NewCartHandler(cuc cart.CartUseCase, l logger.Logger) *cartHandler {
 // @Failure      500  {object}  map[string]string "Internal server error"
 // @Security     ApiKeyAuth
 // @Router       /api/cart [get]
-func (h *cartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
+func (h *CartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
 
-	userID, err := middleware.GetUserID(ctx)
-	if err != nil {
-		l.Error("failed to get user_id from context", err)
-		response.Error(w, http.StatusInternalServerError, "Internal server error")
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
-	cart, totalCost, err := h.cartUC.GetCart(ctx, userID)
+	cart, err := h.cartClient.GetCart(ctx, userID)
 	if err != nil {
-		l.Error("failed to fetch cart", err, logger.Int("user_id", userID))
+		l.Error("failed to fetch cart via grpc", err)
 		response.Error(w, http.StatusInternalServerError, "failed to get cart")
 		return
 	}
 
 	cartResponse := CartResponse{
+		RestaurantBrandID: cart.RestaurantID,
+		TotalCost:         cart.TotalCost,
 		Items:             make([]CartItemDTO, 0, len(cart.Items)),
-		RestaurantBrandID: cart.RestaurantBrandID,
-		TotalCost:         totalCost,
-		UpdatedAt:         cart.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}
 
 	for _, item := range cart.Items {
-		imageURL := item.ImageURL
-		if imageURL == "" {
-			imageURL = os.Getenv("DEFAULT_FOOD_LOGO_URL")
-		}
-
 		cartResponse.Items = append(cartResponse.Items, CartItemDTO{
 			DishID:   item.DishID,
 			Name:     item.Name,
 			Price:    item.Price,
 			Quantity: item.Quantity,
-			ImageURL: imageURL,
+			ImageURL: item.ImageURL,
 		})
 	}
-
-	l.Debug("get cart success",
-		logger.Int("user_id", userID),
-		logger.Int("items_count", len(cart.Items)),
-		logger.Any("total_cost", totalCost),
-		logger.Int("restaurant_id", cart.RestaurantBrandID),
-	)
 
 	response.JSON(w, http.StatusOK, cartResponse)
 }
@@ -121,57 +106,48 @@ func (h *cartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 // @Failure      500    {object}  map[string]string "Internal server error"
 // @Security     ApiKeyAuth
 // @Router       /api/cart [put]
-func (h *cartHandler) UpdateCart(w http.ResponseWriter, r *http.Request) {
+func (h *CartHandler) UpdateCart(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
 
-	userID, err := middleware.GetUserID(ctx)
-	if err != nil {
-		l.Error("failed to get user_id from context", err)
-		response.Error(w, http.StatusInternalServerError, "Internal server error")
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	idemKey := r.Header.Get("Idempotency-Key")
+	if idemKey == "" {
+		response.Error(w, http.StatusBadRequest, "Idempotency-Key header is required")
 		return
 	}
 
 	var reqCart CartRequest
-	err = request.JSON(r, &reqCart)
-	if err != nil {
-		l.Warn("invalid update cart json", logger.Int("user_id", userID), logger.String("error", err.Error()))
+	if err := request.JSON(r, &reqCart); err != nil {
+		l.Warn("invalid update cart json", logger.String("error", err.Error()))
 		response.Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
-	domainCart := domain.Cart{
-		UserID:            userID,
-		RestaurantBrandID: reqCart.RestaurantID,
-		Items:             make([]domain.CartItem, 0, len(reqCart.Items)),
-	}
-
+	clientItems := make([]cartclient.Item, 0, len(reqCart.Items))
 	for _, it := range reqCart.Items {
-		domainCart.Items = append(domainCart.Items, domain.CartItem{
+		clientItems = append(clientItems, cartclient.Item{
 			DishID:   it.DishID,
 			Quantity: it.Quantity,
 		})
 	}
 
-	err = h.cartUC.UpdateCart(ctx, userID, domainCart)
+	err := h.cartClient.UpdateCart(ctx, userID, reqCart.RestaurantID, clientItems, idemKey)
 	if err != nil {
-		switch {
-		case errors.Is(err, domain.ErrInvalidQuantity), errors.Is(err, domain.ErrMultipleRestaurants):
-			l.Warn("cart update validation failed", logger.Int("user_id", userID), logger.String("reason", err.Error()))
-			response.Error(w, http.StatusBadRequest, err.Error())
-		default:
-			l.Error("failed to sync cart", err, logger.Int("user_id", userID))
-			response.Error(w, http.StatusInternalServerError, "internal server error")
+		if errors.Is(err, cartclient.ErrInvalidCart) {
+			l.Warn("cart update validation failed")
+			response.Error(w, http.StatusBadRequest, "invalid cart data (check quantity or mixed restaurants)")
+			return
 		}
+		l.Error("failed to sync cart via grpc", err)
+		response.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
-	l.Debug("cart synced successfully",
-		logger.Int("user_id", userID),
-		logger.Int("items_count", len(reqCart.Items)),
-		logger.Int("restaurant_id", reqCart.RestaurantID),
-	)
-
-	response.JSON(w, http.StatusOK, nil)
+	response.JSON(w, http.StatusOK, map[string]string{"message": "cart updated successfully"})
 }
-*/

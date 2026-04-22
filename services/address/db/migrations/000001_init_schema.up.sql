@@ -43,5 +43,5 @@ CREATE TABLE "client_address" (
 	CONSTRAINT fk_client_address_location
 		FOREIGN KEY (location_id)
 		REFERENCES "location"(id)
-		ON DELETE RESTRICT,
+		ON DELETE RESTRICT
 );

@@ -1,25 +1,24 @@
 package restaurant
 
-/*
 //go:generate easyjson $GOFILE
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
-	restaurant "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/restaurant"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/logger"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/pkg/response"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/restaurantclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
 )
 
 //easyjson:json
 type RestaurantBrandResponse struct {
-	ID            string `json:"id" example:"550e8400-e29b-41d4-a716-446655440000"`
+	ID            string `json:"id" example:"1"`
 	Name          string `json:"name" example:"KFC"`
-	Description   string `json:"description" example:"Острые крылошки"`
+	Description   string `json:"description" example:"Острые крылышки"`
 	PromotionTier int    `json:"promotion_tier" example:"2"`
-	LogoURL       string `json:"logo_url" example:"restaurants/logos/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"`
-	BannerURL     string `json:"banner_url" example:"restaurangs/banners/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"`
+	LogoURL       string `json:"logo_url"`
 }
 
 //easyjson:json
@@ -27,120 +26,151 @@ type RestaurantBrandsResponse struct {
 	RestaurantBrands []RestaurantBrandResponse `json:"restaurants"`
 }
 
-type restaurantBrandHandler struct {
-	restaurantBrandUC restaurant.RestaurantBrandUseCase
-	logger            logger.Logger
+//easyjson:json
+type DishResponse struct {
+	ID          string `json:"id" example:"1"`
+	Name        string `json:"name" example:"Чизбургер"`
+	Description string `json:"description" example:"Сочный бургер с сыром"`
+	ImageURL    string `json:"image_url"`
+	Price       int64  `json:"price" example:"199000000"`
 }
 
-func NewRestaurantBrandHandler(rbuc restaurant.RestaurantBrandUseCase, logger logger.Logger) *restaurantBrandHandler {
-	return &restaurantBrandHandler{
-		restaurantBrandUC: rbuc,
-		logger:            logger,
+//easyjson:json
+type DishesResponse struct {
+	Dishes []DishResponse `json:"dishes"`
+}
+type RestaurantHandler struct {
+	restaurantClient restaurantclient.RestaurantClient
+	logger           logger.Logger
+}
+
+func NewRestaurantHandler(rc restaurantclient.RestaurantClient, l logger.Logger) *RestaurantHandler {
+	return &RestaurantHandler{
+		restaurantClient: rc,
+		logger:           l,
 	}
 }
 
-// GetRestaurantBrandsList godoc
-// @Summary 		Получение списка ресторанов
-// @Description		Возвращает список брендов ресторанов с поддержкой пагинации (limit и offset)
-// @Tags				restaurants
-// @Produce				json
-// @Param				limit	query	  int	false	"Количество получаемых ресторанов"	default(20)
-// @Param				offset	query	  int	false	"Смещение от начала списка"     	default(0)
-// @Success				200		{object}  RestaurantBrandsResponse			"Успешное получение списка ресторанов"
-// @Router				/restaurants/brands [get]
-func (h *restaurantBrandHandler) GetRestaurantBrandsList(w http.ResponseWriter, r *http.Request) {
+func (h *RestaurantHandler) GetRestaurantBrandsList(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
 
-	query := r.URL.Query()
-
 	limit := 20
 	offset := 0
+	query := r.URL.Query()
 
 	if qLimit := query.Get("limit"); qLimit != "" {
 		if val, err := strconv.Atoi(qLimit); err == nil && val > 0 {
 			limit = val
-		} else {
-			l.Debug("invalid limit query parameter, using default",
-				logger.String("input", qLimit),
-				logger.Int("default", limit),
-			)
 		}
 	}
 
 	if qOffset := query.Get("offset"); qOffset != "" {
 		if val, err := strconv.Atoi(qOffset); err == nil && val >= 0 {
 			offset = val
-		} else {
-			l.Debug("invalid offset query parameter, using default",
-				logger.String("input", qOffset),
-				logger.Int("default", offset),
-			)
 		}
 	}
 
-	restaurantBrandsList, err := h.restaurantBrandUC.GetRestaurantBrandsList(ctx, limit, offset)
+	brands, err := h.restaurantClient.GetRestaurantBrandsList(ctx, int32(limit), int32(offset))
 	if err != nil {
-		l.Error("failed to get restaurant brand list", err,
-			logger.Int("limit", limit),
-			logger.Int("offset", offset),
-		)
+		l.Error("failed to get restaurant brand list", err)
 		response.Error(w, http.StatusInternalServerError, "Get restaurant brand list error")
 		return
 	}
 
-	dtoList := make([]RestaurantBrandResponse, 0, len(restaurantBrandsList))
-
-	for _, currRestaurantBrand := range restaurantBrandsList {
-		restResp := RestaurantBrandResponse{
-			ID:            strconv.Itoa(currRestaurantBrand.ID),
-			Name:          currRestaurantBrand.Name,
-			Description:   currRestaurantBrand.Description,
-			PromotionTier: currRestaurantBrand.PromotionTier,
-			LogoURL:       currRestaurantBrand.LogoURL,
-		}
-
-		dtoList = append(dtoList, restResp)
+	dtoList := make([]RestaurantBrandResponse, 0, len(brands))
+	for _, b := range brands {
+		dtoList = append(dtoList, RestaurantBrandResponse{
+			ID:            strconv.FormatInt(b.Id, 10),
+			Name:          b.Name,
+			Description:   b.Description,
+			PromotionTier: int(b.PromotionTier),
+			LogoURL:       b.LogoUrl,
+		})
 	}
 
-	l.Debug("successfully fetched restaurant brands",
-		logger.Int("count", len(dtoList)),
-		logger.Int("limit", limit),
-		logger.Int("offset", offset),
-	)
-
-	resp := RestaurantBrandsResponse{
-		RestaurantBrands: dtoList,
-	}
-
-	response.JSON(w, http.StatusOK, resp)
+	response.JSON(w, http.StatusOK, RestaurantBrandsResponse{RestaurantBrands: dtoList})
 }
 
-func (h *restaurantBrandHandler) GetRestaurantBrandByID(w http.ResponseWriter, r *http.Request) {
+func (h *RestaurantHandler) GetRestaurantBrandByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
+
 	idStr := r.PathValue("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		l.Warn("invalid restaurant id format", logger.String("id_str", idStr))
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || id <= 0 {
 		response.Error(w, http.StatusBadRequest, "Invalid ID format")
 		return
 	}
 
-	brand, err := h.restaurantBrandUC.GetRestaurantBrandByID(ctx, id)
+	brand, err := h.restaurantClient.GetRestaurantBrandByID(ctx, id)
 	if err != nil {
-		l.Warn("restaurant not found", logger.Int("id", id))
-		response.Error(w, http.StatusNotFound, "Restaurant not found")
+		if errors.Is(err, restaurantclient.ErrNotFound) {
+			response.Error(w, http.StatusNotFound, "Restaurant not found")
+			return
+		}
+		l.Error("failed to get restaurant by id", err)
+		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
-	l.Debug("successfully fetched restaurant brand", logger.Int("id", id))
-
 	response.JSON(w, http.StatusOK, RestaurantBrandResponse{
-		ID:          strconv.Itoa(brand.ID),
-		Name:        brand.Name,
-		Description: brand.Description,
-		LogoURL:     brand.LogoURL,
+		ID:            strconv.FormatInt(brand.Id, 10),
+		Name:          brand.Name,
+		Description:   brand.Description,
+		PromotionTier: int(brand.PromotionTier),
+		LogoURL:       brand.LogoUrl,
 	})
 }
-*/
+
+func (h *RestaurantHandler) GetDishesByRestaurantBrandID(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
+
+	brandIDStr := r.PathValue("id")
+	brandID, err := strconv.ParseInt(brandIDStr, 10, 64)
+	if err != nil || brandID <= 0 {
+		response.Error(w, http.StatusBadRequest, "Invalid restaurant brand id")
+		return
+	}
+
+	limit := 20
+	offset := 0
+	query := r.URL.Query()
+
+	if qLimit := query.Get("limit"); qLimit != "" {
+		if val, err := strconv.Atoi(qLimit); err == nil && val > 0 {
+			limit = val
+		}
+	}
+
+	if qOffset := query.Get("offset"); qOffset != "" {
+		if val, err := strconv.Atoi(qOffset); err == nil && val >= 0 {
+			offset = val
+		}
+	}
+
+	dishes, err := h.restaurantClient.GetDishesByRestaurantBrandID(ctx, brandID, int32(limit), int32(offset))
+	if err != nil {
+		if errors.Is(err, restaurantclient.ErrNotFound) {
+			response.Error(w, http.StatusNotFound, "Dishes or Restaurant not found")
+			return
+		}
+		l.Error("failed to get dishes list", err)
+		response.Error(w, http.StatusInternalServerError, "Get dishes list error")
+		return
+	}
+
+	dtoList := make([]DishResponse, 0, len(dishes))
+	for _, d := range dishes {
+		dtoList = append(dtoList, DishResponse{
+			ID:          strconv.FormatInt(d.Id, 10),
+			Name:        d.Name,
+			Description: d.Description,
+			ImageURL:    d.ImageUrl,
+			Price:       d.Price,
+		})
+	}
+
+	response.JSON(w, http.StatusOK, DishesResponse{Dishes: dtoList})
+}

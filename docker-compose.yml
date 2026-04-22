@@ -1,20 +1,29 @@
 version: '3.8'
+
+x-shared-env: &shared-env
+  LOG_LEVEL: ${LOG_LEVEL:-debug}
+  DEFAULT_AVATAR_URL: "https://nancats-bucket.storage.yandexcloud.net/avatars/default-avatar.webp"
+  DEFAULT_RESTAURANT_LOGO_URL: "https://nancats-bucket.storage.yandexcloud.net/restaurants/default-restaurant-logo.webp"
+  DEFAULT_FOOD_LOGO_URL: "https://nancats-bucket.storage.yandexcloud.net/foods/default-food-logo.webp"
+  S3_KEY_ID: ${S3_KEY_ID}
+  S3_SECRET_KEY: ${S3_SECRET_KEY}
+
 services:
   db:
     image: postgis/postgis:18-3.6-alpine # Образ с Postgres + PostGIS
     container_name: postgres_db
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER:-user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
     ports:
       - "5432:5432"
     volumes:
       # сохраняет таблицы и данные пользователей
       - postgres_data:/var/lib/postgresql/data
+      - ./init-dbs.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck: # Проверка готовности базы
       # бэкенд не начнет пытаться подключиться к базе, пока она не будет готова принимать соединения
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-user}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -27,28 +36,138 @@ services:
       - "6379:6379"
     restart: always
     
-  backend:
-    build: .
-    container_name: go_backend
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./uploads:/app/uploads
+  auth_service:
+    build:
+      context: .
+      args:
+        BUILD_PATH: ./services/auth/cmd/main.go
+    container_name: auth_service
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
+      <<: *shared-env
       REDIS_URL: redis://redis:6379/0
-      DEFAULT_AVATAR_URL: "https://nancats-bucket.storage.yandexcloud.net/avatars/default-avatar.webp"
-      DEFAULT_RESTAURANT_LOGO_URL: "https://nancats-bucket.storage.yandexcloud.net/restaurants/default-restaurant-logo.webp"
-      DEFAULT_FOOD_LOGO_URL: "https://nancats-bucket.storage.yandexcloud.net/foods/default-food-logo.webp"
+      USER_SERVICE_ADDR: user_service:50052
+    depends_on:
+      redis:
+        condition: service_started
+      user_service:
+        condition: service_started
+
+  user_service:
+    build:
+      context: .
+      args:
+        BUILD_PATH: ./services/user/cmd/main.go
+    container_name: user_service
+    environment:
+      <<: *shared-env
+      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/user_db?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+
+  restaurant_service:
+    build:
+      context: .
+      args:
+        BUILD_PATH: ./services/restaurant/cmd/main.go
+    container_name: restaurant_service
+    environment:
+      <<: *shared-env
+      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/restaurant_db?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+
+  cart_service:
+    build:
+      context: .
+      args:
+        BUILD_PATH: ./services/cart/cmd/main.go
+    container_name: cart_service
+    environment:
+      <<: *shared-env
+      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/cart_db?sslmode=disable
+      RESTAURANT_SERVICE_ADDR: restaurant_service:50053
+    depends_on:
+      db:
+        condition: service_healthy
+
+  address_service:
+    build:
+      context: .
+      args:
+        BUILD_PATH: ./services/address/cmd/main.go
+    container_name: address_service
+    environment:
+      <<: *shared-env
+      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/address_db?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+
+  payment_service:
+    build:
+      context: .
+      args:
+        BUILD_PATH: ./services/payment/cmd/main.go
+    container_name: payment_service
+    environment:
+      <<: *shared-env
+      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/payment_db?sslmode=disable
+      REDIS_URL: redis://redis:6379/0
+      ORDER_SERVICE_ADDR: order_service:50057
       YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID}
       YOOKASSA_SECRET_KEY: ${YOOKASSA_SECRET_KEY}
       YOOKASSA_RETURN_URL: ${YOOKASSA_RETURN_URL}
-      S3_KEY_ID: ${S3_KEY_ID}
-      S3_SECRET_KEY: ${S3_SECRET_KEY}
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  order_service:
+    build:
+      context: .
+      args:
+        BUILD_PATH: ./services/order/cmd/main.go
+    container_name: order_service
+    environment:
+      <<: *shared-env
+      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/order_db?sslmode=disable
+      ADDRESS_SERVICE_ADDR: address_service:50051
+      CART_SERVICE_ADDR: cart_service:50055
+      PAYMENT_SERVICE_ADDR: payment_service:50056
+      RESTAURANT_SERVICE_ADDR: restaurant_service:50053
+    depends_on:
+      db:
+        condition: service_healthy
+  
+  api_gateway:
+    build:
+      context: .
+      args:
+        BUILD_PATH: ./api-gateway/cmd/api/main.go
+    container_name: api_gateway
+    ports:
+      - "8080:8080"
+    environment:
+      <<: *shared-env
+      PORT: 8080
+      AUTH_SERVICE_ADDR: auth_service:50054
+      USER_SERVICE_ADDR: user_service:50052
+      RESTAURANT_SERVICE_ADDR: restaurant_service:50053
+      CART_SERVICE_ADDR: cart_service:50055
+      ADDRESS_SERVICE_ADDR: address_service:50051
+      PAYMENT_SERVICE_ADDR: payment_service:50056
+      ORDER_SERVICE_ADDR: order_service:50057
+    depends_on:
+      - auth_service
+      - user_service
+      - restaurant_service
+      - cart_service
+      - address_service
+      - payment_service
+      - order_service
     restart: always
 
 volumes:
