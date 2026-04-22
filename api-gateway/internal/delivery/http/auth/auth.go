@@ -131,6 +131,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusCreated, RegisterResponse{
 		Name:      reqDTO.Name,
 		Email:     reqDTO.Email,
+		CreatedAt: time.Now(),
 		CSRFToken: csrfToken,
 	})
 }

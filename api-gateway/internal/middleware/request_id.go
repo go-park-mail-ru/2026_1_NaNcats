@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/common"
 	"github.com/google/uuid"
 )
 
@@ -25,7 +26,7 @@ func (m *RequestIDMiddleware) Handler(next http.Handler) http.Handler {
 
 		w.Header().Set("X-Request-ID", reqID)
 
-		ctx := context.WithValue(r.Context(), RequestIDKey, reqID)
+		ctx := context.WithValue(r.Context(), common.RequestIDKey, reqID)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
