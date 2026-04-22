@@ -10,6 +10,7 @@ type Config struct {
 	Logger config.LoggerConfig     `yaml:"logger"`
 	GRPC   config.GRPCServerConfig `yaml:"grpc"`
 	Redis  config.RedisConfig      `yaml:"redis"`
+	OTEL   config.OTELConfig       `yaml:"otel"`
 
 	// Адрес gRPC сервера пользователей
 	UserServiceAddr string `yaml:"user_service_addr" env:"USER_SERVICE_ADDR" env-default:"localhost:50052"`

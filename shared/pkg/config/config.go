@@ -27,6 +27,11 @@ type RedisConfig struct {
 	IdleTimeout time.Duration `yaml:"idle_timeout" env:"REDIS_IDLE_TIMEOUT" env-default:"60s"`
 }
 
+type OTELConfig struct {
+	ServiceName   string `yaml:"service_name" env:"OTEL_SERVICE_NAME" env-required:"true"`
+	CollectorAddr string `yaml:"collector_addr" env:"OTEL_COLLECTOR_ADDR" env-default:"localhost:4317"`
+}
+
 // Универсальный загрузчик
 func MustLoad(cfg interface{}) {
 	configPath := os.Getenv("CONFIG_PATH")

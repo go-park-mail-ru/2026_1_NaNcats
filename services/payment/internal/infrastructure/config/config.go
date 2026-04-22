@@ -15,6 +15,7 @@ type Config struct {
 	Postgres config.PostgresConfig   `yaml:"postgres"`
 	GRPC     config.GRPCServerConfig `yaml:"grpc"`
 	Redis    config.RedisConfig      `yaml:"redis"`
+	OTEL     config.OTELConfig       `yaml:"otel"`
 
 	OrderServiceAddr string         `yaml:"order_service_addr" env:"ORDER_SERVICE_ADDR" env-default:"localhost:50057"`
 	Yookassa         YookassaConfig `yaml:"yookassa"`

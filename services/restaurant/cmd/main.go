@@ -11,7 +11,9 @@ import (
 	infrastructureLogger "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/common/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/interceptors"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/metrics"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 
 	restaurantDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/delivery/grpc"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/infrastructure/config"
@@ -61,7 +63,18 @@ func main() {
 
 	restaurantHandler := restaurantDelivery.NewRestaurantHandler(brandUC, dishUC)
 
+	// Контекст, который отменяется по сигналу ОС
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	cleanup, err := metrics.InitMetrics(ctx, cfg.OTEL.ServiceName, cfg.OTEL.CollectorAddr)
+	if err != nil {
+		appLogger.Fatal("failed to init metrics", err)
+	}
+	defer cleanup()
+
 	grpcServer := grpc.NewServer(
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.ChainUnaryInterceptor(
 			interceptors.UnaryServerRecovery(appLogger),
 			interceptors.UnaryServerLogging(appLogger),
@@ -83,10 +96,7 @@ func main() {
 		}
 	}()
 
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
-
-	<-stop
+	<-ctx.Done()
 	appLogger.Info("Received shutdown signal, stopping gracefully...")
 	grpcServer.GracefulStop()
 	appLogger.Info("Restaurant microservice stopped")

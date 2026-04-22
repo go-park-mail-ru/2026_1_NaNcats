@@ -8,6 +8,7 @@ type Config struct {
 	Logger   config.LoggerConfig     `yaml:"logger"`
 	Postgres config.PostgresConfig   `yaml:"postgres"`
 	GRPC     config.GRPCServerConfig `yaml:"grpc"`
+	OTEL     config.OTELConfig       `yaml:"otel"`
 
 	RestaurantServiceAddr string `yaml:"restaurant_service_addr" env:"RESTAURANT_SERVICE_ADDR" env-default:"localhost:50053"`
 

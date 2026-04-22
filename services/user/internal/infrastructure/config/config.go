@@ -16,6 +16,7 @@ type Config struct {
 	Postgres config.PostgresConfig   `yaml:"postgres"`
 	GRPC     config.GRPCServerConfig `yaml:"grpc"`
 	S3       S3Config                `yaml:"s3"`
+	OTEL     config.OTELConfig       `yaml:"otel"`
 
 	DefaultAvatarURL string `yaml:"default_avatar_url" env:"DEFAULT_AVATAR_URL" env-required:"true"`
 }

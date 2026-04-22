@@ -4,14 +4,13 @@ import (
 	"context"
 	"log"
 	"net"
-	"os"
-	"os/signal"
-	"syscall"
 
 	infrastructureLogger "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/common/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/interceptors"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/metrics"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 
 	addressDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/address/internal/delivery/grpc"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/address/internal/infrastructure/config"
@@ -59,7 +58,14 @@ func main() {
 	addressUC := addressUseCase.NewAddressUseCase(addressRepo)
 	addressHandler := addressDelivery.NewAddressHandler(addressUC)
 
+	cleanup, err := metrics.InitMetrics(ctx, cfg.OTEL.ServiceName, cfg.OTEL.CollectorAddr)
+	if err != nil {
+		appLogger.Fatal("failed to init metrics", err)
+	}
+	defer cleanup()
+
 	grpcServer := grpc.NewServer(
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.ChainUnaryInterceptor(
 			interceptors.UnaryServerRecovery(appLogger),
 			interceptors.UnaryServerLogging(appLogger),
@@ -81,10 +87,7 @@ func main() {
 		}
 	}()
 
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
-
-	<-stop
+	<-ctx.Done()
 	appLogger.Info("Received shutdown signal, stopping gracefully...")
 	grpcServer.GracefulStop()
 	appLogger.Info("Address microservice stopped")

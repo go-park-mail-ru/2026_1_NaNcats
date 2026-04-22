@@ -15,5 +15,9 @@ grpc:
 
 order_service_addr: "localhost:50057"
 
+otel:
+  service_name: "payment-service"
+  collector_addr: "otel-collector:4317"
+
 yookassa:
   return_url: "http://localhost:3000/profile/wallet"

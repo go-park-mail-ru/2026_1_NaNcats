@@ -8,5 +8,9 @@ grpc:
   port: "50053"
   timeout: "5s"
 
+otel:
+  service_name: "restaurant-service"
+  collector_addr: "otel-collector:4317"
+
 default_restaurant_logo_url: "https://nancats-bucket.storage.yandexcloud.net/restaurants/default-restaurant-logo.webp"
 default_food_logo_url: "https://nancats-bucket.storage.yandexcloud.net/foods/default-food-logo.webp"

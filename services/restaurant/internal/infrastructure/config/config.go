@@ -8,6 +8,7 @@ type Config struct {
 	Logger   config.LoggerConfig     `yaml:"logger"`
 	Postgres config.PostgresConfig   `yaml:"postgres"`
 	GRPC     config.GRPCServerConfig `yaml:"grpc"`
+	OTEL     config.OTELConfig       `yaml:"otel"`
 
 	DefaultRestaurantLogoURL string `yaml:"default_restaurant_logo_url" env:"DEFAULT_RESTAURANT_LOGO_URL" env-required:"true"`
 	DefaultFoodLogoURL       string `yaml:"default_food_logo_url" env:"DEFAULT_FOOD_LOGO_URL" env-required:"true"`
