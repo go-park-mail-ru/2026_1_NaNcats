@@ -44,6 +44,7 @@ services:
     container_name: auth_service
     environment:
       <<: *shared-env
+      CONFIG_PATH: ./services/auth/config.yaml
       REDIS_URL: redis://redis:6379/0
       USER_SERVICE_ADDR: user_service:50052
     depends_on:
@@ -60,6 +61,7 @@ services:
     container_name: user_service
     environment:
       <<: *shared-env
+      CONFIG_PATH: ./services/user/config.yaml
       DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/user_db?sslmode=disable
     depends_on:
       db:
@@ -73,6 +75,7 @@ services:
     container_name: restaurant_service
     environment:
       <<: *shared-env
+      CONFIG_PATH: ./services/restaurant/config.yaml
       DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/restaurant_db?sslmode=disable
     depends_on:
       db:
@@ -86,6 +89,7 @@ services:
     container_name: cart_service
     environment:
       <<: *shared-env
+      CONFIG_PATH: ./services/cart/config.yaml
       DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/cart_db?sslmode=disable
       RESTAURANT_SERVICE_ADDR: restaurant_service:50053
     depends_on:
@@ -100,6 +104,7 @@ services:
     container_name: address_service
     environment:
       <<: *shared-env
+      CONFIG_PATH: ./services/address/config.yaml
       DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/address_db?sslmode=disable
     depends_on:
       db:
@@ -113,6 +118,7 @@ services:
     container_name: payment_service
     environment:
       <<: *shared-env
+      CONFIG_PATH: ./services/payment/config.yaml
       DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/payment_db?sslmode=disable
       REDIS_URL: redis://redis:6379/0
       ORDER_SERVICE_ADDR: order_service:50057
@@ -133,6 +139,7 @@ services:
     container_name: order_service
     environment:
       <<: *shared-env
+      CONFIG_PATH: ./services/order/config.yaml
       DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/order_db?sslmode=disable
       ADDRESS_SERVICE_ADDR: address_service:50051
       CART_SERVICE_ADDR: cart_service:50055
