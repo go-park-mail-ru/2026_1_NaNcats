@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-const mdRequestIDKey = "x-user-id"
+const mdRequestIDKey = "x-request-id"
 
 // Автоматическая запись каждого gRPC вызова в логи
 func UnaryServerLogging(l logger.Logger) grpc.UnaryServerInterceptor {

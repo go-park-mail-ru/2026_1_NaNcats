@@ -49,8 +49,6 @@ func (m *LoggingMiddleware) Handler(next http.Handler) http.Handler {
 
 		duration := time.Since(start)
 
-		userAgent := r.UserAgent()
-
 		m.logger.WithContext(r.Context()).Info("http request finished",
 			logger.Int("status", wrapped.statusCode),
 			logger.Int("size_bytes", wrapped.size),
