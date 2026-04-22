@@ -98,6 +98,7 @@ func main() {
 		grpc.WithChainUnaryInterceptor(
 			interceptors.UnaryClientRequestID(),
 			interceptors.UnaryClientUserID(),
+			interceptors.UnaryClientLogging(appLogger),
 		),
 	}
 	appLogger.Info("Connecting to microservices...")

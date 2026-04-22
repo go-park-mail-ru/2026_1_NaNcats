@@ -16,6 +16,4 @@ grpc:
 order_service_addr: "localhost:50057"
 
 yookassa:
-  shop_id: "my_id"
-  secret_key: "my_key"
   return_url: "http://localhost:3000/profile/wallet"

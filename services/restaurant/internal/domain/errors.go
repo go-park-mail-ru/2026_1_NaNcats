@@ -6,6 +6,7 @@ import (
 )
 
 var (
-	ErrDishNotFound       = errutil.New("DISH_NOT_FOUND", "dish not found", codes.NotFound)
-	ErrRestaurantNotFound = errutil.New("RESTAURANT_NOT_FOUND", "restaurant not found", codes.NotFound)
+	ErrDishNotFound             = errutil.New("DISH_NOT_FOUND", "dish not found", codes.NotFound)
+	ErrRestaurantNotFound       = errutil.New("RESTAURANT_NOT_FOUND", "restaurant not found", codes.NotFound)
+	ErrInvalidRestaurantBrandID = errutil.New("INVALID_RESTAURANT_BRAND_ID", "invalid restaurant_brand_id", codes.InvalidArgument)
 )

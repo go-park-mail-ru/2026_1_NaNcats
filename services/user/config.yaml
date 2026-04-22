@@ -9,8 +9,6 @@ grpc:
   timeout: "5s"
 
 s3:
-  key_id: "my_s3_key_id"
-  secret_key: "my_s3_secret_key"
   bucket_name: "nancats-bucket"
   region: "ru-central1"
 

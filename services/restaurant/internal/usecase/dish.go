@@ -5,8 +5,6 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/repository"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
-	"google.golang.org/grpc/codes"
 )
 
 //go:generate mockgen -destination=mocks/dish_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/restaurant DishUseCase
@@ -30,7 +28,7 @@ func NewDishUseCase(dr repository.DishRepository, dflurl string) DishUseCase {
 func (uc *dishUseCase) GetDishesByRestaurantBrandID(ctx context.Context, restaurantBrandID int64, limit, offset int) ([]domain.Dish, error) {
 	// Валидация входа
 	if restaurantBrandID <= 0 {
-		return nil, errutil.New("INVALID_RESTAURANT_BRAND_ID", "invalid restaurant_brand_id", codes.InvalidArgument)
+		return nil, domain.ErrInvalidRestaurantBrandID
 	}
 
 	// Пагинация
