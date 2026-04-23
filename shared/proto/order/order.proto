@@ -39,10 +39,11 @@ message CreateOrderRequest {
   int64 user_id = 1; 
   string address_public_id = 2;
   int64 restaurant_branch_id = 3;
-  string payment_method_id = 4;
-  int64 delivery_cost = 5;
-  int64 service_fee = 6;
-  string idempotency_key = 7;
+  int64 restaurant_brand_id = 4;
+  string payment_method_id = 5;
+  int64 delivery_cost = 6;
+  int64 service_fee = 7;
+  string idempotency_key = 8;
 }
 
 message CreateOrderResponse {

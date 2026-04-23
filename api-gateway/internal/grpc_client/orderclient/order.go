@@ -19,6 +19,7 @@ var (
 type CreateOrderInput struct {
 	AddressPublicID    string
 	RestaurantBranchID int64
+	RestaurantBrandID  int64
 	PaymentMethodID    string
 	DeliveryCost       int64
 	ServiceFee         int64
@@ -51,6 +52,7 @@ func (c *orderClient) CreateOrder(ctx context.Context, userID int64, input Creat
 		UserId:             userID,
 		AddressPublicId:    input.AddressPublicID,
 		RestaurantBranchId: input.RestaurantBranchID,
+		RestaurantBrandId:  input.RestaurantBrandID,
 		PaymentMethodId:    input.PaymentMethodID,
 		DeliveryCost:       input.DeliveryCost,
 		ServiceFee:         input.ServiceFee,

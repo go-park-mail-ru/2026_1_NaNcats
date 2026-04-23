@@ -82,11 +82,16 @@ func (c *restaurantClient) GetDishesByIDs(ctx context.Context, dishIDs []int64) 
 }
 
 func (c *restaurantClient) GetRestaurantLogos(ctx context.Context, brandIDs []int64) (map[int64]string, error) {
-	resp, err := c.client.GetRestaurantLogos(ctx, &pbRestaurant.GetRestaurantLogosRequest{
+	resp, err := c.client.GetRestaurantBrandsByIDs(ctx, &pbRestaurant.GetRestaurantBrandsByIDsRequest{
 		BrandIds: brandIDs,
 	})
 	if err != nil {
 		return nil, ErrInternal
 	}
-	return resp.Logos, nil
+	logos := make(map[int64]string, len(resp.RestaurantBrands))
+	for _, restaurantBrand := range resp.RestaurantBrands {
+		logos[restaurantBrand.Id] = restaurantBrand.LogoUrl
+	}
+
+	return logos, nil
 }

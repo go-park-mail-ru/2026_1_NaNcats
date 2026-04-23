@@ -13,6 +13,7 @@ import (
 type RestaurantBrandUseCase interface {
 	GetRestaurantBrandsList(ctx context.Context, limit, offset int) ([]domain.RestaurantBrand, error)
 	GetRestaurantBrandByID(ctx context.Context, id int64) (domain.RestaurantBrand, error)
+	GetRestaurantBrandsByIDs(ctx context.Context, brandIDs []int64) ([]domain.RestaurantBrand, error)
 }
 
 type restaurantBrandUseCase struct {
@@ -25,6 +26,21 @@ func NewRestaurantBrandUseCase(rbr repository.RestaurantBrandRepository, drlurl 
 		restaurantBrandRepo:      rbr,
 		defaultRestaurantLogoURL: drlurl,
 	}
+}
+
+func (rb *restaurantBrandUseCase) GetRestaurantBrandsByIDs(ctx context.Context, brandIDs []int64) ([]domain.RestaurantBrand, error) {
+	brands, err := rb.restaurantBrandRepo.GetRestaurantBrandsByIDs(ctx, brandIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	for i, brand := range brands {
+		if brand.LogoURL == "" {
+			brands[i].LogoURL = rb.defaultRestaurantLogoURL
+		}
+	}
+
+	return brands, nil
 }
 
 func (rb *restaurantBrandUseCase) GetRestaurantBrandsList(ctx context.Context, limit, offset int) ([]domain.RestaurantBrand, error) {

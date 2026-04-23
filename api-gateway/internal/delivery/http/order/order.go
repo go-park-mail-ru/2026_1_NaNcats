@@ -17,6 +17,7 @@ import (
 type CreateOrderRequest struct {
 	AddressID          string `json:"address_id"`
 	RestaurantBranchID int64  `json:"branch_id"`
+	RestaurantBrandID  int64  `json:"brand_id"`
 	PaymentMethodID    string `json:"payment_method_id,omitempty"`
 	DeliveryCost       int64  `json:"delivery_cost"`
 	ServiceFee         int64  `json:"service_fee"`
@@ -95,6 +96,7 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	input := orderclient.CreateOrderInput{
 		AddressPublicID:    req.AddressID,
 		RestaurantBranchID: req.RestaurantBranchID,
+		RestaurantBrandID:  req.RestaurantBrandID,
 		PaymentMethodID:    req.PaymentMethodID,
 		DeliveryCost:       req.DeliveryCost,
 		ServiceFee:         req.ServiceFee,

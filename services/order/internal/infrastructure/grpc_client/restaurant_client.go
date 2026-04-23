@@ -27,13 +27,17 @@ func (c *restaurantClient) GetRestaurantName(ctx context.Context, branchID int64
 	return resp.RestaurantBrand.Name, nil
 }
 
-func (c *restaurantClient) GetLogosByBranchIDs(ctx context.Context, branchIDs []int64) (map[int64]string, error) {
-	resp, err := c.client.GetRestaurantLogos(ctx, &pb.GetRestaurantLogosRequest{
-		BrandIds: branchIDs,
+func (c *restaurantClient) GetLogosByBrandIDs(ctx context.Context, brandIDs []int64) (map[int64]string, error) {
+	resp, err := c.client.GetRestaurantBrandsByIDs(ctx, &pb.GetRestaurantBrandsByIDsRequest{
+		BrandIds: brandIDs,
 	})
 	if err != nil {
 		return nil, err
 	}
+	logos := make(map[int64]string, len(resp.RestaurantBrands))
+	for _, restaurantBrand := range resp.RestaurantBrands {
+		logos[restaurantBrand.Id] = restaurantBrand.LogoUrl
+	}
 
-	return resp.Logos, nil
+	return logos, nil
 }

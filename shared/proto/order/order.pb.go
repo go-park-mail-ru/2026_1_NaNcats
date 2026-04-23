@@ -180,10 +180,11 @@ type CreateOrderRequest struct {
 	UserId             int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	AddressPublicId    string                 `protobuf:"bytes,2,opt,name=address_public_id,json=addressPublicId,proto3" json:"address_public_id,omitempty"`
 	RestaurantBranchId int64                  `protobuf:"varint,3,opt,name=restaurant_branch_id,json=restaurantBranchId,proto3" json:"restaurant_branch_id,omitempty"`
-	PaymentMethodId    string                 `protobuf:"bytes,4,opt,name=payment_method_id,json=paymentMethodId,proto3" json:"payment_method_id,omitempty"`
-	DeliveryCost       int64                  `protobuf:"varint,5,opt,name=delivery_cost,json=deliveryCost,proto3" json:"delivery_cost,omitempty"`
-	ServiceFee         int64                  `protobuf:"varint,6,opt,name=service_fee,json=serviceFee,proto3" json:"service_fee,omitempty"`
-	IdempotencyKey     string                 `protobuf:"bytes,7,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	RestaurantBrandId  int64                  `protobuf:"varint,4,opt,name=restaurant_brand_id,json=restaurantBrandId,proto3" json:"restaurant_brand_id,omitempty"`
+	PaymentMethodId    string                 `protobuf:"bytes,5,opt,name=payment_method_id,json=paymentMethodId,proto3" json:"payment_method_id,omitempty"`
+	DeliveryCost       int64                  `protobuf:"varint,6,opt,name=delivery_cost,json=deliveryCost,proto3" json:"delivery_cost,omitempty"`
+	ServiceFee         int64                  `protobuf:"varint,7,opt,name=service_fee,json=serviceFee,proto3" json:"service_fee,omitempty"`
+	IdempotencyKey     string                 `protobuf:"bytes,8,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -235,6 +236,13 @@ func (x *CreateOrderRequest) GetAddressPublicId() string {
 func (x *CreateOrderRequest) GetRestaurantBranchId() int64 {
 	if x != nil {
 		return x.RestaurantBranchId
+	}
+	return 0
+}
+
+func (x *CreateOrderRequest) GetRestaurantBrandId() int64 {
+	if x != nil {
+		return x.RestaurantBrandId
 	}
 	return 0
 }
@@ -485,16 +493,17 @@ const file_order_order_proto_rawDesc = "" +
 	"\x06status\x18\x05 \x01(\tR\x06status\x129\n" +
 	"\n" +
 	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12&\n" +
-	"\x05items\x18\a \x03(\v2\x10.order.OrderDishR\x05items\"\xa6\x02\n" +
+	"\x05items\x18\a \x03(\v2\x10.order.OrderDishR\x05items\"\xd6\x02\n" +
 	"\x12CreateOrderRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12*\n" +
 	"\x11address_public_id\x18\x02 \x01(\tR\x0faddressPublicId\x120\n" +
-	"\x14restaurant_branch_id\x18\x03 \x01(\x03R\x12restaurantBranchId\x12*\n" +
-	"\x11payment_method_id\x18\x04 \x01(\tR\x0fpaymentMethodId\x12#\n" +
-	"\rdelivery_cost\x18\x05 \x01(\x03R\fdeliveryCost\x12\x1f\n" +
-	"\vservice_fee\x18\x06 \x01(\x03R\n" +
+	"\x14restaurant_branch_id\x18\x03 \x01(\x03R\x12restaurantBranchId\x12.\n" +
+	"\x13restaurant_brand_id\x18\x04 \x01(\x03R\x11restaurantBrandId\x12*\n" +
+	"\x11payment_method_id\x18\x05 \x01(\tR\x0fpaymentMethodId\x12#\n" +
+	"\rdelivery_cost\x18\x06 \x01(\x03R\fdeliveryCost\x12\x1f\n" +
+	"\vservice_fee\x18\a \x01(\x03R\n" +
 	"serviceFee\x12'\n" +
-	"\x0fidempotency_key\x18\a \x01(\tR\x0eidempotencyKey\"h\n" +
+	"\x0fidempotency_key\x18\b \x01(\tR\x0eidempotencyKey\"h\n" +
 	"\x13CreateOrderResponse\x12&\n" +
 	"\x0forder_public_id\x18\x01 \x01(\tR\rorderPublicId\x12)\n" +
 	"\x10confirmation_url\x18\x02 \x01(\tR\x0fconfirmationUrl\"+\n" +

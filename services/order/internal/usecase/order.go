@@ -30,7 +30,7 @@ type AddressClient interface {
 //go:generate mockgen -destination=mocks/restaurant_client_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase RestaurantClient
 type RestaurantClient interface {
 	GetRestaurantName(ctx context.Context, branchID int64) (string, error)
-	GetLogosByBranchIDs(ctx context.Context, branchIDs []int64) (map[int64]string, error)
+	GetLogosByBrandIDs(ctx context.Context, brandIDs []int64) (map[int64]string, error)
 }
 
 //go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/order OrderUseCase
@@ -99,6 +99,7 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, userID int64, req domain
 	order := domain.Order{
 		ClientID:           userID,
 		RestaurantBranchID: req.RestaurantBranchID,
+		RestaurantBrandID:  req.RestaurantBrandID,
 		RestaurantName:     resName,
 		ClientAddressID:    req.AddressPublicID,
 		TotalCost:          finalTotalCost,
@@ -136,22 +137,22 @@ func (o *orderUseCase) GetOrders(ctx context.Context, userID int64) ([]domain.Or
 	}
 
 	// Собираем уникальные ID ресторанов
-	branchIDs := make([]int64, 0)
+	brandIDs := make([]int64, 0)
 	seen := make(map[int64]bool)
 	for _, ord := range orders {
-		if !seen[ord.RestaurantBranchID] {
-			branchIDs = append(branchIDs, ord.RestaurantBranchID)
-			seen[ord.RestaurantBranchID] = true
+		if !seen[ord.RestaurantBrandID] {
+			brandIDs = append(brandIDs, ord.RestaurantBrandID)
+			seen[ord.RestaurantBrandID] = true
 		}
 	}
 
-	logos, err := o.restaurantClient.GetLogosByBranchIDs(ctx, branchIDs)
+	logos, err := o.restaurantClient.GetLogosByBrandIDs(ctx, brandIDs)
 	if err != nil {
 		// печально, отдаем с дефолтным лого
 	}
 
 	for i := range orders {
-		logo, ok := logos[orders[i].RestaurantBranchID]
+		logo, ok := logos[orders[i].RestaurantBrandID]
 		if ok && logo != "" {
 			orders[i].RestaurantLogoURL = logo
 		} else {

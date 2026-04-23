@@ -20,6 +20,7 @@ type orderDB struct {
 	ClientID           int64     `db:"client_account_id"`
 	CourierID          *int64    `db:"courier_account_id"`
 	RestaurantBranchID int64     `db:"restaurant_branch_id"`
+	RestaurantBrandID  int64     `db:"restaurant_brand_id"`
 	ClientAddressID    string    `db:"client_address_id"`
 	TotalCost          int64     `db:"total_cost"`
 	PromocodeID        *int64    `db:"promocode_id"`
@@ -37,6 +38,7 @@ func (o orderDB) toDomain() domain.Order {
 		PublicID:           o.PublicID,
 		ClientID:           o.ClientID,
 		RestaurantBranchID: o.RestaurantBranchID,
+		RestaurantBrandID:  o.RestaurantBrandID,
 		RestaurantName:     o.RestaurantName,
 		ClientAddressID:    o.ClientAddressID,
 		TotalCost:          o.TotalCost,
@@ -80,11 +82,11 @@ func (r *orderRepo) CreateOrder(ctx context.Context, order domain.Order, idempot
 
 	orderQuery := `
 			INSERT INTO "order" (
-				client_account_id, restaurant_branch_id, restaurant_name,
-				client_address_id, total_cost, payment_method_id,
+				client_account_id, restaurant_branch_id, restaurant_brand_id,
+				restaurant_name, client_address_id, total_cost, payment_method_id,
 				yookassa_payment_id, status, idempotency_key
 			)
-			VALUES ($1, $2, $3, $4, $5, NULLIF($6, ''), NULLIF($7, ''), $8, NULLIF($9, ''))
+			VALUES ($1, $2, $3, $4, $5, $6, NULLIF($7, ''), NULLIF($8, ''), $9, NULLIF($10, ''))
 			RETURNING id, public_id;
 		`
 
@@ -94,6 +96,7 @@ func (r *orderRepo) CreateOrder(ctx context.Context, order domain.Order, idempot
 	err = tx.QueryRow(ctx, orderQuery,
 		order.ClientID,
 		order.RestaurantBranchID,
+		order.RestaurantBrandID,
 		order.RestaurantName,
 		order.ClientAddressID,
 		order.TotalCost,
@@ -159,9 +162,10 @@ func (r *orderRepo) GetOrderByPublicID(ctx context.Context, publicID string, use
 	query := `
 			SELECT 
 				id, public_id, client_account_id, courier_account_id, 
-				restaurant_branch_id, client_address_id, total_cost, 
-				promocode_id, restaurant_name, payment_method_id,
-				yookassa_payment_id, status, created_at, updated_at
+				restaurant_branch_id, restaurant_brand_id, 
+				client_address_id, total_cost, promocode_id,
+				restaurant_name, payment_method_id, yookassa_payment_id,
+				status, created_at, updated_at
 			FROM "order" 
 			WHERE public_id = $1 AND client_account_id = $2;
 		`
@@ -203,7 +207,7 @@ func (r *orderRepo) GetOrdersByUserID(ctx context.Context, userID int64) ([]doma
 	query := `
     SELECT 
         id, public_id, client_account_id, courier_account_id, 
-        restaurant_branch_id, restaurant_name, -- ДОБАВИЛИ
+        restaurant_branch_id, restaurant_brand_id, restaurant_name,
         client_address_id, total_cost, 
         promocode_id, payment_method_id, yookassa_payment_id,
         status, created_at, updated_at

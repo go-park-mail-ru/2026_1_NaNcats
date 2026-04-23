@@ -7,6 +7,7 @@ CREATE TABLE "order" (
 	client_account_id BIGINT NOT NULL,
 	courier_account_id BIGINT,
 	restaurant_branch_id BIGINT NOT NULL,
+	restaurant_brand_id BIGINT NOT NULL,
 	client_address_id TEXT NOT NULL,
 	total_cost BIGINT
 		CHECK (total_cost >= 1000000), -- 1 рубль

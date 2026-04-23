@@ -373,27 +373,27 @@ func (x *GetRestaurantBrandByIDResponse) GetRestaurantBrand() *RestaurantBrand {
 	return nil
 }
 
-type GetRestaurantLogosRequest struct {
+type GetRestaurantBrandsByIDsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	BrandIds      []int64                `protobuf:"varint,1,rep,packed,name=brand_ids,json=brandIds,proto3" json:"brand_ids,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetRestaurantLogosRequest) Reset() {
-	*x = GetRestaurantLogosRequest{}
+func (x *GetRestaurantBrandsByIDsRequest) Reset() {
+	*x = GetRestaurantBrandsByIDsRequest{}
 	mi := &file_restaurant_restaurant_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetRestaurantLogosRequest) String() string {
+func (x *GetRestaurantBrandsByIDsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetRestaurantLogosRequest) ProtoMessage() {}
+func (*GetRestaurantBrandsByIDsRequest) ProtoMessage() {}
 
-func (x *GetRestaurantLogosRequest) ProtoReflect() protoreflect.Message {
+func (x *GetRestaurantBrandsByIDsRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_restaurant_restaurant_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -405,39 +405,39 @@ func (x *GetRestaurantLogosRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetRestaurantLogosRequest.ProtoReflect.Descriptor instead.
-func (*GetRestaurantLogosRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetRestaurantBrandsByIDsRequest.ProtoReflect.Descriptor instead.
+func (*GetRestaurantBrandsByIDsRequest) Descriptor() ([]byte, []int) {
 	return file_restaurant_restaurant_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *GetRestaurantLogosRequest) GetBrandIds() []int64 {
+func (x *GetRestaurantBrandsByIDsRequest) GetBrandIds() []int64 {
 	if x != nil {
 		return x.BrandIds
 	}
 	return nil
 }
 
-type GetRestaurantLogosResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Logos         map[int64]string       `protobuf:"bytes,1,rep,name=logos,proto3" json:"logos,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+type GetRestaurantBrandsByIDsResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	RestaurantBrands []*RestaurantBrand     `protobuf:"bytes,1,rep,name=restaurant_brands,json=restaurantBrands,proto3" json:"restaurant_brands,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
-func (x *GetRestaurantLogosResponse) Reset() {
-	*x = GetRestaurantLogosResponse{}
+func (x *GetRestaurantBrandsByIDsResponse) Reset() {
+	*x = GetRestaurantBrandsByIDsResponse{}
 	mi := &file_restaurant_restaurant_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetRestaurantLogosResponse) String() string {
+func (x *GetRestaurantBrandsByIDsResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetRestaurantLogosResponse) ProtoMessage() {}
+func (*GetRestaurantBrandsByIDsResponse) ProtoMessage() {}
 
-func (x *GetRestaurantLogosResponse) ProtoReflect() protoreflect.Message {
+func (x *GetRestaurantBrandsByIDsResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_restaurant_restaurant_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -449,14 +449,14 @@ func (x *GetRestaurantLogosResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetRestaurantLogosResponse.ProtoReflect.Descriptor instead.
-func (*GetRestaurantLogosResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetRestaurantBrandsByIDsResponse.ProtoReflect.Descriptor instead.
+func (*GetRestaurantBrandsByIDsResponse) Descriptor() ([]byte, []int) {
 	return file_restaurant_restaurant_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *GetRestaurantLogosResponse) GetLogos() map[int64]string {
+func (x *GetRestaurantBrandsByIDsResponse) GetRestaurantBrands() []*RestaurantBrand {
 	if x != nil {
-		return x.Logos
+		return x.RestaurantBrands
 	}
 	return nil
 }
@@ -681,15 +681,11 @@ const file_restaurant_restaurant_proto_rawDesc = "" +
 	"\x1dGetRestaurantBrandByIDRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\"h\n" +
 	"\x1eGetRestaurantBrandByIDResponse\x12F\n" +
-	"\x10restaurant_brand\x18\x01 \x01(\v2\x1b.restaurant.RestaurantBrandR\x0frestaurantBrand\"8\n" +
-	"\x19GetRestaurantLogosRequest\x12\x1b\n" +
-	"\tbrand_ids\x18\x01 \x03(\x03R\bbrandIds\"\x9f\x01\n" +
-	"\x1aGetRestaurantLogosResponse\x12G\n" +
-	"\x05logos\x18\x01 \x03(\v21.restaurant.GetRestaurantLogosResponse.LogosEntryR\x05logos\x1a8\n" +
-	"\n" +
-	"LogosEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\x03R\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x83\x01\n" +
+	"\x10restaurant_brand\x18\x01 \x01(\v2\x1b.restaurant.RestaurantBrandR\x0frestaurantBrand\">\n" +
+	"\x1fGetRestaurantBrandsByIDsRequest\x12\x1b\n" +
+	"\tbrand_ids\x18\x01 \x03(\x03R\bbrandIds\"l\n" +
+	" GetRestaurantBrandsByIDsResponse\x12H\n" +
+	"\x11restaurant_brands\x18\x01 \x03(\v2\x1b.restaurant.RestaurantBrandR\x10restaurantBrands\"\x83\x01\n" +
 	"#GetDishesByRestaurantBrandIDRequest\x12.\n" +
 	"\x13restaurant_brand_id\x18\x01 \x01(\x03R\x11restaurantBrandId\x12\x14\n" +
 	"\x05limit\x18\x02 \x01(\x05R\x05limit\x12\x16\n" +
@@ -699,11 +695,11 @@ const file_restaurant_restaurant_proto_rawDesc = "" +
 	"\x15GetDishesByIDsRequest\x12\x19\n" +
 	"\bdish_ids\x18\x01 \x03(\x03R\adishIds\"B\n" +
 	"\x16GetDishesByIDsResponse\x12(\n" +
-	"\x06dishes\x18\x01 \x03(\v2\x10.restaurant.DishR\x06dishes2\xba\x04\n" +
+	"\x06dishes\x18\x01 \x03(\v2\x10.restaurant.DishR\x06dishes2\xcc\x04\n" +
 	"\x11RestaurantService\x12r\n" +
 	"\x17GetRestaurantBrandsList\x12*.restaurant.GetRestaurantBrandsListRequest\x1a+.restaurant.GetRestaurantBrandsListResponse\x12o\n" +
-	"\x16GetRestaurantBrandByID\x12).restaurant.GetRestaurantBrandByIDRequest\x1a*.restaurant.GetRestaurantBrandByIDResponse\x12c\n" +
-	"\x12GetRestaurantLogos\x12%.restaurant.GetRestaurantLogosRequest\x1a&.restaurant.GetRestaurantLogosResponse\x12\x81\x01\n" +
+	"\x16GetRestaurantBrandByID\x12).restaurant.GetRestaurantBrandByIDRequest\x1a*.restaurant.GetRestaurantBrandByIDResponse\x12u\n" +
+	"\x18GetRestaurantBrandsByIDs\x12+.restaurant.GetRestaurantBrandsByIDsRequest\x1a,.restaurant.GetRestaurantBrandsByIDsResponse\x12\x81\x01\n" +
 	"\x1cGetDishesByRestaurantBrandID\x12/.restaurant.GetDishesByRestaurantBrandIDRequest\x1a0.restaurant.GetDishesByRestaurantBrandIDResponse\x12W\n" +
 	"\x0eGetDishesByIDs\x12!.restaurant.GetDishesByIDsRequest\x1a\".restaurant.GetDishesByIDsResponseBCZAgithub.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurantb\x06proto3"
 
@@ -719,7 +715,7 @@ func file_restaurant_restaurant_proto_rawDescGZIP() []byte {
 	return file_restaurant_restaurant_proto_rawDescData
 }
 
-var file_restaurant_restaurant_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_restaurant_restaurant_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_restaurant_restaurant_proto_goTypes = []any{
 	(*RestaurantBrand)(nil),                      // 0: restaurant.RestaurantBrand
 	(*Dish)(nil),                                 // 1: restaurant.Dish
@@ -727,28 +723,27 @@ var file_restaurant_restaurant_proto_goTypes = []any{
 	(*GetRestaurantBrandsListResponse)(nil),      // 3: restaurant.GetRestaurantBrandsListResponse
 	(*GetRestaurantBrandByIDRequest)(nil),        // 4: restaurant.GetRestaurantBrandByIDRequest
 	(*GetRestaurantBrandByIDResponse)(nil),       // 5: restaurant.GetRestaurantBrandByIDResponse
-	(*GetRestaurantLogosRequest)(nil),            // 6: restaurant.GetRestaurantLogosRequest
-	(*GetRestaurantLogosResponse)(nil),           // 7: restaurant.GetRestaurantLogosResponse
+	(*GetRestaurantBrandsByIDsRequest)(nil),      // 6: restaurant.GetRestaurantBrandsByIDsRequest
+	(*GetRestaurantBrandsByIDsResponse)(nil),     // 7: restaurant.GetRestaurantBrandsByIDsResponse
 	(*GetDishesByRestaurantBrandIDRequest)(nil),  // 8: restaurant.GetDishesByRestaurantBrandIDRequest
 	(*GetDishesByRestaurantBrandIDResponse)(nil), // 9: restaurant.GetDishesByRestaurantBrandIDResponse
 	(*GetDishesByIDsRequest)(nil),                // 10: restaurant.GetDishesByIDsRequest
 	(*GetDishesByIDsResponse)(nil),               // 11: restaurant.GetDishesByIDsResponse
-	nil,                                          // 12: restaurant.GetRestaurantLogosResponse.LogosEntry
 }
 var file_restaurant_restaurant_proto_depIdxs = []int32{
 	0,  // 0: restaurant.GetRestaurantBrandsListResponse.restaurant_brands:type_name -> restaurant.RestaurantBrand
 	0,  // 1: restaurant.GetRestaurantBrandByIDResponse.restaurant_brand:type_name -> restaurant.RestaurantBrand
-	12, // 2: restaurant.GetRestaurantLogosResponse.logos:type_name -> restaurant.GetRestaurantLogosResponse.LogosEntry
+	0,  // 2: restaurant.GetRestaurantBrandsByIDsResponse.restaurant_brands:type_name -> restaurant.RestaurantBrand
 	1,  // 3: restaurant.GetDishesByRestaurantBrandIDResponse.dishes:type_name -> restaurant.Dish
 	1,  // 4: restaurant.GetDishesByIDsResponse.dishes:type_name -> restaurant.Dish
 	2,  // 5: restaurant.RestaurantService.GetRestaurantBrandsList:input_type -> restaurant.GetRestaurantBrandsListRequest
 	4,  // 6: restaurant.RestaurantService.GetRestaurantBrandByID:input_type -> restaurant.GetRestaurantBrandByIDRequest
-	6,  // 7: restaurant.RestaurantService.GetRestaurantLogos:input_type -> restaurant.GetRestaurantLogosRequest
+	6,  // 7: restaurant.RestaurantService.GetRestaurantBrandsByIDs:input_type -> restaurant.GetRestaurantBrandsByIDsRequest
 	8,  // 8: restaurant.RestaurantService.GetDishesByRestaurantBrandID:input_type -> restaurant.GetDishesByRestaurantBrandIDRequest
 	10, // 9: restaurant.RestaurantService.GetDishesByIDs:input_type -> restaurant.GetDishesByIDsRequest
 	3,  // 10: restaurant.RestaurantService.GetRestaurantBrandsList:output_type -> restaurant.GetRestaurantBrandsListResponse
 	5,  // 11: restaurant.RestaurantService.GetRestaurantBrandByID:output_type -> restaurant.GetRestaurantBrandByIDResponse
-	7,  // 12: restaurant.RestaurantService.GetRestaurantLogos:output_type -> restaurant.GetRestaurantLogosResponse
+	7,  // 12: restaurant.RestaurantService.GetRestaurantBrandsByIDs:output_type -> restaurant.GetRestaurantBrandsByIDsResponse
 	9,  // 13: restaurant.RestaurantService.GetDishesByRestaurantBrandID:output_type -> restaurant.GetDishesByRestaurantBrandIDResponse
 	11, // 14: restaurant.RestaurantService.GetDishesByIDs:output_type -> restaurant.GetDishesByIDsResponse
 	10, // [10:15] is the sub-list for method output_type
@@ -769,7 +764,7 @@ func file_restaurant_restaurant_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_restaurant_restaurant_proto_rawDesc), len(file_restaurant_restaurant_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

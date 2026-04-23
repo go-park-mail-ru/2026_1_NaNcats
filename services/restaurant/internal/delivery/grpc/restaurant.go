@@ -73,6 +73,23 @@ func (h *RestaurantHandler) GetRestaurantBrandByID(ctx context.Context, req *pb.
 	}, nil
 }
 
+// Пакетное получения данных о ресторанах
+func (h *RestaurantHandler) GetRestaurantBrandsByIDs(ctx context.Context, req *pb.GetRestaurantBrandsByIDsRequest) (*pb.GetRestaurantBrandsByIDsResponse, error) {
+	brands, err := h.brandUC.GetRestaurantBrandsByIDs(ctx, req.BrandIds)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	pbBrands := make([]*pb.RestaurantBrand, 0, len(brands))
+	for _, b := range brands {
+		pbBrands = append(pbBrands, mapDomainToPBRestaurant(b))
+	}
+
+	return &pb.GetRestaurantBrandsByIDsResponse{
+		RestaurantBrands: pbBrands,
+	}, nil
+}
+
 // Меню конкретного ресторана
 func (h *RestaurantHandler) GetDishesByRestaurantBrandID(ctx context.Context, req *pb.GetDishesByRestaurantBrandIDRequest) (*pb.GetDishesByRestaurantBrandIDResponse, error) {
 	dishes, err := h.dishUC.GetDishesByRestaurantBrandID(ctx, req.RestaurantBrandId, int(req.Limit), int(req.Offset))

@@ -8,6 +8,7 @@ type Order struct {
 	ClientID           int64
 	CourierID          int64
 	RestaurantBranchID int64
+	RestaurantBrandID  int64
 	ClientAddressID    string
 	TotalCost          int64
 	PromocodeID        int64
@@ -31,6 +32,7 @@ type CreateOrderInput struct {
 	UserID             int64
 	AddressPublicID    string
 	RestaurantBranchID int64
+	RestaurantBrandID  int64
 	PaymentMethodID    string
 	DeliveryCost       int64
 	ServiceFee         int64

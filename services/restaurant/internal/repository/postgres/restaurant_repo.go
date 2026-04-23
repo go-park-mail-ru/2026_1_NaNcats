@@ -100,3 +100,28 @@ func (r *restaurantBrandRepo) GetByID(ctx context.Context, id int64) (domain.Res
 	}
 	return rb.toDomain(), nil
 }
+
+func (r *restaurantBrandRepo) GetRestaurantBrandsByIDs(ctx context.Context, ids []int64) ([]domain.RestaurantBrand, error) {
+	query := `
+		SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at
+		FROM "restaurant_brand"
+		WHERE id = ANY($1);
+	`
+
+	rows, err := r.pool.Query(ctx, query, ids)
+	if err != nil {
+		return nil, fmt.Errorf("postgres query error: %w", err)
+	}
+	defer rows.Close()
+
+	dbRestaurantBrands, err := pgx.CollectRows(rows, pgx.RowToStructByName[restaurantBrandDB])
+	if err != nil {
+		return nil, fmt.Errorf("mapping dishes: %w", err)
+	}
+
+	restaurantBrands := make([]domain.RestaurantBrand, 0, len(ids))
+	for _, rb := range dbRestaurantBrands {
+		restaurantBrands = append(restaurantBrands, rb.toDomain())
+	}
+	return restaurantBrands, nil
+}

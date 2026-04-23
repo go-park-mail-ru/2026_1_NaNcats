@@ -21,7 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	RestaurantService_GetRestaurantBrandsList_FullMethodName      = "/restaurant.RestaurantService/GetRestaurantBrandsList"
 	RestaurantService_GetRestaurantBrandByID_FullMethodName       = "/restaurant.RestaurantService/GetRestaurantBrandByID"
-	RestaurantService_GetRestaurantLogos_FullMethodName           = "/restaurant.RestaurantService/GetRestaurantLogos"
+	RestaurantService_GetRestaurantBrandsByIDs_FullMethodName     = "/restaurant.RestaurantService/GetRestaurantBrandsByIDs"
 	RestaurantService_GetDishesByRestaurantBrandID_FullMethodName = "/restaurant.RestaurantService/GetDishesByRestaurantBrandID"
 	RestaurantService_GetDishesByIDs_FullMethodName               = "/restaurant.RestaurantService/GetDishesByIDs"
 )
@@ -36,8 +36,8 @@ type RestaurantServiceClient interface {
 	GetRestaurantBrandsList(ctx context.Context, in *GetRestaurantBrandsListRequest, opts ...grpc.CallOption) (*GetRestaurantBrandsListResponse, error)
 	// Метод получения ресторана по ID
 	GetRestaurantBrandByID(ctx context.Context, in *GetRestaurantBrandByIDRequest, opts ...grpc.CallOption) (*GetRestaurantBrandByIDResponse, error)
-	// Метод пакетного получения логотипов (для истории заказов)
-	GetRestaurantLogos(ctx context.Context, in *GetRestaurantLogosRequest, opts ...grpc.CallOption) (*GetRestaurantLogosResponse, error)
+	// Метод пакетного получения данных о ресторанах
+	GetRestaurantBrandsByIDs(ctx context.Context, in *GetRestaurantBrandsByIDsRequest, opts ...grpc.CallOption) (*GetRestaurantBrandsByIDsResponse, error)
 	// Метод получения блюд из ресторана по его ID
 	GetDishesByRestaurantBrandID(ctx context.Context, in *GetDishesByRestaurantBrandIDRequest, opts ...grpc.CallOption) (*GetDishesByRestaurantBrandIDResponse, error)
 	// Метод получения блюд по их ID
@@ -72,10 +72,10 @@ func (c *restaurantServiceClient) GetRestaurantBrandByID(ctx context.Context, in
 	return out, nil
 }
 
-func (c *restaurantServiceClient) GetRestaurantLogos(ctx context.Context, in *GetRestaurantLogosRequest, opts ...grpc.CallOption) (*GetRestaurantLogosResponse, error) {
+func (c *restaurantServiceClient) GetRestaurantBrandsByIDs(ctx context.Context, in *GetRestaurantBrandsByIDsRequest, opts ...grpc.CallOption) (*GetRestaurantBrandsByIDsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetRestaurantLogosResponse)
-	err := c.cc.Invoke(ctx, RestaurantService_GetRestaurantLogos_FullMethodName, in, out, cOpts...)
+	out := new(GetRestaurantBrandsByIDsResponse)
+	err := c.cc.Invoke(ctx, RestaurantService_GetRestaurantBrandsByIDs_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -112,8 +112,8 @@ type RestaurantServiceServer interface {
 	GetRestaurantBrandsList(context.Context, *GetRestaurantBrandsListRequest) (*GetRestaurantBrandsListResponse, error)
 	// Метод получения ресторана по ID
 	GetRestaurantBrandByID(context.Context, *GetRestaurantBrandByIDRequest) (*GetRestaurantBrandByIDResponse, error)
-	// Метод пакетного получения логотипов (для истории заказов)
-	GetRestaurantLogos(context.Context, *GetRestaurantLogosRequest) (*GetRestaurantLogosResponse, error)
+	// Метод пакетного получения данных о ресторанах
+	GetRestaurantBrandsByIDs(context.Context, *GetRestaurantBrandsByIDsRequest) (*GetRestaurantBrandsByIDsResponse, error)
 	// Метод получения блюд из ресторана по его ID
 	GetDishesByRestaurantBrandID(context.Context, *GetDishesByRestaurantBrandIDRequest) (*GetDishesByRestaurantBrandIDResponse, error)
 	// Метод получения блюд по их ID
@@ -134,8 +134,8 @@ func (UnimplementedRestaurantServiceServer) GetRestaurantBrandsList(context.Cont
 func (UnimplementedRestaurantServiceServer) GetRestaurantBrandByID(context.Context, *GetRestaurantBrandByIDRequest) (*GetRestaurantBrandByIDResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetRestaurantBrandByID not implemented")
 }
-func (UnimplementedRestaurantServiceServer) GetRestaurantLogos(context.Context, *GetRestaurantLogosRequest) (*GetRestaurantLogosResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetRestaurantLogos not implemented")
+func (UnimplementedRestaurantServiceServer) GetRestaurantBrandsByIDs(context.Context, *GetRestaurantBrandsByIDsRequest) (*GetRestaurantBrandsByIDsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetRestaurantBrandsByIDs not implemented")
 }
 func (UnimplementedRestaurantServiceServer) GetDishesByRestaurantBrandID(context.Context, *GetDishesByRestaurantBrandIDRequest) (*GetDishesByRestaurantBrandIDResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetDishesByRestaurantBrandID not implemented")
@@ -200,20 +200,20 @@ func _RestaurantService_GetRestaurantBrandByID_Handler(srv interface{}, ctx cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RestaurantService_GetRestaurantLogos_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetRestaurantLogosRequest)
+func _RestaurantService_GetRestaurantBrandsByIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRestaurantBrandsByIDsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RestaurantServiceServer).GetRestaurantLogos(ctx, in)
+		return srv.(RestaurantServiceServer).GetRestaurantBrandsByIDs(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: RestaurantService_GetRestaurantLogos_FullMethodName,
+		FullMethod: RestaurantService_GetRestaurantBrandsByIDs_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RestaurantServiceServer).GetRestaurantLogos(ctx, req.(*GetRestaurantLogosRequest))
+		return srv.(RestaurantServiceServer).GetRestaurantBrandsByIDs(ctx, req.(*GetRestaurantBrandsByIDsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -270,8 +270,8 @@ var RestaurantService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RestaurantService_GetRestaurantBrandByID_Handler,
 		},
 		{
-			MethodName: "GetRestaurantLogos",
-			Handler:    _RestaurantService_GetRestaurantLogos_Handler,
+			MethodName: "GetRestaurantBrandsByIDs",
+			Handler:    _RestaurantService_GetRestaurantBrandsByIDs_Handler,
 		},
 		{
 			MethodName: "GetDishesByRestaurantBrandID",
