@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/domain"
@@ -160,10 +161,10 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, userID int64, req domain
 	// Публикуем в RabbitMQ
 	err = o.rabbitPublisher.PublishJSON(ctx, events.QueueCartCommands, cmd)
 	if err != nil {
-		// Компенсирующая транзакция
+		// Компенсирующая операция
 		cancelErr := o.orderRepo.UpdateOrderStatus(ctx, orderPublicID, StatusFailed)
 		if cancelErr != nil {
-			o.logger.Error("failed while compensating operation", err)
+			o.logger.Error("failed while compensating operation", cancelErr)
 		}
 		return "", "", errutil.Wrap("INTERNAL_SERVER_ERROR", "broker unavailable, order cancelled", err, codes.Internal)
 	}
@@ -220,4 +221,92 @@ func (o *orderUseCase) UpdateOrderStatusByPaymentID(ctx context.Context, payment
 	}
 
 	return o.orderRepo.UpdateStatusByPaymentID(ctx, paymentID, newStatus)
+}
+
+func (o *orderUseCase) ProcessSagaReply(ctx context.Context, reply events.SagaReply) error {
+	if reply.Status == events.StatusError {
+		o.logger.Error("Saga step failed", errors.New(reply.ErrorMessage), logger.String("step", reply.Step))
+
+		err := o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusFailed)
+		if err != nil {
+			o.logger.Error("failed to update order status while handling saga step error", err, logger.String("order_id", reply.OrderID))
+		}
+
+		if reply.Step == "PAYMENT" {
+			compCmd := events.SagaCommand{
+				OrderID:        reply.OrderID,
+				Action:         events.CommandUnlockCart,
+				IdempotencyKey: reply.OrderID + "_compensate_cart",
+			}
+			// Компенсирующая операция
+			cancelErr := o.rabbitPublisher.PublishJSON(ctx, events.QueueCartCommands, compCmd)
+			if cancelErr != nil {
+				o.logger.Error("failed while compensating operation", cancelErr)
+			}
+		}
+
+		gatewayEvent := events.GatewayEvent{
+			OrderID: reply.OrderID,
+			Status:  StatusFailed,
+			Error:   reply.ErrorMessage,
+		}
+		err = o.rabbitPublisher.PublishJSON(ctx, events.QueueGatewayEvents, gatewayEvent)
+		if err != nil {
+			o.logger.Error("failed while compensating operation", err)
+		}
+
+		return nil
+	}
+
+	// Успешные шаги
+	switch reply.Step {
+	case "CART":
+		// Сейчас корзина залочена
+
+		order, err := o.orderRepo.GetOrderByPublicID(ctx, reply.OrderID, reply.UserID)
+		if err != nil {
+			return fmt.Errorf("failed to get order for payment: %w", err)
+		}
+
+		// Обновляем статус
+		err = o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusCartLocked)
+		if err != nil {
+			return err
+		}
+
+		payCmd := events.SagaCommand{
+			OrderID:         reply.OrderID,
+			UserID:          order.ClientID,
+			Action:          events.CommandCreatPayment,
+			Amount:          order.TotalCost,
+			PaymentMethodID: order.PaymentMethodID,
+			IdempotencyKey:  reply.OrderID + "_payment",
+		}
+		return o.rabbitPublisher.PublishJSON(ctx, events.QueuePaymentCommands, payCmd)
+
+	case "PAYMENT":
+		// Платеж создан
+
+		// Сохраняем ID платежа и меняем статус
+		err := o.orderRepo.SetYookassaID(ctx, reply.OrderID, reply.PaymentID)
+		if err != nil {
+			return err
+		}
+		err = o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusPaymentReady)
+		if err != nil {
+			return err
+		}
+
+		gatewayEvent := events.GatewayEvent{
+			OrderID:    reply.OrderID,
+			Status:     StatusPaymentReady,
+			PaymentURL: reply.PaymentURL,
+		}
+		return o.rabbitPublisher.PublishJSON(ctx, events.QueueGatewayEvents, gatewayEvent)
+
+	default:
+		o.logger.Warn("Unknown saga step", logger.String("step", reply.Step))
+	}
+
+	return nil
 }

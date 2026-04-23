@@ -39,8 +39,9 @@ type SagaCommand struct {
 //easyjson:json
 type SagaReply struct {
 	OrderID      string `json:"order_id"` // public_id
-	Step         string `json:"step"`     // какой шаг, т.е. сервис
-	Status       string `json:"status"`   // SUCCESS/ERROR
+	UserID       int64
+	Step         string `json:"step"`   // какой шаг, т.е. сервис
+	Status       string `json:"status"` // SUCCESS/ERROR
 	ErrorMessage string `json:"error_message,omitempty"`
 
 	PaymentURL string `json:"payment_url,omitempty"`
