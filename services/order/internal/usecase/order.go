@@ -7,19 +7,29 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq/events"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+)
+
+const (
+	StatusCreated      = "created"
+	StatusCartLocked   = "cart_locked"
+	StatusPaymentReady = "payment_ready"
+	StatusPaid         = "paid"
+	StatusInProgress   = "in_progress"
+	StatusWaiting      = "waiting"
+	StatusDelivering   = "delivering"
+	StatusFinished     = "finished"
+	StatusCancelled    = "cancelled"
+	StatusFailed       = "failed"
 )
 
 //go:generate mockgen -destination=mocks/cart_client_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase CartClient
 type CartClient interface {
 	GetCart(ctx context.Context, userID int64) (domain.Cart, int64, error)
 	ClearCart(ctx context.Context, userID int64, idempotencyKey string) error
-}
-
-//go:generate mockgen -destination=mocks/payment_client_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase PaymentClient
-type PaymentClient interface {
-	CreatePayment(ctx context.Context, amount int64, paymentMethodID string, idempotencyKey string) (string, string, error)
 }
 
 //go:generate mockgen -destination=mocks/address_client_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase AddressClient
@@ -33,6 +43,10 @@ type RestaurantClient interface {
 	GetLogosByBrandIDs(ctx context.Context, brandIDs []int64) (map[int64]string, error)
 }
 
+type MessagePublisher interface {
+	PublishJSON(ctx context.Context, queueName string, data any) error
+}
+
 //go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/order OrderUseCase
 type OrderUseCase interface {
 	CreateOrder(ctx context.Context, userID int64, req domain.CreateOrderInput, idempotencyKey string) (string, string, error)
@@ -44,23 +58,34 @@ type orderUseCase struct {
 	orderRepo                repository.OrderRepository
 	addressClient            AddressClient
 	cartClient               CartClient
-	paymentClient            PaymentClient
 	restaurantClient         RestaurantClient
+	rabbitPublisher          MessagePublisher
 	defaultRestaurantLogoURL string
+	logger                   logger.Logger
 }
 
-func NewOrderUseCase(or repository.OrderRepository, ac AddressClient, cc CartClient, pc PaymentClient, rc RestaurantClient, drlurl string) OrderUseCase {
+func NewOrderUseCase(
+	or repository.OrderRepository,
+	ac AddressClient,
+	cc CartClient,
+	rc RestaurantClient,
+	rp MessagePublisher,
+	drlurl string,
+	l logger.Logger,
+) OrderUseCase {
 	return &orderUseCase{
 		orderRepo:                or,
 		addressClient:            ac,
 		cartClient:               cc,
-		paymentClient:            pc,
 		restaurantClient:         rc,
+		rabbitPublisher:          rp,
 		defaultRestaurantLogoURL: drlurl,
+		logger:                   l,
 	}
 }
 
 func (o *orderUseCase) CreateOrder(ctx context.Context, userID int64, req domain.CreateOrderInput, idempotencyKey string) (string, string, error) {
+	// Читаем корзину
 	cart, cartTotalCost, err := o.cartClient.GetCart(ctx, userID)
 	if err != nil {
 		return "", "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to get cart", err, codes.Internal)
@@ -69,6 +94,7 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, userID int64, req domain
 		return "", "", errutil.New("CART_EMPTY", "cart is empty", codes.InvalidArgument)
 	}
 
+	// Проверяем адрес
 	err = o.addressClient.CheckAddressExists(ctx, userID, req.AddressPublicID)
 	if err != nil {
 		st, ok := status.FromError(err)
@@ -80,6 +106,7 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, userID int64, req domain
 		return "", "", fmt.Errorf("address service internal error: %w", err)
 	}
 
+	// Собираем блюда
 	items := make([]domain.OrderDish, 0, len(cart.Items))
 	for _, item := range cart.Items {
 		items = append(items, domain.OrderDish{
@@ -89,13 +116,20 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, userID int64, req domain
 		})
 	}
 
+	// Считаем итоговую сумму
+	/* // TODO:
+	/  // 1) Реализовать расчет стоимости на основе расстояния между рестиком и адресом пользователя
+	/  // 2) Попробовать интегрировать динамичную цену при помощи API погоды
+	*/
 	finalTotalCost := cartTotalCost + req.DeliveryCost + req.ServiceFee
 
+	// Собираем инфу о ресторане
 	resName, err := o.restaurantClient.GetRestaurantName(ctx, req.RestaurantBranchID)
 	if err != nil {
 		return "", "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to get restaurant info", err, codes.Internal)
 	}
 
+	// Записываем в БД со статусом "created" (см. файл миграции)
 	order := domain.Order{
 		ClientID:           userID,
 		RestaurantBranchID: req.RestaurantBranchID,
@@ -103,7 +137,7 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, userID int64, req domain
 		RestaurantName:     resName,
 		ClientAddressID:    req.AddressPublicID,
 		TotalCost:          finalTotalCost,
-		Status:             "waiting",
+		Status:             StatusCreated,
 		Items:              items,
 	}
 
@@ -112,18 +146,29 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, userID int64, req domain
 		return "", "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to create order in db", err, codes.Internal)
 	}
 
-	paymentID, confirmationURL, err := o.paymentClient.CreatePayment(ctx, finalTotalCost, req.PaymentMethodID, idempotencyKey)
+	// Запуск саги
+
+	// Формируем команду для корзины
+	cmd := events.SagaCommand{
+		OrderID:        orderPublicID,
+		UserID:         userID,
+		Action:         events.CommandLockCart,
+		IdempotencyKey: idempotencyKey,
+		Amount:         finalTotalCost,
+	}
+
+	// Публикуем в RabbitMQ
+	err = o.rabbitPublisher.PublishJSON(ctx, events.QueueCartCommands, cmd)
 	if err != nil {
-		return "", "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to initialize payment", err, codes.Internal)
+		// Компенсирующая транзакция
+		cancelErr := o.orderRepo.UpdateOrderStatus(ctx, orderPublicID, StatusFailed)
+		if cancelErr != nil {
+			o.logger.Error("failed while compensating operation", err)
+		}
+		return "", "", errutil.Wrap("INTERNAL_SERVER_ERROR", "broker unavailable, order cancelled", err, codes.Internal)
 	}
 
-	if err = o.orderRepo.SetYookassaID(ctx, orderPublicID, paymentID); err != nil {
-		return "", "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to link yookassa ID to order", err, codes.Internal)
-	}
-
-	_ = o.cartClient.ClearCart(ctx, userID, idempotencyKey)
-
-	return orderPublicID, confirmationURL, nil
+	return orderPublicID, "", nil
 }
 
 func (o *orderUseCase) GetOrders(ctx context.Context, userID int64) ([]domain.Order, error) {
@@ -148,7 +193,7 @@ func (o *orderUseCase) GetOrders(ctx context.Context, userID int64) ([]domain.Or
 
 	logos, err := o.restaurantClient.GetLogosByBrandIDs(ctx, brandIDs)
 	if err != nil {
-		// печально, отдаем с дефолтным лого
+		o.logger.Error("failed to get logos of restaurants", err)
 	}
 
 	for i := range orders {

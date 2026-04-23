@@ -158,6 +158,25 @@ func (r *orderRepo) UpdateStatusByPaymentID(ctx context.Context, yookassaPayment
 	return nil
 }
 
+func (r *orderRepo) UpdateOrderStatus(ctx context.Context, publicID string, newStatus string) error {
+	query := `
+		UPDATE "order"
+		SET status = $1, updated_at = NOW()
+		WHERE public_id = $2;
+	`
+
+	tag, err := r.pool.Exec(ctx, query, newStatus, publicID)
+	if err != nil {
+		return fmt.Errorf("update status by public id: %w", err)
+	}
+
+	if tag.RowsAffected() == 0 {
+		return errors.New("order not found")
+	}
+
+	return nil
+}
+
 func (r *orderRepo) GetOrderByPublicID(ctx context.Context, publicID string, userID int64) (domain.Order, error) {
 	query := `
 			SELECT 
