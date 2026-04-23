@@ -23,7 +23,6 @@ import (
 	addressPb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/address"
 	cartPb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/cart"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/order"
-	paymentPb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/payment"
 	restaurantPb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
 
 	orderDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/delivery/grpc"
@@ -75,9 +74,6 @@ func main() {
 	cartGrpcClient := cartPb.NewCartServiceClient(cartConn)
 	cartClient := orderGrpcClient.NewCartClient(cartGrpcClient)
 
-	paymentGrpcClient := paymentPb.NewPaymentServiceClient(payConn)
-	paymentClient := orderGrpcClient.NewPaymentClient(paymentGrpcClient)
-
 	restaurantGrpcClient := restaurantPb.NewRestaurantServiceClient(resConn)
 	restaurantClient := orderGrpcClient.NewRestaurantClient(restaurantGrpcClient)
 
@@ -86,7 +82,6 @@ func main() {
 		orderRepo,
 		addressClient,
 		cartClient,
-		paymentClient,
 		restaurantClient,
 		cfg.DefaultRestaurantLogoURL,
 	)

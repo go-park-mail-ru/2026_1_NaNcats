@@ -30,7 +30,6 @@ const (
 //go:generate mockgen -destination=mocks/cart_client_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase CartClient
 type CartClient interface {
 	GetCart(ctx context.Context, userID int64) (domain.Cart, int64, error)
-	ClearCart(ctx context.Context, userID int64, idempotencyKey string) error
 }
 
 //go:generate mockgen -destination=mocks/address_client_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase AddressClient
