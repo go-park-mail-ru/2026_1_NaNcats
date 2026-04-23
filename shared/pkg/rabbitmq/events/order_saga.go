@@ -1,5 +1,7 @@
 package events
 
+//go:generate easyjson $GOFILE
+
 // Очереди, в которые будет идти запись
 const (
 	QueueCartCommands    = "saga.cart.commands"

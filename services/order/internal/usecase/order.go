@@ -53,6 +53,7 @@ type OrderUseCase interface {
 	CreateOrder(ctx context.Context, userID int64, req domain.CreateOrderInput, idempotencyKey string) (string, string, error)
 	GetOrders(ctx context.Context, userID int64) ([]domain.Order, error)
 	UpdateOrderStatusByPaymentID(ctx context.Context, paymentID string, status string, idempotencyKey string) error
+	ProcessSagaReply(ctx context.Context, reply events.SagaReply) error
 }
 
 type orderUseCase struct {
