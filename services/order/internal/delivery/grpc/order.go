@@ -47,6 +47,7 @@ func (h *OrderHandler) CreateOrder(ctx context.Context, req *pb.CreateOrderReque
 	input := domain.CreateOrderInput{
 		AddressPublicID:    req.AddressPublicId,
 		RestaurantBranchID: req.RestaurantBranchId,
+		RestaurantBrandID:  req.RestaurantBrandId,
 		PaymentMethodID:    req.PaymentMethodId,
 		DeliveryCost:       req.DeliveryCost,
 		ServiceFee:         req.ServiceFee,
