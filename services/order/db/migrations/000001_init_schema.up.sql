@@ -1,4 +1,13 @@
-CREATE TYPE order_status AS ENUM('in_progress', 'waiting', 'delivering', 'finished', 'canceled');
+CREATE TYPE order_status AS ENUM('created', 'cart_locked', 'payment_ready', 'paid', 'in_progress', 'waiting', 'delivering', 'finished', 'cancelled');
+--	 created       : создана запись в БД, запуск Саги
+--	 cart_locked   : заблокировано изменение корзины
+--	 payment_ready : создана ссылка на оплату, ждем оплаты
+--	 paid          : юзер оплатил
+--	 in_progress   : ресторан начал готовку
+--	 waiting       : заказ готов, ждем пока курьер его заберет
+--	 delivering    : курьер доставляет
+--	 finished      : курьер доставил заказ, сфоткал его/передал пользователю
+--	 cancelled     : заказ отменен (пользователь может отменить вплоть до статуса 'in_progress', дальше только через тех поддержку)
 
 CREATE TABLE "order" (
 	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
