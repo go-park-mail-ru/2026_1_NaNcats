@@ -105,11 +105,14 @@ services:
     container_name: cart_service
     environment:
       <<: *shared-env
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
       CONFIG_PATH: ./services/cart/config.yaml
       DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/cart_db?sslmode=disable
       RESTAURANT_SERVICE_ADDR: restaurant_service:50053
     depends_on:
       db:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   address_service:
@@ -134,6 +137,7 @@ services:
     container_name: payment_service
     environment:
       <<: *shared-env
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
       CONFIG_PATH: ./services/payment/config.yaml
       DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/payment_db?sslmode=disable
       REDIS_URL: redis://redis:6379/0
@@ -146,6 +150,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   order_service:
     build:
@@ -155,6 +161,7 @@ services:
     container_name: order_service
     environment:
       <<: *shared-env
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
       CONFIG_PATH: ./services/order/config.yaml
       DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/order_db?sslmode=disable
       ADDRESS_SERVICE_ADDR: address_service:50051
@@ -163,6 +170,8 @@ services:
       RESTAURANT_SERVICE_ADDR: restaurant_service:50053
     depends_on:
       db:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
   
   api_gateway:
@@ -175,6 +184,7 @@ services:
       - "8080:8080"
     environment:
       <<: *shared-env
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
       PORT: 8080
       AUTH_SERVICE_ADDR: auth_service:50054
       USER_SERVICE_ADDR: user_service:50052
@@ -184,13 +194,22 @@ services:
       PAYMENT_SERVICE_ADDR: payment_service:50056
       ORDER_SERVICE_ADDR: order_service:50057
     depends_on:
-      - auth_service
-      - user_service
-      - restaurant_service
-      - cart_service
-      - address_service
-      - payment_service
-      - order_service
+      rabbitmq:
+        condition: service_healthy
+      auth_service:
+        condition: service_started
+      user_service:
+        condition: service_started
+      restaurant_service:
+        condition: service_started
+      cart_service:
+        condition: service_started
+      address_service:
+        condition: service_started
+      payment_service:
+        condition: service_started
+      order_service:
+        condition: service_started
     restart: always
 
 volumes:
