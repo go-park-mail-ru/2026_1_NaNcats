@@ -40,19 +40,19 @@ func (m *MockRestaurantClient) EXPECT() *MockRestaurantClientMockRecorder {
 	return m.recorder
 }
 
-// GetLogosByBranchIDs mocks base method.
-func (m *MockRestaurantClient) GetLogosByBranchIDs(ctx context.Context, branchIDs []int64) (map[int64]string, error) {
+// GetLogosByBrandIDs mocks base method.
+func (m *MockRestaurantClient) GetLogosByBrandIDs(ctx context.Context, brandIDs []int64) (map[int64]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLogosByBranchIDs", ctx, branchIDs)
+	ret := m.ctrl.Call(m, "GetLogosByBrandIDs", ctx, brandIDs)
 	ret0, _ := ret[0].(map[int64]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetLogosByBranchIDs indicates an expected call of GetLogosByBranchIDs.
-func (mr *MockRestaurantClientMockRecorder) GetLogosByBranchIDs(ctx, branchIDs any) *gomock.Call {
+// GetLogosByBrandIDs indicates an expected call of GetLogosByBrandIDs.
+func (mr *MockRestaurantClientMockRecorder) GetLogosByBrandIDs(ctx, brandIDs any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLogosByBranchIDs", reflect.TypeOf((*MockRestaurantClient)(nil).GetLogosByBranchIDs), ctx, branchIDs)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLogosByBrandIDs", reflect.TypeOf((*MockRestaurantClient)(nil).GetLogosByBrandIDs), ctx, brandIDs)
 }
 
 // GetRestaurantName mocks base method.

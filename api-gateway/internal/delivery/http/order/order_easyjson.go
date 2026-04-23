@@ -239,6 +239,12 @@ func easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			} else {
 				out.RestaurantBranchID = int64(in.Int64())
 			}
+		case "brand_id":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.RestaurantBrandID = int64(in.Int64())
+			}
 		case "payment_method_id":
 			if in.IsNull() {
 				in.Skip()
@@ -280,6 +286,11 @@ func easyjson120d1ca2EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		const prefix string = ",\"branch_id\":"
 		out.RawString(prefix)
 		out.Int64(int64(in.RestaurantBranchID))
+	}
+	{
+		const prefix string = ",\"brand_id\":"
+		out.RawString(prefix)
+		out.Int64(int64(in.RestaurantBrandID))
 	}
 	if in.PaymentMethodID != "" {
 		const prefix string = ",\"payment_method_id\":"
