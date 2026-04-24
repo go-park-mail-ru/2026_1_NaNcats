@@ -12,6 +12,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
 	httpSwagger "github.com/swaggo/http-swagger"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -219,10 +220,11 @@ func main() {
 	handler := corsMW.Handler(mux)
 	handler = loggingMW.Handler(handler)
 	handler = reqIDMW.Handler(handler)
+	otelHandler := otelhttp.NewHandler(handler, "api-gateway")
 
 	server := &http.Server{
 		Addr:         ":" + port,
-		Handler:      handler,
+		Handler:      otelHandler,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}

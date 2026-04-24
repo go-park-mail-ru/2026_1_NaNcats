@@ -2,7 +2,9 @@ package metrics
 
 import (
 	"context"
+	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/sdk/metric"
@@ -37,6 +39,11 @@ func InitMetrics(ctx context.Context, serviceName string, collectorAddr string) 
 	)
 
 	otel.SetMeterProvider(provider)
+
+	err = runtime.Start(runtime.WithMinimumReadMemStatsInterval(time.Second))
+	if err != nil {
+		return nil, err
+	}
 
 	// Возвращаем функцию-замыкание для корректного закрытия
 	return func() { _ = provider.Shutdown(context.Background()) }, nil
