@@ -277,7 +277,7 @@ func (o *orderUseCase) ProcessSagaReply(ctx context.Context, reply events.SagaRe
 		payCmd := events.SagaCommand{
 			OrderID:         reply.OrderID,
 			UserID:          order.ClientID,
-			Action:          events.CommandCreatPayment,
+			Action:          events.CommandCreatePayment,
 			Amount:          order.TotalCost,
 			PaymentMethodID: order.PaymentMethodID,
 			IdempotencyKey:  reply.OrderID + "_payment",

@@ -23,6 +23,9 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/metrics"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
 
+	paymentRabbitMQ "github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/delivery/rabbitmq"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq"
+
 	orderPb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/order"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/payment"
 
@@ -45,7 +48,8 @@ func main() {
 	appLogger := infrastructureLogger.NewLoggerAdapter(rawLogger)
 	appLogger.Info("Starting Payment microservice...")
 
-	ctx := context.Background()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
 	pgConfig, err := pgxpool.ParseConfig(cfg.Postgres.URL)
 	if err != nil {
@@ -103,9 +107,16 @@ func main() {
 	)
 	paymentHandler := paymentDelivery.NewPaymentHandler(paymentUC)
 
-	// Контекст, который отменяется по сигналу ОС
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	rabbitClient, err := rabbitmq.NewRabbitClient(cfg.RabbitMQURL, appLogger)
+	if err != nil {
+		appLogger.Fatal("Failed to connect to RabbitMQ", err)
+	}
+	defer rabbitClient.Close()
+
+	paymentConsumer := paymentRabbitMQ.NewPaymentConsumer(rabbitClient, paymentUC, appLogger)
+	if err := paymentConsumer.Start(ctx); err != nil {
+		appLogger.Fatal("Failed to start Payment RabbitMQ consumer", err)
+	}
 
 	cleanup, err := metrics.InitMetrics(ctx, cfg.OTEL.ServiceName, cfg.OTEL.CollectorAddr)
 	if err != nil {

@@ -39,7 +39,7 @@ func (c *PaymentConsumer) Start(ctx context.Context) error {
 			Step:    "PAYMENT",
 		}
 
-		if cmd.Action == events.CommandCreatPayment {
+		if cmd.Action == events.CommandCreatePayment {
 			paymentID, confirmationURL, err := c.usecase.CreatePayment(ctx, cmd.Amount, cmd.PaymentMethodID, cmd.IdempotencyKey)
 
 			if err != nil {

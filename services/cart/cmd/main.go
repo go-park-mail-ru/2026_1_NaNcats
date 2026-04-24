@@ -22,6 +22,9 @@ import (
 	cartPG "github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/repository/postgres"
 	cartUseCase "github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/usecase"
 
+	cartRabbitMQ "github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/delivery/rabbitmq"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq"
+
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/cart"
 	restaurantPb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
 
@@ -43,7 +46,8 @@ func main() {
 	appLogger := infrastructureLogger.NewLoggerAdapter(rawLogger)
 	appLogger.Info("Starting Cart microservice...")
 
-	ctx := context.Background()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
 	pgConfig, err := pgxpool.ParseConfig(cfg.Postgres.URL)
 	if err != nil {
@@ -80,9 +84,16 @@ func main() {
 	cartUC := cartUseCase.NewCartUseCase(cartRepo, restaurantClient, cfg.DefaultFoodLogoURL)
 	cartHandler := cartDelivery.NewCartHandler(cartUC)
 
-	// Контекст, который отменяется по сигналу ОС
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	rabbitClient, err := rabbitmq.NewRabbitClient(cfg.RabbitMQURL, appLogger)
+	if err != nil {
+		appLogger.Fatal("Failed to connect to RabbitMQ", err)
+	}
+	defer rabbitClient.Close()
+
+	cartConsumer := cartRabbitMQ.NewCartConsumer(rabbitClient, cartUC, appLogger)
+	if err := cartConsumer.Start(ctx); err != nil {
+		appLogger.Fatal("Failed to start Cart RabbitMQ consumer", err)
+	}
 
 	cleanup, err := metrics.InitMetrics(ctx, cfg.OTEL.ServiceName, cfg.OTEL.CollectorAddr)
 	if err != nil {

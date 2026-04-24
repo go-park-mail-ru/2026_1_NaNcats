@@ -12,6 +12,7 @@ type Config struct {
 
 	RestaurantServiceAddr string `yaml:"restaurant_service_addr" env:"RESTAURANT_SERVICE_ADDR" env-default:"localhost:50053"`
 
+	RabbitMQURL        string `yaml:"rabbit_mq_url" env:"RABBITMQ_URL" env-required:"true"`
 	DefaultFoodLogoURL string `yaml:"default_food_logo_url" env:"DEFAULT_FOOD_LOGO_URL" env-required:"true"`
 }
 

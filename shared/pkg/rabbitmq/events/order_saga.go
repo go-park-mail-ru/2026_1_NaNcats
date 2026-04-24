@@ -12,10 +12,10 @@ const (
 
 // команды оркестратора
 const (
-	CommandLockCart     = "LOCK_CART"
-	CommandUnlockCart   = "UNLOCK_CART"
-	CommandClearCart    = "CLEAR_CART"
-	CommandCreatPayment = "CREATE_PAYMENT"
+	CommandLockCart      = "LOCK_CART"
+	CommandUnlockCart    = "UNLOCK_CART"
+	CommandClearCart     = "CLEAR_CART"
+	CommandCreatePayment = "CREATE_PAYMENT"
 )
 
 const (

@@ -17,6 +17,7 @@ type Config struct {
 	Redis    config.RedisConfig      `yaml:"redis"`
 	OTEL     config.OTELConfig       `yaml:"otel"`
 
+	RabbitMQURL      string         `yaml:"rabbit_mq_url" env:"RABBITMQ_URL" env-required:"true"`
 	OrderServiceAddr string         `yaml:"order_service_addr" env:"ORDER_SERVICE_ADDR" env-default:"localhost:50057"`
 	Yookassa         YookassaConfig `yaml:"yookassa"`
 }
