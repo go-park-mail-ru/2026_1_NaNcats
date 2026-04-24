@@ -85,17 +85,15 @@ gen:
 	go generate ./...
 
 # Генерация proto файлов
+PROTO_DIR = shared/proto
+# Находим все .proto файлы в директории рекурсивно
+PROTO_FILES = $(shell find $(PROTO_DIR) -name "*.proto")
+
 proto:
-	protoc -I shared/proto \
-			--go_out=shared/proto --go_opt=paths=source_relative \
-			--go-grpc_out=shared/proto --go-grpc_opt=paths=source_relative \
-			shared/proto/address/address.proto \
-			shared/proto/auth/auth.proto \
-			shared/proto/cart/cart.proto \
-			shared/proto/order/order.proto \
-			shared/proto/payment/payment.proto \
-			shared/proto/restaurant/restaurant.proto \
-			shared/proto/user/user.proto
+	protoc -I $(PROTO_DIR) \
+		--go_out=$(PROTO_DIR) --go_opt=paths=source_relative \
+		--go-grpc_out=$(PROTO_DIR) --go-grpc_opt=paths=source_relative \
+		$(PROTO_FILES)
 
 # Тестирование с правильным подсчетом покрытия
 test:
