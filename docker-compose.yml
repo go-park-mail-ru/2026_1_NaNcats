@@ -44,7 +44,7 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_USER:-guest}
     ports:
       - "5672:5672" # порт для микросервисов
-      - "15672:15672" # порт для веб-админки
+      - "8081:15672" # порт для веб-админки
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
