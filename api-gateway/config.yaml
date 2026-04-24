@@ -9,7 +9,7 @@ http:
 
 otel:
   service_name: "api-gateway"
-  collector_addr: "localhost:4317"
+  collector_addr: "otel-collector:4317"
 
 grpc_clients:
   auth_service_addr: "localhost:50054"
