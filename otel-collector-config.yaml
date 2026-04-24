@@ -23,7 +23,7 @@ exporters:
     tls:
       insecure: true
 
-  logging:
+  debug:
     verbosity: basic # Выводить краткую инфу о пришедших данных в логи контейнера Collector
 
 service:
@@ -32,7 +32,7 @@ service:
     metrics:
       receivers: [otlp]
       processors: [batch]
-      exporters: [prometheus, logging]
+      exporters: [prometheus, debug]
     
     # Конвейер для трейсов
     traces:

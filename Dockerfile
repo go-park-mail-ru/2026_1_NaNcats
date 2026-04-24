@@ -23,6 +23,7 @@ WORKDIR /app
 
 RUN apk add --no-cache ca-certificates tzdata
 
+COPY --from=builder /app/api-gateway ./api-gateway
 COPY --from=builder /app/bin/service ./main
 COPY --from=builder /app/migrate ./migrate
 COPY --from=builder /app/services ./services
