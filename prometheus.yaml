@@ -1,0 +1,14 @@
+global:
+  scrape_interval: 5s # Как часто забирать данные
+
+# Цели
+scrape_configs:
+  # Забираем метрики из коллектора
+  - job_name: 'otel-collector'
+    static_configs:
+      - targets: ['otel-collector:8889']
+
+  # Забираем метрики железа сервера
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
