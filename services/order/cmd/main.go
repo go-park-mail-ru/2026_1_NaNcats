@@ -20,6 +20,9 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/metrics"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
 
+	orderRabbitMQ "github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/delivery/rabbitmq"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq"
+
 	addressPb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/address"
 	cartPb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/cart"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/order"
@@ -63,8 +66,6 @@ func main() {
 	defer addrConn.Close()
 	cartConn := createGrpcConn(cfg.CartServiceAddr, "Cart", appLogger)
 	defer cartConn.Close()
-	payConn := createGrpcConn(cfg.PaymentServiceAddr, "Payment", appLogger)
-	defer payConn.Close()
 	resConn := createGrpcConn(cfg.RestaurantServiceAddr, "Restaurant", appLogger)
 	defer resConn.Close()
 
@@ -77,19 +78,31 @@ func main() {
 	restaurantGrpcClient := restaurantPb.NewRestaurantServiceClient(resConn)
 	restaurantClient := orderGrpcClient.NewRestaurantClient(restaurantGrpcClient)
 
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	rabbitClient, err := rabbitmq.NewRabbitClient(cfg.RabbitMQURL, appLogger)
+	if err != nil {
+		appLogger.Fatal("Failed to connect to RabbitMQ", err)
+	}
+	defer rabbitClient.Close()
+
 	orderRepo := orderPG.NewOrderRepo(pool)
 	orderUC := orderUseCase.NewOrderUseCase(
 		orderRepo,
 		addressClient,
 		cartClient,
 		restaurantClient,
+		rabbitClient,
 		cfg.DefaultRestaurantLogoURL,
+		appLogger,
 	)
 	orderHandler := orderDelivery.NewOrderHandler(orderUC)
 
-	// Контекст, который отменяется по сигналу ОС
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	orderConsumer := orderRabbitMQ.NewOrderConsumer(rabbitClient, orderUC, appLogger)
+	if err := orderConsumer.Start(ctx); err != nil {
+		appLogger.Fatal("Failed to start RabbitMQ consumer", err)
+	}
 
 	cleanup, err := metrics.InitMetrics(ctx, cfg.OTEL.ServiceName, cfg.OTEL.CollectorAddr)
 	if err != nil {
