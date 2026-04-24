@@ -13,6 +13,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/metrics"
 	"github.com/gomodule/redigo/redis"
+	"github.com/joho/godotenv"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 
 	authDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/delivery/grpc"
@@ -30,6 +31,7 @@ import (
 )
 
 func main() {
+	_ = godotenv.Load()
 	cfg := config.Load()
 
 	ctx := context.Background()

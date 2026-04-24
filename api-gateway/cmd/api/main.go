@@ -32,10 +32,12 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/restaurantclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/userclient"
 
+	gatewayConfig "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/infrastructure/config"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
 	infrastructureLogger "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/common/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/interceptors"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/metrics"
 
 	pbAddress "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/address"
 	pbAuth "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/auth"
@@ -46,13 +48,16 @@ import (
 	pbUser "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/user"
 
 	_ "github.com/go-park-mail-ru/2026_1_NaNcats/docs"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 )
 
-func getEnvOrDefault(key, defaultVal string) string {
-	if val := os.Getenv(key); val != "" {
-		return val
+func mustInitConn(addr string, serviceName string, appLogger logger.Logger, opts []grpc.DialOption) *grpc.ClientConn {
+	conn, err := grpc.NewClient(addr, opts...)
+	if err != nil {
+		appLogger.Fatal("Failed to connect to "+serviceName, err)
 	}
-	return defaultVal
+	appLogger.Info("Connected to "+serviceName, logger.String("addr", addr))
+	return conn
 }
 
 // @title 		NaNcats Delivery API
@@ -64,38 +69,29 @@ func main() {
 	// Пытаемся загрузить .env файл только для локальной разработки
 	// В Docker переменные прокинутся сами через docker-compose
 	_ = godotenv.Load()
+	cfg := gatewayConfig.Load()
 
-	// Читаем уровень логирования из переменной окружения
-	logLevel := os.Getenv("LOG_LEVEL")
-	if logLevel == "" {
-		logLevel = "info"
-	}
-	rawLogger, err := logger.NewZapLogger(logLevel)
+	rawLogger, err := logger.NewZapLogger(cfg.Logger.Level)
 	if err != nil {
 		log.Fatalf("Cannot start without logger: %v", err)
 	}
 	appLogger := infrastructureLogger.NewLoggerAdapter(rawLogger)
 	appLogger.Info("Starting API Gateway...")
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	cleanup, err := metrics.InitMetrics(ctx, cfg.OTEL.ServiceName, cfg.OTEL.CollectorAddr)
+	if err != nil {
+		appLogger.Fatal("Failed to init metrics", err)
 	}
+	defer cleanup()
 
 	validate := validator.New()
 
-	services := map[string]string{
-		"auth":       getEnvOrDefault("AUTH_SERVICE_ADDR", "localhost:50054"),
-		"user":       getEnvOrDefault("USER_SERVICE_ADDR", "localhost:50052"),
-		"restaurant": getEnvOrDefault("RESTAURANT_SERVICE_ADDR", "localhost:50053"),
-		"cart":       getEnvOrDefault("CART_SERVICE_ADDR", "localhost:50055"),
-		"address":    getEnvOrDefault("ADDRESS_SERVICE_ADDR", "localhost:50051"),
-		"payment":    getEnvOrDefault("PAYMENT_SERVICE_ADDR", "localhost:50056"),
-		"order":      getEnvOrDefault("ORDER_SERVICE_ADDR", "localhost:50057"),
-	}
-
 	grpcOpts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 		grpc.WithChainUnaryInterceptor(
 			interceptors.UnaryClientRequestID(),
 			interceptors.UnaryClientUserID(),
@@ -104,46 +100,25 @@ func main() {
 	}
 	appLogger.Info("Connecting to microservices...")
 
-	authConn, err := grpc.NewClient(services["auth"], grpcOpts...)
-	if err != nil {
-		appLogger.Fatal("Failed to connect to Auth Service", err)
-	}
+	authConn := mustInitConn(cfg.GRPCClients.AuthAddr, "Auth Service", appLogger, grpcOpts)
 	defer authConn.Close()
 
-	userConn, err := grpc.NewClient(services["user"], grpcOpts...)
-	if err != nil {
-		appLogger.Fatal("Failed to connect to User Service", err)
-	}
+	userConn := mustInitConn(cfg.GRPCClients.UserAddr, "User Service", appLogger, grpcOpts)
 	defer userConn.Close()
 
-	restConn, err := grpc.NewClient(services["restaurant"], grpcOpts...)
-	if err != nil {
-		appLogger.Fatal("Failed to connect to Restaurant Service", err)
-	}
+	restConn := mustInitConn(cfg.GRPCClients.RestaurantAddr, "Restaurant Service", appLogger, grpcOpts)
 	defer restConn.Close()
 
-	cartConn, err := grpc.NewClient(services["cart"], grpcOpts...)
-	if err != nil {
-		appLogger.Fatal("Failed to connect to Cart Service", err)
-	}
+	cartConn := mustInitConn(cfg.GRPCClients.CartAddr, "Cart Service", appLogger, grpcOpts)
 	defer cartConn.Close()
 
-	addrConn, err := grpc.NewClient(services["address"], grpcOpts...)
-	if err != nil {
-		appLogger.Fatal("Failed to connect to Address Service", err)
-	}
+	addrConn := mustInitConn(cfg.GRPCClients.AddressAddr, "Address Service", appLogger, grpcOpts)
 	defer addrConn.Close()
 
-	payConn, err := grpc.NewClient(services["payment"], grpcOpts...)
-	if err != nil {
-		appLogger.Fatal("Failed to connect to Payment Service", err)
-	}
+	payConn := mustInitConn(cfg.GRPCClients.PaymentAddr, "Payment Service", appLogger, grpcOpts)
 	defer payConn.Close()
 
-	orderConn, err := grpc.NewClient(services["order"], grpcOpts...)
-	if err != nil {
-		appLogger.Fatal("Failed to connect to Order Service", err)
-	}
+	orderConn := mustInitConn(cfg.GRPCClients.OrderAddr, "Order Service", appLogger, grpcOpts)
 	defer orderConn.Close()
 
 	authClient := authclient.NewAuthClient(pbAuth.NewAuthServiceClient(authConn))
@@ -164,11 +139,7 @@ func main() {
 
 	reqIDMW := middleware.NewRequestIDMiddleware()
 	loggingMW := middleware.NewLoggingMiddleware(appLogger)
-	corsMW := middleware.NewCORSMiddleware([]string{
-		"http://localhost:3000",
-		"http://localhost:2033",
-		"https://localhost:2033",
-	})
+	corsMW := middleware.NewCORSMiddleware(cfg.HTTP.AllowedOrigins)
 	authMW := middleware.NewAuthMiddleware(authClient, appLogger)
 	csrfMW := middleware.NewCSRFMiddleware(authClient, appLogger)
 
@@ -223,29 +194,26 @@ func main() {
 	otelHandler := otelhttp.NewHandler(handler, "api-gateway")
 
 	server := &http.Server{
-		Addr:         ":" + port,
+		Addr:         ":" + cfg.HTTP.Port,
 		Handler:      otelHandler,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
 
 	go func() {
-		appLogger.Info("API Gateway is running", logger.String("port", port))
+		appLogger.Info("API Gateway is running", logger.String("port", cfg.HTTP.Port))
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			appLogger.Fatal("server failed to start", err)
 		}
 	}()
 
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
-
-	<-stop
+	<-ctx.Done()
 	appLogger.Info("Received shutdown signal, stopping API Gateway gracefully...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err := server.Shutdown(ctx); err != nil {
+	if err := server.Shutdown(shutdownCtx); err != nil {
 		appLogger.Fatal("Server forced to shutdown", err)
 	}
 	appLogger.Info("API Gateway stopped")
