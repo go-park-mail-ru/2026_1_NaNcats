@@ -83,6 +83,18 @@ type TemplateDTO struct {
 	Content string `json:"content"`
 }
 
+// Вспомогательные структуры для Swagger
+//
+//easyjson:json
+type CreateTicketResponse struct {
+	TicketID string `json:"ticket_id"`
+}
+
+//easyjson:json
+type SuccessResponse struct {
+	Success bool `json:"success"`
+}
+
 // Вспомогательные алиасы списков для удобной генерации MarshalJSON
 //
 //easyjson:json

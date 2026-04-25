@@ -156,7 +156,7 @@ migrate-down:
 	migrate -path ./services/$(s)/db/migrations -database "$(call get_db_url,$(s))" down
 
 swagger:
-	swag init -g $(MAIN_PKG) --parseInternal --parseDependency
+	swag init -g $(GATEWAY_PKG) --parseInternal --parseDependency
 
 # --- ЛОГИ ---
 

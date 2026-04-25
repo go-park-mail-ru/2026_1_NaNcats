@@ -1,33 +1,13 @@
 basePath: /api
 definitions:
-  github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookNotification:
-    properties:
-      event:
-        type: string
-      object:
-        items:
-          type: integer
-        type: array
-      type:
-        type: string
-    type: object
-  github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse:
-    properties:
-      code:
-        example: 400
-        type: integer
-      message:
-        example: Неверный формат запроса
-        type: string
-    type: object
-  internal_delivery_handler_address.AddressListResponse:
+  api-gateway_internal_delivery_http_address.AddressListResponse:
     properties:
       addresses:
         items:
-          $ref: '#/definitions/internal_delivery_handler_address.AddressResponse'
+          $ref: '#/definitions/api-gateway_internal_delivery_http_address.AddressResponse'
         type: array
     type: object
-  internal_delivery_handler_address.AddressRequest:
+  api-gateway_internal_delivery_http_address.AddressRequest:
     properties:
       address_text:
         type: string
@@ -48,7 +28,7 @@ definitions:
       lon:
         type: number
     type: object
-  internal_delivery_handler_address.AddressResponse:
+  api-gateway_internal_delivery_http_address.AddressResponse:
     properties:
       apartment:
         type: string
@@ -65,14 +45,14 @@ definitions:
       label:
         type: string
       location:
-        $ref: '#/definitions/internal_delivery_handler_address.LocationResponse'
+        $ref: '#/definitions/api-gateway_internal_delivery_http_address.LocationResponse'
     type: object
-  internal_delivery_handler_address.CreateAddressResponse:
+  api-gateway_internal_delivery_http_address.CreateAddressResponse:
     properties:
       id:
         type: string
     type: object
-  internal_delivery_handler_address.LocationResponse:
+  api-gateway_internal_delivery_http_address.LocationResponse:
     properties:
       address_text:
         type: string
@@ -81,19 +61,19 @@ definitions:
       longitude:
         type: number
     type: object
-  internal_delivery_handler_address.MessageResponse:
+  api-gateway_internal_delivery_http_address.MessageResponse:
     properties:
       message:
         type: string
     type: object
-  internal_delivery_handler_auth.CSRFResponse:
+  api-gateway_internal_delivery_http_auth.CSRFResponse:
     properties:
       csrf_token:
         type: string
       message:
         type: string
     type: object
-  internal_delivery_handler_auth.LoginRequest:
+  api-gateway_internal_delivery_http_auth.LoginRequest:
     properties:
       login:
         example: user@mail.ru
@@ -104,7 +84,7 @@ definitions:
         minLength: 8
         type: string
     type: object
-  internal_delivery_handler_auth.LoginResponse:
+  api-gateway_internal_delivery_http_auth.LoginResponse:
     properties:
       avatar_url:
         example: users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
@@ -115,7 +95,7 @@ definitions:
         example: Иван
         type: string
     type: object
-  internal_delivery_handler_auth.RegisterRequest:
+  api-gateway_internal_delivery_http_auth.RegisterRequest:
     properties:
       email:
         example: user@mail.ru
@@ -129,7 +109,7 @@ definitions:
         minLength: 8
         type: string
     type: object
-  internal_delivery_handler_auth.RegisterResponse:
+  api-gateway_internal_delivery_http_auth.RegisterResponse:
     properties:
       created_at:
         example: 2006-01-02T15:04:05Z07:00
@@ -143,7 +123,7 @@ definitions:
         example: Иван
         type: string
     type: object
-  internal_delivery_handler_cart.CartItemDTO:
+  api-gateway_internal_delivery_http_cart.CartItemDTO:
     properties:
       dish_id:
         type: integer
@@ -156,33 +136,33 @@ definitions:
       quantity:
         type: integer
     type: object
-  internal_delivery_handler_cart.CartRequest:
+  api-gateway_internal_delivery_http_cart.CartRequest:
     properties:
       items:
         items:
-          $ref: '#/definitions/internal_delivery_handler_cart.CartItemDTO'
+          $ref: '#/definitions/api-gateway_internal_delivery_http_cart.CartItemDTO'
         type: array
       restaurant_id:
         type: integer
     type: object
-  internal_delivery_handler_cart.CartResponse:
+  api-gateway_internal_delivery_http_cart.CartResponse:
     properties:
       items:
         items:
-          $ref: '#/definitions/internal_delivery_handler_cart.CartItemDTO'
+          $ref: '#/definitions/api-gateway_internal_delivery_http_cart.CartItemDTO'
         type: array
       restaurant_id:
         type: integer
       total_cost:
         type: integer
-      updated_at:
-        type: string
     type: object
-  internal_delivery_handler_order.CreateOrderRequest:
+  api-gateway_internal_delivery_http_order.CreateOrderRequest:
     properties:
       address_id:
         type: string
       branch_id:
+        type: integer
+      brand_id:
         type: integer
       delivery_cost:
         type: integer
@@ -190,22 +170,20 @@ definitions:
         type: string
       service_fee:
         type: integer
-      total_cost:
-        type: integer
     type: object
-  internal_delivery_handler_order.CreateOrderResponse:
+  api-gateway_internal_delivery_http_order.CreateOrderResponse:
     properties:
       confirmation_url:
         type: string
       order_id:
         type: string
     type: object
-  internal_delivery_handler_payment.BindingResponse:
+  api-gateway_internal_delivery_http_payment.BindingResponse:
     properties:
       confirmation_url:
         type: string
     type: object
-  internal_delivery_handler_payment.PaymentMethodResponse:
+  api-gateway_internal_delivery_http_payment.PaymentMethodResponse:
     properties:
       card_type:
         example: Mir
@@ -222,70 +200,118 @@ definitions:
         example: "6767"
         type: string
     type: object
-  internal_delivery_handler_restaurant.DishResponse:
+  api-gateway_internal_delivery_http_support.CategoryDTO:
     properties:
+      default_line:
+        type: integer
       description:
-        example: Сочный бургер с сыром
         type: string
       id:
-        example: "1"
-        type: string
-      image_url:
-        example: /api/images/dishes/cheeseburger.png
-        type: string
-      name:
-        example: Чизбургер
-        type: string
-      price:
-        example: 19900
         type: integer
-    type: object
-  internal_delivery_handler_restaurant.DishesResponse:
-    properties:
-      dishes:
-        items:
-          $ref: '#/definitions/internal_delivery_handler_restaurant.DishResponse'
-        type: array
-    type: object
-  internal_delivery_handler_restaurant.RestaurantBrandResponse:
-    properties:
-      banner_url:
-        example: restaurangs/banners/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
+      name:
         type: string
-      description:
-        example: Острые крылошки
+    type: object
+  api-gateway_internal_delivery_http_support.ChangeStatusRequest:
+    properties:
+      status:
+        type: string
+    type: object
+  api-gateway_internal_delivery_http_support.CreateTicketRequest:
+    properties:
+      category_id:
+        type: integer
+      client_meta:
+        type: string
+      contact_email:
+        type: string
+      first_message:
+        type: string
+    type: object
+  api-gateway_internal_delivery_http_support.CreateTicketResponse:
+    properties:
+      ticket_id:
+        type: string
+    type: object
+  api-gateway_internal_delivery_http_support.EventDTO:
+    properties:
+      author_id:
+        type: integer
+      author_role:
+        type: string
+      created_at:
+        type: string
+      event_type:
         type: string
       id:
-        example: 550e8400-e29b-41d4-a716-446655440000
-        type: string
-      logo_url:
-        example: restaurants/logos/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
-        type: string
-      name:
-        example: KFC
-        type: string
-      promotion_tier:
-        example: 2
+        type: integer
+      payload:
+        items:
+          type: integer
+        type: array
+      ticket_id:
         type: integer
     type: object
-  internal_delivery_handler_restaurant.RestaurantBrandsResponse:
+  api-gateway_internal_delivery_http_support.RateTicketRequest:
     properties:
-      restaurants:
-        items:
-          $ref: '#/definitions/internal_delivery_handler_restaurant.RestaurantBrandResponse'
-        type: array
+      rating:
+        type: integer
     type: object
-  internal_delivery_handler_user.UpdateAvatarResponse:
+  api-gateway_internal_delivery_http_support.ReassignTicketRequest:
+    properties:
+      agent_id:
+        type: integer
+      line:
+        type: integer
+    type: object
+  api-gateway_internal_delivery_http_support.SetAgentStatusRequest:
+    properties:
+      status:
+        type: string
+    type: object
+  api-gateway_internal_delivery_http_support.SuccessResponse:
+    properties:
+      success:
+        type: boolean
+    type: object
+  api-gateway_internal_delivery_http_support.TemplateDTO:
+    properties:
+      content:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  api-gateway_internal_delivery_http_support.TicketDTO:
+    properties:
+      assignee_id:
+        type: integer
+      category_id:
+        type: integer
+      created_at:
+        type: string
+      current_status:
+        type: string
+      id:
+        type: integer
+      public_id:
+        type: string
+      resolution_rating:
+        type: integer
+      support_line:
+        type: integer
+    type: object
+  api-gateway_internal_delivery_http_user.UpdateAvatarResponse:
     properties:
       avatar_url:
         type: string
       message:
         type: string
     type: object
-  internal_delivery_handler_user.UserProfileResponse:
+  api-gateway_internal_delivery_http_user.UserProfileResponse:
     properties:
       avatar_url:
-        example: users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png
+        example: users/avatars/fjaun99f.png
         type: string
       email:
         example: terminator2007@gmail.com
@@ -294,13 +320,33 @@ definitions:
         example: Илья
         type: string
     type: object
-  internal_delivery_handler_user.UserProfileUpdateRequest:
+  api-gateway_internal_delivery_http_user.UserProfileUpdateRequest:
     properties:
       email:
         example: new_mail@gmail.com
         type: string
       name:
         example: Андрей
+        type: string
+    type: object
+  github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_api_clients_yookassa.WebhookNotification:
+    properties:
+      event:
+        type: string
+      object:
+        items:
+          type: integer
+        type: array
+      type:
+        type: string
+    type: object
+  github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse:
+    properties:
+      code:
+        example: 400
+        type: integer
+      message:
+        example: Неверный формат запроса
         type: string
     type: object
 host: localhost:8080
@@ -310,6 +356,171 @@ info:
   title: NaNcats Delivery API
   version: "1.0"
 paths:
+  /agent/status:
+    patch:
+      consumes:
+      - application/json
+      description: 'Позволяет агенту изменить свой статус (например: активен, отошел)'
+      parameters:
+      - description: Новый статус агента
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_delivery_http_support.SetAgentStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Статус успешно обновлен
+          schema:
+            $ref: '#/definitions/api-gateway_internal_delivery_http_support.SuccessResponse'
+        "400":
+          description: Ошибка запроса
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+        "401":
+          description: Неавторизован
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+      summary: Установка рабочего статуса агента
+      tags:
+      - agent
+  /agent/templates:
+    get:
+      description: Возвращает список готовых шаблонов(отбивок) для использования агентами
+        в чате
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список шаблонов
+          schema:
+            items:
+              $ref: '#/definitions/api-gateway_internal_delivery_http_support.TemplateDTO'
+            type: array
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+      summary: Получение шаблонов ответов (Для агентов)
+      tags:
+      - agent
+  /agent/tickets:
+    get:
+      description: Возвращает список тикетов, назначенных на текущего агента поддержки
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список назначенных тикетов
+          schema:
+            items:
+              $ref: '#/definitions/api-gateway_internal_delivery_http_support.TicketDTO'
+            type: array
+        "401":
+          description: Неавторизован
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+      summary: Получение назначенных тикетов (Для агентов)
+      tags:
+      - agent
+  /agent/tickets/{id}/reassign:
+    post:
+      consumes:
+      - application/json
+      description: Передает тикет другому агенту или на другую линию поддержки
+      parameters:
+      - description: Public ID тикета
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Ключ идемпотентности
+        in: header
+        name: Idempotency-Key
+        required: true
+        type: string
+      - description: Данные для переназначения
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_delivery_http_support.ReassignTicketRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Тикет успешно переназначен
+          schema:
+            $ref: '#/definitions/api-gateway_internal_delivery_http_support.SuccessResponse'
+        "400":
+          description: Ошибка запроса
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+        "401":
+          description: Неавторизован
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+      summary: Переназначение тикета (Для агентов)
+      tags:
+      - agent
+  /agent/tickets/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Меняет статус указанного тикета
+      parameters:
+      - description: Public ID тикета
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Ключ идемпотентности
+        in: header
+        name: Idempotency-Key
+        required: true
+        type: string
+      - description: Новый статус
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_delivery_http_support.ChangeStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Статус успешно изменен
+          schema:
+            $ref: '#/definitions/api-gateway_internal_delivery_http_support.SuccessResponse'
+        "400":
+          description: Ошибка запроса
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+        "401":
+          description: Неавторизован
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+      summary: Изменение статуса тикета (Для агентов)
+      tags:
+      - agent
   /api/cart:
     get:
       description: Возвращает текущую корзину авторизованного пользователя
@@ -319,7 +530,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_delivery_handler_cart.CartResponse'
+            $ref: '#/definitions/api-gateway_internal_delivery_http_cart.CartResponse'
         "401":
           description: Unauthorized
           schema:
@@ -347,7 +558,7 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/internal_delivery_handler_cart.CartRequest'
+          $ref: '#/definitions/api-gateway_internal_delivery_http_cart.CartRequest'
       produces:
       - application/json
       responses:
@@ -391,14 +602,14 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/internal_delivery_handler_order.CreateOrderRequest'
+          $ref: '#/definitions/api-gateway_internal_delivery_http_order.CreateOrderRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Заказ успешно создан
           schema:
-            $ref: '#/definitions/internal_delivery_handler_order.CreateOrderResponse'
+            $ref: '#/definitions/api-gateway_internal_delivery_http_order.CreateOrderResponse'
         "400":
           description: Bad request или пустая корзина
           schema:
@@ -439,26 +650,26 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/internal_delivery_handler_auth.LoginRequest'
+          $ref: '#/definitions/api-gateway_internal_delivery_http_auth.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Успешный вход
           schema:
-            $ref: '#/definitions/internal_delivery_handler_auth.LoginResponse'
+            $ref: '#/definitions/api-gateway_internal_delivery_http_auth.LoginResponse'
         "400":
           description: Неверный формат JSON
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
         "401":
           description: Неверный логин или пароль
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
       summary: Авторизация пользователя
       tags:
       - auth
@@ -487,15 +698,15 @@ paths:
         "200":
           description: Успешный вход и создание сессии
           schema:
-            $ref: '#/definitions/internal_delivery_handler_auth.LoginResponse'
+            $ref: '#/definitions/api-gateway_internal_delivery_http_auth.LoginResponse'
         "401":
           description: Неавторизован
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
         "500":
           description: Внутренняя ошибка
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
       summary: Проверка текущей сессии
       tags:
       - auth
@@ -511,26 +722,26 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/internal_delivery_handler_auth.RegisterRequest'
+          $ref: '#/definitions/api-gateway_internal_delivery_http_auth.RegisterRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Успешная регистрация
           schema:
-            $ref: '#/definitions/internal_delivery_handler_auth.RegisterResponse'
+            $ref: '#/definitions/api-gateway_internal_delivery_http_auth.RegisterResponse'
         "400":
           description: Ошибка валидации (email/пароль)
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
         "409":
           description: Пользователь с такой почтой уже существует
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
       summary: Регистрация пользователя
       tags:
       - auth
@@ -544,11 +755,11 @@ paths:
         "200":
           description: Успешное получение токена или сообщение об отсутствии сессии
           schema:
-            $ref: '#/definitions/internal_delivery_handler_auth.CSRFResponse'
+            $ref: '#/definitions/api-gateway_internal_delivery_http_auth.CSRFResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
       summary: Получение CSRF токена
       tags:
       - auth
@@ -564,15 +775,15 @@ paths:
         "200":
           description: Успешное получение данных профиля
           schema:
-            $ref: '#/definitions/internal_delivery_handler_user.UserProfileResponse'
+            $ref: '#/definitions/api-gateway_internal_delivery_http_user.UserProfileResponse'
         "404":
           description: Пользователь не найден
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
       summary: Получение профиля пользователя
       tags:
       - profile
@@ -587,7 +798,7 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/internal_delivery_handler_user.UserProfileUpdateRequest'
+          $ref: '#/definitions/api-gateway_internal_delivery_http_user.UserProfileUpdateRequest'
       produces:
       - application/json
       responses:
@@ -600,15 +811,15 @@ paths:
         "400":
           description: Ошибка валидации JSON или нет данных для обновления
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
         "409":
           description: Указанный email уже используется другим пользователем
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
       summary: Обновление данных профиля
       tags:
       - profile
@@ -621,15 +832,15 @@ paths:
         "200":
           description: Список адресов пользователя
           schema:
-            $ref: '#/definitions/internal_delivery_handler_address.AddressListResponse'
+            $ref: '#/definitions/api-gateway_internal_delivery_http_address.AddressListResponse'
         "401":
           description: Неавторизован
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
       summary: Получение списка адресов
       tags:
       - profile
@@ -643,26 +854,26 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/internal_delivery_handler_address.AddressRequest'
+          $ref: '#/definitions/api-gateway_internal_delivery_http_address.AddressRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Успешное создание (возвращает public_id)
           schema:
-            $ref: '#/definitions/internal_delivery_handler_address.CreateAddressResponse'
+            $ref: '#/definitions/api-gateway_internal_delivery_http_address.CreateAddressResponse'
         "400":
           description: Ошибка в формате запроса
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
         "401":
           description: Неавторизован
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
       summary: Добавление нового адреса
       tags:
       - profile
@@ -679,15 +890,15 @@ paths:
         "200":
           description: Адрес успешно удален
           schema:
-            $ref: '#/definitions/internal_delivery_handler_address.MessageResponse'
+            $ref: '#/definitions/api-gateway_internal_delivery_http_address.MessageResponse'
         "401":
           description: Неавторизован
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
       summary: Удаление адреса
       tags:
       - profile
@@ -706,26 +917,26 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/internal_delivery_handler_address.AddressRequest'
+          $ref: '#/definitions/api-gateway_internal_delivery_http_address.AddressRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Адрес успешно обновлен
           schema:
-            $ref: '#/definitions/internal_delivery_handler_address.MessageResponse'
+            $ref: '#/definitions/api-gateway_internal_delivery_http_address.MessageResponse'
         "400":
           description: Ошибка в формате запроса
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
         "401":
           description: Неавторизован
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
       summary: Обновление адреса
       tags:
       - profile
@@ -739,11 +950,11 @@ paths:
         "200":
           description: Аватар успешно удален
           schema:
-            $ref: '#/definitions/internal_delivery_handler_user.UpdateAvatarResponse'
+            $ref: '#/definitions/api-gateway_internal_delivery_http_user.UpdateAvatarResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
       summary: Удаление аватара пользователя
       tags:
       - profile
@@ -764,15 +975,15 @@ paths:
         "200":
           description: Аватар успешно обновлен
           schema:
-            $ref: '#/definitions/internal_delivery_handler_user.UpdateAvatarResponse'
+            $ref: '#/definitions/api-gateway_internal_delivery_http_user.UpdateAvatarResponse'
         "400":
           description: Ошибка запроса (файл слишком большой, неверный формат или отсутствует)
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse'
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
       summary: Обновление аватара пользователя
       tags:
       - profile
@@ -786,7 +997,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/internal_delivery_handler_payment.PaymentMethodResponse'
+              $ref: '#/definitions/api-gateway_internal_delivery_http_payment.PaymentMethodResponse'
             type: array
         "401":
           description: Пользователь не авторизован
@@ -850,7 +1061,7 @@ paths:
         "200":
           description: URL для подтверждения привязки
           schema:
-            $ref: '#/definitions/internal_delivery_handler_payment.BindingResponse'
+            $ref: '#/definitions/api-gateway_internal_delivery_http_payment.BindingResponse'
         "401":
           description: Пользователь не авторизован
           schema:
@@ -867,61 +1078,153 @@ paths:
       tags:
       - profile
       - payments
-  /restaurants/brands:
+  /support/categories:
     get:
-      description: Возвращает список брендов ресторанов с поддержкой пагинации (limit
-        и offset)
-      parameters:
-      - default: 20
-        description: Количество получаемых ресторанов
-        in: query
-        name: limit
-        type: integer
-      - default: 0
-        description: Смещение от начала списка
-        in: query
-        name: offset
-        type: integer
+      description: Возвращает список доступных категорий для создания тикетов
       produces:
       - application/json
       responses:
         "200":
-          description: Успешное получение списка ресторанов
+          description: Список категорий
           schema:
-            $ref: '#/definitions/internal_delivery_handler_restaurant.RestaurantBrandsResponse'
-      summary: Получение списка ресторанов
+            items:
+              $ref: '#/definitions/api-gateway_internal_delivery_http_support.CategoryDTO'
+            type: array
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+      summary: Получение категорий обращений
       tags:
-      - restaurants
-  /restaurants/brands/{id}/dishes:
+      - support
+  /support/tickets:
     get:
-      description: Возвращает список блюд ресторана (по restaurant_brand_id) с поддержкой
-        пагинации (limit и offset)
+      description: Возвращает все обращения текущего пользователя (идентифицируется
+        по токену или куке guest_id)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список тикетов пользователя
+          schema:
+            items:
+              $ref: '#/definitions/api-gateway_internal_delivery_http_support.TicketDTO'
+            type: array
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+      summary: Получение списка тикетов пользователя
+      tags:
+      - support
+    post:
+      consumes:
+      - application/json
+      description: Создает новое обращение в службу поддержки (для авторизованных
+        и неавторизованных пользователей)
       parameters:
-      - description: ID бренда ресторана (restaurant_brand_id)
+      - description: Ключ идемпотентности
+        in: header
+        name: Idempotency-Key
+        required: true
+        type: string
+      - description: Данные тикета
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_delivery_http_support.CreateTicketRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное создание (возвращает ticket_id)
+          schema:
+            $ref: '#/definitions/api-gateway_internal_delivery_http_support.CreateTicketResponse'
+        "400":
+          description: Ошибка в формате запроса или отсутствие заголовка
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+      summary: Создание тикета
+      tags:
+      - support
+  /support/tickets/{id}/events:
+    get:
+      description: Возвращает историю переписки и событий по конкретному тикету
+      parameters:
+      - description: Public ID тикета
         in: path
         name: id
         required: true
-        type: integer
-      - default: 20
-        description: Количество получаемых блюд
-        in: query
-        name: limit
-        type: integer
-      - default: 0
-        description: Смещение от начала списка
-        in: query
-        name: offset
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
         "200":
-          description: Успешное получение списка блюд
+          description: Список событий
           schema:
-            $ref: '#/definitions/internal_delivery_handler_restaurant.DishesResponse'
-      summary: Получение списка блюд ресторана
+            items:
+              $ref: '#/definitions/api-gateway_internal_delivery_http_support.EventDTO'
+            type: array
+        "403":
+          description: Доступ запрещен
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+        "404":
+          description: Тикет не найден
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+      summary: Получение событий тикета
       tags:
-      - restaurants
+      - support
+  /support/tickets/{id}/rate:
+    post:
+      consumes:
+      - application/json
+      description: Позволяет пользователю поставить оценку решенному тикету
+      parameters:
+      - description: Public ID тикета
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Ключ идемпотентности
+        in: header
+        name: Idempotency-Key
+        required: true
+        type: string
+      - description: Оценка тикета
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_delivery_http_support.RateTicketRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешная оценка
+          schema:
+            $ref: '#/definitions/api-gateway_internal_delivery_http_support.SuccessResponse'
+        "400":
+          description: Ошибка в формате запроса
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+      summary: Оценка решения тикета
+      tags:
+      - support
   /webhooks/yookassa:
     post:
       consumes:
@@ -934,7 +1237,7 @@ paths:
         name: notification
         required: true
         schema:
-          $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookNotification'
+          $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_api_clients_yookassa.WebhookNotification'
       produces:
       - application/json
       responses:
