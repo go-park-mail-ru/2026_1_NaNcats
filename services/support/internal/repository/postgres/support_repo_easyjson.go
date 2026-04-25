@@ -104,7 +104,202 @@ func (v *statusChangedPayloadDTO) UnmarshalJSON(data []byte) error {
 func (v *statusChangedPayloadDTO) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson40c203d0DecodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres(l, v)
 }
-func easyjson40c203d0DecodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres1(in *jlexer.Lexer, out *messagePayloadDTO) {
+func easyjson40c203d0DecodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres1(in *jlexer.Lexer, out *reassignedPayloadDTO) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		switch key {
+		case "old_assignee_id":
+			if in.IsNull() {
+				in.Skip()
+				out.OldAssigneeID = nil
+			} else {
+				if out.OldAssigneeID == nil {
+					out.OldAssigneeID = new(int64)
+				}
+				if in.IsNull() {
+					in.Skip()
+				} else {
+					*out.OldAssigneeID = int64(in.Int64())
+				}
+			}
+		case "new_assignee_id":
+			if in.IsNull() {
+				in.Skip()
+				out.NewAssigneeID = nil
+			} else {
+				if out.NewAssigneeID == nil {
+					out.NewAssigneeID = new(int64)
+				}
+				if in.IsNull() {
+					in.Skip()
+				} else {
+					*out.NewAssigneeID = int64(in.Int64())
+				}
+			}
+		case "old_line":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.OldLine = int(in.Int())
+			}
+		case "new_line":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.NewLine = int(in.Int())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson40c203d0EncodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres1(out *jwriter.Writer, in reassignedPayloadDTO) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.OldAssigneeID != nil {
+		const prefix string = ",\"old_assignee_id\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.Int64(int64(*in.OldAssigneeID))
+	}
+	if in.NewAssigneeID != nil {
+		const prefix string = ",\"new_assignee_id\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int64(int64(*in.NewAssigneeID))
+	}
+	if in.OldLine != 0 {
+		const prefix string = ",\"old_line\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int(int(in.OldLine))
+	}
+	if in.NewLine != 0 {
+		const prefix string = ",\"new_line\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int(int(in.NewLine))
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v reassignedPayloadDTO) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson40c203d0EncodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres1(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v reassignedPayloadDTO) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson40c203d0EncodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres1(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *reassignedPayloadDTO) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson40c203d0DecodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres1(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *reassignedPayloadDTO) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson40c203d0DecodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres1(l, v)
+}
+func easyjson40c203d0DecodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres2(in *jlexer.Lexer, out *ratedPayloadDTO) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		switch key {
+		case "rating":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.Rating = int(in.Int())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson40c203d0EncodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres2(out *jwriter.Writer, in ratedPayloadDTO) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"rating\":"
+		out.RawString(prefix[1:])
+		out.Int(int(in.Rating))
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v ratedPayloadDTO) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson40c203d0EncodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres2(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v ratedPayloadDTO) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson40c203d0EncodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres2(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *ratedPayloadDTO) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson40c203d0DecodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres2(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *ratedPayloadDTO) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson40c203d0DecodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres2(l, v)
+}
+func easyjson40c203d0DecodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres3(in *jlexer.Lexer, out *messagePayloadDTO) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -134,7 +329,7 @@ func easyjson40c203d0DecodeGithubComGoParkMailRu20261NaNcatsServicesSupportInter
 		in.Consumed()
 	}
 }
-func easyjson40c203d0EncodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres1(out *jwriter.Writer, in messagePayloadDTO) {
+func easyjson40c203d0EncodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres3(out *jwriter.Writer, in messagePayloadDTO) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -149,23 +344,23 @@ func easyjson40c203d0EncodeGithubComGoParkMailRu20261NaNcatsServicesSupportInter
 // MarshalJSON supports json.Marshaler interface
 func (v messagePayloadDTO) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson40c203d0EncodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres1(&w, v)
+	easyjson40c203d0EncodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres3(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v messagePayloadDTO) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson40c203d0EncodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres1(w, v)
+	easyjson40c203d0EncodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres3(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *messagePayloadDTO) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson40c203d0DecodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres1(&r, v)
+	easyjson40c203d0DecodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres3(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *messagePayloadDTO) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson40c203d0DecodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres1(l, v)
+	easyjson40c203d0DecodeGithubComGoParkMailRu20261NaNcatsServicesSupportInternalRepositoryPostgres3(l, v)
 }

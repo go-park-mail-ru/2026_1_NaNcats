@@ -30,6 +30,21 @@ type statusChangedPayloadDTO struct {
 	Reason    string `json:"reason,omitempty"`
 }
 
+//easyjson:json
+type reassignedPayloadDTO struct {
+	OldAssigneeID *int64 `json:"old_assignee_id,omitempty"`
+	NewAssigneeID *int64 `json:"new_assignee_id,omitempty"`
+	OldLine       int    `json:"old_line,omitempty"`
+	NewLine       int    `json:"new_line,omitempty"`
+}
+
+// Смена рейтинга
+//
+//easyjson:json
+type ratedPayloadDTO struct {
+	Rating int `json:"rating"`
+}
+
 type agentProfileDB struct {
 	AccountID   int64     `db:"account_id"`
 	Status      string    `db:"status"`
@@ -227,30 +242,87 @@ func (r *supportRepo) AddEvent(ctx context.Context, input domain.AddEventInput) 
 	return tx.Commit(ctx)
 }
 
-func (r *supportRepo) UpdateTicketStatus(ctx context.Context, ticketID int64, status string) error {
-	query := `
-		UPDATE "support_ticket" 
-		SET current_status = $1, updated_at = NOW() 
-		WHERE id = $2
-	`
-	tag, err := r.pool.Exec(ctx, query, status, ticketID)
+func (r *supportRepo) UpdateTicketStatus(ctx context.Context, ticketID int64, status string, authorID *int64, authorRole string, idempotencyKey string) error {
+	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	if tag.RowsAffected() == 0 {
-		return errors.New("ticket not found")
+	defer tx.Rollback(ctx)
+
+	var oldStatus string
+	err = tx.QueryRow(ctx, `SELECT current_status FROM "support_ticket" WHERE id = $1`, ticketID).Scan(&oldStatus)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return errors.New("ticket not found")
+		}
+		return err
 	}
-	return nil
+
+	query := `UPDATE "support_ticket" SET current_status = $1, updated_at = NOW() WHERE id = $2`
+	result, err := tx.Exec(ctx, query, status, ticketID)
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() == 0 {
+		return errors.New("failed to update ticket status")
+	}
+
+	// Пишем в историю
+	payload, _ := easyjson.Marshal(statusChangedPayloadDTO{
+		OldStatus: oldStatus,
+		NewStatus: status,
+	})
+
+	eventQuery := `
+		INSERT INTO "support_event" (ticket_id, author_account_id, author_role, event_type, payload, idempotency_key, created_at)
+		VALUES ($1, $2, $3, 'status_changed', $4, NULLIF($5, ''), NOW())
+		ON CONFLICT (idempotency_key) DO NOTHING;
+	`
+	_, err = tx.Exec(ctx, eventQuery, ticketID, authorID, authorRole, payload, idempotencyKey)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }
 
-func (r *supportRepo) AssignTicket(ctx context.Context, ticketID int64, agentID int64, line int) error {
-	query := `
-		UPDATE "support_ticket" 
-		SET assignee_id = $1, support_line = $2, updated_at = NOW() 
-		WHERE id = $3
+func (r *supportRepo) AssignTicket(ctx context.Context, ticketID int64, agentID int64, line int, authorID *int64, authorRole string, idempotencyKey string) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	var oldAssignee *int64
+	var oldLine int
+	err = tx.QueryRow(ctx, `SELECT assignee_id, support_line FROM "support_ticket" WHERE id = $1`, ticketID).Scan(&oldAssignee, &oldLine)
+	if err != nil {
+		return err
+	}
+
+	query := `UPDATE "support_ticket" SET assignee_id = $1, support_line = $2, updated_at = NOW() WHERE id = $3`
+	if _, err := tx.Exec(ctx, query, agentID, line, ticketID); err != nil {
+		return err
+	}
+
+	payload, _ := easyjson.Marshal(reassignedPayloadDTO{
+		OldAssigneeID: oldAssignee,
+		NewAssigneeID: &agentID,
+		OldLine:       oldLine,
+		NewLine:       line,
+	})
+
+	eventQuery := `
+		INSERT INTO "support_event" (ticket_id, author_account_id, author_role, event_type, payload, idempotency_key, created_at)
+		VALUES ($1, $2, $3, 'reassigned', $4, NULLIF($5, ''), NOW())
+		ON CONFLICT (idempotency_key) DO NOTHING;
 	`
-	_, err := r.pool.Exec(ctx, query, agentID, line, ticketID)
-	return err
+	_, err = tx.Exec(ctx, eventQuery, ticketID, authorID, authorRole, payload, idempotencyKey)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }
 
 func (r *supportRepo) GetTicketByPublicID(ctx context.Context, publicID string) (domain.Ticket, error) {
@@ -360,7 +432,7 @@ func (r *supportRepo) UpdateAgentStatus(ctx context.Context, agentID int64, stat
 }
 
 func (r *supportRepo) GetActiveCategories(ctx context.Context) ([]domain.Category, error) {
-	query := `SELECT id, name, description, is_active FROM "support_category" WHERE is_active = true`
+	query := `SELECT id, name, description, default_line, is_active FROM "support_category" WHERE is_active = true`
 	rows, err := r.pool.Query(ctx, query)
 	if err != nil {
 		return nil, err
@@ -393,20 +465,36 @@ func (r *supportRepo) GetAgentProfile(ctx context.Context, agentID int64) (domai
 	return dbAgent.toDomain(), nil
 }
 
-func (r *supportRepo) SetTicketRating(ctx context.Context, ticketID int64, rating int) error {
-	query := `
-		UPDATE "support_ticket" 
-		SET resolution_rating = $1, updated_at = NOW() 
-		WHERE id = $2
-	`
-	tag, err := r.pool.Exec(ctx, query, rating, ticketID)
+func (r *supportRepo) SetTicketRating(ctx context.Context, ticketID int64, rating int, authorID *int64, idempotencyKey string) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	query := `UPDATE "support_ticket" SET resolution_rating = $1, updated_at = NOW() WHERE id = $2`
+	tag, err := tx.Exec(ctx, query, rating, ticketID)
 	if err != nil {
 		return err
 	}
 	if tag.RowsAffected() == 0 {
 		return errors.New("ticket not found")
 	}
-	return nil
+
+	// Добавляем событие в чат
+	payload, _ := easyjson.Marshal(ratedPayloadDTO{Rating: rating})
+	eventQuery := `
+        INSERT INTO "support_event" (ticket_id, author_account_id, author_role, event_type, payload, idempotency_key, created_at)
+        VALUES ($1, $2, 'user', 'rated', $3, NULLIF($4, ''), NOW())
+        ON CONFLICT (idempotency_key) DO NOTHING;
+    `
+	_, err = tx.Exec(ctx, eventQuery, ticketID, authorID, payload, idempotencyKey)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+
 }
 
 func (r *supportRepo) GetTemplates(ctx context.Context) ([]domain.Template, error) {

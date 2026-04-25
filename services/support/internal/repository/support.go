@@ -15,9 +15,9 @@ type SupportRepository interface {
 	GetAssignedTickets(ctx context.Context, agentID int64) ([]domain.Ticket, error)
 
 	// Управление состоянием (с обновлением updated_at)
-	UpdateTicketStatus(ctx context.Context, ticketID int64, status string) error
-	AssignTicket(ctx context.Context, ticketID int64, agentID int64, line int) error
-	SetTicketRating(ctx context.Context, ticketID int64, rating int) error
+	UpdateTicketStatus(ctx context.Context, ticketID int64, status string, authorID *int64, authorRole string, idempotencyKey string) error
+	AssignTicket(ctx context.Context, ticketID int64, agentID int64, line int, authorID *int64, authorRole string, idempotencyKey string) error
+	SetTicketRating(ctx context.Context, ticketID int64, rating int, authorID *int64, idempotencyKey string) error
 
 	// События (чат и логи)
 	AddEvent(ctx context.Context, input domain.AddEventInput) error
