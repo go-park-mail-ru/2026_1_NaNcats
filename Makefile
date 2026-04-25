@@ -14,7 +14,7 @@ DB_PASSWORD ?= password
 DB_HOST ?= localhost
 DB_PORT ?= 5432
 
-MICROSERVICES = auth user restaurant cart address payment order
+MICROSERVICES = auth user restaurant cart address payment order support
 ALL_SERVICES = $(MICROSERVICES) api-gateway
 
 $(shell mkdir -p .tmp_pids)
