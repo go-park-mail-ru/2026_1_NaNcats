@@ -9,6 +9,7 @@ import (
 	pbSupport "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/support"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 var (
@@ -16,6 +17,8 @@ var (
 	ErrInternal       = errors.New("internal server error")
 	ErrTicketNotFound = errors.New("ticket not found")
 )
+
+// --- DTOs ---
 
 type CreateTicketInput struct {
 	ClientID     *int64
@@ -27,35 +30,65 @@ type CreateTicketInput struct {
 }
 
 type SendMessageInput struct {
-	TicketID   int64
-	AuthorID   *int64
-	AuthorRole string
-	Message    string
+	TicketPublicID string
+	AuthorID       *int64
+	AuthorRole     string
+	Message        string
 }
 
 type Ticket struct {
-	ID            int64
-	PublicID      string
-	CategoryID    int64
-	CurrentStatus string
-	SupportLine   int
-	CreatedAt     time.Time
+	ID               int64
+	PublicID         string
+	CategoryID       int64
+	CurrentStatus    string
+	SupportLine      int
+	AssigneeID       int64
+	ResolutionRating int
+	CreatedAt        time.Time
 }
 
-type Message struct {
+type Event struct {
 	ID         int64
 	TicketID   int64
 	AuthorID   int64
 	AuthorRole string
-	Text       string
+	EventType  string
+	Payload    json.RawMessage
 	CreatedAt  time.Time
 }
 
+type Category struct {
+	ID          int64
+	Name        string
+	Description string
+	DefaultLine int
+}
+
+type Template struct {
+	ID      int64
+	Name    string
+	Content string
+}
+
+// --- Interface ---
+
 type SupportClient interface {
+	// Пользовательская часть
 	CreateTicket(ctx context.Context, input CreateTicketInput, idempotencyKey string) (string, error)
 	SendMessage(ctx context.Context, input SendMessageInput, idempotencyKey string) (int64, error)
 	GetUserTickets(ctx context.Context, clientID *int64, guestID *string) ([]Ticket, error)
-	GetTicketMessages(ctx context.Context, ticketID int64) ([]Message, error)
+	GetTicketEvents(ctx context.Context, ticketPublicID string, clientID *int64, guestID *string) ([]Event, error)
+	RateTicket(ctx context.Context, ticketPublicID string, rating int, clientID *int64, idempotencyKey string) error
+
+	// Операторская часть
+	GetAssignedTickets(ctx context.Context, agentID int64) ([]Ticket, error)
+	ChangeTicketStatus(ctx context.Context, ticketPublicID string, status string, agentID int64, idempotencyKey string) error
+	ReassignTicket(ctx context.Context, ticketPublicID string, agentID int64, line int, authorID int64, idempotencyKey string) error
+	SetAgentStatus(ctx context.Context, agentID int64, status string) error
+
+	// Справочники
+	GetCategories(ctx context.Context) ([]Category, error)
+	GetTemplates(ctx context.Context) ([]Template, error)
 }
 
 type supportClient struct {
@@ -67,6 +100,8 @@ func NewSupportClient(cl pbSupport.SupportServiceClient) SupportClient {
 		client: cl,
 	}
 }
+
+// === Пользовательская часть ===
 
 func (c *supportClient) CreateTicket(ctx context.Context, input CreateTicketInput, idempotencyKey string) (string, error) {
 	req := &pbSupport.CreateTicketRequest{
@@ -98,7 +133,7 @@ func (c *supportClient) CreateTicket(ctx context.Context, input CreateTicketInpu
 
 func (c *supportClient) SendMessage(ctx context.Context, input SendMessageInput, idempotencyKey string) (int64, error) {
 	req := &pbSupport.SendMessageRequest{
-		TicketId:       input.TicketID,
+		TicketPublicId: input.TicketPublicID,
 		AuthorRole:     input.AuthorRole,
 		Message:        input.Message,
 		IdempotencyKey: idempotencyKey,
@@ -138,41 +173,202 @@ func (c *supportClient) GetUserTickets(ctx context.Context, clientID *int64, gue
 	tickets := make([]Ticket, 0, len(resp.Tickets))
 	for _, pbT := range resp.Tickets {
 		tickets = append(tickets, Ticket{
-			ID:            pbT.Id,
-			PublicID:      pbT.PublicId,
-			CurrentStatus: pbT.CurrentStatus,
-			CreatedAt:     pbT.CreatedAt.AsTime(),
+			ID:               pbT.Id,
+			PublicID:         pbT.PublicId,
+			CategoryID:       pbT.CategoryId,
+			CurrentStatus:    pbT.CurrentStatus,
+			SupportLine:      int(pbT.SupportLine),
+			AssigneeID:       pbT.AssigneeId,
+			ResolutionRating: int(pbT.ResolutionRating),
+			CreatedAt:        pbT.CreatedAt.AsTime(),
 		})
 	}
 
 	return tickets, nil
 }
 
-func (c *supportClient) GetTicketMessages(ctx context.Context, ticketID int64) ([]Message, error) {
-	req := &pbSupport.GetTicketMessagesRequest{
-		TicketId: ticketID,
+func (c *supportClient) GetTicketEvents(ctx context.Context, ticketPublicID string, clientID *int64, guestID *string) ([]Event, error) {
+	req := &pbSupport.GetTicketEventsRequest{
+		TicketPublicId: ticketPublicID,
 	}
 
-	resp, err := c.client.GetTicketMessages(ctx, req)
+	if clientID != nil {
+		req.ClientId = *clientID
+	}
+	if guestID != nil {
+		req.GuestId = *guestID
+	}
+
+	resp, err := c.client.GetTicketEvents(ctx, req)
 	if err != nil {
 		st, ok := status.FromError(err)
-		if ok && st.Code() == codes.NotFound {
-			return nil, ErrTicketNotFound
+		if ok {
+			switch st.Code() {
+			case codes.NotFound:
+				return nil, ErrTicketNotFound
+			case codes.PermissionDenied:
+				return nil, ErrUnauthorized
+			}
 		}
 		return nil, ErrInternal
 	}
 
-	messages := make([]Message, 0, len(resp.Messages))
-	for _, message := range resp.Messages {
-		messages = append(messages, Message{
-			ID:         message.Id,
-			TicketID:   message.TicketId,
-			AuthorID:   message.AuthorId,
-			AuthorRole: message.AuthorRole,
-			Text:       message.Text,
-			CreatedAt:  message.CreatedAt.AsTime(),
+	events := make([]Event, 0, len(resp.Events))
+	for _, event := range resp.Events {
+		events = append(events, Event{
+			ID:         event.Id,
+			TicketID:   event.TicketId,
+			AuthorID:   event.AuthorId,
+			AuthorRole: event.AuthorRole,
+			EventType:  event.EventType,
+			Payload:    json.RawMessage([]byte(event.Payload)),
+			CreatedAt:  event.CreatedAt.AsTime(),
 		})
 	}
 
-	return messages, nil
+	return events, nil
+}
+
+func (c *supportClient) RateTicket(ctx context.Context, ticketPublicID string, rating int, clientID *int64, idempotencyKey string) error {
+	req := &pbSupport.RateTicketRequest{
+		TicketPublicId: ticketPublicID,
+		Rating:         int32(rating),
+		IdempotencyKey: idempotencyKey,
+	}
+
+	if clientID != nil {
+		req.ClientId = *clientID
+	}
+
+	_, err := c.client.RateTicket(ctx, req)
+	if err != nil {
+		st, ok := status.FromError(err)
+		if ok && st.Code() == codes.NotFound {
+			return ErrTicketNotFound
+		}
+		return ErrInternal
+	}
+
+	return nil
+}
+
+func (c *supportClient) GetAssignedTickets(ctx context.Context, agentID int64) ([]Ticket, error) {
+	req := &pbSupport.GetAssignedTicketsRequest{
+		AgentId: agentID,
+	}
+
+	resp, err := c.client.GetAssignedTickets(ctx, req)
+	if err != nil {
+		return nil, ErrInternal
+	}
+
+	tickets := make([]Ticket, 0, len(resp.Tickets))
+	for _, pbT := range resp.Tickets {
+		tickets = append(tickets, Ticket{
+			ID:               pbT.Id,
+			PublicID:         pbT.PublicId,
+			CategoryID:       pbT.CategoryId,
+			CurrentStatus:    pbT.CurrentStatus,
+			SupportLine:      int(pbT.SupportLine),
+			AssigneeID:       pbT.AssigneeId,
+			ResolutionRating: int(pbT.ResolutionRating),
+			CreatedAt:        pbT.CreatedAt.AsTime(),
+		})
+	}
+
+	return tickets, nil
+}
+
+func (c *supportClient) ChangeTicketStatus(ctx context.Context, ticketPublicID string, newStatus string, agentID int64, idempotencyKey string) error {
+	req := &pbSupport.ChangeTicketStatusRequest{
+		TicketPublicId: ticketPublicID,
+		Status:         newStatus,
+		AgentId:        agentID,
+		IdempotencyKey: idempotencyKey,
+	}
+
+	_, err := c.client.ChangeTicketStatus(ctx, req)
+	if err != nil {
+		st, ok := status.FromError(err)
+		if ok && st.Code() == codes.NotFound {
+			return ErrTicketNotFound
+		}
+		return ErrInternal
+	}
+
+	return nil
+}
+
+func (c *supportClient) ReassignTicket(ctx context.Context, ticketPublicID string, agentID int64, line int, authorID int64, idempotencyKey string) error {
+	req := &pbSupport.ReassignTicketRequest{
+		TicketPublicId: ticketPublicID,
+		AgentId:        agentID,
+		Line:           int32(line),
+		AuthorId:       authorID,
+		IdempotencyKey: idempotencyKey,
+	}
+
+	_, err := c.client.ReassignTicket(ctx, req)
+	if err != nil {
+		st, ok := status.FromError(err)
+		if ok && st.Code() == codes.NotFound {
+			return ErrTicketNotFound
+		}
+		return ErrInternal
+	}
+
+	return nil
+}
+
+func (c *supportClient) SetAgentStatus(ctx context.Context, agentID int64, agentStatus string) error {
+	req := &pbSupport.SetAgentStatusRequest{
+		AgentId: agentID,
+		Status:  agentStatus,
+	}
+
+	_, err := c.client.SetAgentStatus(ctx, req)
+	if err != nil {
+		return ErrInternal
+	}
+
+	return nil
+}
+
+// === Справочники ===
+
+func (c *supportClient) GetCategories(ctx context.Context) ([]Category, error) {
+	resp, err := c.client.GetCategories(ctx, &emptypb.Empty{})
+	if err != nil {
+		return nil, ErrInternal
+	}
+
+	categories := make([]Category, 0, len(resp.Categories))
+	for _, cat := range resp.Categories {
+		categories = append(categories, Category{
+			ID:          cat.Id,
+			Name:        cat.Name,
+			Description: cat.Description,
+			DefaultLine: int(cat.DefaultLine),
+		})
+	}
+
+	return categories, nil
+}
+
+func (c *supportClient) GetTemplates(ctx context.Context) ([]Template, error) {
+	resp, err := c.client.GetTemplates(ctx, &emptypb.Empty{})
+	if err != nil {
+		return nil, ErrInternal
+	}
+
+	templates := make([]Template, 0, len(resp.Templates))
+	for _, tpl := range resp.Templates {
+		templates = append(templates, Template{
+			ID:      tpl.Id,
+			Name:    tpl.Name,
+			Content: tpl.Content,
+		})
+	}
+
+	return templates, nil
 }

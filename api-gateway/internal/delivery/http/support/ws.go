@@ -4,7 +4,6 @@ package support
 
 import (
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/supportclient"
@@ -34,9 +33,8 @@ func (h *SupportHandler) ConnectChat(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
 
-	ticketIDStr := r.PathValue("id")
-	ticketID, err := strconv.ParseInt(ticketIDStr, 10, 64)
-	if err != nil {
+	ticketPublicID := r.PathValue("id")
+	if ticketPublicID == "" {
 		http.Error(w, "invalid ticket id", http.StatusBadRequest)
 		return
 	}
@@ -48,8 +46,8 @@ func (h *SupportHandler) ConnectChat(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	h.redisHub.AddConnection(ctx, ticketID, conn)
-	defer h.redisHub.RemoveConnection(ticketID, conn)
+	h.redisHub.AddConnection(ctx, ticketPublicID, conn)
+	defer h.redisHub.RemoveConnection(ticketPublicID, conn)
 
 	var authorID *int64
 	authorRole := "USER"
@@ -57,10 +55,10 @@ func (h *SupportHandler) ConnectChat(w http.ResponseWriter, r *http.Request) {
 	uID, isAuth := middleware.GetUserID(ctx)
 	if isAuth {
 		authorID = &uID
-		// TODO: добавить проверку на принадлежость сотруднику саппорта
+		// TODO: добавить проверку на принадлежность сотруднику саппорта
 	}
 
-	l.Info("client connected to chat", logger.Int("ticket_id", int(ticketID)))
+	l.Info("client connected to chat", logger.String("ticket_public_id", ticketPublicID))
 
 	for {
 		_, messageData, err := conn.ReadMessage()
@@ -82,10 +80,10 @@ func (h *SupportHandler) ConnectChat(w http.ResponseWriter, r *http.Request) {
 		}
 
 		input := supportclient.SendMessageInput{
-			TicketID:   ticketID,
-			AuthorID:   authorID,
-			AuthorRole: authorRole,
-			Message:    wsMsg.Text,
+			TicketPublicID: ticketPublicID,
+			AuthorID:       authorID,
+			AuthorRole:     authorRole,
+			Message:        wsMsg.Text,
 		}
 
 		msgID, err := h.supportClient.SendMessage(ctx, input, wsMsg.IdempotencyKey)
@@ -96,14 +94,14 @@ func (h *SupportHandler) ConnectChat(w http.ResponseWriter, r *http.Request) {
 		}
 
 		event := WsEvent{
-			ID:         msgID,
-			TicketID:   ticketID,
-			AuthorRole: authorRole,
-			Text:       wsMsg.Text,
-			CreatedAt:  time.Now().Format(time.RFC3339),
+			ID:             msgID,
+			TicketPublicID: ticketPublicID,
+			AuthorRole:     authorRole,
+			Text:           wsMsg.Text,
+			CreatedAt:      time.Now().Format(time.RFC3339),
 		}
 
-		if err := h.redisHub.Publish(ticketID, event); err != nil {
+		if err := h.redisHub.Publish(ticketPublicID, event); err != nil {
 			l.Error("failed to publish to redis", err)
 		}
 	}
