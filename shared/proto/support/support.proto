@@ -22,9 +22,10 @@ message CreateTicketRequest {
   int64 client_id = 1; // 0, если гость
   string guest_id = 2;
   string contact_email = 3;
-  string category = 4;
+  int64 category_id = 4;
   string initial_message = 5;
   string client_meta = 6;
+  string idempotency_key = 7;
 }
 
 message SendMessageRequest {
@@ -32,6 +33,7 @@ message SendMessageRequest {
   int64 author_id = 2;
   string author_role = 3;
   string message = 4;
+  string idempotency_key = 5;
 }
 
 message Message {

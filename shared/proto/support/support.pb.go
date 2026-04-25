@@ -27,9 +27,10 @@ type CreateTicketRequest struct {
 	ClientId       int64                  `protobuf:"varint,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"` // 0, если гость
 	GuestId        string                 `protobuf:"bytes,2,opt,name=guest_id,json=guestId,proto3" json:"guest_id,omitempty"`
 	ContactEmail   string                 `protobuf:"bytes,3,opt,name=contact_email,json=contactEmail,proto3" json:"contact_email,omitempty"`
-	Category       string                 `protobuf:"bytes,4,opt,name=category,proto3" json:"category,omitempty"`
+	CategoryId     int64                  `protobuf:"varint,4,opt,name=category_id,json=categoryId,proto3" json:"category_id,omitempty"`
 	InitialMessage string                 `protobuf:"bytes,5,opt,name=initial_message,json=initialMessage,proto3" json:"initial_message,omitempty"`
 	ClientMeta     string                 `protobuf:"bytes,6,opt,name=client_meta,json=clientMeta,proto3" json:"client_meta,omitempty"`
+	IdempotencyKey string                 `protobuf:"bytes,7,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -85,11 +86,11 @@ func (x *CreateTicketRequest) GetContactEmail() string {
 	return ""
 }
 
-func (x *CreateTicketRequest) GetCategory() string {
+func (x *CreateTicketRequest) GetCategoryId() int64 {
 	if x != nil {
-		return x.Category
+		return x.CategoryId
 	}
-	return ""
+	return 0
 }
 
 func (x *CreateTicketRequest) GetInitialMessage() string {
@@ -106,14 +107,22 @@ func (x *CreateTicketRequest) GetClientMeta() string {
 	return ""
 }
 
+func (x *CreateTicketRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
 type SendMessageRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	TicketId      int64                  `protobuf:"varint,1,opt,name=ticket_id,json=ticketId,proto3" json:"ticket_id,omitempty"`
-	AuthorId      int64                  `protobuf:"varint,2,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"`
-	AuthorRole    string                 `protobuf:"bytes,3,opt,name=author_role,json=authorRole,proto3" json:"author_role,omitempty"`
-	Message       string                 `protobuf:"bytes,4,opt,name=message,proto3" json:"message,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	TicketId       int64                  `protobuf:"varint,1,opt,name=ticket_id,json=ticketId,proto3" json:"ticket_id,omitempty"`
+	AuthorId       int64                  `protobuf:"varint,2,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"`
+	AuthorRole     string                 `protobuf:"bytes,3,opt,name=author_role,json=authorRole,proto3" json:"author_role,omitempty"`
+	Message        string                 `protobuf:"bytes,4,opt,name=message,proto3" json:"message,omitempty"`
+	IdempotencyKey string                 `protobuf:"bytes,5,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *SendMessageRequest) Reset() {
@@ -170,6 +179,13 @@ func (x *SendMessageRequest) GetAuthorRole() string {
 func (x *SendMessageRequest) GetMessage() string {
 	if x != nil {
 		return x.Message
+	}
+	return ""
+}
+
+func (x *SendMessageRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
 	}
 	return ""
 }
@@ -566,21 +582,24 @@ var File_support_support_proto protoreflect.FileDescriptor
 
 const file_support_support_proto_rawDesc = "" +
 	"\n" +
-	"\x15support/support.proto\x12\asupport\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd8\x01\n" +
+	"\x15support/support.proto\x12\asupport\x1a\x1fgoogle/protobuf/timestamp.proto\"\x86\x02\n" +
 	"\x13CreateTicketRequest\x12\x1b\n" +
 	"\tclient_id\x18\x01 \x01(\x03R\bclientId\x12\x19\n" +
 	"\bguest_id\x18\x02 \x01(\tR\aguestId\x12#\n" +
-	"\rcontact_email\x18\x03 \x01(\tR\fcontactEmail\x12\x1a\n" +
-	"\bcategory\x18\x04 \x01(\tR\bcategory\x12'\n" +
+	"\rcontact_email\x18\x03 \x01(\tR\fcontactEmail\x12\x1f\n" +
+	"\vcategory_id\x18\x04 \x01(\x03R\n" +
+	"categoryId\x12'\n" +
 	"\x0finitial_message\x18\x05 \x01(\tR\x0einitialMessage\x12\x1f\n" +
 	"\vclient_meta\x18\x06 \x01(\tR\n" +
-	"clientMeta\"\x89\x01\n" +
+	"clientMeta\x12'\n" +
+	"\x0fidempotency_key\x18\a \x01(\tR\x0eidempotencyKey\"\xb2\x01\n" +
 	"\x12SendMessageRequest\x12\x1b\n" +
 	"\tticket_id\x18\x01 \x01(\x03R\bticketId\x12\x1b\n" +
 	"\tauthor_id\x18\x02 \x01(\x03R\bauthorId\x12\x1f\n" +
 	"\vauthor_role\x18\x03 \x01(\tR\n" +
 	"authorRole\x12\x18\n" +
-	"\amessage\x18\x04 \x01(\tR\amessage\"\xc3\x01\n" +
+	"\amessage\x18\x04 \x01(\tR\amessage\x12'\n" +
+	"\x0fidempotency_key\x18\x05 \x01(\tR\x0eidempotencyKey\"\xc3\x01\n" +
 	"\aMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1b\n" +
 	"\tticket_id\x18\x02 \x01(\x03R\bticketId\x12\x1b\n" +
