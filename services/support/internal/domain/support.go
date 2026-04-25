@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 type Ticket struct {
 	ID               int64
@@ -13,7 +16,7 @@ type Ticket struct {
 	SupportLine      int
 	AssigneeID       *int64
 	ResolutionRating *int
-	ClientMeta       []byte
+	ClientMeta       json.RawMessage
 	CreatorRole      string
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
@@ -25,22 +28,32 @@ type Event struct {
 	AuthorID   *int64
 	AuthorRole string
 	EventType  string
-	Payload    []byte
+	Payload    json.RawMessage
 	CreatedAt  time.Time
 }
-
+type AgentProfile struct {
+	AccountID   int64
+	Status      string
+	SupportLine int
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
 type CreateTicketInput struct {
-	ClientID     *int64
-	GuestID      *string
-	ContactEmail string
-	CategoryID   int
-	Message      string
-	ClientMeta   []byte
+	ClientID       *int64
+	GuestID        *string
+	ContactEmail   string
+	CategoryID     int
+	FirstMessage   string
+	ClientMeta     json.RawMessage
+	CreatorRole    string
+	IdempotencyKey string
 }
 
-type SendMessageInput struct {
-	TicketID   int64
-	AuthorID   *int64
-	AuthorRole string
-	Message    string
+type AddEventInput struct {
+	TicketID       int64
+	AuthorID       *int64
+	AuthorRole     string
+	EventType      string
+	Payload        json.RawMessage
+	IdempotencyKey string
 }
