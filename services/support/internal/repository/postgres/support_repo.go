@@ -327,7 +327,7 @@ func (r *supportRepo) GetTicketByPublicID(ctx context.Context, publicID string) 
 		return domain.Ticket{}, err
 	}
 
-	dbT, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[ticketDB])
+	dbT, err := pgx.CollectOneRow(rows, pgx.RowToStructByNameLax[ticketDB])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.Ticket{}, errors.New("ticket not found")
@@ -349,7 +349,7 @@ func (r *supportRepo) GetTicketsByClientID(ctx context.Context, clientID int64) 
 	}
 	defer rows.Close()
 
-	dbTickets, err := pgx.CollectRows(rows, pgx.RowToStructByName[ticketDB])
+	dbTickets, err := pgx.CollectRows(rows, pgx.RowToStructByNameLax[ticketDB])
 	if err != nil {
 		return nil, fmt.Errorf("collect client tickets: %w", err)
 	}
@@ -369,7 +369,7 @@ func (r *supportRepo) GetTicketsByGuestID(ctx context.Context, guestID string) (
 	}
 	defer rows.Close()
 
-	dbTickets, err := pgx.CollectRows(rows, pgx.RowToStructByName[ticketDB])
+	dbTickets, err := pgx.CollectRows(rows, pgx.RowToStructByNameLax[ticketDB])
 	if err != nil {
 		return nil, fmt.Errorf("collect guest tickets: %w", err)
 	}
@@ -389,7 +389,7 @@ func (r *supportRepo) GetAssignedTickets(ctx context.Context, agentID int64) ([]
 	}
 	defer rows.Close()
 
-	dbTickets, err := pgx.CollectRows(rows, pgx.RowToStructByName[ticketDB])
+	dbTickets, err := pgx.CollectRows(rows, pgx.RowToStructByNameLax[ticketDB])
 	if err != nil {
 		return nil, err
 	}
@@ -404,7 +404,7 @@ func (r *supportRepo) GetEventsByTicketID(ctx context.Context, ticketID int64) (
 		return nil, err
 	}
 
-	dbEvents, err := pgx.CollectRows(rows, pgx.RowToStructByName[eventDB])
+	dbEvents, err := pgx.CollectRows(rows, pgx.RowToStructByNameLax[eventDB])
 	if err != nil {
 		return nil, err
 	}
@@ -434,7 +434,7 @@ func (r *supportRepo) GetActiveCategories(ctx context.Context) ([]domain.Categor
 	}
 	defer rows.Close()
 
-	return pgx.CollectRows(rows, pgx.RowToStructByName[domain.Category])
+	return pgx.CollectRows(rows, pgx.RowToStructByNameLax[domain.Category])
 }
 
 func (r *supportRepo) GetAgentProfile(ctx context.Context, agentID int64) (domain.AgentProfile, error) {
@@ -449,7 +449,7 @@ func (r *supportRepo) GetAgentProfile(ctx context.Context, agentID int64) (domai
 		return domain.AgentProfile{}, fmt.Errorf("query agent profile: %w", err)
 	}
 
-	dbAgent, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[agentProfileDB])
+	dbAgent, err := pgx.CollectOneRow(rows, pgx.RowToStructByNameLax[agentProfileDB])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.AgentProfile{}, errors.New("agent profile not found")
@@ -504,7 +504,7 @@ func (r *supportRepo) GetTemplates(ctx context.Context) ([]domain.Template, erro
 	}
 	defer rows.Close()
 
-	templates, err := pgx.CollectRows(rows, pgx.RowToStructByName[domain.Template])
+	templates, err := pgx.CollectRows(rows, pgx.RowToStructByNameLax[domain.Template])
 	if err != nil {
 		return nil, fmt.Errorf("collect support templates: %w", err)
 	}
