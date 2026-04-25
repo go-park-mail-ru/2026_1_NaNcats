@@ -6,7 +6,6 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/repository"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
-	"github.com/mailru/easyjson"
 	"google.golang.org/grpc/codes"
 )
 
@@ -89,28 +88,20 @@ func (u *supportUseCase) AddMessage(ctx context.Context, ticketPublicID string, 
 	}
 
 	if ticket.CurrentStatus == "closed" && authorRole == "user" {
-		err = u.repo.UpdateTicketStatus(ctx, ticket.ID, "open", nil, "system", idempotencyKey+"_reopen")
+		err = u.repo.UpdateTicketStatus(
+			ctx,
+			ticket.ID,
+			"open",
+			nil,
+			"system",
+			idempotencyKey+"_reopen",
+		)
 		if err != nil {
 			return errutil.Internal("failed to auto-reopen ticket", err)
 		}
 	}
 
-	payload := domain.MessagePayload{Text: text}
-	payloadBytes, err := easyjson.Marshal(payload)
-	if err != nil {
-		return errutil.Internal("failed to marshal message", err)
-	}
-
-	event := domain.AddEventInput{
-		TicketID:       ticket.ID,
-		AuthorID:       authorID,
-		AuthorRole:     authorRole,
-		EventType:      "message",
-		Payload:        payloadBytes,
-		IdempotencyKey: idempotencyKey,
-	}
-
-	return u.repo.AddEvent(ctx, event)
+	return u.repo.AddMessageEvent(ctx, ticket.ID, authorID, authorRole, text, idempotencyKey)
 }
 
 func (u *supportUseCase) GetTicketChat(ctx context.Context, ticketPublicID string) ([]domain.Event, error) {
@@ -155,37 +146,34 @@ func (u *supportUseCase) RateTicket(ctx context.Context, publicID string, rating
 
 	ticket, err := u.repo.GetTicketByPublicID(ctx, publicID)
 	if err != nil {
-		return errutil.Wrap("TICKET_NOT_FOUND", "ticket not found", err, codes.NotFound)
+		return domain.ErrTicketNotFound
 	}
 
 	if ticket.CurrentStatus != "closed" {
 		return domain.ErrInvalidState
 	}
 
-	err = u.repo.SetTicketRating(ctx, ticket.ID, rating, clientID, idempotencyKey)
-	if err != nil {
-		return errutil.Internal("failed to set rating", err)
-	}
-
-	return nil
+	return u.repo.SetTicketRating(ctx, ticket.ID, rating, clientID, idempotencyKey)
 }
 
-func (u *supportUseCase) ChangeTicketStatus(ctx context.Context, ticketPublicID string, status string, agentID int64, idempotencyKey string) error {
+func (u *supportUseCase) ChangeTicketStatus(ctx context.Context, ticketPublicID string, newStatus string, agentID int64, idempotencyKey string) error {
 	ticket, err := u.repo.GetTicketByPublicID(ctx, ticketPublicID)
 	if err != nil {
-		return errutil.Wrap("TICKET_NOT_FOUND", "ticket not found", err, codes.NotFound)
+		return domain.ErrTicketNotFound
 	}
 
-	// Защита от лишних действий
-	if ticket.CurrentStatus == status {
+	if ticket.CurrentStatus == newStatus {
 		return nil
 	}
 
-	err = u.repo.UpdateTicketStatus(ctx, ticket.ID, status, &agentID, "support", idempotencyKey)
-	if err != nil {
-		return errutil.Internal("failed to update status", err)
-	}
-	return nil
+	return u.repo.UpdateTicketStatus(
+		ctx,
+		ticket.ID,
+		newStatus,
+		&agentID,
+		"support",
+		idempotencyKey,
+	)
 }
 
 func (u *supportUseCase) ReassignTicket(ctx context.Context, ticketPublicID string, newAgentID int64, line int, authorID int64, idempotencyKey string) error {
@@ -194,11 +182,15 @@ func (u *supportUseCase) ReassignTicket(ctx context.Context, ticketPublicID stri
 		return domain.ErrTicketNotFound
 	}
 
-	if err := u.repo.AssignTicket(ctx, ticket.ID, newAgentID, line, &authorID, "support", idempotencyKey); err != nil {
-		return errutil.Internal("failed to reassign ticket", err)
-	}
-
-	return nil
+	return u.repo.AssignTicket(
+		ctx,
+		ticket.ID,
+		newAgentID,
+		line,
+		&authorID, // автор действия (кто переназначил)
+		"support",
+		idempotencyKey,
+	)
 }
 
 func (u *supportUseCase) GetAssignedTickets(ctx context.Context, agentID int64) ([]domain.Ticket, error) {
