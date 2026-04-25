@@ -10,11 +10,16 @@ CREATE TABLE "support_category" (
 	description TEXT
 		CHECK (char_length(description) <= 500),
 		
+	-- К какой линии по умолчанию относится категория (1 или 2)
+	default_line INT DEFAULT 1 NOT NULL
+		CHECK (default_line >= 1 AND default_line <= 3),
+
 	is_active BOOLEAN DEFAULT TRUE NOT NULL,
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
+
 
 CREATE TABLE "support_template" (
 	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -99,9 +104,9 @@ CREATE INDEX idx_support_ticket_client_id ON "support_ticket"(client_account_id)
 CREATE INDEX idx_support_ticket_guest_id ON "support_ticket"(guest_id) WHERE guest_id IS NOT NULL;
 CREATE INDEX idx_support_agent_online ON "support_agent_profile"(status) WHERE status = 'online';
 
-INSERT INTO "support_category" (name, description) VALUES 
-('Баг/техническая ошибка', 'Ошибки на сайте или в приложении'),
-('Вопрос по заказу', 'Где курьер, отмена заказа, изменения'),
-('Жалоба на доставку/продукт/ресторан', 'Невкусно, холодное, недовес'),
-('Предложение', 'Идеи по улучшению сервиса')
-ON CONFLICT (name) DO NOTHING;
+INSERT INTO "support_category" (name, description, default_line) VALUES 
+('Баг/техническая ошибка', 'Ошибки на сайте или в приложении', 2),
+('Вопрос по заказу', 'Где курьер, отмена заказа, изменения', 1),
+('Жалоба на доставку/продукт/ресторан', 'Невкусно, холодное, недовес', 1),
+('Предложение', 'Идеи по улучшению сервиса', 1)
+ON CONFLICT (name) DO UPDATE SET default_line = EXCLUDED.default_line;

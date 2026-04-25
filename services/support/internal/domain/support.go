@@ -57,3 +57,16 @@ type AddEventInput struct {
 	Payload        json.RawMessage
 	IdempotencyKey string
 }
+
+type Category struct {
+	ID          int64  `db:"id"`
+	Name        string `db:"name"`
+	Description string `db:"description"`
+	IsActive    bool   `db:"is_active"`
+}
+
+type Template struct {
+	ID      int64  `db:"id"`
+	Name    string `db:"name"`
+	Content string `db:"content"`
+}
