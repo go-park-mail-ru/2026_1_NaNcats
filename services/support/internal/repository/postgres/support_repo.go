@@ -277,16 +277,6 @@ func (r *supportRepo) UpdateTicketStatus(ctx context.Context, ticketID int64, st
 		return fmt.Errorf("marshal status change: %w", err)
 	}
 
-	eventQuery := `
-		INSERT INTO "support_event" (ticket_id, author_account_id, author_role, event_type, payload, idempotency_key, created_at)
-		VALUES ($1, $2, $3, 'status_changed', $4, NULLIF($5, ''), NOW())
-		ON CONFLICT (idempotency_key) DO NOTHING;
-	`
-	_, err = tx.Exec(ctx, eventQuery, ticketID, authorID, authorRole, payload, idempotencyKey)
-	if err != nil {
-		return err
-	}
-
 	if err := r.saveEventTx(ctx, tx, ticketID, authorID, authorRole, "status_changed", payload, idempotencyKey); err != nil {
 		return err
 	}
@@ -313,11 +303,6 @@ func (r *supportRepo) AssignTicket(
 	var oldLine int
 	err = tx.QueryRow(ctx, `SELECT assignee_id, support_line FROM "support_ticket" WHERE id = $1`, ticketID).Scan(&oldAssignee, &oldLine)
 	if err != nil {
-		return err
-	}
-
-	query := `UPDATE "support_ticket" SET assignee_id = $1, support_line = $2, updated_at = NOW() WHERE id = $3`
-	if _, err := tx.Exec(ctx, query, agentID, line, ticketID); err != nil {
 		return err
 	}
 
