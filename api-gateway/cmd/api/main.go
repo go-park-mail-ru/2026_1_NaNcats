@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/gomodule/redigo/redis"
 	"github.com/joho/godotenv"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -22,6 +23,7 @@ import (
 	orderHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/order"
 	paymentHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/payment"
 	restaurantHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/restaurant"
+	supportHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/support"
 	userHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/user"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/addressclient"
@@ -30,6 +32,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/orderclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/paymentclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/restaurantclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/supportclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/userclient"
 
 	gatewayConfig "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/infrastructure/config"
@@ -45,6 +48,7 @@ import (
 	pbOrder "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/order"
 	pbPayment "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/payment"
 	pbRestaurant "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
+	pbSupport "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/support"
 	pbUser "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/user"
 
 	_ "github.com/go-park-mail-ru/2026_1_NaNcats/docs"
@@ -89,6 +93,21 @@ func main() {
 
 	validate := validator.New()
 
+	redisPool := &redis.Pool{
+		MaxIdle:     10,
+		MaxActive:   100,
+		IdleTimeout: 240 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			// TODO: вынести адрес в конфиг, пока так сойдет
+			redisAddr := os.Getenv("REDIS_ADDR")
+			if redisAddr == "" {
+				redisAddr = "localhost:6379"
+			}
+			return redis.Dial("tcp", redisAddr)
+		},
+	}
+	defer redisPool.Close()
+
 	grpcOpts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
@@ -121,6 +140,9 @@ func main() {
 	orderConn := mustInitConn(cfg.GRPCClients.OrderAddr, "Order Service", appLogger, grpcOpts)
 	defer orderConn.Close()
 
+	supportConn := mustInitConn(cfg.GRPCClients.SupportAddr, "Support Service", appLogger, grpcOpts)
+	defer supportConn.Close()
+
 	authClient := authclient.NewAuthClient(pbAuth.NewAuthServiceClient(authConn))
 	userClient := userclient.NewUserClient(pbUser.NewUserServiceClient(userConn))
 	restClient := restaurantclient.NewRestaurantClient(pbRestaurant.NewRestaurantServiceClient(restConn))
@@ -128,6 +150,7 @@ func main() {
 	addrClient := addressclient.NewAddressClient(pbAddress.NewAddressServiceClient(addrConn))
 	payClient := paymentclient.NewPaymentClient(pbPayment.NewPaymentServiceClient(payConn))
 	orderClient := orderclient.NewOrderClient(pbOrder.NewOrderServiceClient(orderConn))
+	supportClient := supportclient.NewSupportClient(pbSupport.NewSupportServiceClient(supportConn))
 
 	authHandler := authHttp.NewAuthHandler(authClient, userClient, appLogger, validate)
 	userProfileHandler := userHttp.NewUserProfileHandler(userClient, appLogger)
@@ -136,6 +159,9 @@ func main() {
 	addressHandler := addressHttp.NewAddressHandler(addrClient, appLogger)
 	paymentHandler := paymentHttp.NewPaymentHandler(payClient, appLogger)
 	orderHandler := orderHttp.NewOrderHandler(orderClient, appLogger)
+
+	redisHub := supportHttp.NewRedisHub(redisPool, appLogger)
+	supportHandler := supportHttp.NewSupportHandler(supportClient, redisHub, appLogger)
 
 	reqIDMW := middleware.NewRequestIDMiddleware()
 	loggingMW := middleware.NewLoggingMiddleware(appLogger)
@@ -184,6 +210,11 @@ func main() {
 	// === ORDERS ===
 	mux.Handle("POST /api/orders", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.CreateOrder))))
 	mux.Handle("GET /api/profile/orders", authMW.RequireAuth(http.HandlerFunc(orderHandler.GetMyOrders)))
+
+	// === SUPPORT ===
+	mux.HandleFunc("POST /api/support/tickets", supportHandler.CreateTicket)
+	mux.HandleFunc("GET /api/support/tickets", supportHandler.GetMyTickets)
+	mux.HandleFunc("GET /api/support/tickets/{id}/chat", supportHandler.ConnectChat)
 
 	// === SWAGGER ===
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)

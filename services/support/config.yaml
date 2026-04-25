@@ -1,0 +1,12 @@
+logger:
+  level: "debug"
+
+postgres:
+  url: "postgres://user:password@localhost:5438/support_db?sslmode=disable"
+
+grpc:
+  port: "50058"
+  timeout: "5s"
+
+otel:
+  service_name: "support-service"

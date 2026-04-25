@@ -216,6 +216,20 @@ services:
       rabbitmq:
         condition: service_healthy
   
+  support_service:
+    build:
+      context: .
+      args:
+        BUILD_PATH: ./services/support/cmd/main.go
+    container_name: support_service
+    environment:
+      <<: *shared-env
+      CONFIG_PATH: ./services/support/config.yaml
+      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/support_db?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+  
   api_gateway:
     build:
       context: .
@@ -237,6 +251,7 @@ services:
       ADDRESS_SERVICE_ADDR: address_service:50051
       PAYMENT_SERVICE_ADDR: payment_service:50056
       ORDER_SERVICE_ADDR: order_service:50057
+      SUPPORT_SERVICE_ADDR: support_service:50058
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -253,6 +268,10 @@ services:
       payment_service:
         condition: service_started
       order_service:
+        condition: service_started
+      support_service:
+        condition: service_started
+      redis:
         condition: service_started
     restart: always
 

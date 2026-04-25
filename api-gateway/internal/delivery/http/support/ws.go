@@ -48,6 +48,9 @@ func (h *SupportHandler) ConnectChat(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
+	h.redisHub.AddConnection(ctx, ticketID, conn)
+	defer h.redisHub.RemoveConnection(ticketID, conn)
+
 	var authorID *int64
 	authorRole := "USER"
 
@@ -92,16 +95,16 @@ func (h *SupportHandler) ConnectChat(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		successReply := map[string]interface{}{
-			"id":         msgID,
-			"text":       wsMsg.Text,
-			"status":     "sent",
-			"created_at": time.Now().Format(time.RFC3339),
+		event := WsEvent{
+			ID:         msgID,
+			TicketID:   ticketID,
+			AuthorRole: authorRole,
+			Text:       wsMsg.Text,
+			CreatedAt:  time.Now().Format(time.RFC3339),
 		}
 
-		if err := conn.WriteJSON(successReply); err != nil {
-			l.Error("failed to write ws message", err)
-			break
+		if err := h.redisHub.Publish(ticketID, event); err != nil {
+			l.Error("failed to publish to redis", err)
 		}
 	}
 }

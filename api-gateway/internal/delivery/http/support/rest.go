@@ -24,12 +24,14 @@ type CreateTicketRequest struct {
 
 type SupportHandler struct {
 	supportClient supportclient.SupportClient
+	redisHub      *RedisHub
 	logger        logger.Logger
 }
 
-func NewSupportHandler(sc supportclient.SupportClient, l logger.Logger) *SupportHandler {
+func NewSupportHandler(sc supportclient.SupportClient, rh *RedisHub, l logger.Logger) *SupportHandler {
 	return &SupportHandler{
 		supportClient: sc,
+		redisHub:      rh,
 		logger:        l,
 	}
 }
@@ -54,7 +56,7 @@ func (h *SupportHandler) CreateTicket(w http.ResponseWriter, r *http.Request) {
 		ContactEmail: req.ContactEmail,
 		CategoryID:   req.CategoryID,
 		FirstMessage: req.FirstMessage,
-		ClientMeta:   json.RawMessage(req.ClientMeta),
+		ClientMeta:   json.RawMessage([]byte(req.ClientMeta)),
 	}
 
 	userID, isAuth := middleware.GetUserID(ctx)
