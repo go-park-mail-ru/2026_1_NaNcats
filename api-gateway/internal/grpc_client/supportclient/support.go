@@ -43,7 +43,7 @@ type Ticket struct {
 
 type SupportClient interface {
 	CreateTicket(ctx context.Context, input CreateTicketInput, idempotencyKey string) (string, error)
-	GetTickets(ctx context.Context, clientID *int64, guestID *string) ([]Ticket, error)
+	GetUserTickets(ctx context.Context, clientID *int64, guestID *string) ([]Ticket, error)
 	SendMessage(ctx context.Context, input SendMessageInput, idempotencyKey string) (int64, error)
 }
 
@@ -83,4 +83,32 @@ func (c *supportClient) CreateTicket(ctx context.Context, input CreateTicketInpu
 	}
 
 	return resp.PublicId, nil
+}
+
+func (c *supportClient) GetUserTickets(ctx context.Context, clientID *int64, guestID *string) ([]Ticket, error) {
+	req := &pbSupport.GetUserTicketsRequest{}
+
+	if clientID != nil {
+		req.ClientId = *clientID
+	}
+	if guestID != nil {
+		req.GuestId = *guestID
+	}
+
+	resp, err := c.client.GetUserTickets(ctx, req)
+	if err != nil {
+		return nil, ErrInternal
+	}
+
+	tickets := make([]Ticket, 0, len(resp.Tickets))
+	for _, pbT := range resp.Tickets {
+		tickets = append(tickets, Ticket{
+			ID:            pbT.Id,
+			PublicID:      pbT.PublicId,
+			CurrentStatus: pbT.CurrentStatus,
+			CreatedAt:     pbT.CreatedAt.AsTime(),
+		})
+	}
+
+	return tickets, nil
 }
