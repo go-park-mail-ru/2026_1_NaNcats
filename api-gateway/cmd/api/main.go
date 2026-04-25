@@ -211,10 +211,23 @@ func main() {
 	mux.Handle("POST /api/orders", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.CreateOrder))))
 	mux.Handle("GET /api/profile/orders", authMW.RequireAuth(http.HandlerFunc(orderHandler.GetMyOrders)))
 
-	// === SUPPORT ===
+	// === SUPPORT === (Пользовательская часть)
+	mux.HandleFunc("GET /api/support/categories", supportHandler.GetCategories)
+	mux.HandleFunc("POST /api/support/tickets", supportHandler.CreateTicket)
+	mux.HandleFunc("GET /api/support/tickets", supportHandler.GetMyTickets)
+	mux.HandleFunc("GET /api/support/tickets/{id}/events", supportHandler.GetTicketEvents)
+	mux.HandleFunc("POST /api/support/tickets/{id}/rate", supportHandler.RateTicket)
+	mux.HandleFunc("GET /api/support/tickets/{id}/chat", supportHandler.ConnectChat)
 	mux.HandleFunc("POST /api/support/tickets", supportHandler.CreateTicket)
 	mux.HandleFunc("GET /api/support/tickets", supportHandler.GetMyTickets)
 	mux.HandleFunc("GET /api/support/tickets/{id}/chat", supportHandler.ConnectChat)
+
+	// === SUPPORT === (Операторская часть / Админка)
+	mux.Handle("GET /api/admin/support/tickets", authMW.RequireAuth(http.HandlerFunc(supportHandler.GetAssignedTickets)))
+	mux.Handle("PATCH /api/admin/support/tickets/{id}/status", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(supportHandler.ChangeTicketStatus))))
+	mux.Handle("POST /api/admin/support/tickets/{id}/reassign", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(supportHandler.ReassignTicket))))
+	mux.Handle("PATCH /api/admin/support/agent/status", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(supportHandler.SetAgentStatus))))
+	mux.Handle("GET /api/admin/support/templates", authMW.RequireAuth(http.HandlerFunc(supportHandler.GetTemplates)))
 
 	// === SWAGGER ===
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
