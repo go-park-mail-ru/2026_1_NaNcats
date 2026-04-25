@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	ErrUnauthorized = errors.New("unauthorized action")
-	ErrInternal     = errors.New("internal server error")
+	ErrUnauthorized   = errors.New("unauthorized action")
+	ErrInternal       = errors.New("internal server error")
+	ErrTicketNotFound = errors.New("ticket not found")
 )
 
 type CreateTicketInput struct {
@@ -43,8 +44,8 @@ type Ticket struct {
 
 type SupportClient interface {
 	CreateTicket(ctx context.Context, input CreateTicketInput, idempotencyKey string) (string, error)
-	GetUserTickets(ctx context.Context, clientID *int64, guestID *string) ([]Ticket, error)
 	SendMessage(ctx context.Context, input SendMessageInput, idempotencyKey string) (int64, error)
+	GetUserTickets(ctx context.Context, clientID *int64, guestID *string) ([]Ticket, error)
 }
 
 type supportClient struct {
@@ -83,6 +84,30 @@ func (c *supportClient) CreateTicket(ctx context.Context, input CreateTicketInpu
 	}
 
 	return resp.PublicId, nil
+}
+
+func (c *supportClient) SendMessage(ctx context.Context, input SendMessageInput, idempotencyKey string) (int64, error) {
+	req := &pbSupport.SendMessageRequest{
+		TicketId:       input.TicketID,
+		AuthorRole:     input.AuthorRole,
+		Message:        input.Message,
+		IdempotencyKey: idempotencyKey,
+	}
+
+	if input.AuthorID != nil {
+		req.AuthorId = *input.AuthorID
+	}
+
+	resp, err := c.client.SendMessage(ctx, req)
+	if err != nil {
+		st, ok := status.FromError(err)
+		if ok && st.Code() == codes.NotFound {
+			return 0, ErrTicketNotFound
+		}
+		return 0, ErrInternal
+	}
+
+	return resp.Id, nil
 }
 
 func (c *supportClient) GetUserTickets(ctx context.Context, clientID *int64, guestID *string) ([]Ticket, error) {
