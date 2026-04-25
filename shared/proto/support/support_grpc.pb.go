@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -19,26 +20,47 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SupportService_CreateTicket_FullMethodName      = "/support.SupportService/CreateTicket"
-	SupportService_SendMessage_FullMethodName       = "/support.SupportService/SendMessage"
-	SupportService_GetUserTickets_FullMethodName    = "/support.SupportService/GetUserTickets"
-	SupportService_GetTicketMessages_FullMethodName = "/support.SupportService/GetTicketMessages"
+	SupportService_CreateTicket_FullMethodName       = "/support.SupportService/CreateTicket"
+	SupportService_SendMessage_FullMethodName        = "/support.SupportService/SendMessage"
+	SupportService_GetUserTickets_FullMethodName     = "/support.SupportService/GetUserTickets"
+	SupportService_GetTicketEvents_FullMethodName    = "/support.SupportService/GetTicketEvents"
+	SupportService_RateTicket_FullMethodName         = "/support.SupportService/RateTicket"
+	SupportService_GetAssignedTickets_FullMethodName = "/support.SupportService/GetAssignedTickets"
+	SupportService_ChangeTicketStatus_FullMethodName = "/support.SupportService/ChangeTicketStatus"
+	SupportService_ReassignTicket_FullMethodName     = "/support.SupportService/ReassignTicket"
+	SupportService_SetAgentStatus_FullMethodName     = "/support.SupportService/SetAgentStatus"
+	SupportService_GetCategories_FullMethodName      = "/support.SupportService/GetCategories"
+	SupportService_GetTemplates_FullMethodName       = "/support.SupportService/GetTemplates"
 )
 
 // SupportServiceClient is the client API for SupportService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// Микросервис тех поддержки
+// Микросервис техподдержки
 type SupportServiceClient interface {
 	// Метод создания тикета
-	CreateTicket(ctx context.Context, in *CreateTicketRequest, opts ...grpc.CallOption) (*TicketResponse, error)
+	CreateTicket(ctx context.Context, in *CreateTicketRequest, opts ...grpc.CallOption) (*CreateTicketResponse, error)
 	// Метод отправки сообщения
-	SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*MessageResponse, error)
-	// Метод получения тикетов конкретного юзера
+	SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*EventResponse, error)
+	// Метод получения тикетов юзера
 	GetUserTickets(ctx context.Context, in *GetUserTicketsRequest, opts ...grpc.CallOption) (*TicketListResponse, error)
-	// Получение сообщений тикета
-	GetTicketMessages(ctx context.Context, in *GetTicketMessagesRequest, opts ...grpc.CallOption) (*MessageListResponse, error)
+	// Метод получения эвента
+	GetTicketEvents(ctx context.Context, in *GetTicketEventsRequest, opts ...grpc.CallOption) (*EventListResponse, error)
+	// Метод оценки тикета
+	RateTicket(ctx context.Context, in *RateTicketRequest, opts ...grpc.CallOption) (*SuccessResponse, error)
+	// Метод получения связанных тикетов
+	GetAssignedTickets(ctx context.Context, in *GetAssignedTicketsRequest, opts ...grpc.CallOption) (*TicketListResponse, error)
+	// Метод изменения статуса тикета
+	ChangeTicketStatus(ctx context.Context, in *ChangeTicketStatusRequest, opts ...grpc.CallOption) (*SuccessResponse, error)
+	// Метод передачи тикета другому
+	ReassignTicket(ctx context.Context, in *ReassignTicketRequest, opts ...grpc.CallOption) (*SuccessResponse, error)
+	// Метод
+	SetAgentStatus(ctx context.Context, in *SetAgentStatusRequest, opts ...grpc.CallOption) (*SuccessResponse, error)
+	// Метод получения категорий обращенийы
+	GetCategories(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*CategoryListResponse, error)
+	// Метод получения шаблонных ответов
+	GetTemplates(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*TemplateListResponse, error)
 }
 
 type supportServiceClient struct {
@@ -49,9 +71,9 @@ func NewSupportServiceClient(cc grpc.ClientConnInterface) SupportServiceClient {
 	return &supportServiceClient{cc}
 }
 
-func (c *supportServiceClient) CreateTicket(ctx context.Context, in *CreateTicketRequest, opts ...grpc.CallOption) (*TicketResponse, error) {
+func (c *supportServiceClient) CreateTicket(ctx context.Context, in *CreateTicketRequest, opts ...grpc.CallOption) (*CreateTicketResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(TicketResponse)
+	out := new(CreateTicketResponse)
 	err := c.cc.Invoke(ctx, SupportService_CreateTicket_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -59,9 +81,9 @@ func (c *supportServiceClient) CreateTicket(ctx context.Context, in *CreateTicke
 	return out, nil
 }
 
-func (c *supportServiceClient) SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*MessageResponse, error) {
+func (c *supportServiceClient) SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*EventResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(MessageResponse)
+	out := new(EventResponse)
 	err := c.cc.Invoke(ctx, SupportService_SendMessage_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -79,10 +101,80 @@ func (c *supportServiceClient) GetUserTickets(ctx context.Context, in *GetUserTi
 	return out, nil
 }
 
-func (c *supportServiceClient) GetTicketMessages(ctx context.Context, in *GetTicketMessagesRequest, opts ...grpc.CallOption) (*MessageListResponse, error) {
+func (c *supportServiceClient) GetTicketEvents(ctx context.Context, in *GetTicketEventsRequest, opts ...grpc.CallOption) (*EventListResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(MessageListResponse)
-	err := c.cc.Invoke(ctx, SupportService_GetTicketMessages_FullMethodName, in, out, cOpts...)
+	out := new(EventListResponse)
+	err := c.cc.Invoke(ctx, SupportService_GetTicketEvents_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *supportServiceClient) RateTicket(ctx context.Context, in *RateTicketRequest, opts ...grpc.CallOption) (*SuccessResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SuccessResponse)
+	err := c.cc.Invoke(ctx, SupportService_RateTicket_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *supportServiceClient) GetAssignedTickets(ctx context.Context, in *GetAssignedTicketsRequest, opts ...grpc.CallOption) (*TicketListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TicketListResponse)
+	err := c.cc.Invoke(ctx, SupportService_GetAssignedTickets_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *supportServiceClient) ChangeTicketStatus(ctx context.Context, in *ChangeTicketStatusRequest, opts ...grpc.CallOption) (*SuccessResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SuccessResponse)
+	err := c.cc.Invoke(ctx, SupportService_ChangeTicketStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *supportServiceClient) ReassignTicket(ctx context.Context, in *ReassignTicketRequest, opts ...grpc.CallOption) (*SuccessResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SuccessResponse)
+	err := c.cc.Invoke(ctx, SupportService_ReassignTicket_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *supportServiceClient) SetAgentStatus(ctx context.Context, in *SetAgentStatusRequest, opts ...grpc.CallOption) (*SuccessResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SuccessResponse)
+	err := c.cc.Invoke(ctx, SupportService_SetAgentStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *supportServiceClient) GetCategories(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*CategoryListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CategoryListResponse)
+	err := c.cc.Invoke(ctx, SupportService_GetCategories_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *supportServiceClient) GetTemplates(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*TemplateListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TemplateListResponse)
+	err := c.cc.Invoke(ctx, SupportService_GetTemplates_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -93,16 +185,30 @@ func (c *supportServiceClient) GetTicketMessages(ctx context.Context, in *GetTic
 // All implementations must embed UnimplementedSupportServiceServer
 // for forward compatibility.
 //
-// Микросервис тех поддержки
+// Микросервис техподдержки
 type SupportServiceServer interface {
 	// Метод создания тикета
-	CreateTicket(context.Context, *CreateTicketRequest) (*TicketResponse, error)
+	CreateTicket(context.Context, *CreateTicketRequest) (*CreateTicketResponse, error)
 	// Метод отправки сообщения
-	SendMessage(context.Context, *SendMessageRequest) (*MessageResponse, error)
-	// Метод получения тикетов конкретного юзера
+	SendMessage(context.Context, *SendMessageRequest) (*EventResponse, error)
+	// Метод получения тикетов юзера
 	GetUserTickets(context.Context, *GetUserTicketsRequest) (*TicketListResponse, error)
-	// Получение сообщений тикета
-	GetTicketMessages(context.Context, *GetTicketMessagesRequest) (*MessageListResponse, error)
+	// Метод получения эвента
+	GetTicketEvents(context.Context, *GetTicketEventsRequest) (*EventListResponse, error)
+	// Метод оценки тикета
+	RateTicket(context.Context, *RateTicketRequest) (*SuccessResponse, error)
+	// Метод получения связанных тикетов
+	GetAssignedTickets(context.Context, *GetAssignedTicketsRequest) (*TicketListResponse, error)
+	// Метод изменения статуса тикета
+	ChangeTicketStatus(context.Context, *ChangeTicketStatusRequest) (*SuccessResponse, error)
+	// Метод передачи тикета другому
+	ReassignTicket(context.Context, *ReassignTicketRequest) (*SuccessResponse, error)
+	// Метод
+	SetAgentStatus(context.Context, *SetAgentStatusRequest) (*SuccessResponse, error)
+	// Метод получения категорий обращенийы
+	GetCategories(context.Context, *emptypb.Empty) (*CategoryListResponse, error)
+	// Метод получения шаблонных ответов
+	GetTemplates(context.Context, *emptypb.Empty) (*TemplateListResponse, error)
 	mustEmbedUnimplementedSupportServiceServer()
 }
 
@@ -113,17 +219,38 @@ type SupportServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedSupportServiceServer struct{}
 
-func (UnimplementedSupportServiceServer) CreateTicket(context.Context, *CreateTicketRequest) (*TicketResponse, error) {
+func (UnimplementedSupportServiceServer) CreateTicket(context.Context, *CreateTicketRequest) (*CreateTicketResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateTicket not implemented")
 }
-func (UnimplementedSupportServiceServer) SendMessage(context.Context, *SendMessageRequest) (*MessageResponse, error) {
+func (UnimplementedSupportServiceServer) SendMessage(context.Context, *SendMessageRequest) (*EventResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SendMessage not implemented")
 }
 func (UnimplementedSupportServiceServer) GetUserTickets(context.Context, *GetUserTicketsRequest) (*TicketListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUserTickets not implemented")
 }
-func (UnimplementedSupportServiceServer) GetTicketMessages(context.Context, *GetTicketMessagesRequest) (*MessageListResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetTicketMessages not implemented")
+func (UnimplementedSupportServiceServer) GetTicketEvents(context.Context, *GetTicketEventsRequest) (*EventListResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTicketEvents not implemented")
+}
+func (UnimplementedSupportServiceServer) RateTicket(context.Context, *RateTicketRequest) (*SuccessResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RateTicket not implemented")
+}
+func (UnimplementedSupportServiceServer) GetAssignedTickets(context.Context, *GetAssignedTicketsRequest) (*TicketListResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAssignedTickets not implemented")
+}
+func (UnimplementedSupportServiceServer) ChangeTicketStatus(context.Context, *ChangeTicketStatusRequest) (*SuccessResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ChangeTicketStatus not implemented")
+}
+func (UnimplementedSupportServiceServer) ReassignTicket(context.Context, *ReassignTicketRequest) (*SuccessResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReassignTicket not implemented")
+}
+func (UnimplementedSupportServiceServer) SetAgentStatus(context.Context, *SetAgentStatusRequest) (*SuccessResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetAgentStatus not implemented")
+}
+func (UnimplementedSupportServiceServer) GetCategories(context.Context, *emptypb.Empty) (*CategoryListResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetCategories not implemented")
+}
+func (UnimplementedSupportServiceServer) GetTemplates(context.Context, *emptypb.Empty) (*TemplateListResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTemplates not implemented")
 }
 func (UnimplementedSupportServiceServer) mustEmbedUnimplementedSupportServiceServer() {}
 func (UnimplementedSupportServiceServer) testEmbeddedByValue()                        {}
@@ -200,20 +327,146 @@ func _SupportService_GetUserTickets_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SupportService_GetTicketMessages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetTicketMessagesRequest)
+func _SupportService_GetTicketEvents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTicketEventsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SupportServiceServer).GetTicketMessages(ctx, in)
+		return srv.(SupportServiceServer).GetTicketEvents(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SupportService_GetTicketMessages_FullMethodName,
+		FullMethod: SupportService_GetTicketEvents_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SupportServiceServer).GetTicketMessages(ctx, req.(*GetTicketMessagesRequest))
+		return srv.(SupportServiceServer).GetTicketEvents(ctx, req.(*GetTicketEventsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SupportService_RateTicket_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RateTicketRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SupportServiceServer).RateTicket(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SupportService_RateTicket_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SupportServiceServer).RateTicket(ctx, req.(*RateTicketRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SupportService_GetAssignedTickets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAssignedTicketsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SupportServiceServer).GetAssignedTickets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SupportService_GetAssignedTickets_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SupportServiceServer).GetAssignedTickets(ctx, req.(*GetAssignedTicketsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SupportService_ChangeTicketStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangeTicketStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SupportServiceServer).ChangeTicketStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SupportService_ChangeTicketStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SupportServiceServer).ChangeTicketStatus(ctx, req.(*ChangeTicketStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SupportService_ReassignTicket_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReassignTicketRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SupportServiceServer).ReassignTicket(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SupportService_ReassignTicket_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SupportServiceServer).ReassignTicket(ctx, req.(*ReassignTicketRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SupportService_SetAgentStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetAgentStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SupportServiceServer).SetAgentStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SupportService_SetAgentStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SupportServiceServer).SetAgentStatus(ctx, req.(*SetAgentStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SupportService_GetCategories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SupportServiceServer).GetCategories(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SupportService_GetCategories_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SupportServiceServer).GetCategories(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SupportService_GetTemplates_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SupportServiceServer).GetTemplates(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SupportService_GetTemplates_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SupportServiceServer).GetTemplates(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -238,8 +491,36 @@ var SupportService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SupportService_GetUserTickets_Handler,
 		},
 		{
-			MethodName: "GetTicketMessages",
-			Handler:    _SupportService_GetTicketMessages_Handler,
+			MethodName: "GetTicketEvents",
+			Handler:    _SupportService_GetTicketEvents_Handler,
+		},
+		{
+			MethodName: "RateTicket",
+			Handler:    _SupportService_RateTicket_Handler,
+		},
+		{
+			MethodName: "GetAssignedTickets",
+			Handler:    _SupportService_GetAssignedTickets_Handler,
+		},
+		{
+			MethodName: "ChangeTicketStatus",
+			Handler:    _SupportService_ChangeTicketStatus_Handler,
+		},
+		{
+			MethodName: "ReassignTicket",
+			Handler:    _SupportService_ReassignTicket_Handler,
+		},
+		{
+			MethodName: "SetAgentStatus",
+			Handler:    _SupportService_SetAgentStatus_Handler,
+		},
+		{
+			MethodName: "GetCategories",
+			Handler:    _SupportService_GetCategories_Handler,
+		},
+		{
+			MethodName: "GetTemplates",
+			Handler:    _SupportService_GetTemplates_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

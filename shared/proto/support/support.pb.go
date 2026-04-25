@@ -9,6 +9,7 @@ package support
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -22,6 +23,242 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type TicketResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	PublicId         string                 `protobuf:"bytes,2,opt,name=public_id,json=publicId,proto3" json:"public_id,omitempty"`
+	CategoryId       int64                  `protobuf:"varint,3,opt,name=category_id,json=categoryId,proto3" json:"category_id,omitempty"`
+	CurrentStatus    string                 `protobuf:"bytes,4,opt,name=current_status,json=currentStatus,proto3" json:"current_status,omitempty"`
+	SupportLine      int64                  `protobuf:"varint,5,opt,name=support_line,json=supportLine,proto3" json:"support_line,omitempty"`
+	AssigneeId       int64                  `protobuf:"varint,6,opt,name=assignee_id,json=assigneeId,proto3" json:"assignee_id,omitempty"`
+	ResolutionRating int32                  `protobuf:"varint,7,opt,name=resolution_rating,json=resolutionRating,proto3" json:"resolution_rating,omitempty"`
+	CreatedAt        *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *TicketResponse) Reset() {
+	*x = TicketResponse{}
+	mi := &file_support_support_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TicketResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TicketResponse) ProtoMessage() {}
+
+func (x *TicketResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_support_support_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TicketResponse.ProtoReflect.Descriptor instead.
+func (*TicketResponse) Descriptor() ([]byte, []int) {
+	return file_support_support_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *TicketResponse) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *TicketResponse) GetPublicId() string {
+	if x != nil {
+		return x.PublicId
+	}
+	return ""
+}
+
+func (x *TicketResponse) GetCategoryId() int64 {
+	if x != nil {
+		return x.CategoryId
+	}
+	return 0
+}
+
+func (x *TicketResponse) GetCurrentStatus() string {
+	if x != nil {
+		return x.CurrentStatus
+	}
+	return ""
+}
+
+func (x *TicketResponse) GetSupportLine() int64 {
+	if x != nil {
+		return x.SupportLine
+	}
+	return 0
+}
+
+func (x *TicketResponse) GetAssigneeId() int64 {
+	if x != nil {
+		return x.AssigneeId
+	}
+	return 0
+}
+
+func (x *TicketResponse) GetResolutionRating() int32 {
+	if x != nil {
+		return x.ResolutionRating
+	}
+	return 0
+}
+
+func (x *TicketResponse) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+type Event struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	TicketId      int64                  `protobuf:"varint,2,opt,name=ticket_id,json=ticketId,proto3" json:"ticket_id,omitempty"`
+	AuthorId      int64                  `protobuf:"varint,3,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"`
+	AuthorRole    string                 `protobuf:"bytes,4,opt,name=author_role,json=authorRole,proto3" json:"author_role,omitempty"`
+	EventType     string                 `protobuf:"bytes,5,opt,name=event_type,json=eventType,proto3" json:"event_type,omitempty"`
+	Payload       string                 `protobuf:"bytes,6,opt,name=payload,proto3" json:"payload,omitempty"` // JSON строка (содержимое зависит от event_type)
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Event) Reset() {
+	*x = Event{}
+	mi := &file_support_support_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Event) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Event) ProtoMessage() {}
+
+func (x *Event) ProtoReflect() protoreflect.Message {
+	mi := &file_support_support_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Event.ProtoReflect.Descriptor instead.
+func (*Event) Descriptor() ([]byte, []int) {
+	return file_support_support_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Event) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *Event) GetTicketId() int64 {
+	if x != nil {
+		return x.TicketId
+	}
+	return 0
+}
+
+func (x *Event) GetAuthorId() int64 {
+	if x != nil {
+		return x.AuthorId
+	}
+	return 0
+}
+
+func (x *Event) GetAuthorRole() string {
+	if x != nil {
+		return x.AuthorRole
+	}
+	return ""
+}
+
+func (x *Event) GetEventType() string {
+	if x != nil {
+		return x.EventType
+	}
+	return ""
+}
+
+func (x *Event) GetPayload() string {
+	if x != nil {
+		return x.Payload
+	}
+	return ""
+}
+
+func (x *Event) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+type SuccessResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SuccessResponse) Reset() {
+	*x = SuccessResponse{}
+	mi := &file_support_support_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SuccessResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SuccessResponse) ProtoMessage() {}
+
+func (x *SuccessResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_support_support_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SuccessResponse.ProtoReflect.Descriptor instead.
+func (*SuccessResponse) Descriptor() ([]byte, []int) {
+	return file_support_support_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *SuccessResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
 type CreateTicketRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	ClientId       int64                  `protobuf:"varint,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"` // 0, если гость
@@ -29,7 +266,7 @@ type CreateTicketRequest struct {
 	ContactEmail   string                 `protobuf:"bytes,3,opt,name=contact_email,json=contactEmail,proto3" json:"contact_email,omitempty"`
 	CategoryId     int64                  `protobuf:"varint,4,opt,name=category_id,json=categoryId,proto3" json:"category_id,omitempty"`
 	InitialMessage string                 `protobuf:"bytes,5,opt,name=initial_message,json=initialMessage,proto3" json:"initial_message,omitempty"`
-	ClientMeta     string                 `protobuf:"bytes,6,opt,name=client_meta,json=clientMeta,proto3" json:"client_meta,omitempty"`
+	ClientMeta     string                 `protobuf:"bytes,6,opt,name=client_meta,json=clientMeta,proto3" json:"client_meta,omitempty"` // JSON строка
 	IdempotencyKey string                 `protobuf:"bytes,7,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -37,7 +274,7 @@ type CreateTicketRequest struct {
 
 func (x *CreateTicketRequest) Reset() {
 	*x = CreateTicketRequest{}
-	mi := &file_support_support_proto_msgTypes[0]
+	mi := &file_support_support_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -49,7 +286,7 @@ func (x *CreateTicketRequest) String() string {
 func (*CreateTicketRequest) ProtoMessage() {}
 
 func (x *CreateTicketRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[0]
+	mi := &file_support_support_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -62,7 +299,7 @@ func (x *CreateTicketRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTicketRequest.ProtoReflect.Descriptor instead.
 func (*CreateTicketRequest) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{0}
+	return file_support_support_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CreateTicketRequest) GetClientId() int64 {
@@ -114,9 +351,53 @@ func (x *CreateTicketRequest) GetIdempotencyKey() string {
 	return ""
 }
 
+type CreateTicketResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PublicId      string                 `protobuf:"bytes,1,opt,name=public_id,json=publicId,proto3" json:"public_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateTicketResponse) Reset() {
+	*x = CreateTicketResponse{}
+	mi := &file_support_support_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateTicketResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateTicketResponse) ProtoMessage() {}
+
+func (x *CreateTicketResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_support_support_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateTicketResponse.ProtoReflect.Descriptor instead.
+func (*CreateTicketResponse) Descriptor() ([]byte, []int) {
+	return file_support_support_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *CreateTicketResponse) GetPublicId() string {
+	if x != nil {
+		return x.PublicId
+	}
+	return ""
+}
+
 type SendMessageRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	TicketId       int64                  `protobuf:"varint,1,opt,name=ticket_id,json=ticketId,proto3" json:"ticket_id,omitempty"`
+	TicketPublicId string                 `protobuf:"bytes,1,opt,name=ticket_public_id,json=ticketPublicId,proto3" json:"ticket_public_id,omitempty"`
 	AuthorId       int64                  `protobuf:"varint,2,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"`
 	AuthorRole     string                 `protobuf:"bytes,3,opt,name=author_role,json=authorRole,proto3" json:"author_role,omitempty"`
 	Message        string                 `protobuf:"bytes,4,opt,name=message,proto3" json:"message,omitempty"`
@@ -127,7 +408,7 @@ type SendMessageRequest struct {
 
 func (x *SendMessageRequest) Reset() {
 	*x = SendMessageRequest{}
-	mi := &file_support_support_proto_msgTypes[1]
+	mi := &file_support_support_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -139,7 +420,7 @@ func (x *SendMessageRequest) String() string {
 func (*SendMessageRequest) ProtoMessage() {}
 
 func (x *SendMessageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[1]
+	mi := &file_support_support_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -152,14 +433,14 @@ func (x *SendMessageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendMessageRequest.ProtoReflect.Descriptor instead.
 func (*SendMessageRequest) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{1}
+	return file_support_support_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *SendMessageRequest) GetTicketId() int64 {
+func (x *SendMessageRequest) GetTicketPublicId() string {
 	if x != nil {
-		return x.TicketId
+		return x.TicketPublicId
 	}
-	return 0
+	return ""
 }
 
 func (x *SendMessageRequest) GetAuthorId() int64 {
@@ -190,33 +471,29 @@ func (x *SendMessageRequest) GetIdempotencyKey() string {
 	return ""
 }
 
-type Message struct {
+type EventResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	TicketId      int64                  `protobuf:"varint,2,opt,name=ticket_id,json=ticketId,proto3" json:"ticket_id,omitempty"`
-	AuthorId      int64                  `protobuf:"varint,3,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"`
-	AuthorRole    string                 `protobuf:"bytes,4,opt,name=author_role,json=authorRole,proto3" json:"author_role,omitempty"`
-	Text          string                 `protobuf:"bytes,5,opt,name=text,proto3" json:"text,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Message) Reset() {
-	*x = Message{}
-	mi := &file_support_support_proto_msgTypes[2]
+func (x *EventResponse) Reset() {
+	*x = EventResponse{}
+	mi := &file_support_support_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Message) String() string {
+func (x *EventResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Message) ProtoMessage() {}
+func (*EventResponse) ProtoMessage() {}
 
-func (x *Message) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[2]
+func (x *EventResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_support_support_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -227,47 +504,19 @@ func (x *Message) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Message.ProtoReflect.Descriptor instead.
-func (*Message) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{2}
+// Deprecated: Use EventResponse.ProtoReflect.Descriptor instead.
+func (*EventResponse) Descriptor() ([]byte, []int) {
+	return file_support_support_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *Message) GetId() int64 {
+func (x *EventResponse) GetId() int64 {
 	if x != nil {
 		return x.Id
 	}
 	return 0
 }
 
-func (x *Message) GetTicketId() int64 {
-	if x != nil {
-		return x.TicketId
-	}
-	return 0
-}
-
-func (x *Message) GetAuthorId() int64 {
-	if x != nil {
-		return x.AuthorId
-	}
-	return 0
-}
-
-func (x *Message) GetAuthorRole() string {
-	if x != nil {
-		return x.AuthorRole
-	}
-	return ""
-}
-
-func (x *Message) GetText() string {
-	if x != nil {
-		return x.Text
-	}
-	return ""
-}
-
-func (x *Message) GetCreatedAt() *timestamppb.Timestamp {
+func (x *EventResponse) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
 	}
@@ -284,7 +533,7 @@ type GetUserTicketsRequest struct {
 
 func (x *GetUserTicketsRequest) Reset() {
 	*x = GetUserTicketsRequest{}
-	mi := &file_support_support_proto_msgTypes[3]
+	mi := &file_support_support_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -296,7 +545,7 @@ func (x *GetUserTicketsRequest) String() string {
 func (*GetUserTicketsRequest) ProtoMessage() {}
 
 func (x *GetUserTicketsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[3]
+	mi := &file_support_support_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -309,7 +558,7 @@ func (x *GetUserTicketsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserTicketsRequest.ProtoReflect.Descriptor instead.
 func (*GetUserTicketsRequest) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{3}
+	return file_support_support_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GetUserTicketsRequest) GetClientId() int64 {
@@ -326,28 +575,30 @@ func (x *GetUserTicketsRequest) GetGuestId() string {
 	return ""
 }
 
-type GetTicketMessagesRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	TicketId      int64                  `protobuf:"varint,1,opt,name=ticket_id,json=ticketId,proto3" json:"ticket_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+type GetTicketEventsRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	TicketPublicId string                 `protobuf:"bytes,1,opt,name=ticket_public_id,json=ticketPublicId,proto3" json:"ticket_public_id,omitempty"`
+	ClientId       int64                  `protobuf:"varint,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"` // Для проверки прав доступа к тикету
+	GuestId        string                 `protobuf:"bytes,3,opt,name=guest_id,json=guestId,proto3" json:"guest_id,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
-func (x *GetTicketMessagesRequest) Reset() {
-	*x = GetTicketMessagesRequest{}
-	mi := &file_support_support_proto_msgTypes[4]
+func (x *GetTicketEventsRequest) Reset() {
+	*x = GetTicketEventsRequest{}
+	mi := &file_support_support_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetTicketMessagesRequest) String() string {
+func (x *GetTicketEventsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetTicketMessagesRequest) ProtoMessage() {}
+func (*GetTicketEventsRequest) ProtoMessage() {}
 
-func (x *GetTicketMessagesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[4]
+func (x *GetTicketEventsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_support_support_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -358,136 +609,30 @@ func (x *GetTicketMessagesRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetTicketMessagesRequest.ProtoReflect.Descriptor instead.
-func (*GetTicketMessagesRequest) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{4}
+// Deprecated: Use GetTicketEventsRequest.ProtoReflect.Descriptor instead.
+func (*GetTicketEventsRequest) Descriptor() ([]byte, []int) {
+	return file_support_support_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *GetTicketMessagesRequest) GetTicketId() int64 {
+func (x *GetTicketEventsRequest) GetTicketPublicId() string {
 	if x != nil {
-		return x.TicketId
-	}
-	return 0
-}
-
-type TicketResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	PublicId      string                 `protobuf:"bytes,2,opt,name=public_id,json=publicId,proto3" json:"public_id,omitempty"`
-	CurrentStatus string                 `protobuf:"bytes,3,opt,name=current_status,json=currentStatus,proto3" json:"current_status,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *TicketResponse) Reset() {
-	*x = TicketResponse{}
-	mi := &file_support_support_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *TicketResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TicketResponse) ProtoMessage() {}
-
-func (x *TicketResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use TicketResponse.ProtoReflect.Descriptor instead.
-func (*TicketResponse) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *TicketResponse) GetId() int64 {
-	if x != nil {
-		return x.Id
-	}
-	return 0
-}
-
-func (x *TicketResponse) GetPublicId() string {
-	if x != nil {
-		return x.PublicId
+		return x.TicketPublicId
 	}
 	return ""
 }
 
-func (x *TicketResponse) GetCurrentStatus() string {
+func (x *GetTicketEventsRequest) GetClientId() int64 {
 	if x != nil {
-		return x.CurrentStatus
-	}
-	return ""
-}
-
-func (x *TicketResponse) GetCreatedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.CreatedAt
-	}
-	return nil
-}
-
-type MessageResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *MessageResponse) Reset() {
-	*x = MessageResponse{}
-	mi := &file_support_support_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *MessageResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MessageResponse) ProtoMessage() {}
-
-func (x *MessageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MessageResponse.ProtoReflect.Descriptor instead.
-func (*MessageResponse) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *MessageResponse) GetId() int64 {
-	if x != nil {
-		return x.Id
+		return x.ClientId
 	}
 	return 0
 }
 
-func (x *MessageResponse) GetCreatedAt() *timestamppb.Timestamp {
+func (x *GetTicketEventsRequest) GetGuestId() string {
 	if x != nil {
-		return x.CreatedAt
+		return x.GuestId
 	}
-	return nil
+	return ""
 }
 
 type TicketListResponse struct {
@@ -499,7 +644,7 @@ type TicketListResponse struct {
 
 func (x *TicketListResponse) Reset() {
 	*x = TicketListResponse{}
-	mi := &file_support_support_proto_msgTypes[7]
+	mi := &file_support_support_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -511,7 +656,7 @@ func (x *TicketListResponse) String() string {
 func (*TicketListResponse) ProtoMessage() {}
 
 func (x *TicketListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[7]
+	mi := &file_support_support_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -524,7 +669,7 @@ func (x *TicketListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TicketListResponse.ProtoReflect.Descriptor instead.
 func (*TicketListResponse) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{7}
+	return file_support_support_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *TicketListResponse) GetTickets() []*TicketResponse {
@@ -534,28 +679,28 @@ func (x *TicketListResponse) GetTickets() []*TicketResponse {
 	return nil
 }
 
-type MessageListResponse struct {
+type EventListResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Messages      []*Message             `protobuf:"bytes,1,rep,name=messages,proto3" json:"messages,omitempty"`
+	Events        []*Event               `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *MessageListResponse) Reset() {
-	*x = MessageListResponse{}
-	mi := &file_support_support_proto_msgTypes[8]
+func (x *EventListResponse) Reset() {
+	*x = EventListResponse{}
+	mi := &file_support_support_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *MessageListResponse) String() string {
+func (x *EventListResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*MessageListResponse) ProtoMessage() {}
+func (*EventListResponse) ProtoMessage() {}
 
-func (x *MessageListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[8]
+func (x *EventListResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_support_support_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -566,14 +711,538 @@ func (x *MessageListResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use MessageListResponse.ProtoReflect.Descriptor instead.
-func (*MessageListResponse) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{8}
+// Deprecated: Use EventListResponse.ProtoReflect.Descriptor instead.
+func (*EventListResponse) Descriptor() ([]byte, []int) {
+	return file_support_support_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *MessageListResponse) GetMessages() []*Message {
+func (x *EventListResponse) GetEvents() []*Event {
 	if x != nil {
-		return x.Messages
+		return x.Events
+	}
+	return nil
+}
+
+type RateTicketRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	TicketPublicId string                 `protobuf:"bytes,1,opt,name=ticket_public_id,json=ticketPublicId,proto3" json:"ticket_public_id,omitempty"`
+	Rating         int32                  `protobuf:"varint,2,opt,name=rating,proto3" json:"rating,omitempty"`
+	ClientId       int64                  `protobuf:"varint,3,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	IdempotencyKey string                 `protobuf:"bytes,4,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *RateTicketRequest) Reset() {
+	*x = RateTicketRequest{}
+	mi := &file_support_support_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RateTicketRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RateTicketRequest) ProtoMessage() {}
+
+func (x *RateTicketRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_support_support_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RateTicketRequest.ProtoReflect.Descriptor instead.
+func (*RateTicketRequest) Descriptor() ([]byte, []int) {
+	return file_support_support_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *RateTicketRequest) GetTicketPublicId() string {
+	if x != nil {
+		return x.TicketPublicId
+	}
+	return ""
+}
+
+func (x *RateTicketRequest) GetRating() int32 {
+	if x != nil {
+		return x.Rating
+	}
+	return 0
+}
+
+func (x *RateTicketRequest) GetClientId() int64 {
+	if x != nil {
+		return x.ClientId
+	}
+	return 0
+}
+
+func (x *RateTicketRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
+type GetAssignedTicketsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentId       int64                  `protobuf:"varint,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAssignedTicketsRequest) Reset() {
+	*x = GetAssignedTicketsRequest{}
+	mi := &file_support_support_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAssignedTicketsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAssignedTicketsRequest) ProtoMessage() {}
+
+func (x *GetAssignedTicketsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_support_support_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAssignedTicketsRequest.ProtoReflect.Descriptor instead.
+func (*GetAssignedTicketsRequest) Descriptor() ([]byte, []int) {
+	return file_support_support_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *GetAssignedTicketsRequest) GetAgentId() int64 {
+	if x != nil {
+		return x.AgentId
+	}
+	return 0
+}
+
+type ChangeTicketStatusRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	TicketPublicId string                 `protobuf:"bytes,1,opt,name=ticket_public_id,json=ticketPublicId,proto3" json:"ticket_public_id,omitempty"`
+	Status         string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	AgentId        int64                  `protobuf:"varint,3,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	IdempotencyKey string                 `protobuf:"bytes,4,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ChangeTicketStatusRequest) Reset() {
+	*x = ChangeTicketStatusRequest{}
+	mi := &file_support_support_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChangeTicketStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChangeTicketStatusRequest) ProtoMessage() {}
+
+func (x *ChangeTicketStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_support_support_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChangeTicketStatusRequest.ProtoReflect.Descriptor instead.
+func (*ChangeTicketStatusRequest) Descriptor() ([]byte, []int) {
+	return file_support_support_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ChangeTicketStatusRequest) GetTicketPublicId() string {
+	if x != nil {
+		return x.TicketPublicId
+	}
+	return ""
+}
+
+func (x *ChangeTicketStatusRequest) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *ChangeTicketStatusRequest) GetAgentId() int64 {
+	if x != nil {
+		return x.AgentId
+	}
+	return 0
+}
+
+func (x *ChangeTicketStatusRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
+type ReassignTicketRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	TicketPublicId string                 `protobuf:"bytes,1,opt,name=ticket_public_id,json=ticketPublicId,proto3" json:"ticket_public_id,omitempty"`
+	AgentId        int64                  `protobuf:"varint,2,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"` // Кому передаем
+	Line           int32                  `protobuf:"varint,3,opt,name=line,proto3" json:"line,omitempty"`                      // На какую линию
+	AuthorId       int64                  `protobuf:"varint,4,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"`
+	IdempotencyKey string                 `protobuf:"bytes,5,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ReassignTicketRequest) Reset() {
+	*x = ReassignTicketRequest{}
+	mi := &file_support_support_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReassignTicketRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReassignTicketRequest) ProtoMessage() {}
+
+func (x *ReassignTicketRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_support_support_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReassignTicketRequest.ProtoReflect.Descriptor instead.
+func (*ReassignTicketRequest) Descriptor() ([]byte, []int) {
+	return file_support_support_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *ReassignTicketRequest) GetTicketPublicId() string {
+	if x != nil {
+		return x.TicketPublicId
+	}
+	return ""
+}
+
+func (x *ReassignTicketRequest) GetAgentId() int64 {
+	if x != nil {
+		return x.AgentId
+	}
+	return 0
+}
+
+func (x *ReassignTicketRequest) GetLine() int32 {
+	if x != nil {
+		return x.Line
+	}
+	return 0
+}
+
+func (x *ReassignTicketRequest) GetAuthorId() int64 {
+	if x != nil {
+		return x.AuthorId
+	}
+	return 0
+}
+
+func (x *ReassignTicketRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
+type SetAgentStatusRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentId       int64                  `protobuf:"varint,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"` // online / offline
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetAgentStatusRequest) Reset() {
+	*x = SetAgentStatusRequest{}
+	mi := &file_support_support_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetAgentStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetAgentStatusRequest) ProtoMessage() {}
+
+func (x *SetAgentStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_support_support_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetAgentStatusRequest.ProtoReflect.Descriptor instead.
+func (*SetAgentStatusRequest) Descriptor() ([]byte, []int) {
+	return file_support_support_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *SetAgentStatusRequest) GetAgentId() int64 {
+	if x != nil {
+		return x.AgentId
+	}
+	return 0
+}
+
+func (x *SetAgentStatusRequest) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+type Category struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	DefaultLine   int32                  `protobuf:"varint,4,opt,name=default_line,json=defaultLine,proto3" json:"default_line,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Category) Reset() {
+	*x = Category{}
+	mi := &file_support_support_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Category) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Category) ProtoMessage() {}
+
+func (x *Category) ProtoReflect() protoreflect.Message {
+	mi := &file_support_support_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Category.ProtoReflect.Descriptor instead.
+func (*Category) Descriptor() ([]byte, []int) {
+	return file_support_support_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *Category) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *Category) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Category) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *Category) GetDefaultLine() int32 {
+	if x != nil {
+		return x.DefaultLine
+	}
+	return 0
+}
+
+type CategoryListResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Categories    []*Category            `protobuf:"bytes,1,rep,name=categories,proto3" json:"categories,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CategoryListResponse) Reset() {
+	*x = CategoryListResponse{}
+	mi := &file_support_support_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CategoryListResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CategoryListResponse) ProtoMessage() {}
+
+func (x *CategoryListResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_support_support_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CategoryListResponse.ProtoReflect.Descriptor instead.
+func (*CategoryListResponse) Descriptor() ([]byte, []int) {
+	return file_support_support_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *CategoryListResponse) GetCategories() []*Category {
+	if x != nil {
+		return x.Categories
+	}
+	return nil
+}
+
+type Template struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Content       string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Template) Reset() {
+	*x = Template{}
+	mi := &file_support_support_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Template) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Template) ProtoMessage() {}
+
+func (x *Template) ProtoReflect() protoreflect.Message {
+	mi := &file_support_support_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Template.ProtoReflect.Descriptor instead.
+func (*Template) Descriptor() ([]byte, []int) {
+	return file_support_support_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *Template) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *Template) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Template) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+type TemplateListResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Templates     []*Template            `protobuf:"bytes,1,rep,name=templates,proto3" json:"templates,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TemplateListResponse) Reset() {
+	*x = TemplateListResponse{}
+	mi := &file_support_support_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TemplateListResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TemplateListResponse) ProtoMessage() {}
+
+func (x *TemplateListResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_support_support_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TemplateListResponse.ProtoReflect.Descriptor instead.
+func (*TemplateListResponse) Descriptor() ([]byte, []int) {
+	return file_support_support_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *TemplateListResponse) GetTemplates() []*Template {
+	if x != nil {
+		return x.Templates
 	}
 	return nil
 }
@@ -582,7 +1251,32 @@ var File_support_support_proto protoreflect.FileDescriptor
 
 const file_support_support_proto_rawDesc = "" +
 	"\n" +
-	"\x15support/support.proto\x12\asupport\x1a\x1fgoogle/protobuf/timestamp.proto\"\x86\x02\n" +
+	"\x15support/support.proto\x12\asupport\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb1\x02\n" +
+	"\x0eTicketResponse\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1b\n" +
+	"\tpublic_id\x18\x02 \x01(\tR\bpublicId\x12\x1f\n" +
+	"\vcategory_id\x18\x03 \x01(\x03R\n" +
+	"categoryId\x12%\n" +
+	"\x0ecurrent_status\x18\x04 \x01(\tR\rcurrentStatus\x12!\n" +
+	"\fsupport_line\x18\x05 \x01(\x03R\vsupportLine\x12\x1f\n" +
+	"\vassignee_id\x18\x06 \x01(\x03R\n" +
+	"assigneeId\x12+\n" +
+	"\x11resolution_rating\x18\a \x01(\x05R\x10resolutionRating\x129\n" +
+	"\n" +
+	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xe6\x01\n" +
+	"\x05Event\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1b\n" +
+	"\tticket_id\x18\x02 \x01(\x03R\bticketId\x12\x1b\n" +
+	"\tauthor_id\x18\x03 \x01(\x03R\bauthorId\x12\x1f\n" +
+	"\vauthor_role\x18\x04 \x01(\tR\n" +
+	"authorRole\x12\x1d\n" +
+	"\n" +
+	"event_type\x18\x05 \x01(\tR\teventType\x12\x18\n" +
+	"\apayload\x18\x06 \x01(\tR\apayload\x129\n" +
+	"\n" +
+	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"+\n" +
+	"\x0fSuccessResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"\x86\x02\n" +
 	"\x13CreateTicketRequest\x12\x1b\n" +
 	"\tclient_id\x18\x01 \x01(\x03R\bclientId\x12\x19\n" +
 	"\bguest_id\x18\x02 \x01(\tR\aguestId\x12#\n" +
@@ -592,47 +1286,80 @@ const file_support_support_proto_rawDesc = "" +
 	"\x0finitial_message\x18\x05 \x01(\tR\x0einitialMessage\x12\x1f\n" +
 	"\vclient_meta\x18\x06 \x01(\tR\n" +
 	"clientMeta\x12'\n" +
-	"\x0fidempotency_key\x18\a \x01(\tR\x0eidempotencyKey\"\xb2\x01\n" +
-	"\x12SendMessageRequest\x12\x1b\n" +
-	"\tticket_id\x18\x01 \x01(\x03R\bticketId\x12\x1b\n" +
+	"\x0fidempotency_key\x18\a \x01(\tR\x0eidempotencyKey\"3\n" +
+	"\x14CreateTicketResponse\x12\x1b\n" +
+	"\tpublic_id\x18\x01 \x01(\tR\bpublicId\"\xbf\x01\n" +
+	"\x12SendMessageRequest\x12(\n" +
+	"\x10ticket_public_id\x18\x01 \x01(\tR\x0eticketPublicId\x12\x1b\n" +
 	"\tauthor_id\x18\x02 \x01(\x03R\bauthorId\x12\x1f\n" +
 	"\vauthor_role\x18\x03 \x01(\tR\n" +
 	"authorRole\x12\x18\n" +
 	"\amessage\x18\x04 \x01(\tR\amessage\x12'\n" +
-	"\x0fidempotency_key\x18\x05 \x01(\tR\x0eidempotencyKey\"\xc3\x01\n" +
-	"\aMessage\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1b\n" +
-	"\tticket_id\x18\x02 \x01(\x03R\bticketId\x12\x1b\n" +
-	"\tauthor_id\x18\x03 \x01(\x03R\bauthorId\x12\x1f\n" +
-	"\vauthor_role\x18\x04 \x01(\tR\n" +
-	"authorRole\x12\x12\n" +
-	"\x04text\x18\x05 \x01(\tR\x04text\x129\n" +
-	"\n" +
-	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"O\n" +
-	"\x15GetUserTicketsRequest\x12\x1b\n" +
-	"\tclient_id\x18\x01 \x01(\x03R\bclientId\x12\x19\n" +
-	"\bguest_id\x18\x02 \x01(\tR\aguestId\"7\n" +
-	"\x18GetTicketMessagesRequest\x12\x1b\n" +
-	"\tticket_id\x18\x01 \x01(\x03R\bticketId\"\x9f\x01\n" +
-	"\x0eTicketResponse\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1b\n" +
-	"\tpublic_id\x18\x02 \x01(\tR\bpublicId\x12%\n" +
-	"\x0ecurrent_status\x18\x03 \x01(\tR\rcurrentStatus\x129\n" +
-	"\n" +
-	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\\\n" +
-	"\x0fMessageResponse\x12\x0e\n" +
+	"\x0fidempotency_key\x18\x05 \x01(\tR\x0eidempotencyKey\"Z\n" +
+	"\rEventResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x129\n" +
 	"\n" +
-	"created_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"G\n" +
+	"created_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"O\n" +
+	"\x15GetUserTicketsRequest\x12\x1b\n" +
+	"\tclient_id\x18\x01 \x01(\x03R\bclientId\x12\x19\n" +
+	"\bguest_id\x18\x02 \x01(\tR\aguestId\"z\n" +
+	"\x16GetTicketEventsRequest\x12(\n" +
+	"\x10ticket_public_id\x18\x01 \x01(\tR\x0eticketPublicId\x12\x1b\n" +
+	"\tclient_id\x18\x02 \x01(\x03R\bclientId\x12\x19\n" +
+	"\bguest_id\x18\x03 \x01(\tR\aguestId\"G\n" +
 	"\x12TicketListResponse\x121\n" +
-	"\atickets\x18\x01 \x03(\v2\x17.support.TicketResponseR\atickets\"C\n" +
-	"\x13MessageListResponse\x12,\n" +
-	"\bmessages\x18\x01 \x03(\v2\x10.support.MessageR\bmessages2\xc2\x02\n" +
-	"\x0eSupportService\x12E\n" +
-	"\fCreateTicket\x12\x1c.support.CreateTicketRequest\x1a\x17.support.TicketResponse\x12D\n" +
-	"\vSendMessage\x12\x1b.support.SendMessageRequest\x1a\x18.support.MessageResponse\x12M\n" +
-	"\x0eGetUserTickets\x12\x1e.support.GetUserTicketsRequest\x1a\x1b.support.TicketListResponse\x12T\n" +
-	"\x11GetTicketMessages\x12!.support.GetTicketMessagesRequest\x1a\x1c.support.MessageListResponseB@Z>github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/supportb\x06proto3"
+	"\atickets\x18\x01 \x03(\v2\x17.support.TicketResponseR\atickets\";\n" +
+	"\x11EventListResponse\x12&\n" +
+	"\x06events\x18\x01 \x03(\v2\x0e.support.EventR\x06events\"\x9b\x01\n" +
+	"\x11RateTicketRequest\x12(\n" +
+	"\x10ticket_public_id\x18\x01 \x01(\tR\x0eticketPublicId\x12\x16\n" +
+	"\x06rating\x18\x02 \x01(\x05R\x06rating\x12\x1b\n" +
+	"\tclient_id\x18\x03 \x01(\x03R\bclientId\x12'\n" +
+	"\x0fidempotency_key\x18\x04 \x01(\tR\x0eidempotencyKey\"6\n" +
+	"\x19GetAssignedTicketsRequest\x12\x19\n" +
+	"\bagent_id\x18\x01 \x01(\x03R\aagentId\"\xa1\x01\n" +
+	"\x19ChangeTicketStatusRequest\x12(\n" +
+	"\x10ticket_public_id\x18\x01 \x01(\tR\x0eticketPublicId\x12\x16\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\x12\x19\n" +
+	"\bagent_id\x18\x03 \x01(\x03R\aagentId\x12'\n" +
+	"\x0fidempotency_key\x18\x04 \x01(\tR\x0eidempotencyKey\"\xb6\x01\n" +
+	"\x15ReassignTicketRequest\x12(\n" +
+	"\x10ticket_public_id\x18\x01 \x01(\tR\x0eticketPublicId\x12\x19\n" +
+	"\bagent_id\x18\x02 \x01(\x03R\aagentId\x12\x12\n" +
+	"\x04line\x18\x03 \x01(\x05R\x04line\x12\x1b\n" +
+	"\tauthor_id\x18\x04 \x01(\x03R\bauthorId\x12'\n" +
+	"\x0fidempotency_key\x18\x05 \x01(\tR\x0eidempotencyKey\"J\n" +
+	"\x15SetAgentStatusRequest\x12\x19\n" +
+	"\bagent_id\x18\x01 \x01(\x03R\aagentId\x12\x16\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\"s\n" +
+	"\bCategory\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12!\n" +
+	"\fdefault_line\x18\x04 \x01(\x05R\vdefaultLine\"I\n" +
+	"\x14CategoryListResponse\x121\n" +
+	"\n" +
+	"categories\x18\x01 \x03(\v2\x11.support.CategoryR\n" +
+	"categories\"H\n" +
+	"\bTemplate\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
+	"\acontent\x18\x03 \x01(\tR\acontent\"G\n" +
+	"\x14TemplateListResponse\x12/\n" +
+	"\ttemplates\x18\x01 \x03(\v2\x11.support.TemplateR\ttemplates2\xd6\x06\n" +
+	"\x0eSupportService\x12K\n" +
+	"\fCreateTicket\x12\x1c.support.CreateTicketRequest\x1a\x1d.support.CreateTicketResponse\x12B\n" +
+	"\vSendMessage\x12\x1b.support.SendMessageRequest\x1a\x16.support.EventResponse\x12M\n" +
+	"\x0eGetUserTickets\x12\x1e.support.GetUserTicketsRequest\x1a\x1b.support.TicketListResponse\x12N\n" +
+	"\x0fGetTicketEvents\x12\x1f.support.GetTicketEventsRequest\x1a\x1a.support.EventListResponse\x12B\n" +
+	"\n" +
+	"RateTicket\x12\x1a.support.RateTicketRequest\x1a\x18.support.SuccessResponse\x12U\n" +
+	"\x12GetAssignedTickets\x12\".support.GetAssignedTicketsRequest\x1a\x1b.support.TicketListResponse\x12R\n" +
+	"\x12ChangeTicketStatus\x12\".support.ChangeTicketStatusRequest\x1a\x18.support.SuccessResponse\x12J\n" +
+	"\x0eReassignTicket\x12\x1e.support.ReassignTicketRequest\x1a\x18.support.SuccessResponse\x12J\n" +
+	"\x0eSetAgentStatus\x12\x1e.support.SetAgentStatusRequest\x1a\x18.support.SuccessResponse\x12F\n" +
+	"\rGetCategories\x12\x16.google.protobuf.Empty\x1a\x1d.support.CategoryListResponse\x12E\n" +
+	"\fGetTemplates\x12\x16.google.protobuf.Empty\x1a\x1d.support.TemplateListResponseB@Z>github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/supportb\x06proto3"
 
 var (
 	file_support_support_proto_rawDescOnce sync.Once
@@ -646,38 +1373,66 @@ func file_support_support_proto_rawDescGZIP() []byte {
 	return file_support_support_proto_rawDescData
 }
 
-var file_support_support_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_support_support_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_support_support_proto_goTypes = []any{
-	(*CreateTicketRequest)(nil),      // 0: support.CreateTicketRequest
-	(*SendMessageRequest)(nil),       // 1: support.SendMessageRequest
-	(*Message)(nil),                  // 2: support.Message
-	(*GetUserTicketsRequest)(nil),    // 3: support.GetUserTicketsRequest
-	(*GetTicketMessagesRequest)(nil), // 4: support.GetTicketMessagesRequest
-	(*TicketResponse)(nil),           // 5: support.TicketResponse
-	(*MessageResponse)(nil),          // 6: support.MessageResponse
-	(*TicketListResponse)(nil),       // 7: support.TicketListResponse
-	(*MessageListResponse)(nil),      // 8: support.MessageListResponse
-	(*timestamppb.Timestamp)(nil),    // 9: google.protobuf.Timestamp
+	(*TicketResponse)(nil),            // 0: support.TicketResponse
+	(*Event)(nil),                     // 1: support.Event
+	(*SuccessResponse)(nil),           // 2: support.SuccessResponse
+	(*CreateTicketRequest)(nil),       // 3: support.CreateTicketRequest
+	(*CreateTicketResponse)(nil),      // 4: support.CreateTicketResponse
+	(*SendMessageRequest)(nil),        // 5: support.SendMessageRequest
+	(*EventResponse)(nil),             // 6: support.EventResponse
+	(*GetUserTicketsRequest)(nil),     // 7: support.GetUserTicketsRequest
+	(*GetTicketEventsRequest)(nil),    // 8: support.GetTicketEventsRequest
+	(*TicketListResponse)(nil),        // 9: support.TicketListResponse
+	(*EventListResponse)(nil),         // 10: support.EventListResponse
+	(*RateTicketRequest)(nil),         // 11: support.RateTicketRequest
+	(*GetAssignedTicketsRequest)(nil), // 12: support.GetAssignedTicketsRequest
+	(*ChangeTicketStatusRequest)(nil), // 13: support.ChangeTicketStatusRequest
+	(*ReassignTicketRequest)(nil),     // 14: support.ReassignTicketRequest
+	(*SetAgentStatusRequest)(nil),     // 15: support.SetAgentStatusRequest
+	(*Category)(nil),                  // 16: support.Category
+	(*CategoryListResponse)(nil),      // 17: support.CategoryListResponse
+	(*Template)(nil),                  // 18: support.Template
+	(*TemplateListResponse)(nil),      // 19: support.TemplateListResponse
+	(*timestamppb.Timestamp)(nil),     // 20: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),             // 21: google.protobuf.Empty
 }
 var file_support_support_proto_depIdxs = []int32{
-	9, // 0: support.Message.created_at:type_name -> google.protobuf.Timestamp
-	9, // 1: support.TicketResponse.created_at:type_name -> google.protobuf.Timestamp
-	9, // 2: support.MessageResponse.created_at:type_name -> google.protobuf.Timestamp
-	5, // 3: support.TicketListResponse.tickets:type_name -> support.TicketResponse
-	2, // 4: support.MessageListResponse.messages:type_name -> support.Message
-	0, // 5: support.SupportService.CreateTicket:input_type -> support.CreateTicketRequest
-	1, // 6: support.SupportService.SendMessage:input_type -> support.SendMessageRequest
-	3, // 7: support.SupportService.GetUserTickets:input_type -> support.GetUserTicketsRequest
-	4, // 8: support.SupportService.GetTicketMessages:input_type -> support.GetTicketMessagesRequest
-	5, // 9: support.SupportService.CreateTicket:output_type -> support.TicketResponse
-	6, // 10: support.SupportService.SendMessage:output_type -> support.MessageResponse
-	7, // 11: support.SupportService.GetUserTickets:output_type -> support.TicketListResponse
-	8, // 12: support.SupportService.GetTicketMessages:output_type -> support.MessageListResponse
-	9, // [9:13] is the sub-list for method output_type
-	5, // [5:9] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	20, // 0: support.TicketResponse.created_at:type_name -> google.protobuf.Timestamp
+	20, // 1: support.Event.created_at:type_name -> google.protobuf.Timestamp
+	20, // 2: support.EventResponse.created_at:type_name -> google.protobuf.Timestamp
+	0,  // 3: support.TicketListResponse.tickets:type_name -> support.TicketResponse
+	1,  // 4: support.EventListResponse.events:type_name -> support.Event
+	16, // 5: support.CategoryListResponse.categories:type_name -> support.Category
+	18, // 6: support.TemplateListResponse.templates:type_name -> support.Template
+	3,  // 7: support.SupportService.CreateTicket:input_type -> support.CreateTicketRequest
+	5,  // 8: support.SupportService.SendMessage:input_type -> support.SendMessageRequest
+	7,  // 9: support.SupportService.GetUserTickets:input_type -> support.GetUserTicketsRequest
+	8,  // 10: support.SupportService.GetTicketEvents:input_type -> support.GetTicketEventsRequest
+	11, // 11: support.SupportService.RateTicket:input_type -> support.RateTicketRequest
+	12, // 12: support.SupportService.GetAssignedTickets:input_type -> support.GetAssignedTicketsRequest
+	13, // 13: support.SupportService.ChangeTicketStatus:input_type -> support.ChangeTicketStatusRequest
+	14, // 14: support.SupportService.ReassignTicket:input_type -> support.ReassignTicketRequest
+	15, // 15: support.SupportService.SetAgentStatus:input_type -> support.SetAgentStatusRequest
+	21, // 16: support.SupportService.GetCategories:input_type -> google.protobuf.Empty
+	21, // 17: support.SupportService.GetTemplates:input_type -> google.protobuf.Empty
+	4,  // 18: support.SupportService.CreateTicket:output_type -> support.CreateTicketResponse
+	6,  // 19: support.SupportService.SendMessage:output_type -> support.EventResponse
+	9,  // 20: support.SupportService.GetUserTickets:output_type -> support.TicketListResponse
+	10, // 21: support.SupportService.GetTicketEvents:output_type -> support.EventListResponse
+	2,  // 22: support.SupportService.RateTicket:output_type -> support.SuccessResponse
+	9,  // 23: support.SupportService.GetAssignedTickets:output_type -> support.TicketListResponse
+	2,  // 24: support.SupportService.ChangeTicketStatus:output_type -> support.SuccessResponse
+	2,  // 25: support.SupportService.ReassignTicket:output_type -> support.SuccessResponse
+	2,  // 26: support.SupportService.SetAgentStatus:output_type -> support.SuccessResponse
+	17, // 27: support.SupportService.GetCategories:output_type -> support.CategoryListResponse
+	19, // 28: support.SupportService.GetTemplates:output_type -> support.TemplateListResponse
+	18, // [18:29] is the sub-list for method output_type
+	7,  // [7:18] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_support_support_proto_init() }
@@ -691,7 +1446,7 @@ func file_support_support_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_support_support_proto_rawDesc), len(file_support_support_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
