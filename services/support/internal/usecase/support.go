@@ -17,6 +17,7 @@ type SupportUseCase interface {
 	AddMessage(ctx context.Context, ticketPublicID string, authorID *int64, authorRole string, text, idempotencyKey string) error
 	GetTicketChat(ctx context.Context, ticketPublicID string) ([]domain.Event, error)
 	RateTicket(ctx context.Context, ticketPublicID string, rating int, authorID *int64, idempotencyKey string) error
+	GetTicketEvents(ctx context.Context, publicID string, clientID *int64, guestID *string) ([]domain.Event, error)
 
 	// Для операторов
 	GetAssignedTickets(ctx context.Context, agentID int64) ([]domain.Ticket, error)
