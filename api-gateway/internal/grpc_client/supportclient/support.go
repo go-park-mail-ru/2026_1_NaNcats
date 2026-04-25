@@ -42,10 +42,20 @@ type Ticket struct {
 	CreatedAt     time.Time
 }
 
+type Message struct {
+	ID         int64
+	TicketID   int64
+	AuthorID   int64
+	AuthorRole string
+	Text       string
+	CreatedAt  time.Time
+}
+
 type SupportClient interface {
 	CreateTicket(ctx context.Context, input CreateTicketInput, idempotencyKey string) (string, error)
 	SendMessage(ctx context.Context, input SendMessageInput, idempotencyKey string) (int64, error)
 	GetUserTickets(ctx context.Context, clientID *int64, guestID *string) ([]Ticket, error)
+	GetTicketMessages(ctx context.Context, ticketID int64) ([]Message, error)
 }
 
 type supportClient struct {
@@ -136,4 +146,33 @@ func (c *supportClient) GetUserTickets(ctx context.Context, clientID *int64, gue
 	}
 
 	return tickets, nil
+}
+
+func (c *supportClient) GetTicketMessages(ctx context.Context, ticketID int64) ([]Message, error) {
+	req := &pbSupport.GetTicketMessagesRequest{
+		TicketId: ticketID,
+	}
+
+	resp, err := c.client.GetTicketMessages(ctx, req)
+	if err != nil {
+		st, ok := status.FromError(err)
+		if ok && st.Code() == codes.NotFound {
+			return nil, ErrTicketNotFound
+		}
+		return nil, ErrInternal
+	}
+
+	messages := make([]Message, 0, len(resp.Messages))
+	for _, message := range resp.Messages {
+		messages = append(messages, Message{
+			ID:         message.Id,
+			TicketID:   message.TicketId,
+			AuthorID:   message.AuthorId,
+			AuthorRole: message.AuthorRole,
+			Text:       message.Text,
+			CreatedAt:  message.CreatedAt.AsTime(),
+		})
+	}
+
+	return messages, nil
 }
