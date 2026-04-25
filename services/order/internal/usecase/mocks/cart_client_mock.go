@@ -41,20 +41,6 @@ func (m *MockCartClient) EXPECT() *MockCartClientMockRecorder {
 	return m.recorder
 }
 
-// ClearCart mocks base method.
-func (m *MockCartClient) ClearCart(ctx context.Context, userID int64, idempotencyKey string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ClearCart", ctx, userID, idempotencyKey)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ClearCart indicates an expected call of ClearCart.
-func (mr *MockCartClientMockRecorder) ClearCart(ctx, userID, idempotencyKey any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClearCart", reflect.TypeOf((*MockCartClient)(nil).ClearCart), ctx, userID, idempotencyKey)
-}
-
 // GetCart mocks base method.
 func (m *MockCartClient) GetCart(ctx context.Context, userID int64) (domain.Cart, int64, error) {
 	m.ctrl.T.Helper()

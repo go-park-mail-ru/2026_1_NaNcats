@@ -70,3 +70,13 @@ type Template struct {
 	Name    string `db:"name"`
 	Content string `db:"content"`
 }
+
+type MessagePayload struct {
+	Text string
+}
+
+type StatusChangedPayload struct {
+	OldStatus string
+	NewStatus string
+	Reason    string
+}

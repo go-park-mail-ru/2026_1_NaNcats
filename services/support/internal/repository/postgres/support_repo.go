@@ -13,7 +13,22 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/mailru/easyjson"
 )
+
+//go:generate easyjson $GOFILE
+
+//easyjson:json
+type messagePayloadDTO struct {
+	Text string `json:"text"`
+}
+
+//easyjson:json
+type statusChangedPayloadDTO struct {
+	OldStatus string `json:"old_status"`
+	NewStatus string `json:"new_status"`
+	Reason    string `json:"reason,omitempty"`
+}
 
 type agentProfileDB struct {
 	AccountID   int64     `db:"account_id"`
@@ -99,25 +114,26 @@ func NewSupportRepo(pool postgres.PgxPool) repository.SupportRepository {
 	return &supportRepo{pool: pool}
 }
 
-// CreateTicket создает тикет и первое сообщение в одной транзакции
 func (r *supportRepo) CreateTicket(ctx context.Context, input domain.CreateTicketInput) (string, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("begin transaction: %w", err)
 	}
 	defer tx.Rollback(ctx)
 
-	query := `
+	ticketQuery := `
 		INSERT INTO "support_ticket" (
 			client_account_id, guest_id, contact_email, category_id, 
-			creator_role, client_meta, idempotency_key
-		) VALUES ($1, NULLIF($2, '')::uuid, $3, $4, $5, $6, $7)
+			creator_role, client_meta, idempotency_key,
+			created_at, updated_at
+		) VALUES ($1, NULLIF($2, '')::uuid, $3, $4, $5, $6, $7, NOW(), NOW())
 		RETURNING id, public_id;
 	`
+
 	var ticketID int64
 	var publicID string
 
-	err = tx.QueryRow(ctx, query,
+	err = tx.QueryRow(ctx, ticketQuery,
 		input.ClientID,
 		input.GuestID,
 		input.ContactEmail,
@@ -130,23 +146,41 @@ func (r *supportRepo) CreateTicket(ctx context.Context, input domain.CreateTicke
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-			return "", fmt.Errorf("ticket already exists: %w", err)
+			return "", fmt.Errorf("ticket with this idempotency key already exists: %w", err)
 		}
-		return "", err
+		return "", fmt.Errorf("insert support ticket: %w", err)
 	}
 
-	// Создаем начальное событие (первое сообщение клиента)
-	eventPayload, _ := json.Marshal(map[string]string{"text": input.FirstMessage})
-	eventQuery := `
-		INSERT INTO "support_event" (ticket_id, author_account_id, author_role, event_type, payload)
-		VALUES ($1, $2, $3, 'ticket_created', $4)
-	`
-	_, err = tx.Exec(ctx, eventQuery, ticketID, input.ClientID, input.CreatorRole, eventPayload)
+	payloadDTO := messagePayloadDTO{
+		Text: input.FirstMessage,
+	}
+
+	eventPayload, err := easyjson.Marshal(payloadDTO)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("marshal initial message payload: %w", err)
 	}
 
-	return publicID, tx.Commit(ctx)
+	eventQuery := `
+		INSERT INTO "support_event" (
+			ticket_id, author_account_id, author_role, 
+			event_type, payload, created_at
+		) VALUES ($1, $2, $3, 'ticket_created', $4, NOW())
+	`
+	_, err = tx.Exec(ctx, eventQuery,
+		ticketID,
+		input.ClientID,
+		input.CreatorRole,
+		eventPayload,
+	)
+	if err != nil {
+		return "", fmt.Errorf("insert initial support event: %w", err)
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return "", fmt.Errorf("commit transaction: %w", err)
+	}
+
+	return publicID, nil
 }
 
 func (r *supportRepo) AddEvent(ctx context.Context, input domain.AddEventInput) error {
@@ -156,7 +190,6 @@ func (r *supportRepo) AddEvent(ctx context.Context, input domain.AddEventInput) 
 	}
 	defer tx.Rollback(ctx)
 
-	// 1. Вставляем событие
 	query := `
 		INSERT INTO "support_event" (ticket_id, author_account_id, author_role, event_type, payload, idempotency_key)
 		VALUES ($1, $2, $3, $4, $5, NULLIF($6, ''))
@@ -172,12 +205,11 @@ func (r *supportRepo) AddEvent(ctx context.Context, input domain.AddEventInput) 
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-			return nil // Идемпотентность: событие уже есть
+			return nil
 		}
 		return err
 	}
 
-	// 2. Обновляем время тикета (замена триггера)
 	updateTimeQuery := `UPDATE "support_ticket" SET updated_at = NOW() WHERE id = $1`
 	_, err = tx.Exec(ctx, updateTimeQuery, input.TicketID)
 	if err != nil {
