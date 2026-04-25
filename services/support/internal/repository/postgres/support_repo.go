@@ -250,7 +250,7 @@ func (r *supportRepo) UpdateTicketStatus(ctx context.Context, ticketID int64, st
 	defer tx.Rollback(ctx)
 
 	var oldStatus string
-	err = tx.QueryRow(ctx, `SELECT current_status FROM "support_ticket" WHERE id = $1`, ticketID).Scan(&oldStatus)
+	err = tx.QueryRow(ctx, `SELECT current_status FROM "support_ticket" WHERE id = $1 FOR UPDATE`, ticketID).Scan(&oldStatus) // Добавил FOR UPDATE для надежности
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return errors.New("ticket not found")
@@ -268,10 +268,13 @@ func (r *supportRepo) UpdateTicketStatus(ctx context.Context, ticketID int64, st
 	}
 
 	// Пишем в историю
-	payload, _ := easyjson.Marshal(statusChangedPayloadDTO{
+	payload, err := easyjson.Marshal(statusChangedPayloadDTO{
 		OldStatus: oldStatus,
 		NewStatus: status,
 	})
+	if err != nil {
+		return fmt.Errorf("marshal status change: %w", err)
+	}
 
 	eventQuery := `
 		INSERT INTO "support_event" (ticket_id, author_account_id, author_role, event_type, payload, idempotency_key, created_at)
@@ -305,12 +308,15 @@ func (r *supportRepo) AssignTicket(ctx context.Context, ticketID int64, agentID 
 		return err
 	}
 
-	payload, _ := easyjson.Marshal(reassignedPayloadDTO{
+	payload, err := easyjson.Marshal(reassignedPayloadDTO{
 		OldAssigneeID: oldAssignee,
 		NewAssigneeID: &agentID,
 		OldLine:       oldLine,
 		NewLine:       line,
 	})
+	if err != nil {
+		return fmt.Errorf("marshal error: %w", err)
+	}
 
 	eventQuery := `
 		INSERT INTO "support_event" (ticket_id, author_account_id, author_role, event_type, payload, idempotency_key, created_at)
@@ -494,7 +500,6 @@ func (r *supportRepo) SetTicketRating(ctx context.Context, ticketID int64, ratin
 	}
 
 	return tx.Commit(ctx)
-
 }
 
 func (r *supportRepo) GetTemplates(ctx context.Context) ([]domain.Template, error) {
