@@ -11,7 +11,16 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
+
+	wsManager "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/websocket"
+	"github.com/gorilla/websocket"
 )
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
 
 //easyjson:json
 type CreateOrderRequest struct {
@@ -41,12 +50,14 @@ type OrderHistoryResponse struct {
 
 type OrderHandler struct {
 	orderClient orderclient.OrderClient
+	wsManager   *wsManager.WsManager
 	logger      logger.Logger
 }
 
-func NewOrderHandler(oc orderclient.OrderClient, l logger.Logger) *OrderHandler {
+func NewOrderHandler(oc orderclient.OrderClient, wsm *wsManager.WsManager, l logger.Logger) *OrderHandler {
 	return &OrderHandler{
 		orderClient: oc,
+		wsManager:   wsm,
 		logger:      l,
 	}
 }
@@ -158,4 +169,22 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.JSON(w, http.StatusOK, resp)
+}
+
+func (h *OrderHandler) TrackOrderWS(w http.ResponseWriter, r *http.Request) {
+	orderID := r.PathValue("id")
+	if orderID == "" {
+		response.Error(w, http.StatusBadRequest, "order_id is required")
+		return
+	}
+
+	// TODO: проверить проверку на принадлежность заказа конкретному юзеру
+
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		h.logger.Error("failed to upgrade to websocket", err)
+		return
+	}
+
+	h.wsManager.AddConnection(orderID, conn)
 }

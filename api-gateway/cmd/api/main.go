@@ -25,6 +25,9 @@ import (
 	restaurantHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/restaurant"
 	supportHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/support"
 	userHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/user"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/rabbitmq"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/websocket"
+	rabbitclient "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/addressclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/authclient"
@@ -151,6 +154,15 @@ func main() {
 	payClient := paymentclient.NewPaymentClient(pbPayment.NewPaymentServiceClient(payConn))
 	orderClient := orderclient.NewOrderClient(pbOrder.NewOrderServiceClient(orderConn))
 	supportClient := supportclient.NewSupportClient(pbSupport.NewSupportServiceClient(supportConn))
+	rabbitClient, err := rabbitclient.NewRabbitClient(cfg.RabbitMQURL, appLogger)
+	if err != nil {
+		appLogger.Fatal("failed to init RabbitMq client", err)
+	}
+
+	orderChannel := "gateway:order:events"
+	wsManager := websocket.NewWsManager(redisPool, orderChannel, appLogger)
+
+	go wsManager.RunPubSubListener(ctx)
 
 	authHandler := authHttp.NewAuthHandler(authClient, userClient, appLogger, validate)
 	userProfileHandler := userHttp.NewUserProfileHandler(userClient, appLogger)
@@ -158,7 +170,7 @@ func main() {
 	cartHandler := cartHttp.NewCartHandler(cartClient, appLogger)
 	addressHandler := addressHttp.NewAddressHandler(addrClient, appLogger)
 	paymentHandler := paymentHttp.NewPaymentHandler(payClient, appLogger)
-	orderHandler := orderHttp.NewOrderHandler(orderClient, appLogger)
+	orderHandler := orderHttp.NewOrderHandler(orderClient, wsManager, appLogger)
 
 	redisHub := supportHttp.NewRedisHub(redisPool, appLogger)
 	supportHandler := supportHttp.NewSupportHandler(supportClient, redisHub, appLogger)
@@ -168,6 +180,11 @@ func main() {
 	corsMW := middleware.NewCORSMiddleware(cfg.HTTP.AllowedOrigins)
 	authMW := middleware.NewAuthMiddleware(authClient, appLogger)
 	csrfMW := middleware.NewCSRFMiddleware(authClient, appLogger)
+
+	gatewayConsumer := rabbitmq.NewGatewayConsumer(rabbitClient, wsManager, appLogger)
+	if err := gatewayConsumer.Start(ctx); err != nil {
+		appLogger.Fatal("Failed to start Gateway RabbitMQ consumer", err)
+	}
 
 	// создание собственного роутера
 	mux := http.NewServeMux()
@@ -210,6 +227,7 @@ func main() {
 	// === ORDERS ===
 	mux.Handle("POST /api/orders", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.CreateOrder))))
 	mux.Handle("GET /api/profile/orders", authMW.RequireAuth(http.HandlerFunc(orderHandler.GetMyOrders)))
+	mux.Handle("GET /api/ws/orders/{id}", authMW.RequireAuth(http.HandlerFunc(orderHandler.TrackOrderWS)))
 
 	// === SUPPORT === (Пользовательская часть)
 	mux.HandleFunc("GET /api/support/categories", supportHandler.GetCategories)

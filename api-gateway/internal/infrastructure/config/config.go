@@ -20,6 +20,7 @@ type Config struct {
 	HTTP        HTTPConfig          `yaml:"http"`
 	GRPCClients GRPCClientsConfig   `yaml:"grpc_clients"`
 	OTEL        config.OTELConfig   `yaml:"otel"`
+	RabbitMQURL string              `yaml:"rabbit_mq_url" env:"RABBITMQ_URL" env-required:"true"`
 }
 
 type HTTPConfig struct {
