@@ -43,6 +43,7 @@ type CreateTicketInput struct {
 	GuestID        *string
 	ContactEmail   string
 	CategoryID     int64
+	SupportLine    int
 	FirstMessage   string
 	ClientMeta     json.RawMessage
 	CreatorRole    string

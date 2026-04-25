@@ -147,9 +147,9 @@ func (r *supportRepo) CreateTicket(ctx context.Context, input domain.CreateTicke
 	ticketQuery := `
 		INSERT INTO "support_ticket" (
 			client_account_id, guest_id, contact_email, category_id, 
-			creator_role, client_meta, idempotency_key,
+			support_line, creator_role, client_meta, idempotency_key,
 			created_at, updated_at
-		) VALUES ($1, NULLIF($2, '')::uuid, $3, $4, $5, $6, $7, NOW(), NOW())
+		) VALUES ($1, NULLIF($2, '')::uuid, $3, $4, $5, $6, $7, $8, NOW(), NOW())
 		RETURNING id, public_id;
 	`
 
@@ -161,6 +161,7 @@ func (r *supportRepo) CreateTicket(ctx context.Context, input domain.CreateTicke
 		input.GuestID,
 		input.ContactEmail,
 		input.CategoryID,
+		input.SupportLine,
 		input.CreatorRole,
 		input.ClientMeta,
 		input.IdempotencyKey,
@@ -286,10 +287,22 @@ func (r *supportRepo) UpdateTicketStatus(ctx context.Context, ticketID int64, st
 		return err
 	}
 
+	if err := r.saveEventTx(ctx, tx, ticketID, authorID, authorRole, "status_changed", payload, idempotencyKey); err != nil {
+		return err
+	}
+
 	return tx.Commit(ctx)
 }
 
-func (r *supportRepo) AssignTicket(ctx context.Context, ticketID int64, agentID int64, line int, authorID *int64, authorRole string, idempotencyKey string) error {
+func (r *supportRepo) AssignTicket(
+	ctx context.Context,
+	ticketID int64,
+	agentID int64,
+	line int,
+	authorID *int64,
+	authorRole string,
+	idempotencyKey string,
+) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -308,23 +321,14 @@ func (r *supportRepo) AssignTicket(ctx context.Context, ticketID int64, agentID 
 		return err
 	}
 
-	payload, err := easyjson.Marshal(reassignedPayloadDTO{
+	payload, _ := easyjson.Marshal(reassignedPayloadDTO{
 		OldAssigneeID: oldAssignee,
 		NewAssigneeID: &agentID,
 		OldLine:       oldLine,
 		NewLine:       line,
 	})
-	if err != nil {
-		return fmt.Errorf("marshal error: %w", err)
-	}
 
-	eventQuery := `
-		INSERT INTO "support_event" (ticket_id, author_account_id, author_role, event_type, payload, idempotency_key, created_at)
-		VALUES ($1, $2, $3, 'reassigned', $4, NULLIF($5, ''), NOW())
-		ON CONFLICT (idempotency_key) DO NOTHING;
-	`
-	_, err = tx.Exec(ctx, eventQuery, ticketID, authorID, authorRole, payload, idempotencyKey)
-	if err != nil {
+	if err := r.saveEventTx(ctx, tx, ticketID, authorID, authorRole, "reassigned", payload, idempotencyKey); err != nil {
 		return err
 	}
 
@@ -521,4 +525,95 @@ func (r *supportRepo) GetTemplates(ctx context.Context) ([]domain.Template, erro
 	}
 
 	return templates, nil
+}
+
+func (r *supportRepo) AddMessageEvent(ctx context.Context, ticketID int64, authorID *int64, authorRole string, text string, idempotencyKey string) error {
+	payloadDTO := messagePayloadDTO{
+		Text: text,
+	}
+
+	payloadBytes, err := easyjson.Marshal(payloadDTO)
+	if err != nil {
+		return err
+	}
+
+	return r.saveEvent(ctx, ticketID, authorID, authorRole, "message", payloadBytes, idempotencyKey)
+}
+
+func (r *supportRepo) saveEvent(ctx context.Context, ticketID int64, authorID *int64, authorRole, eventType string, payload []byte, idempotencyKey string) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	if err := r.saveEventTx(ctx, tx, ticketID, authorID, authorRole, eventType, payload, idempotencyKey); err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+// saveEventTx выполняет сохранение внутри уже открытой транзакции
+func (r *supportRepo) saveEventTx(ctx context.Context, tx pgx.Tx, ticketID int64, authorID *int64, authorRole, eventType string, payload []byte, idempotencyKey string) error {
+	eventQuery := `
+		INSERT INTO "support_event" (ticket_id, author_account_id, author_role, event_type, payload, idempotency_key, created_at)
+		VALUES ($1, $2, $3, $4, $5, NULLIF($6, ''), NOW())
+	`
+	_, err := tx.Exec(ctx, eventQuery, ticketID, authorID, authorRole, eventType, payload, idempotencyKey)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			return nil
+		}
+		return fmt.Errorf("insert event: %w", err)
+	}
+
+	_, err = tx.Exec(ctx, `UPDATE "support_ticket" SET updated_at = NOW() WHERE id = $1`, ticketID)
+	if err != nil {
+		return fmt.Errorf("update ticket updated_at: %w", err)
+	}
+
+	return nil
+}
+
+func (r *supportRepo) AddStatusChangedEvent(
+	ctx context.Context,
+	ticketID int64,
+	authorID *int64,
+	authorRole string,
+	oldStatus string,
+	newStatus string,
+	reason string,
+	idempotencyKey string,
+) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	query := `UPDATE "support_ticket" SET current_status = $1, updated_at = NOW() WHERE id = $2`
+	_, err = tx.Exec(ctx, query, newStatus, ticketID)
+	if err != nil {
+		return fmt.Errorf("update current_status: %w", err)
+	}
+
+	payloadDTO := statusChangedPayloadDTO{
+		OldStatus: oldStatus,
+		NewStatus: newStatus,
+		Reason:    reason,
+	}
+
+	payloadBytes, err := easyjson.Marshal(payloadDTO)
+	if err != nil {
+		return fmt.Errorf("marshal status payload: %w", err)
+	}
+
+	err = r.saveEventTx(ctx, tx, ticketID, authorID, authorRole, "status_changed", payloadBytes, idempotencyKey)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }

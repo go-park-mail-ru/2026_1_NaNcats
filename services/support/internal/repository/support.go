@@ -31,4 +31,7 @@ type SupportRepository interface {
 	GetActiveCategories(ctx context.Context) ([]domain.Category, error)
 	// Быстрые готовые ответы
 	GetTemplates(ctx context.Context) ([]domain.Template, error)
+
+	AddMessageEvent(ctx context.Context, ticketID int64, authorID *int64, authorRole, text, idempotencyKey string) error
+	AddStatusChangedEvent(ctx context.Context, ticketID int64, authorID *int64, authorRole string, oldStatus, newStatus, reason string, idempotencyKey string) error
 }

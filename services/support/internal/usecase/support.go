@@ -2,165 +2,225 @@ package usecase
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/repository"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
+	"github.com/mailru/easyjson"
 	"google.golang.org/grpc/codes"
 )
 
-// Статусы тикетов
-const (
-	StatusOpen       = "OPEN"
-	StatusInProgress = "IN_PROGRESS"
-	StatusClosed     = "CLOSED"
-)
-
-// Роли авторов
-const (
-	RoleUser    = "USER"
-	RoleSupport = "SUPPORT"
-	RoleSystem  = "SYSTEM"
-)
-
-// Типы событий
-const (
-	EventTicketCreated = "TICKET_CREATED"
-	EventMessage       = "MESSAGE"
-	EventStatusChanged = "STATUS_CHANGED"
-	EventReassigned    = "REASSIGNED"
-)
-
-//go:generate mockgen -destination=mocks/support_repo_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/usecase SupportRepository
-type SupportRepository interface {
-	CreateTicketWithEvent(ctx context.Context, ticket domain.Ticket, event domain.Event) (domain.Ticket, error)
-	CreateEvent(ctx context.Context, event domain.Event) (domain.Event, error)
-	GetTicketsByUser(ctx context.Context, clientID *int64, guestID *string) ([]domain.Ticket, error)
-	GetEventsByTicketID(ctx context.Context, ticketID int64) ([]domain.Event, error)
-	GetTicketByID(ctx context.Context, ticketID int64) (domain.Ticket, error)
-}
-
-//go:generate mockgen -destination=mocks/support_usecase_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/usecase SupportUseCase
+//go:generate mockgen -destination=mocks/support_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/usecase SupportUseCase
 type SupportUseCase interface {
-	CreateTicket(ctx context.Context, req domain.CreateTicketInput) (domain.Ticket, error)
-	SendMessage(ctx context.Context, req domain.SendMessageInput) (domain.Event, error)
-	GetUserTickets(ctx context.Context, clientID *int64, guestID *string) ([]domain.Ticket, error)
-	GetTicketMessages(ctx context.Context, ticketID int64) ([]domain.Event, error)
+	// Для пользователей / гостей
+	CreateTicket(ctx context.Context, input domain.CreateTicketInput) (string, error)
+	GetMyTickets(ctx context.Context, clientID *int64, guestID *string) ([]domain.Ticket, error)
+	AddMessage(ctx context.Context, ticketPublicID string, authorID *int64, authorRole string, text, idempotencyKey string) error
+	GetTicketChat(ctx context.Context, ticketPublicID string) ([]domain.Event, error)
+	RateTicket(ctx context.Context, ticketPublicID string, rating int, authorID *int64, idempotencyKey string) error
+
+	// Для операторов
+	GetAssignedTickets(ctx context.Context, agentID int64) ([]domain.Ticket, error)
+	ChangeTicketStatus(ctx context.Context, ticketPublicID string, status string, agentID int64, idempotencyKey string) error
+	ReassignTicket(ctx context.Context, ticketPublicID string, agentID int64, line int, authorID int64, idempotencyKey string) error
+	SetAgentStatus(ctx context.Context, agentID int64, status string) error
+
+	// Справочники
+	GetCategories(ctx context.Context) ([]domain.Category, error)
+	GetTemplates(ctx context.Context) ([]domain.Template, error)
 }
 
 type supportUseCase struct {
-	supportRepo SupportRepository
-	logger      logger.Logger
+	repo repository.SupportRepository
 }
 
-func NewSupportUseCase(sr SupportRepository, l logger.Logger) SupportUseCase {
-	return &supportUseCase{
-		supportRepo: sr,
-		logger:      l,
-	}
+func NewSupportUseCase(r repository.SupportRepository) SupportUseCase {
+	return &supportUseCase{repo: r}
 }
 
-func (s *supportUseCase) CreateTicket(ctx context.Context, req domain.CreateTicketInput) (domain.Ticket, error) {
-	// Валидируем
-	if req.ClientID == nil && req.GuestID == nil {
-		return domain.Ticket{}, errutil.New("UNAUTHORIZED", "either client_id or guest_id must be provided", codes.Unauthenticated)
-	}
-	if req.Message == "" {
-		return domain.Ticket{}, errutil.New("INVALID_ARGUMENT", "message cannot be empty", codes.InvalidArgument)
+func (u *supportUseCase) CreateTicket(ctx context.Context, input domain.CreateTicketInput) (string, error) {
+	// Проверка авторизации
+	if input.ClientID == nil && (input.GuestID == nil || *input.GuestID == "") {
+		return "", domain.ErrUnauthorized
 	}
 
-	// Собираем тикет
-	ticket := domain.Ticket{
-		ClientID:      req.ClientID,
-		GuestID:       req.GuestID,
-		ContactEmail:  req.ContactEmail,
-		CategoryID:    req.CategoryID,
-		CurrentStatus: StatusOpen,
-		SupportLine:   1, // автоматом на первую линию отправляем | TODO: сделать возможность устанавливать на вторую линию, если тикет создается сотрудником на другую проблему для передачи на вторую линию
-		ClientMeta:    req.ClientMeta,
-		CreatorRole:   RoleUser,
-	}
-
-	// Формируем payload для первого события
-	payloadMap := map[string]string{"text": req.Message}
-	payloadBytes, err := json.Marshal(payloadMap)
+	// Умная маршрутизация: достаем категорию, чтобы узнать default_line
+	categories, err := u.repo.GetActiveCategories(ctx)
 	if err != nil {
-		return domain.Ticket{}, errutil.Wrap("INTERNAL_ERROR", "failed to marshal event payload", err, codes.Internal)
+		return "", errutil.Internal("failed to fetch categories for routing", err)
 	}
 
-	event := domain.Event{
-		AuthorID:   req.ClientID,
-		AuthorRole: RoleUser,
-		EventType:  EventTicketCreated,
-		Payload:    payloadBytes,
+	// Ищем нашу категорию и выставляем линию
+	input.SupportLine = 1
+	for _, cat := range categories {
+		if cat.ID == input.CategoryID {
+			input.SupportLine = cat.DefaultLine
+			break
+		}
 	}
 
-	// Сохраняем в репозиторий в одной транзакции
-	createdTicket, err := s.supportRepo.CreateTicketWithEvent(ctx, ticket, event)
+	// Создание
+	publicID, err := u.repo.CreateTicket(ctx, input)
 	if err != nil {
-		return domain.Ticket{}, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to create ticket and event in db", err, codes.Internal)
+		return "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to create ticket", err, codes.Internal)
 	}
 
-	return createdTicket, nil
+	return publicID, nil
 }
 
-func (s *supportUseCase) SendMessage(ctx context.Context, req domain.SendMessageInput) (domain.Event, error) {
-	if req.Message == "" {
-		return domain.Event{}, errutil.New("INVALID_ARGUMENT", "message cannot be empty", codes.InvalidArgument)
+func (u *supportUseCase) GetMyTickets(ctx context.Context, clientID *int64, guestID *string) ([]domain.Ticket, error) {
+	if clientID != nil {
+		return u.repo.GetTicketsByClientID(ctx, *clientID)
 	}
-
-	// Проверяем, существует ли тикет
-	ticket, err := s.supportRepo.GetTicketByID(ctx, req.TicketID)
-	if err != nil {
-		return domain.Event{}, errutil.Wrap("NOT_FOUND", "ticket not found", err, codes.NotFound)
+	if guestID != nil && *guestID != "" {
+		return u.repo.GetTicketsByGuestID(ctx, *guestID)
 	}
-
-	if ticket.CurrentStatus == StatusClosed {
-		return domain.Event{}, errutil.New("TICKET_CLOSED", "cannot send message to a closed ticket", codes.FailedPrecondition)
-	}
-
-	// Формируем payload
-	payloadMap := map[string]string{"text": req.Message}
-	payloadBytes, err := json.Marshal(payloadMap)
-	if err != nil {
-		return domain.Event{}, errutil.Wrap("INTERNAL_ERROR", "failed to marshal event payload", err, codes.Internal)
-	}
-
-	event := domain.Event{
-		TicketID:   req.TicketID,
-		AuthorID:   req.AuthorID,
-		AuthorRole: req.AuthorRole,
-		EventType:  EventMessage,
-		Payload:    payloadBytes,
-	}
-
-	createdEvent, err := s.supportRepo.CreateEvent(ctx, event)
-	if err != nil {
-		return domain.Event{}, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to create message event", err, codes.Internal)
-	}
-
-	return createdEvent, nil
+	return nil, domain.ErrUnauthorized
 }
 
-func (s *supportUseCase) GetUserTickets(ctx context.Context, clientID *int64, guestID *string) ([]domain.Ticket, error) {
-	if clientID == nil && guestID == nil {
-		return nil, errutil.New("UNAUTHORIZED", "either client_id or guest_id must be provided", codes.Unauthenticated)
+func (u *supportUseCase) AddMessage(ctx context.Context, ticketPublicID string, authorID *int64, authorRole string, text, idempotencyKey string) error {
+	if text == "" {
+		return domain.ErrInvalidMessageInput
 	}
 
-	tickets, err := s.supportRepo.GetTicketsByUser(ctx, clientID, guestID)
+	ticket, err := u.repo.GetTicketByPublicID(ctx, ticketPublicID)
 	if err != nil {
-		return nil, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to get user tickets", err, codes.Internal)
+		return domain.ErrTicketNotFound
 	}
 
-	return tickets, nil
+	if ticket.CurrentStatus == "closed" && authorRole == "user" {
+		err = u.repo.UpdateTicketStatus(ctx, ticket.ID, "open", nil, "system", idempotencyKey+"_reopen")
+		if err != nil {
+			return errutil.Internal("failed to auto-reopen ticket", err)
+		}
+	}
+
+	payload := domain.MessagePayload{Text: text}
+	payloadBytes, err := easyjson.Marshal(payload)
+	if err != nil {
+		return errutil.Internal("failed to marshal message", err)
+	}
+
+	event := domain.AddEventInput{
+		TicketID:       ticket.ID,
+		AuthorID:       authorID,
+		AuthorRole:     authorRole,
+		EventType:      "message",
+		Payload:        payloadBytes,
+		IdempotencyKey: idempotencyKey,
+	}
+
+	return u.repo.AddEvent(ctx, event)
 }
 
-func (s *supportUseCase) GetTicketMessages(ctx context.Context, ticketID int64) ([]domain.Event, error) {
-	events, err := s.supportRepo.GetEventsByTicketID(ctx, ticketID)
+func (u *supportUseCase) GetTicketChat(ctx context.Context, ticketPublicID string) ([]domain.Event, error) {
+	ticket, err := u.repo.GetTicketByPublicID(ctx, ticketPublicID)
 	if err != nil {
-		return nil, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to get ticket events", err, codes.Internal)
+		return nil, domain.ErrTicketNotFound
+	}
+
+	events, err := u.repo.GetEventsByTicketID(ctx, ticket.ID)
+	if err != nil {
+		return nil, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to get events", err, codes.Internal)
 	}
 
 	return events, nil
+}
+
+func (u *supportUseCase) GetTicketEvents(ctx context.Context, publicID string, clientID *int64, guestID *string) ([]domain.Event, error) {
+	ticket, err := u.repo.GetTicketByPublicID(ctx, publicID)
+	if err != nil {
+		return nil, domain.ErrTicketNotFound
+	}
+
+	isOwner := (clientID != nil && ticket.ClientID != nil && *ticket.ClientID == *clientID) ||
+		(guestID != nil && ticket.GuestID != nil && *ticket.GuestID == *guestID)
+
+	if !isOwner {
+		return nil, domain.ErrPermissionDenied
+	}
+
+	events, err := u.repo.GetEventsByTicketID(ctx, ticket.ID)
+	if err != nil {
+		return nil, errutil.Internal("failed to get ticket events", err)
+	}
+
+	return events, nil
+}
+
+func (u *supportUseCase) RateTicket(ctx context.Context, publicID string, rating int, clientID *int64, idempotencyKey string) error {
+	if rating < 1 || rating > 5 {
+		return domain.ErrInvalidRatingInput
+	}
+
+	ticket, err := u.repo.GetTicketByPublicID(ctx, publicID)
+	if err != nil {
+		return errutil.Wrap("TICKET_NOT_FOUND", "ticket not found", err, codes.NotFound)
+	}
+
+	if ticket.CurrentStatus != "closed" {
+		return domain.ErrInvalidState
+	}
+
+	err = u.repo.SetTicketRating(ctx, ticket.ID, rating, clientID, idempotencyKey)
+	if err != nil {
+		return errutil.Internal("failed to set rating", err)
+	}
+
+	return nil
+}
+
+func (u *supportUseCase) ChangeTicketStatus(ctx context.Context, ticketPublicID string, status string, agentID int64, idempotencyKey string) error {
+	ticket, err := u.repo.GetTicketByPublicID(ctx, ticketPublicID)
+	if err != nil {
+		return errutil.Wrap("TICKET_NOT_FOUND", "ticket not found", err, codes.NotFound)
+	}
+
+	// Защита от лишних действий
+	if ticket.CurrentStatus == status {
+		return nil
+	}
+
+	err = u.repo.UpdateTicketStatus(ctx, ticket.ID, status, &agentID, "support", idempotencyKey)
+	if err != nil {
+		return errutil.Internal("failed to update status", err)
+	}
+	return nil
+}
+
+func (u *supportUseCase) ReassignTicket(ctx context.Context, ticketPublicID string, newAgentID int64, line int, authorID int64, idempotencyKey string) error {
+	ticket, err := u.repo.GetTicketByPublicID(ctx, ticketPublicID)
+	if err != nil {
+		return domain.ErrTicketNotFound
+	}
+
+	if err := u.repo.AssignTicket(ctx, ticket.ID, newAgentID, line, &authorID, "support", idempotencyKey); err != nil {
+		return errutil.Internal("failed to reassign ticket", err)
+	}
+
+	return nil
+}
+
+func (u *supportUseCase) GetAssignedTickets(ctx context.Context, agentID int64) ([]domain.Ticket, error) {
+	tickets, err := u.repo.GetAssignedTickets(ctx, agentID)
+	if err != nil {
+		return nil, errutil.Internal("failed to get assigned tickets", err)
+	}
+	return tickets, nil
+}
+
+func (u *supportUseCase) SetAgentStatus(ctx context.Context, agentID int64, status string) error {
+	if status != "online" && status != "offline" {
+		return domain.ErrInvalidStatusInput
+	}
+	return u.repo.UpdateAgentStatus(ctx, agentID, status)
+
+}
+
+func (u *supportUseCase) GetCategories(ctx context.Context) ([]domain.Category, error) {
+	return u.repo.GetActiveCategories(ctx)
+}
+
+func (u *supportUseCase) GetTemplates(ctx context.Context) ([]domain.Template, error) {
+	return u.repo.GetTemplates(ctx)
 }
