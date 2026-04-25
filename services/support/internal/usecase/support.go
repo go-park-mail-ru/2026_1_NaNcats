@@ -68,6 +68,23 @@ func (u *supportUseCase) CreateTicket(ctx context.Context, input domain.CreateTi
 	return publicID, nil
 }
 
+func (u *supportUseCase) GetStats(ctx context.Context, agentID int64) (domain.SupportStats, error) {
+	agent, err := u.repo.GetAgentProfile(ctx, agentID)
+	if err != nil {
+		return domain.SupportStats{}, domain.ErrPermissionDenied
+	}
+	if agent.SupportLine < 2 { // статистику видят только L2 и выше
+		return domain.SupportStats{}, domain.ErrPermissionDenied
+	}
+
+	liveStats, err := u.repo.GetStats(ctx)
+	if err != nil {
+		return domain.SupportStats{}, errutil.Internal("failed to fetch live stats", err)
+	}
+
+	return liveStats, nil
+}
+
 func (u *supportUseCase) GetMyTickets(ctx context.Context, clientID *int64, guestID *string) ([]domain.Ticket, error) {
 	if clientID != nil {
 		return u.repo.GetTicketsByClientID(ctx, *clientID)

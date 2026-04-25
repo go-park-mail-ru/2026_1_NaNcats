@@ -82,3 +82,11 @@ type StatusChangedPayload struct {
 	NewStatus string
 	Reason    string
 }
+
+type SupportStats struct {
+	TotalTickets         int64
+	ByStatus             map[string]int64
+	ByCategory           map[string]int64
+	AverageRating        float64
+	AvgResolutionTimeSec int64
+}

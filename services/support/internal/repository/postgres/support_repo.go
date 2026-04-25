@@ -602,3 +602,49 @@ func (r *supportRepo) AddStatusChangedEvent(
 
 	return tx.Commit(ctx)
 }
+
+func (r *supportRepo) GetStats(ctx context.Context) (domain.SupportStats, error) {
+	stats := domain.SupportStats{
+		ByStatus:   make(map[string]int64),
+		ByCategory: make(map[string]int64),
+	}
+
+	// Общее кол-во и средний рейтинг
+	err := r.pool.QueryRow(ctx, `
+		SELECT 
+			count(*), 
+			COALESCE(avg(resolution_rating), 0),
+			COALESCE(avg(EXTRACT(EPOCH FROM (updated_at - created_at))) FILTER (WHERE current_status = 'closed'), 0)
+		FROM "support_ticket"
+	`).Scan(&stats.TotalTickets, &stats.AverageRating, &stats.AvgResolutionTimeSec)
+	if err != nil {
+		return stats, err
+	}
+
+	// Группировка по статусам
+	statusRows, _ := r.pool.Query(ctx, `SELECT current_status, count(*) FROM "support_ticket" GROUP BY current_status`)
+	for statusRows.Next() {
+		var s string
+		var c int64
+		if err := statusRows.Scan(&s, &c); err == nil {
+			stats.ByStatus[s] = c
+		}
+	}
+
+	// Группировка по именам категорий (нужен JOIN)
+	catRows, _ := r.pool.Query(ctx, `
+		SELECT c.name, count(t.id) 
+		FROM "support_category" c
+		LEFT JOIN "support_ticket" t ON c.id = t.category_id
+		GROUP BY c.name
+	`)
+	for catRows.Next() {
+		var name string
+		var c int64
+		if err := catRows.Scan(&name, &c); err == nil {
+			stats.ByCategory[name] = c
+		}
+	}
+
+	return stats, nil
+}

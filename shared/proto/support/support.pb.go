@@ -123,6 +123,82 @@ func (x *TicketResponse) GetCreatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+type SupportStatsResponse struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	TotalTickets         int64                  `protobuf:"varint,1,opt,name=total_tickets,json=totalTickets,proto3" json:"total_tickets,omitempty"`
+	ByStatus             map[string]int64       `protobuf:"bytes,2,rep,name=by_status,json=byStatus,proto3" json:"by_status,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`       // "open": 10, "closed": 50
+	ByCategory           map[string]int64       `protobuf:"bytes,3,rep,name=by_category,json=byCategory,proto3" json:"by_category,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"` // "баг": 15, "жалоба": 5
+	AverageRating        float64                `protobuf:"fixed64,4,opt,name=average_rating,json=averageRating,proto3" json:"average_rating,omitempty"`                                                                 // 4.5
+	AvgResolutionTimeSec int64                  `protobuf:"varint,5,opt,name=avg_resolution_time_sec,json=avgResolutionTimeSec,proto3" json:"avg_resolution_time_sec,omitempty"`                                         // среднее время закрытия
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *SupportStatsResponse) Reset() {
+	*x = SupportStatsResponse{}
+	mi := &file_support_support_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SupportStatsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SupportStatsResponse) ProtoMessage() {}
+
+func (x *SupportStatsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_support_support_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SupportStatsResponse.ProtoReflect.Descriptor instead.
+func (*SupportStatsResponse) Descriptor() ([]byte, []int) {
+	return file_support_support_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *SupportStatsResponse) GetTotalTickets() int64 {
+	if x != nil {
+		return x.TotalTickets
+	}
+	return 0
+}
+
+func (x *SupportStatsResponse) GetByStatus() map[string]int64 {
+	if x != nil {
+		return x.ByStatus
+	}
+	return nil
+}
+
+func (x *SupportStatsResponse) GetByCategory() map[string]int64 {
+	if x != nil {
+		return x.ByCategory
+	}
+	return nil
+}
+
+func (x *SupportStatsResponse) GetAverageRating() float64 {
+	if x != nil {
+		return x.AverageRating
+	}
+	return 0
+}
+
+func (x *SupportStatsResponse) GetAvgResolutionTimeSec() int64 {
+	if x != nil {
+		return x.AvgResolutionTimeSec
+	}
+	return 0
+}
+
 type Event struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -138,7 +214,7 @@ type Event struct {
 
 func (x *Event) Reset() {
 	*x = Event{}
-	mi := &file_support_support_proto_msgTypes[1]
+	mi := &file_support_support_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -150,7 +226,7 @@ func (x *Event) String() string {
 func (*Event) ProtoMessage() {}
 
 func (x *Event) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[1]
+	mi := &file_support_support_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -163,7 +239,7 @@ func (x *Event) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Event.ProtoReflect.Descriptor instead.
 func (*Event) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{1}
+	return file_support_support_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Event) GetId() int64 {
@@ -224,7 +300,7 @@ type SuccessResponse struct {
 
 func (x *SuccessResponse) Reset() {
 	*x = SuccessResponse{}
-	mi := &file_support_support_proto_msgTypes[2]
+	mi := &file_support_support_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -236,7 +312,7 @@ func (x *SuccessResponse) String() string {
 func (*SuccessResponse) ProtoMessage() {}
 
 func (x *SuccessResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[2]
+	mi := &file_support_support_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -249,7 +325,7 @@ func (x *SuccessResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SuccessResponse.ProtoReflect.Descriptor instead.
 func (*SuccessResponse) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{2}
+	return file_support_support_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *SuccessResponse) GetSuccess() bool {
@@ -274,7 +350,7 @@ type CreateTicketRequest struct {
 
 func (x *CreateTicketRequest) Reset() {
 	*x = CreateTicketRequest{}
-	mi := &file_support_support_proto_msgTypes[3]
+	mi := &file_support_support_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -286,7 +362,7 @@ func (x *CreateTicketRequest) String() string {
 func (*CreateTicketRequest) ProtoMessage() {}
 
 func (x *CreateTicketRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[3]
+	mi := &file_support_support_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -299,7 +375,7 @@ func (x *CreateTicketRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTicketRequest.ProtoReflect.Descriptor instead.
 func (*CreateTicketRequest) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{3}
+	return file_support_support_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *CreateTicketRequest) GetClientId() int64 {
@@ -360,7 +436,7 @@ type CreateTicketResponse struct {
 
 func (x *CreateTicketResponse) Reset() {
 	*x = CreateTicketResponse{}
-	mi := &file_support_support_proto_msgTypes[4]
+	mi := &file_support_support_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -372,7 +448,7 @@ func (x *CreateTicketResponse) String() string {
 func (*CreateTicketResponse) ProtoMessage() {}
 
 func (x *CreateTicketResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[4]
+	mi := &file_support_support_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -385,7 +461,7 @@ func (x *CreateTicketResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTicketResponse.ProtoReflect.Descriptor instead.
 func (*CreateTicketResponse) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{4}
+	return file_support_support_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *CreateTicketResponse) GetPublicId() string {
@@ -408,7 +484,7 @@ type SendMessageRequest struct {
 
 func (x *SendMessageRequest) Reset() {
 	*x = SendMessageRequest{}
-	mi := &file_support_support_proto_msgTypes[5]
+	mi := &file_support_support_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -420,7 +496,7 @@ func (x *SendMessageRequest) String() string {
 func (*SendMessageRequest) ProtoMessage() {}
 
 func (x *SendMessageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[5]
+	mi := &file_support_support_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -433,7 +509,7 @@ func (x *SendMessageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendMessageRequest.ProtoReflect.Descriptor instead.
 func (*SendMessageRequest) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{5}
+	return file_support_support_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *SendMessageRequest) GetTicketPublicId() string {
@@ -481,7 +557,7 @@ type EventResponse struct {
 
 func (x *EventResponse) Reset() {
 	*x = EventResponse{}
-	mi := &file_support_support_proto_msgTypes[6]
+	mi := &file_support_support_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -493,7 +569,7 @@ func (x *EventResponse) String() string {
 func (*EventResponse) ProtoMessage() {}
 
 func (x *EventResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[6]
+	mi := &file_support_support_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -506,7 +582,7 @@ func (x *EventResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventResponse.ProtoReflect.Descriptor instead.
 func (*EventResponse) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{6}
+	return file_support_support_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *EventResponse) GetId() int64 {
@@ -533,7 +609,7 @@ type GetUserTicketsRequest struct {
 
 func (x *GetUserTicketsRequest) Reset() {
 	*x = GetUserTicketsRequest{}
-	mi := &file_support_support_proto_msgTypes[7]
+	mi := &file_support_support_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -545,7 +621,7 @@ func (x *GetUserTicketsRequest) String() string {
 func (*GetUserTicketsRequest) ProtoMessage() {}
 
 func (x *GetUserTicketsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[7]
+	mi := &file_support_support_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -558,7 +634,7 @@ func (x *GetUserTicketsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserTicketsRequest.ProtoReflect.Descriptor instead.
 func (*GetUserTicketsRequest) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{7}
+	return file_support_support_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetUserTicketsRequest) GetClientId() int64 {
@@ -586,7 +662,7 @@ type GetTicketEventsRequest struct {
 
 func (x *GetTicketEventsRequest) Reset() {
 	*x = GetTicketEventsRequest{}
-	mi := &file_support_support_proto_msgTypes[8]
+	mi := &file_support_support_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -598,7 +674,7 @@ func (x *GetTicketEventsRequest) String() string {
 func (*GetTicketEventsRequest) ProtoMessage() {}
 
 func (x *GetTicketEventsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[8]
+	mi := &file_support_support_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -611,7 +687,7 @@ func (x *GetTicketEventsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTicketEventsRequest.ProtoReflect.Descriptor instead.
 func (*GetTicketEventsRequest) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{8}
+	return file_support_support_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetTicketEventsRequest) GetTicketPublicId() string {
@@ -644,7 +720,7 @@ type TicketListResponse struct {
 
 func (x *TicketListResponse) Reset() {
 	*x = TicketListResponse{}
-	mi := &file_support_support_proto_msgTypes[9]
+	mi := &file_support_support_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -656,7 +732,7 @@ func (x *TicketListResponse) String() string {
 func (*TicketListResponse) ProtoMessage() {}
 
 func (x *TicketListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[9]
+	mi := &file_support_support_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -669,7 +745,7 @@ func (x *TicketListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TicketListResponse.ProtoReflect.Descriptor instead.
 func (*TicketListResponse) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{9}
+	return file_support_support_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *TicketListResponse) GetTickets() []*TicketResponse {
@@ -688,7 +764,7 @@ type EventListResponse struct {
 
 func (x *EventListResponse) Reset() {
 	*x = EventListResponse{}
-	mi := &file_support_support_proto_msgTypes[10]
+	mi := &file_support_support_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -700,7 +776,7 @@ func (x *EventListResponse) String() string {
 func (*EventListResponse) ProtoMessage() {}
 
 func (x *EventListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[10]
+	mi := &file_support_support_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -713,7 +789,7 @@ func (x *EventListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventListResponse.ProtoReflect.Descriptor instead.
 func (*EventListResponse) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{10}
+	return file_support_support_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *EventListResponse) GetEvents() []*Event {
@@ -735,7 +811,7 @@ type RateTicketRequest struct {
 
 func (x *RateTicketRequest) Reset() {
 	*x = RateTicketRequest{}
-	mi := &file_support_support_proto_msgTypes[11]
+	mi := &file_support_support_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -747,7 +823,7 @@ func (x *RateTicketRequest) String() string {
 func (*RateTicketRequest) ProtoMessage() {}
 
 func (x *RateTicketRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[11]
+	mi := &file_support_support_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -760,7 +836,7 @@ func (x *RateTicketRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RateTicketRequest.ProtoReflect.Descriptor instead.
 func (*RateTicketRequest) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{11}
+	return file_support_support_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *RateTicketRequest) GetTicketPublicId() string {
@@ -800,7 +876,7 @@ type GetAssignedTicketsRequest struct {
 
 func (x *GetAssignedTicketsRequest) Reset() {
 	*x = GetAssignedTicketsRequest{}
-	mi := &file_support_support_proto_msgTypes[12]
+	mi := &file_support_support_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -812,7 +888,7 @@ func (x *GetAssignedTicketsRequest) String() string {
 func (*GetAssignedTicketsRequest) ProtoMessage() {}
 
 func (x *GetAssignedTicketsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[12]
+	mi := &file_support_support_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -825,7 +901,7 @@ func (x *GetAssignedTicketsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAssignedTicketsRequest.ProtoReflect.Descriptor instead.
 func (*GetAssignedTicketsRequest) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{12}
+	return file_support_support_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GetAssignedTicketsRequest) GetAgentId() int64 {
@@ -847,7 +923,7 @@ type ChangeTicketStatusRequest struct {
 
 func (x *ChangeTicketStatusRequest) Reset() {
 	*x = ChangeTicketStatusRequest{}
-	mi := &file_support_support_proto_msgTypes[13]
+	mi := &file_support_support_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -859,7 +935,7 @@ func (x *ChangeTicketStatusRequest) String() string {
 func (*ChangeTicketStatusRequest) ProtoMessage() {}
 
 func (x *ChangeTicketStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[13]
+	mi := &file_support_support_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -872,7 +948,7 @@ func (x *ChangeTicketStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangeTicketStatusRequest.ProtoReflect.Descriptor instead.
 func (*ChangeTicketStatusRequest) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{13}
+	return file_support_support_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ChangeTicketStatusRequest) GetTicketPublicId() string {
@@ -916,7 +992,7 @@ type ReassignTicketRequest struct {
 
 func (x *ReassignTicketRequest) Reset() {
 	*x = ReassignTicketRequest{}
-	mi := &file_support_support_proto_msgTypes[14]
+	mi := &file_support_support_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -928,7 +1004,7 @@ func (x *ReassignTicketRequest) String() string {
 func (*ReassignTicketRequest) ProtoMessage() {}
 
 func (x *ReassignTicketRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[14]
+	mi := &file_support_support_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -941,7 +1017,7 @@ func (x *ReassignTicketRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReassignTicketRequest.ProtoReflect.Descriptor instead.
 func (*ReassignTicketRequest) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{14}
+	return file_support_support_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ReassignTicketRequest) GetTicketPublicId() string {
@@ -989,7 +1065,7 @@ type SetAgentStatusRequest struct {
 
 func (x *SetAgentStatusRequest) Reset() {
 	*x = SetAgentStatusRequest{}
-	mi := &file_support_support_proto_msgTypes[15]
+	mi := &file_support_support_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1001,7 +1077,7 @@ func (x *SetAgentStatusRequest) String() string {
 func (*SetAgentStatusRequest) ProtoMessage() {}
 
 func (x *SetAgentStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[15]
+	mi := &file_support_support_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1014,7 +1090,7 @@ func (x *SetAgentStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetAgentStatusRequest.ProtoReflect.Descriptor instead.
 func (*SetAgentStatusRequest) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{15}
+	return file_support_support_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SetAgentStatusRequest) GetAgentId() int64 {
@@ -1043,7 +1119,7 @@ type Category struct {
 
 func (x *Category) Reset() {
 	*x = Category{}
-	mi := &file_support_support_proto_msgTypes[16]
+	mi := &file_support_support_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1055,7 +1131,7 @@ func (x *Category) String() string {
 func (*Category) ProtoMessage() {}
 
 func (x *Category) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[16]
+	mi := &file_support_support_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1068,7 +1144,7 @@ func (x *Category) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Category.ProtoReflect.Descriptor instead.
 func (*Category) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{16}
+	return file_support_support_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *Category) GetId() int64 {
@@ -1108,7 +1184,7 @@ type CategoryListResponse struct {
 
 func (x *CategoryListResponse) Reset() {
 	*x = CategoryListResponse{}
-	mi := &file_support_support_proto_msgTypes[17]
+	mi := &file_support_support_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1120,7 +1196,7 @@ func (x *CategoryListResponse) String() string {
 func (*CategoryListResponse) ProtoMessage() {}
 
 func (x *CategoryListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[17]
+	mi := &file_support_support_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1133,7 +1209,7 @@ func (x *CategoryListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CategoryListResponse.ProtoReflect.Descriptor instead.
 func (*CategoryListResponse) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{17}
+	return file_support_support_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *CategoryListResponse) GetCategories() []*Category {
@@ -1154,7 +1230,7 @@ type Template struct {
 
 func (x *Template) Reset() {
 	*x = Template{}
-	mi := &file_support_support_proto_msgTypes[18]
+	mi := &file_support_support_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1166,7 +1242,7 @@ func (x *Template) String() string {
 func (*Template) ProtoMessage() {}
 
 func (x *Template) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[18]
+	mi := &file_support_support_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1179,7 +1255,7 @@ func (x *Template) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Template.ProtoReflect.Descriptor instead.
 func (*Template) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{18}
+	return file_support_support_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *Template) GetId() int64 {
@@ -1212,7 +1288,7 @@ type TemplateListResponse struct {
 
 func (x *TemplateListResponse) Reset() {
 	*x = TemplateListResponse{}
-	mi := &file_support_support_proto_msgTypes[19]
+	mi := &file_support_support_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1224,7 +1300,7 @@ func (x *TemplateListResponse) String() string {
 func (*TemplateListResponse) ProtoMessage() {}
 
 func (x *TemplateListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_support_support_proto_msgTypes[19]
+	mi := &file_support_support_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1237,7 +1313,7 @@ func (x *TemplateListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TemplateListResponse.ProtoReflect.Descriptor instead.
 func (*TemplateListResponse) Descriptor() ([]byte, []int) {
-	return file_support_support_proto_rawDescGZIP(), []int{19}
+	return file_support_support_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *TemplateListResponse) GetTemplates() []*Template {
@@ -1263,7 +1339,20 @@ const file_support_support_proto_rawDesc = "" +
 	"assigneeId\x12+\n" +
 	"\x11resolution_rating\x18\a \x01(\x05R\x10resolutionRating\x129\n" +
 	"\n" +
-	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xe6\x01\n" +
+	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xaf\x03\n" +
+	"\x14SupportStatsResponse\x12#\n" +
+	"\rtotal_tickets\x18\x01 \x01(\x03R\ftotalTickets\x12H\n" +
+	"\tby_status\x18\x02 \x03(\v2+.support.SupportStatsResponse.ByStatusEntryR\bbyStatus\x12N\n" +
+	"\vby_category\x18\x03 \x03(\v2-.support.SupportStatsResponse.ByCategoryEntryR\n" +
+	"byCategory\x12%\n" +
+	"\x0eaverage_rating\x18\x04 \x01(\x01R\raverageRating\x125\n" +
+	"\x17avg_resolution_time_sec\x18\x05 \x01(\x03R\x14avgResolutionTimeSec\x1a;\n" +
+	"\rByStatusEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\x03R\x05value:\x028\x01\x1a=\n" +
+	"\x0fByCategoryEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\x03R\x05value:\x028\x01\"\xe6\x01\n" +
 	"\x05Event\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1b\n" +
 	"\tticket_id\x18\x02 \x01(\x03R\bticketId\x12\x1b\n" +
@@ -1346,7 +1435,7 @@ const file_support_support_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
 	"\acontent\x18\x03 \x01(\tR\acontent\"G\n" +
 	"\x14TemplateListResponse\x12/\n" +
-	"\ttemplates\x18\x01 \x03(\v2\x11.support.TemplateR\ttemplates2\xd6\x06\n" +
+	"\ttemplates\x18\x01 \x03(\v2\x11.support.TemplateR\ttemplates2\x99\a\n" +
 	"\x0eSupportService\x12K\n" +
 	"\fCreateTicket\x12\x1c.support.CreateTicketRequest\x1a\x1d.support.CreateTicketResponse\x12B\n" +
 	"\vSendMessage\x12\x1b.support.SendMessageRequest\x1a\x16.support.EventResponse\x12M\n" +
@@ -1359,7 +1448,8 @@ const file_support_support_proto_rawDesc = "" +
 	"\x0eReassignTicket\x12\x1e.support.ReassignTicketRequest\x1a\x18.support.SuccessResponse\x12J\n" +
 	"\x0eSetAgentStatus\x12\x1e.support.SetAgentStatusRequest\x1a\x18.support.SuccessResponse\x12F\n" +
 	"\rGetCategories\x12\x16.google.protobuf.Empty\x1a\x1d.support.CategoryListResponse\x12E\n" +
-	"\fGetTemplates\x12\x16.google.protobuf.Empty\x1a\x1d.support.TemplateListResponseB@Z>github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/supportb\x06proto3"
+	"\fGetTemplates\x12\x16.google.protobuf.Empty\x1a\x1d.support.TemplateListResponse\x12A\n" +
+	"\bGetStats\x12\x16.google.protobuf.Empty\x1a\x1d.support.SupportStatsResponseB@Z>github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/supportb\x06proto3"
 
 var (
 	file_support_support_proto_rawDescOnce sync.Once
@@ -1373,66 +1463,73 @@ func file_support_support_proto_rawDescGZIP() []byte {
 	return file_support_support_proto_rawDescData
 }
 
-var file_support_support_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_support_support_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_support_support_proto_goTypes = []any{
 	(*TicketResponse)(nil),            // 0: support.TicketResponse
-	(*Event)(nil),                     // 1: support.Event
-	(*SuccessResponse)(nil),           // 2: support.SuccessResponse
-	(*CreateTicketRequest)(nil),       // 3: support.CreateTicketRequest
-	(*CreateTicketResponse)(nil),      // 4: support.CreateTicketResponse
-	(*SendMessageRequest)(nil),        // 5: support.SendMessageRequest
-	(*EventResponse)(nil),             // 6: support.EventResponse
-	(*GetUserTicketsRequest)(nil),     // 7: support.GetUserTicketsRequest
-	(*GetTicketEventsRequest)(nil),    // 8: support.GetTicketEventsRequest
-	(*TicketListResponse)(nil),        // 9: support.TicketListResponse
-	(*EventListResponse)(nil),         // 10: support.EventListResponse
-	(*RateTicketRequest)(nil),         // 11: support.RateTicketRequest
-	(*GetAssignedTicketsRequest)(nil), // 12: support.GetAssignedTicketsRequest
-	(*ChangeTicketStatusRequest)(nil), // 13: support.ChangeTicketStatusRequest
-	(*ReassignTicketRequest)(nil),     // 14: support.ReassignTicketRequest
-	(*SetAgentStatusRequest)(nil),     // 15: support.SetAgentStatusRequest
-	(*Category)(nil),                  // 16: support.Category
-	(*CategoryListResponse)(nil),      // 17: support.CategoryListResponse
-	(*Template)(nil),                  // 18: support.Template
-	(*TemplateListResponse)(nil),      // 19: support.TemplateListResponse
-	(*timestamppb.Timestamp)(nil),     // 20: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),             // 21: google.protobuf.Empty
+	(*SupportStatsResponse)(nil),      // 1: support.SupportStatsResponse
+	(*Event)(nil),                     // 2: support.Event
+	(*SuccessResponse)(nil),           // 3: support.SuccessResponse
+	(*CreateTicketRequest)(nil),       // 4: support.CreateTicketRequest
+	(*CreateTicketResponse)(nil),      // 5: support.CreateTicketResponse
+	(*SendMessageRequest)(nil),        // 6: support.SendMessageRequest
+	(*EventResponse)(nil),             // 7: support.EventResponse
+	(*GetUserTicketsRequest)(nil),     // 8: support.GetUserTicketsRequest
+	(*GetTicketEventsRequest)(nil),    // 9: support.GetTicketEventsRequest
+	(*TicketListResponse)(nil),        // 10: support.TicketListResponse
+	(*EventListResponse)(nil),         // 11: support.EventListResponse
+	(*RateTicketRequest)(nil),         // 12: support.RateTicketRequest
+	(*GetAssignedTicketsRequest)(nil), // 13: support.GetAssignedTicketsRequest
+	(*ChangeTicketStatusRequest)(nil), // 14: support.ChangeTicketStatusRequest
+	(*ReassignTicketRequest)(nil),     // 15: support.ReassignTicketRequest
+	(*SetAgentStatusRequest)(nil),     // 16: support.SetAgentStatusRequest
+	(*Category)(nil),                  // 17: support.Category
+	(*CategoryListResponse)(nil),      // 18: support.CategoryListResponse
+	(*Template)(nil),                  // 19: support.Template
+	(*TemplateListResponse)(nil),      // 20: support.TemplateListResponse
+	nil,                               // 21: support.SupportStatsResponse.ByStatusEntry
+	nil,                               // 22: support.SupportStatsResponse.ByCategoryEntry
+	(*timestamppb.Timestamp)(nil),     // 23: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),             // 24: google.protobuf.Empty
 }
 var file_support_support_proto_depIdxs = []int32{
-	20, // 0: support.TicketResponse.created_at:type_name -> google.protobuf.Timestamp
-	20, // 1: support.Event.created_at:type_name -> google.protobuf.Timestamp
-	20, // 2: support.EventResponse.created_at:type_name -> google.protobuf.Timestamp
-	0,  // 3: support.TicketListResponse.tickets:type_name -> support.TicketResponse
-	1,  // 4: support.EventListResponse.events:type_name -> support.Event
-	16, // 5: support.CategoryListResponse.categories:type_name -> support.Category
-	18, // 6: support.TemplateListResponse.templates:type_name -> support.Template
-	3,  // 7: support.SupportService.CreateTicket:input_type -> support.CreateTicketRequest
-	5,  // 8: support.SupportService.SendMessage:input_type -> support.SendMessageRequest
-	7,  // 9: support.SupportService.GetUserTickets:input_type -> support.GetUserTicketsRequest
-	8,  // 10: support.SupportService.GetTicketEvents:input_type -> support.GetTicketEventsRequest
-	11, // 11: support.SupportService.RateTicket:input_type -> support.RateTicketRequest
-	12, // 12: support.SupportService.GetAssignedTickets:input_type -> support.GetAssignedTicketsRequest
-	13, // 13: support.SupportService.ChangeTicketStatus:input_type -> support.ChangeTicketStatusRequest
-	14, // 14: support.SupportService.ReassignTicket:input_type -> support.ReassignTicketRequest
-	15, // 15: support.SupportService.SetAgentStatus:input_type -> support.SetAgentStatusRequest
-	21, // 16: support.SupportService.GetCategories:input_type -> google.protobuf.Empty
-	21, // 17: support.SupportService.GetTemplates:input_type -> google.protobuf.Empty
-	4,  // 18: support.SupportService.CreateTicket:output_type -> support.CreateTicketResponse
-	6,  // 19: support.SupportService.SendMessage:output_type -> support.EventResponse
-	9,  // 20: support.SupportService.GetUserTickets:output_type -> support.TicketListResponse
-	10, // 21: support.SupportService.GetTicketEvents:output_type -> support.EventListResponse
-	2,  // 22: support.SupportService.RateTicket:output_type -> support.SuccessResponse
-	9,  // 23: support.SupportService.GetAssignedTickets:output_type -> support.TicketListResponse
-	2,  // 24: support.SupportService.ChangeTicketStatus:output_type -> support.SuccessResponse
-	2,  // 25: support.SupportService.ReassignTicket:output_type -> support.SuccessResponse
-	2,  // 26: support.SupportService.SetAgentStatus:output_type -> support.SuccessResponse
-	17, // 27: support.SupportService.GetCategories:output_type -> support.CategoryListResponse
-	19, // 28: support.SupportService.GetTemplates:output_type -> support.TemplateListResponse
-	18, // [18:29] is the sub-list for method output_type
-	7,  // [7:18] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	23, // 0: support.TicketResponse.created_at:type_name -> google.protobuf.Timestamp
+	21, // 1: support.SupportStatsResponse.by_status:type_name -> support.SupportStatsResponse.ByStatusEntry
+	22, // 2: support.SupportStatsResponse.by_category:type_name -> support.SupportStatsResponse.ByCategoryEntry
+	23, // 3: support.Event.created_at:type_name -> google.protobuf.Timestamp
+	23, // 4: support.EventResponse.created_at:type_name -> google.protobuf.Timestamp
+	0,  // 5: support.TicketListResponse.tickets:type_name -> support.TicketResponse
+	2,  // 6: support.EventListResponse.events:type_name -> support.Event
+	17, // 7: support.CategoryListResponse.categories:type_name -> support.Category
+	19, // 8: support.TemplateListResponse.templates:type_name -> support.Template
+	4,  // 9: support.SupportService.CreateTicket:input_type -> support.CreateTicketRequest
+	6,  // 10: support.SupportService.SendMessage:input_type -> support.SendMessageRequest
+	8,  // 11: support.SupportService.GetUserTickets:input_type -> support.GetUserTicketsRequest
+	9,  // 12: support.SupportService.GetTicketEvents:input_type -> support.GetTicketEventsRequest
+	12, // 13: support.SupportService.RateTicket:input_type -> support.RateTicketRequest
+	13, // 14: support.SupportService.GetAssignedTickets:input_type -> support.GetAssignedTicketsRequest
+	14, // 15: support.SupportService.ChangeTicketStatus:input_type -> support.ChangeTicketStatusRequest
+	15, // 16: support.SupportService.ReassignTicket:input_type -> support.ReassignTicketRequest
+	16, // 17: support.SupportService.SetAgentStatus:input_type -> support.SetAgentStatusRequest
+	24, // 18: support.SupportService.GetCategories:input_type -> google.protobuf.Empty
+	24, // 19: support.SupportService.GetTemplates:input_type -> google.protobuf.Empty
+	24, // 20: support.SupportService.GetStats:input_type -> google.protobuf.Empty
+	5,  // 21: support.SupportService.CreateTicket:output_type -> support.CreateTicketResponse
+	7,  // 22: support.SupportService.SendMessage:output_type -> support.EventResponse
+	10, // 23: support.SupportService.GetUserTickets:output_type -> support.TicketListResponse
+	11, // 24: support.SupportService.GetTicketEvents:output_type -> support.EventListResponse
+	3,  // 25: support.SupportService.RateTicket:output_type -> support.SuccessResponse
+	10, // 26: support.SupportService.GetAssignedTickets:output_type -> support.TicketListResponse
+	3,  // 27: support.SupportService.ChangeTicketStatus:output_type -> support.SuccessResponse
+	3,  // 28: support.SupportService.ReassignTicket:output_type -> support.SuccessResponse
+	3,  // 29: support.SupportService.SetAgentStatus:output_type -> support.SuccessResponse
+	18, // 30: support.SupportService.GetCategories:output_type -> support.CategoryListResponse
+	20, // 31: support.SupportService.GetTemplates:output_type -> support.TemplateListResponse
+	1,  // 32: support.SupportService.GetStats:output_type -> support.SupportStatsResponse
+	21, // [21:33] is the sub-list for method output_type
+	9,  // [9:21] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_support_support_proto_init() }
@@ -1446,7 +1543,7 @@ func file_support_support_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_support_support_proto_rawDesc), len(file_support_support_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   20,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -47,6 +47,14 @@ type Ticket struct {
 	CreatedAt        time.Time
 }
 
+type SupportStats struct {
+	TotalTickets         int64
+	ByStatus             map[string]int64
+	ByCategory           map[string]int64
+	AverageRating        float64
+	AvgResolutionTimeSec int64
+}
+
 type Event struct {
 	ID         int64
 	TicketID   int64
@@ -89,6 +97,7 @@ type SupportClient interface {
 	// Справочники
 	GetCategories(ctx context.Context) ([]Category, error)
 	GetTemplates(ctx context.Context) ([]Template, error)
+	GetStats(ctx context.Context) (SupportStats, error)
 }
 
 type supportClient struct {
@@ -371,4 +380,19 @@ func (c *supportClient) GetTemplates(ctx context.Context) ([]Template, error) {
 	}
 
 	return templates, nil
+}
+
+func (c *supportClient) GetStats(ctx context.Context) (SupportStats, error) {
+	resp, err := c.client.GetStats(ctx, &emptypb.Empty{})
+	if err != nil {
+		return SupportStats{}, ErrInternal
+	}
+
+	return SupportStats{
+		TotalTickets:         resp.TotalTickets,
+		ByStatus:             resp.ByStatus,
+		ByCategory:           resp.ByCategory,
+		AverageRating:        resp.AverageRating,
+		AvgResolutionTimeSec: resp.AvgResolutionTimeSec,
+	}, nil
 }

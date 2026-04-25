@@ -33,6 +33,8 @@ service SupportService {
   rpc GetCategories(google.protobuf.Empty) returns (CategoryListResponse);
   // Метод получения шаблонных ответов
   rpc GetTemplates(google.protobuf.Empty) returns (TemplateListResponse);
+  // Метод получения статистики
+  rpc GetStats (google.protobuf.Empty) returns (SupportStatsResponse);
 }
 
 message TicketResponse {
@@ -44,6 +46,14 @@ message TicketResponse {
   int64 assignee_id = 6;
   int32 resolution_rating = 7;
   google.protobuf.Timestamp created_at = 8;
+}
+
+message SupportStatsResponse {
+  int64 total_tickets = 1;
+  map<string, int64> by_status = 2;   // "open": 10, "closed": 50
+  map<string, int64> by_category = 3; // "баг": 15, "жалоба": 5
+  double average_rating = 4;          // 4.5
+  int64 avg_resolution_time_sec = 5;  // среднее время закрытия
 }
 
 message Event {

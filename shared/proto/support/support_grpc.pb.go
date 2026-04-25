@@ -31,6 +31,7 @@ const (
 	SupportService_SetAgentStatus_FullMethodName     = "/support.SupportService/SetAgentStatus"
 	SupportService_GetCategories_FullMethodName      = "/support.SupportService/GetCategories"
 	SupportService_GetTemplates_FullMethodName       = "/support.SupportService/GetTemplates"
+	SupportService_GetStats_FullMethodName           = "/support.SupportService/GetStats"
 )
 
 // SupportServiceClient is the client API for SupportService service.
@@ -61,6 +62,8 @@ type SupportServiceClient interface {
 	GetCategories(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*CategoryListResponse, error)
 	// Метод получения шаблонных ответов
 	GetTemplates(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*TemplateListResponse, error)
+	// Метод получения статистики
+	GetStats(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*SupportStatsResponse, error)
 }
 
 type supportServiceClient struct {
@@ -181,6 +184,16 @@ func (c *supportServiceClient) GetTemplates(ctx context.Context, in *emptypb.Emp
 	return out, nil
 }
 
+func (c *supportServiceClient) GetStats(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*SupportStatsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SupportStatsResponse)
+	err := c.cc.Invoke(ctx, SupportService_GetStats_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SupportServiceServer is the server API for SupportService service.
 // All implementations must embed UnimplementedSupportServiceServer
 // for forward compatibility.
@@ -209,6 +222,8 @@ type SupportServiceServer interface {
 	GetCategories(context.Context, *emptypb.Empty) (*CategoryListResponse, error)
 	// Метод получения шаблонных ответов
 	GetTemplates(context.Context, *emptypb.Empty) (*TemplateListResponse, error)
+	// Метод получения статистики
+	GetStats(context.Context, *emptypb.Empty) (*SupportStatsResponse, error)
 	mustEmbedUnimplementedSupportServiceServer()
 }
 
@@ -251,6 +266,9 @@ func (UnimplementedSupportServiceServer) GetCategories(context.Context, *emptypb
 }
 func (UnimplementedSupportServiceServer) GetTemplates(context.Context, *emptypb.Empty) (*TemplateListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetTemplates not implemented")
+}
+func (UnimplementedSupportServiceServer) GetStats(context.Context, *emptypb.Empty) (*SupportStatsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetStats not implemented")
 }
 func (UnimplementedSupportServiceServer) mustEmbedUnimplementedSupportServiceServer() {}
 func (UnimplementedSupportServiceServer) testEmbeddedByValue()                        {}
@@ -471,6 +489,24 @@ func _SupportService_GetTemplates_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SupportService_GetStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SupportServiceServer).GetStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SupportService_GetStats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SupportServiceServer).GetStats(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SupportService_ServiceDesc is the grpc.ServiceDesc for SupportService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -521,6 +557,10 @@ var SupportService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTemplates",
 			Handler:    _SupportService_GetTemplates_Handler,
+		},
+		{
+			MethodName: "GetStats",
+			Handler:    _SupportService_GetStats_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

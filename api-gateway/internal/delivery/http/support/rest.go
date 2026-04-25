@@ -542,6 +542,35 @@ func (h *SupportHandler) getOrSetGuestID(w http.ResponseWriter, r *http.Request)
 	return guestID
 }
 
+// GetSupportStats godoc
+// @Summary      Получение статистики техподдержки
+// @Description  Возвращает агрегированные данные по тикетам: общее количество, распределение по статусам и категориям, средний рейтинг и среднее время решения. Доступно только для ролей admin и support.
+// @Tags         admin, support
+// @Produce      json
+// @Success      200  {object}  supportclient.SupportStats "Статистика успешно получена"
+// @Failure      401  {object}  response.ErrorResponse     "Пользователь не авторизован"
+// @Failure      403  {object}  response.ErrorResponse     "Недостаточно прав (требуется роль admin или support)"
+// @Failure      500  {object}  response.ErrorResponse     "Внутренняя ошибка сервера"
+// @Security     ApiKeyAuth
+// @Router       /admin/support/stats [get]
+func (h *SupportHandler) GetSupportStats(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	role, ok := ctx.Value(middleware.RoleKey).(string)
+	if !ok || (role != "admin" && role != "support") {
+		response.Error(w, http.StatusForbidden, "Access denied: admin or support role required")
+		return
+	}
+
+	stats, err := h.supportClient.GetStats(ctx)
+	if err != nil {
+		response.WriteError(w, err)
+		return
+	}
+
+	response.JSON(w, http.StatusOK, stats)
+}
+
 func mapTicketToDTO(t supportclient.Ticket) TicketDTO {
 	return TicketDTO{
 		ID:               t.ID,
