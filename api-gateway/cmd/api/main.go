@@ -218,9 +218,6 @@ func main() {
 	mux.HandleFunc("GET /api/support/tickets/{id}/events", supportHandler.GetTicketEvents)
 	mux.HandleFunc("POST /api/support/tickets/{id}/rate", supportHandler.RateTicket)
 	mux.HandleFunc("GET /api/support/tickets/{id}/chat", supportHandler.ConnectChat)
-	mux.HandleFunc("POST /api/support/tickets", supportHandler.CreateTicket)
-	mux.HandleFunc("GET /api/support/tickets", supportHandler.GetMyTickets)
-	mux.HandleFunc("GET /api/support/tickets/{id}/chat", supportHandler.ConnectChat)
 
 	// === SUPPORT === (Операторская часть / Админка)
 	mux.Handle("GET /api/admin/support/tickets", authMW.RequireAuth(http.HandlerFunc(supportHandler.GetAssignedTickets)))
