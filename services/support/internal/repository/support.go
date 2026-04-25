@@ -12,6 +12,7 @@ type SupportRepository interface {
 	GetTicketByPublicID(ctx context.Context, publicID string) (domain.Ticket, error)
 	GetTicketsByClientID(ctx context.Context, clientID int64) ([]domain.Ticket, error)
 	GetTicketsByGuestID(ctx context.Context, guestID string) ([]domain.Ticket, error)
+	GetAssignedTickets(ctx context.Context, agentID int64) ([]domain.Ticket, error)
 
 	// Управление состоянием (с обновлением updated_at)
 	UpdateTicketStatus(ctx context.Context, ticketID int64, status string) error
@@ -28,4 +29,6 @@ type SupportRepository interface {
 
 	// Справочники
 	GetActiveCategories(ctx context.Context) ([]domain.Category, error)
+	// Быстрые готовые ответы
+	GetTemplates(ctx context.Context) ([]domain.Template, error)
 }

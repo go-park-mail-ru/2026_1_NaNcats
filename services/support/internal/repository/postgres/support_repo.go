@@ -72,7 +72,7 @@ func (t ticketDB) toDomain() domain.Ticket {
 		ClientID:         t.ClientAccountID,
 		GuestID:          t.GuestID,
 		ContactEmail:     t.ContactEmail,
-		CategoryID:       int(t.CategoryID),
+		CategoryID:       t.CategoryID,
 		CurrentStatus:    t.CurrentStatus,
 		SupportLine:      t.SupportLine,
 		AssigneeID:       t.AssigneeID,
@@ -104,6 +104,14 @@ func (e eventDB) toDomain() domain.Event {
 		Payload:    e.Payload,
 		CreatedAt:  e.CreatedAt,
 	}
+}
+
+func mapDBTicketsToDomain(dbTickets []ticketDB) []domain.Ticket {
+	result := make([]domain.Ticket, 0, len(dbTickets))
+	for _, t := range dbTickets {
+		result = append(result, t.toDomain())
+	}
+	return result
 }
 
 type supportRepo struct {
@@ -247,7 +255,10 @@ func (r *supportRepo) AssignTicket(ctx context.Context, ticketID int64, agentID 
 
 func (r *supportRepo) GetTicketByPublicID(ctx context.Context, publicID string) (domain.Ticket, error) {
 	query := `SELECT * FROM "support_ticket" WHERE public_id = $1`
-	rows, _ := r.pool.Query(ctx, query, publicID)
+	rows, err := r.pool.Query(ctx, query, publicID)
+	if err != nil {
+		return domain.Ticket{}, err
+	}
 
 	dbT, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[ticketDB])
 	if err != nil {
@@ -276,12 +287,7 @@ func (r *supportRepo) GetTicketsByClientID(ctx context.Context, clientID int64) 
 		return nil, fmt.Errorf("collect client tickets: %w", err)
 	}
 
-	result := make([]domain.Ticket, 0, len(dbTickets))
-	for _, t := range dbTickets {
-		result = append(result, t.toDomain())
-	}
-
-	return result, nil
+	return mapDBTicketsToDomain(dbTickets), nil
 }
 
 func (r *supportRepo) GetTicketsByGuestID(ctx context.Context, guestID string) ([]domain.Ticket, error) {
@@ -301,12 +307,7 @@ func (r *supportRepo) GetTicketsByGuestID(ctx context.Context, guestID string) (
 		return nil, fmt.Errorf("collect guest tickets: %w", err)
 	}
 
-	result := make([]domain.Ticket, 0, len(dbTickets))
-	for _, t := range dbTickets {
-		result = append(result, t.toDomain())
-	}
-
-	return result, nil
+	return mapDBTicketsToDomain(dbTickets), nil
 }
 
 func (r *supportRepo) GetAssignedTickets(ctx context.Context, agentID int64) ([]domain.Ticket, error) {
@@ -326,17 +327,15 @@ func (r *supportRepo) GetAssignedTickets(ctx context.Context, agentID int64) ([]
 		return nil, err
 	}
 
-	result := make([]domain.Ticket, 0, len(dbTickets))
-	for _, t := range dbTickets {
-		result = append(result, t.toDomain())
-	}
-
-	return result, nil
+	return mapDBTicketsToDomain(dbTickets), nil
 }
 
 func (r *supportRepo) GetEventsByTicketID(ctx context.Context, ticketID int64) ([]domain.Event, error) {
 	query := `SELECT * FROM "support_event" WHERE ticket_id = $1 ORDER BY created_at ASC`
-	rows, _ := r.pool.Query(ctx, query, ticketID)
+	rows, err := r.pool.Query(ctx, query, ticketID)
+	if err != nil {
+		return nil, err
+	}
 
 	dbEvents, err := pgx.CollectRows(rows, pgx.RowToStructByName[eventDB])
 	if err != nil {
@@ -361,11 +360,14 @@ func (r *supportRepo) UpdateAgentStatus(ctx context.Context, agentID int64, stat
 }
 
 func (r *supportRepo) GetActiveCategories(ctx context.Context) ([]domain.Category, error) {
-	query := `SELECT id, name, description FROM "support_category" WHERE is_active = true`
-	rows, _ := r.pool.Query(ctx, query)
+	query := `SELECT id, name, description, is_active FROM "support_category" WHERE is_active = true`
+	rows, err := r.pool.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-	categories, err := pgx.CollectRows(rows, pgx.RowToStructByPos[domain.Category])
-	return categories, err
+	return pgx.CollectRows(rows, pgx.RowToStructByName[domain.Category])
 }
 
 func (r *supportRepo) GetAgentProfile(ctx context.Context, agentID int64) (domain.AgentProfile, error) {
@@ -405,4 +407,25 @@ func (r *supportRepo) SetTicketRating(ctx context.Context, ticketID int64, ratin
 		return errors.New("ticket not found")
 	}
 	return nil
+}
+
+func (r *supportRepo) GetTemplates(ctx context.Context) ([]domain.Template, error) {
+	query := `
+		SELECT id, name, content 
+		FROM "support_template" 
+		ORDER BY name ASC;
+	`
+
+	rows, err := r.pool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("query support templates: %w", err)
+	}
+	defer rows.Close()
+
+	templates, err := pgx.CollectRows(rows, pgx.RowToStructByName[domain.Template])
+	if err != nil {
+		return nil, fmt.Errorf("collect support templates: %w", err)
+	}
+
+	return templates, nil
 }

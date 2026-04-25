@@ -11,7 +11,7 @@ type Ticket struct {
 	ClientID         *int64
 	GuestID          *string
 	ContactEmail     string
-	CategoryID       int
+	CategoryID       int64
 	CurrentStatus    string
 	SupportLine      int
 	AssigneeID       *int64
@@ -42,7 +42,7 @@ type CreateTicketInput struct {
 	ClientID       *int64
 	GuestID        *string
 	ContactEmail   string
-	CategoryID     int
+	CategoryID     int64
 	FirstMessage   string
 	ClientMeta     json.RawMessage
 	CreatorRole    string
