@@ -5,9 +5,12 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/usecase"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/grpcutil"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/support"
+	"github.com/google/uuid"
 
+	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -25,7 +28,7 @@ func mapDomainToPBTicket(t domain.Ticket) *pb.TicketResponse {
 
 	return &pb.TicketResponse{
 		Id:               t.ID,
-		PublicId:         t.PublicID,
+		PublicId:         t.PublicID.String(),
 		CategoryId:       t.CategoryID,
 		CurrentStatus:    t.CurrentStatus,
 		SupportLine:      int64(t.SupportLine),
@@ -47,9 +50,38 @@ func mapDomainToPBEvent(e domain.Event) *pb.Event {
 		AuthorId:   authorID,
 		AuthorRole: e.AuthorRole,
 		EventType:  e.EventType,
-		Payload:    string(e.Payload), // json.RawMessage -> string
+		Payload:    string(e.Payload),
 		CreatedAt:  timestamppb.New(e.CreatedAt),
 	}
+}
+
+func parseUUID(idStr, slug, msg string) (uuid.UUID, error) {
+	parsed, err := uuid.Parse(idStr)
+	if err != nil {
+		return uuid.Nil, grpcutil.ToGRPCError(errutil.Wrap(
+			slug,
+			msg,
+			err,
+			codes.InvalidArgument,
+		))
+	}
+	return parsed, nil
+}
+
+func parseOptionalUUID(idStr, slug, msg string) (*uuid.UUID, error) {
+	if idStr == "" {
+		return nil, nil
+	}
+	parsed, err := uuid.Parse(idStr)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(errutil.Wrap(
+			slug,
+			msg,
+			err,
+			codes.InvalidArgument,
+		))
+	}
+	return &parsed, nil
 }
 
 type SupportHandler struct {
@@ -77,10 +109,12 @@ func (h *SupportHandler) CreateTicket(ctx context.Context, req *pb.CreateTicketR
 		cid := req.ClientId
 		input.ClientID = &cid
 	}
-	if req.GuestId != "" {
-		gid := req.GuestId
-		input.GuestID = &gid
+
+	guestUUID, err := parseOptionalUUID(req.GuestId, "INVALID_GUEST_ID", "guest_id is not a valid uuid")
+	if err != nil {
+		return nil, err
 	}
+	input.GuestID = guestUUID
 
 	publicID, err := h.usecase.CreateTicket(ctx, input)
 	if err != nil {
@@ -88,7 +122,7 @@ func (h *SupportHandler) CreateTicket(ctx context.Context, req *pb.CreateTicketR
 	}
 
 	return &pb.CreateTicketResponse{
-		PublicId: publicID,
+		PublicId: publicID.String(),
 	}, nil
 }
 
@@ -99,7 +133,12 @@ func (h *SupportHandler) SendMessage(ctx context.Context, req *pb.SendMessageReq
 		authorID = &aid
 	}
 
-	err := h.usecase.AddMessage(ctx, req.TicketPublicId, authorID, req.AuthorRole, req.Message, req.IdempotencyKey)
+	ticketUUID, err := parseUUID(req.TicketPublicId, "INVALID_ID_FORMAT", "provided ticket public id has wrong format")
+	if err != nil {
+		return nil, err
+	}
+
+	err = h.usecase.AddMessage(ctx, ticketUUID, authorID, req.AuthorRole, req.Message, req.IdempotencyKey)
 	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
 	}
@@ -114,19 +153,18 @@ func (h *SupportHandler) SendMessage(ctx context.Context, req *pb.SendMessageReq
 }
 
 func (h *SupportHandler) GetUserTickets(ctx context.Context, req *pb.GetUserTicketsRequest) (*pb.TicketListResponse, error) {
+	guestUUID, err := parseOptionalUUID(req.GuestId, "INVALID_GUEST_ID", "guest_id is not a valid uuid")
+	if err != nil {
+		return nil, err
+	}
+
 	var clientID *int64
 	if req.ClientId != 0 {
 		cid := req.ClientId
 		clientID = &cid
 	}
 
-	var guestID *string
-	if req.GuestId != "" {
-		gid := req.GuestId
-		guestID = &gid
-	}
-
-	tickets, err := h.usecase.GetMyTickets(ctx, clientID, guestID)
+	tickets, err := h.usecase.GetMyTickets(ctx, clientID, guestUUID)
 	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
 	}
@@ -148,13 +186,17 @@ func (h *SupportHandler) GetTicketEvents(ctx context.Context, req *pb.GetTicketE
 		clientID = &cid
 	}
 
-	var guestID *string
-	if req.GuestId != "" {
-		gid := req.GuestId
-		guestID = &gid
+	ticketUUID, err := parseUUID(req.TicketPublicId, "INVALID_ID_FORMAT", "provided ticket public id has wrong format")
+	if err != nil {
+		return nil, err
 	}
 
-	events, err := h.usecase.GetTicketEvents(ctx, req.TicketPublicId, clientID, guestID)
+	guestUUID, err := parseOptionalUUID(req.GuestId, "INVALID_GUEST_ID", "guest_id is not a valid uuid")
+	if err != nil {
+		return nil, err
+	}
+
+	events, err := h.usecase.GetTicketEvents(ctx, ticketUUID, clientID, guestUUID)
 	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
 	}
@@ -176,7 +218,12 @@ func (h *SupportHandler) RateTicket(ctx context.Context, req *pb.RateTicketReque
 		clientID = &cid
 	}
 
-	err := h.usecase.RateTicket(ctx, req.TicketPublicId, int(req.Rating), clientID, req.IdempotencyKey)
+	ticketUUID, err := parseUUID(req.TicketPublicId, "INVALID_ID_FORMAT", "provided ticket public id has wrong format")
+	if err != nil {
+		return nil, err
+	}
+
+	err = h.usecase.RateTicket(ctx, ticketUUID, int(req.Rating), clientID, req.IdempotencyKey)
 	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
 	}
@@ -201,7 +248,12 @@ func (h *SupportHandler) GetAssignedTickets(ctx context.Context, req *pb.GetAssi
 }
 
 func (h *SupportHandler) ChangeTicketStatus(ctx context.Context, req *pb.ChangeTicketStatusRequest) (*pb.SuccessResponse, error) {
-	err := h.usecase.ChangeTicketStatus(ctx, req.TicketPublicId, req.Status, req.AgentId, req.IdempotencyKey)
+	ticketUUID, err := parseUUID(req.TicketPublicId, "INVALID_ID_FORMAT", "provided ticket public id has wrong format")
+	if err != nil {
+		return nil, err
+	}
+
+	err = h.usecase.ChangeTicketStatus(ctx, ticketUUID, req.Status, req.AgentId, req.IdempotencyKey)
 	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
 	}
@@ -210,7 +262,12 @@ func (h *SupportHandler) ChangeTicketStatus(ctx context.Context, req *pb.ChangeT
 }
 
 func (h *SupportHandler) ReassignTicket(ctx context.Context, req *pb.ReassignTicketRequest) (*pb.SuccessResponse, error) {
-	err := h.usecase.ReassignTicket(ctx, req.TicketPublicId, req.AgentId, int(req.Line), req.AuthorId, req.IdempotencyKey)
+	ticketUUID, err := parseUUID(req.TicketPublicId, "INVALID_ID_FORMAT", "provided ticket public id has wrong format")
+	if err != nil {
+		return nil, err
+	}
+
+	err = h.usecase.ReassignTicket(ctx, ticketUUID, req.AgentId, int(req.Line), req.AuthorId, req.IdempotencyKey)
 	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
 	}

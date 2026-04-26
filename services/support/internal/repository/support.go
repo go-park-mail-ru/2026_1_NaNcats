@@ -4,14 +4,15 @@ import (
 	"context"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/domain"
+	"github.com/google/uuid"
 )
 
 type SupportRepository interface {
 	// Тикеты
-	CreateTicket(ctx context.Context, input domain.CreateTicketInput) (string, error)
-	GetTicketByPublicID(ctx context.Context, publicID string) (domain.Ticket, error)
+	CreateTicket(ctx context.Context, input domain.CreateTicketInput) (uuid.UUID, error)
+	GetTicketByPublicID(ctx context.Context, publicID uuid.UUID) (domain.Ticket, error)
 	GetTicketsByClientID(ctx context.Context, clientID int64) ([]domain.Ticket, error)
-	GetTicketsByGuestID(ctx context.Context, guestID string) ([]domain.Ticket, error)
+	GetTicketsByGuestID(ctx context.Context, guestID uuid.UUID) ([]domain.Ticket, error)
 	GetAssignedTickets(ctx context.Context, agentID int64) ([]domain.Ticket, error)
 
 	// Управление состоянием (с обновлением updated_at)

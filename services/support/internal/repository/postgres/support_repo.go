@@ -10,6 +10,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/repository"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
+	"github.com/google/uuid"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -65,9 +66,9 @@ func (a agentProfileDB) toDomain() domain.AgentProfile {
 
 type ticketDB struct {
 	ID               int64           `db:"id"`
-	PublicID         string          `db:"public_id"`
+	PublicID         uuid.UUID       `db:"public_id"`
 	ClientAccountID  *int64          `db:"client_account_id"`
-	GuestID          *string         `db:"guest_id"`
+	GuestID          *uuid.UUID      `db:"guest_id"`
 	ContactEmail     string          `db:"contact_email"`
 	CategoryID       int64           `db:"category_id"`
 	CurrentStatus    string          `db:"current_status"`
@@ -76,6 +77,7 @@ type ticketDB struct {
 	ResolutionRating *int            `db:"resolution_rating"`
 	ClientMeta       json.RawMessage `db:"client_meta"`
 	CreatorRole      string          `db:"creator_role"`
+	IdempotencyKey   *string         `db:"idempotency_key"`
 	CreatedAt        time.Time       `db:"created_at"`
 	UpdatedAt        time.Time       `db:"updated_at"`
 }
@@ -106,6 +108,7 @@ type eventDB struct {
 	AuthorRole      string          `db:"author_role"`
 	EventType       string          `db:"event_type"`
 	Payload         json.RawMessage `db:"payload"`
+	IdempotencyKey  *string         `db:"idempotency_key"`
 	CreatedAt       time.Time       `db:"created_at"`
 }
 
@@ -129,6 +132,17 @@ func mapDBTicketsToDomain(dbTickets []ticketDB) []domain.Ticket {
 	return result
 }
 
+const (
+	ticketFields = `id, public_id, client_account_id, guest_id, contact_email, category_id, 
+                    current_status, support_line, assignee_id, resolution_rating, 
+                    client_meta, creator_role, idempotency_key, created_at, updated_at`
+
+	eventFields = `id, ticket_id, author_account_id, author_role, event_type, 
+                   payload, idempotency_key, created_at`
+
+	agentProfileFields = `account_id, status, support_line, created_at, updated_at`
+)
+
 type supportRepo struct {
 	pool postgres.PgxPool
 }
@@ -137,10 +151,10 @@ func NewSupportRepo(pool postgres.PgxPool) repository.SupportRepository {
 	return &supportRepo{pool: pool}
 }
 
-func (r *supportRepo) CreateTicket(ctx context.Context, input domain.CreateTicketInput) (string, error) {
+func (r *supportRepo) CreateTicket(ctx context.Context, input domain.CreateTicketInput) (uuid.UUID, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return "", fmt.Errorf("begin transaction: %w", err)
+		return uuid.Nil, fmt.Errorf("begin transaction: %w", err)
 	}
 	defer tx.Rollback(ctx)
 
@@ -149,12 +163,12 @@ func (r *supportRepo) CreateTicket(ctx context.Context, input domain.CreateTicke
 			client_account_id, guest_id, contact_email, category_id, 
 			support_line, creator_role, client_meta, idempotency_key,
 			created_at, updated_at
-		) VALUES ($1, NULLIF($2, '')::uuid, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
 		RETURNING id, public_id;
 	`
 
 	var ticketID int64
-	var publicID string
+	var publicID uuid.UUID
 
 	err = tx.QueryRow(ctx, ticketQuery,
 		input.ClientID,
@@ -170,9 +184,9 @@ func (r *supportRepo) CreateTicket(ctx context.Context, input domain.CreateTicke
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-			return "", fmt.Errorf("ticket with this idempotency key already exists: %w", err)
+			return uuid.Nil, fmt.Errorf("ticket with this idempotency key already exists: %w", err)
 		}
-		return "", fmt.Errorf("insert support ticket: %w", err)
+		return uuid.Nil, fmt.Errorf("insert support ticket: %w", err)
 	}
 
 	payloadDTO := messagePayloadDTO{
@@ -181,7 +195,7 @@ func (r *supportRepo) CreateTicket(ctx context.Context, input domain.CreateTicke
 
 	eventPayload, err := easyjson.Marshal(payloadDTO)
 	if err != nil {
-		return "", fmt.Errorf("marshal initial message payload: %w", err)
+		return uuid.Nil, fmt.Errorf("marshal initial message payload: %w", err)
 	}
 
 	eventQuery := `
@@ -197,11 +211,11 @@ func (r *supportRepo) CreateTicket(ctx context.Context, input domain.CreateTicke
 		eventPayload,
 	)
 	if err != nil {
-		return "", fmt.Errorf("insert initial support event: %w", err)
+		return uuid.Nil, fmt.Errorf("insert initial support event: %w", err)
 	}
 
 	if err = tx.Commit(ctx); err != nil {
-		return "", fmt.Errorf("commit transaction: %w", err)
+		return uuid.Nil, fmt.Errorf("commit transaction: %w", err)
 	}
 
 	return publicID, nil
@@ -251,7 +265,7 @@ func (r *supportRepo) UpdateTicketStatus(ctx context.Context, ticketID int64, st
 	defer tx.Rollback(ctx)
 
 	var oldStatus string
-	err = tx.QueryRow(ctx, `SELECT current_status FROM "support_ticket" WHERE id = $1 FOR UPDATE`, ticketID).Scan(&oldStatus) // Добавил FOR UPDATE для надежности
+	err = tx.QueryRow(ctx, `SELECT current_status FROM "support_ticket" WHERE id = $1 FOR UPDATE`, ticketID).Scan(&oldStatus)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return errors.New("ticket not found")
@@ -320,8 +334,8 @@ func (r *supportRepo) AssignTicket(
 	return tx.Commit(ctx)
 }
 
-func (r *supportRepo) GetTicketByPublicID(ctx context.Context, publicID string) (domain.Ticket, error) {
-	query := `SELECT * FROM "support_ticket" WHERE public_id = $1`
+func (r *supportRepo) GetTicketByPublicID(ctx context.Context, publicID uuid.UUID) (domain.Ticket, error) {
+	query := fmt.Sprintf(`SELECT %s FROM "support_ticket" WHERE public_id = $1`, ticketFields)
 	rows, err := r.pool.Query(ctx, query, publicID)
 	if err != nil {
 		return domain.Ticket{}, err
@@ -338,11 +352,12 @@ func (r *supportRepo) GetTicketByPublicID(ctx context.Context, publicID string) 
 }
 
 func (r *supportRepo) GetTicketsByClientID(ctx context.Context, clientID int64) ([]domain.Ticket, error) {
-	query := `
-		SELECT * FROM "support_ticket" 
+	query := fmt.Sprintf(`
+		SELECT %s FROM "support_ticket" 
 		WHERE client_account_id = $1 
 		ORDER BY updated_at DESC;
-	`
+	`, ticketFields)
+
 	rows, err := r.pool.Query(ctx, query, clientID)
 	if err != nil {
 		return nil, fmt.Errorf("query client tickets: %w", err)
@@ -357,12 +372,12 @@ func (r *supportRepo) GetTicketsByClientID(ctx context.Context, clientID int64) 
 	return mapDBTicketsToDomain(dbTickets), nil
 }
 
-func (r *supportRepo) GetTicketsByGuestID(ctx context.Context, guestID string) ([]domain.Ticket, error) {
-	query := `
-		SELECT * FROM "support_ticket" 
-		WHERE guest_id = $1 
+func (r *supportRepo) GetTicketsByGuestID(ctx context.Context, guestID uuid.UUID) ([]domain.Ticket, error) {
+	query := fmt.Sprintf(`
+		SELECT %s FROM "support_ticket" 
+		WHERE guest_id = $1
 		ORDER BY updated_at DESC;
-	`
+	`, ticketFields)
 	rows, err := r.pool.Query(ctx, query, guestID)
 	if err != nil {
 		return nil, fmt.Errorf("query guest tickets: %w", err)
@@ -378,11 +393,12 @@ func (r *supportRepo) GetTicketsByGuestID(ctx context.Context, guestID string) (
 }
 
 func (r *supportRepo) GetAssignedTickets(ctx context.Context, agentID int64) ([]domain.Ticket, error) {
-	query := `
-		SELECT * FROM "support_ticket" 
+	query := fmt.Sprintf(`
+		SELECT %s FROM "support_ticket" 
 		WHERE assignee_id = $1 AND current_status != 'closed'
 		ORDER BY updated_at DESC;
-	`
+	`, ticketFields)
+
 	rows, err := r.pool.Query(ctx, query, agentID)
 	if err != nil {
 		return nil, err
@@ -398,7 +414,7 @@ func (r *supportRepo) GetAssignedTickets(ctx context.Context, agentID int64) ([]
 }
 
 func (r *supportRepo) GetEventsByTicketID(ctx context.Context, ticketID int64) ([]domain.Event, error) {
-	query := `SELECT * FROM "support_event" WHERE ticket_id = $1 ORDER BY created_at ASC`
+	query := fmt.Sprintf(`SELECT %s FROM "support_event" WHERE ticket_id = $1 ORDER BY created_at ASC`, eventFields)
 	rows, err := r.pool.Query(ctx, query, ticketID)
 	if err != nil {
 		return nil, err
@@ -438,11 +454,11 @@ func (r *supportRepo) GetActiveCategories(ctx context.Context) ([]domain.Categor
 }
 
 func (r *supportRepo) GetAgentProfile(ctx context.Context, agentID int64) (domain.AgentProfile, error) {
-	query := `
-		SELECT account_id, status, support_line, created_at, updated_at 
+	query := fmt.Sprintf(`
+		SELECT %s 
 		FROM "support_agent_profile" 
 		WHERE account_id = $1
-	`
+	`, agentProfileFields)
 
 	rows, err := r.pool.Query(ctx, query, agentID)
 	if err != nil {

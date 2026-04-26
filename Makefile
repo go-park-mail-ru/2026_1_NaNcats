@@ -63,6 +63,29 @@ stop:
 		echo "Сервис $(s) не запущен"; \
 	fi
 
+DC = docker compose
+
+# Запуск всех контейнеров в фоне с пересборкой
+d-up:
+	$(DC) up -d --build
+
+# Остановка и удаление контейнеров
+d-down:
+	$(DC) down
+
+# Перезапуск всех сервисов
+d-restart:
+	$(DC) restart
+
+# Полная пересборка без кэша
+d-rebuild:
+	$(DC) build --no-cache $(s)
+	$(DC) up -d $(s)
+
+# Посмотреть статус контейнеров
+d-ps:
+	$(DC) ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
 # Просмотр работающих сервисов
 status:
 	@echo "Работающие сервисы:"

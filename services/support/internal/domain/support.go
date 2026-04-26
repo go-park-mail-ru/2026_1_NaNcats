@@ -3,13 +3,15 @@ package domain
 import (
 	"encoding/json"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Ticket struct {
 	ID               int64
-	PublicID         string
+	PublicID         uuid.UUID
 	ClientID         *int64
-	GuestID          *string
+	GuestID          *uuid.UUID
 	ContactEmail     string
 	CategoryID       int64
 	CurrentStatus    string
@@ -40,7 +42,7 @@ type AgentProfile struct {
 }
 type CreateTicketInput struct {
 	ClientID       *int64
-	GuestID        *string
+	GuestID        *uuid.UUID
 	ContactEmail   string
 	CategoryID     int64
 	SupportLine    int

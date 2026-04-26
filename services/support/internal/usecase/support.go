@@ -6,23 +6,24 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/repository"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
+	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 )
 
 //go:generate mockgen -destination=mocks/support_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/usecase SupportUseCase
 type SupportUseCase interface {
 	// Для пользователей / гостей
-	CreateTicket(ctx context.Context, input domain.CreateTicketInput) (string, error)
-	GetMyTickets(ctx context.Context, clientID *int64, guestID *string) ([]domain.Ticket, error)
-	AddMessage(ctx context.Context, ticketPublicID string, authorID *int64, authorRole string, text, idempotencyKey string) error
-	GetTicketChat(ctx context.Context, ticketPublicID string) ([]domain.Event, error)
-	RateTicket(ctx context.Context, ticketPublicID string, rating int, authorID *int64, idempotencyKey string) error
-	GetTicketEvents(ctx context.Context, publicID string, clientID *int64, guestID *string) ([]domain.Event, error)
+	CreateTicket(ctx context.Context, input domain.CreateTicketInput) (uuid.UUID, error)
+	GetMyTickets(ctx context.Context, clientID *int64, guestID *uuid.UUID) ([]domain.Ticket, error)
+	AddMessage(ctx context.Context, ticketPublicID uuid.UUID, authorID *int64, authorRole string, text, idempotencyKey string) error
+	GetTicketChat(ctx context.Context, ticketPublicID uuid.UUID) ([]domain.Event, error)
+	RateTicket(ctx context.Context, ticketPublicID uuid.UUID, rating int, authorID *int64, idempotencyKey string) error
+	GetTicketEvents(ctx context.Context, publicID uuid.UUID, clientID *int64, guestID *uuid.UUID) ([]domain.Event, error)
 
 	// Для операторов
 	GetAssignedTickets(ctx context.Context, agentID int64) ([]domain.Ticket, error)
-	ChangeTicketStatus(ctx context.Context, ticketPublicID string, status string, agentID int64, idempotencyKey string) error
-	ReassignTicket(ctx context.Context, ticketPublicID string, agentID int64, line int, authorID int64, idempotencyKey string) error
+	ChangeTicketStatus(ctx context.Context, ticketPublicID uuid.UUID, status string, agentID int64, idempotencyKey string) error
+	ReassignTicket(ctx context.Context, ticketPublicID uuid.UUID, agentID int64, line int, authorID int64, idempotencyKey string) error
 	SetAgentStatus(ctx context.Context, agentID int64, status string) error
 
 	// Справочники
@@ -38,16 +39,16 @@ func NewSupportUseCase(r repository.SupportRepository) SupportUseCase {
 	return &supportUseCase{repo: r}
 }
 
-func (u *supportUseCase) CreateTicket(ctx context.Context, input domain.CreateTicketInput) (string, error) {
+func (u *supportUseCase) CreateTicket(ctx context.Context, input domain.CreateTicketInput) (uuid.UUID, error) {
 	// Проверка авторизации
-	if input.ClientID == nil && (input.GuestID == nil || *input.GuestID == "") {
-		return "", domain.ErrUnauthorized
+	if input.ClientID == nil && (input.GuestID == nil || *input.GuestID == uuid.Nil) {
+		return uuid.Nil, domain.ErrUnauthorized
 	}
 
 	// Умная маршрутизация: достаем категорию, чтобы узнать default_line
 	categories, err := u.repo.GetActiveCategories(ctx)
 	if err != nil {
-		return "", errutil.Internal("failed to fetch categories for routing", err)
+		return uuid.Nil, errutil.Internal("failed to fetch categories for routing", err)
 	}
 
 	// Ищем нашу категорию и выставляем линию
@@ -62,7 +63,7 @@ func (u *supportUseCase) CreateTicket(ctx context.Context, input domain.CreateTi
 	// Создание
 	publicID, err := u.repo.CreateTicket(ctx, input)
 	if err != nil {
-		return "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to create ticket", err, codes.Internal)
+		return uuid.Nil, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to create ticket", err, codes.Internal)
 	}
 
 	return publicID, nil
@@ -85,17 +86,17 @@ func (u *supportUseCase) GetStats(ctx context.Context, agentID int64) (domain.Su
 	return liveStats, nil
 }
 
-func (u *supportUseCase) GetMyTickets(ctx context.Context, clientID *int64, guestID *string) ([]domain.Ticket, error) {
+func (u *supportUseCase) GetMyTickets(ctx context.Context, clientID *int64, guestID *uuid.UUID) ([]domain.Ticket, error) {
 	if clientID != nil {
 		return u.repo.GetTicketsByClientID(ctx, *clientID)
 	}
-	if guestID != nil && *guestID != "" {
+	if guestID != nil && *guestID != uuid.Nil {
 		return u.repo.GetTicketsByGuestID(ctx, *guestID)
 	}
 	return nil, domain.ErrUnauthorized
 }
 
-func (u *supportUseCase) AddMessage(ctx context.Context, ticketPublicID string, authorID *int64, authorRole string, text, idempotencyKey string) error {
+func (u *supportUseCase) AddMessage(ctx context.Context, ticketPublicID uuid.UUID, authorID *int64, authorRole string, text, idempotencyKey string) error {
 	if text == "" {
 		return domain.ErrInvalidMessageInput
 	}
@@ -122,7 +123,7 @@ func (u *supportUseCase) AddMessage(ctx context.Context, ticketPublicID string, 
 	return u.repo.AddMessageEvent(ctx, ticket.ID, authorID, authorRole, text, idempotencyKey)
 }
 
-func (u *supportUseCase) GetTicketChat(ctx context.Context, ticketPublicID string) ([]domain.Event, error) {
+func (u *supportUseCase) GetTicketChat(ctx context.Context, ticketPublicID uuid.UUID) ([]domain.Event, error) {
 	ticket, err := u.repo.GetTicketByPublicID(ctx, ticketPublicID)
 	if err != nil {
 		return nil, domain.ErrTicketNotFound
@@ -136,7 +137,7 @@ func (u *supportUseCase) GetTicketChat(ctx context.Context, ticketPublicID strin
 	return events, nil
 }
 
-func (u *supportUseCase) GetTicketEvents(ctx context.Context, publicID string, clientID *int64, guestID *string) ([]domain.Event, error) {
+func (u *supportUseCase) GetTicketEvents(ctx context.Context, publicID uuid.UUID, clientID *int64, guestID *uuid.UUID) ([]domain.Event, error) {
 	ticket, err := u.repo.GetTicketByPublicID(ctx, publicID)
 	if err != nil {
 		return nil, domain.ErrTicketNotFound
@@ -157,7 +158,7 @@ func (u *supportUseCase) GetTicketEvents(ctx context.Context, publicID string, c
 	return events, nil
 }
 
-func (u *supportUseCase) RateTicket(ctx context.Context, publicID string, rating int, clientID *int64, idempotencyKey string) error {
+func (u *supportUseCase) RateTicket(ctx context.Context, publicID uuid.UUID, rating int, clientID *int64, idempotencyKey string) error {
 	if rating < 1 || rating > 5 {
 		return domain.ErrInvalidRatingInput
 	}
@@ -174,7 +175,7 @@ func (u *supportUseCase) RateTicket(ctx context.Context, publicID string, rating
 	return u.repo.SetTicketRating(ctx, ticket.ID, rating, clientID, idempotencyKey)
 }
 
-func (u *supportUseCase) ChangeTicketStatus(ctx context.Context, ticketPublicID string, newStatus string, agentID int64, idempotencyKey string) error {
+func (u *supportUseCase) ChangeTicketStatus(ctx context.Context, ticketPublicID uuid.UUID, newStatus string, agentID int64, idempotencyKey string) error {
 	ticket, err := u.repo.GetTicketByPublicID(ctx, ticketPublicID)
 	if err != nil {
 		return domain.ErrTicketNotFound
@@ -194,7 +195,7 @@ func (u *supportUseCase) ChangeTicketStatus(ctx context.Context, ticketPublicID 
 	)
 }
 
-func (u *supportUseCase) ReassignTicket(ctx context.Context, ticketPublicID string, newAgentID int64, line int, authorID int64, idempotencyKey string) error {
+func (u *supportUseCase) ReassignTicket(ctx context.Context, ticketPublicID uuid.UUID, newAgentID int64, line int, authorID int64, idempotencyKey string) error {
 	ticket, err := u.repo.GetTicketByPublicID(ctx, ticketPublicID)
 	if err != nil {
 		return domain.ErrTicketNotFound
