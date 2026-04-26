@@ -98,19 +98,17 @@ func (r *cartRepo) AddItem(ctx context.Context, cartID string, item domain.CartI
 	return nil
 }
 
-func (r *cartRepo) LockCart(ctx context.Context, cartID string) error {
-	payload := map[string]any{"status": domain.CartStatusLocked}
+func (r *cartRepo) LockCart(ctx context.Context, cartID string, intent domain.PaymentIntent) error {
+	payload := map[string]any{
+		"status":        domain.CartStatusLocked,
+		"pay_for_all":   intent.PayForAll,
+		"payer_mapping": intent.PayerMapping,
+	}
 
 	return r.execWithOutbox(ctx, cartID, "CartLocked", payload, func(tx pgx.Tx) error {
 		query := `UPDATE "cart" SET status = $1, updated_at = NOW() WHERE cart_id = $2`
-		res, err := tx.Exec(ctx, query, domain.CartStatusLocked, cartID)
-		if err != nil {
-			return fmt.Errorf("lock cart: %w", err)
-		}
-		if res.RowsAffected() == 0 {
-			return fmt.Errorf("cart not found")
-		}
-		return nil
+		_, err := tx.Exec(ctx, query, domain.CartStatusLocked, cartID)
+		return err
 	})
 }
 

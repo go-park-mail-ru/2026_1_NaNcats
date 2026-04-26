@@ -11,7 +11,7 @@ type CartRepository interface {
 	// Базовые операции с корзиной
 	GetCartByUserID(ctx context.Context, userID int64) (domain.Cart, error)
 	GetCartByID(ctx context.Context, cartID string) (domain.Cart, error)
-	LockCart(ctx context.Context, cartID string) error
+	LockCart(ctx context.Context, cartID string, intent domain.PaymentIntent) error
 	UnlockCart(ctx context.Context, cartID string) error
 	ClearCart(ctx context.Context, cartID string) error
 	UpdateCartMode(ctx context.Context, cartID string, mode string) error

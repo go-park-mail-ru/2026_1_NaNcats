@@ -11,7 +11,7 @@ service CartService {
   // Метод получения корзины
   rpc GetCart (GetCartRequest) returns (GetCartResponse);
   // Блокируем изменение корзины
-  rpc LockCart (CartOperationRequest) returns (google.protobuf.Empty);
+  rpc LockCart (LockCartRequest) returns (google.protobuf.Empty);
   // Разрешаем изменять корзину
   rpc UnlockCart (CartOperationRequest) returns (google.protobuf.Empty);
   // Чистим корзину
@@ -72,15 +72,23 @@ message Cart {
   repeated CartMember members = 7;
 }
 
-// Общий реквест для операций с корзиной целиком (Lock, Unlock, Clear, CloseSharedCart)
+// Общий реквест для операций с корзиной целиком (Unlock, Clear, CloseSharedCart)
 message CartOperationRequest {
   string cart_id = 1;
   int64 user_id = 2; // ID инициатора
   string idempotency_key = 3;
 }
 
+message LockCartRequest {
+  string cart_id = 1;
+  int64 user_id = 2; // Инициатор (админ)
+  bool pay_for_all = 3; // Настройка оплаты
+  map<int64, int64> payer_mapping = 4; // key: за кого платим (userID), value: кто платит (userID)
+  string idempotency_key = 5;
+}
+
 message GetCartRequest {
-  int64 user_id = 1; // Ищем активную корзину по юзеру (неважно, админ он или гость)
+  int64 user_id = 1; // Ищем активную корзину по юзеру
 }
 
 message GetCartResponse {

@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/grpcutil"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/cart"
@@ -59,8 +60,13 @@ func (h *CartHandler) GetCart(ctx context.Context, req *pb.GetCartRequest) (*pb.
 	}, nil
 }
 
-func (h *CartHandler) LockCart(ctx context.Context, req *pb.CartOperationRequest) (*emptypb.Empty, error) {
-	err := h.usecase.LockCart(ctx, req.CartId, req.UserId, req.IdempotencyKey)
+func (h *CartHandler) LockCart(ctx context.Context, req *pb.LockCartRequest) (*emptypb.Empty, error) {
+	intent := domain.PaymentIntent{
+		PayForAll:    req.PayForAll,
+		PayerMapping: req.PayerMapping,
+	}
+
+	err := h.usecase.LockCart(ctx, req.CartId, req.UserId, intent, req.IdempotencyKey)
 	return &emptypb.Empty{}, grpcutil.ToGRPCError(err)
 }
 

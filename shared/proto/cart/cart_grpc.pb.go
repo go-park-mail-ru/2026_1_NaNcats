@@ -43,7 +43,7 @@ type CartServiceClient interface {
 	// Метод получения корзины
 	GetCart(ctx context.Context, in *GetCartRequest, opts ...grpc.CallOption) (*GetCartResponse, error)
 	// Блокируем изменение корзины
-	LockCart(ctx context.Context, in *CartOperationRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	LockCart(ctx context.Context, in *LockCartRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Разрешаем изменять корзину
 	UnlockCart(ctx context.Context, in *CartOperationRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Чистим корзину
@@ -84,7 +84,7 @@ func (c *cartServiceClient) GetCart(ctx context.Context, in *GetCartRequest, opt
 	return out, nil
 }
 
-func (c *cartServiceClient) LockCart(ctx context.Context, in *CartOperationRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *cartServiceClient) LockCart(ctx context.Context, in *LockCartRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, CartService_LockCart_FullMethodName, in, out, cOpts...)
@@ -203,7 +203,7 @@ type CartServiceServer interface {
 	// Метод получения корзины
 	GetCart(context.Context, *GetCartRequest) (*GetCartResponse, error)
 	// Блокируем изменение корзины
-	LockCart(context.Context, *CartOperationRequest) (*emptypb.Empty, error)
+	LockCart(context.Context, *LockCartRequest) (*emptypb.Empty, error)
 	// Разрешаем изменять корзину
 	UnlockCart(context.Context, *CartOperationRequest) (*emptypb.Empty, error)
 	// Чистим корзину
@@ -237,7 +237,7 @@ type UnimplementedCartServiceServer struct{}
 func (UnimplementedCartServiceServer) GetCart(context.Context, *GetCartRequest) (*GetCartResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetCart not implemented")
 }
-func (UnimplementedCartServiceServer) LockCart(context.Context, *CartOperationRequest) (*emptypb.Empty, error) {
+func (UnimplementedCartServiceServer) LockCart(context.Context, *LockCartRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method LockCart not implemented")
 }
 func (UnimplementedCartServiceServer) UnlockCart(context.Context, *CartOperationRequest) (*emptypb.Empty, error) {
@@ -310,7 +310,7 @@ func _CartService_GetCart_Handler(srv interface{}, ctx context.Context, dec func
 }
 
 func _CartService_LockCart_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CartOperationRequest)
+	in := new(LockCartRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -322,7 +322,7 @@ func _CartService_LockCart_Handler(srv interface{}, ctx context.Context, dec fun
 		FullMethod: CartService_LockCart_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CartServiceServer).LockCart(ctx, req.(*CartOperationRequest))
+		return srv.(CartServiceServer).LockCart(ctx, req.(*LockCartRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

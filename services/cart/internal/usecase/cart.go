@@ -22,7 +22,7 @@ type RestaurantClient interface {
 type CartUseCase interface {
 	// Базовые
 	GetCart(ctx context.Context, userID int64) (domain.Cart, int64, error)
-	LockCart(ctx context.Context, cartID string, userID int64, idempotencyKey string) error
+	LockCart(ctx context.Context, cartID string, userID int64, intent domain.PaymentIntent, idempotencyKey string) error
 	UnlockCart(ctx context.Context, cartID string, userID int64, idempotencyKey string) error
 	ClearCart(ctx context.Context, cartID string, userID int64, idempotencyKey string) error
 
@@ -102,24 +102,34 @@ func (u *cartUseCase) GetCart(ctx context.Context, userID int64) (domain.Cart, i
 	return cart, totalCost, nil
 }
 
-func (u *cartUseCase) LockCart(ctx context.Context, cartID string, userID int64, idempotencyKey string) error {
+func (u *cartUseCase) LockCart(ctx context.Context, cartID string, userID int64, intent domain.PaymentIntent, idempotencyKey string) error {
 	cart, err := u.cartRepo.GetCartByID(ctx, cartID)
 	if err != nil {
 		return err
 	}
 
-	if !cart.HasMember(userID) {
+	if cart.AdminID != userID {
 		return domain.ErrForbidden
 	}
 
-	// проверка на ничейные позиции
+	// Валидация ничейных позиций
 	for _, item := range cart.Items {
 		if item.OwnerUserID == nil {
 			return domain.ErrUnassignedItems
 		}
 	}
 
-	return u.cartRepo.LockCart(ctx, cartID)
+	if !intent.PayForAll {
+		for targetID, payerID := range intent.PayerMapping {
+			if !cart.HasMember(targetID) || !cart.HasMember(payerID) {
+				return domain.ErrUserNotInCart
+			}
+		}
+	}
+
+	// Сохраняем статус и (опционально) само намерение в Outbox,
+	// чтобы Order Service мог его считать при старте Саги
+	return u.cartRepo.LockCart(ctx, cartID, intent)
 }
 
 func (u *cartUseCase) UnlockCart(ctx context.Context, cartID string, userID int64, idempotencyKey string) error {

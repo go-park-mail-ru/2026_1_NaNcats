@@ -60,3 +60,8 @@ type CartInvite struct {
 	CartID    string
 	ExpiresAt time.Time
 }
+
+type PaymentIntent struct {
+	PayForAll    bool
+	PayerMapping map[int64]int64 // Кого -> Кто
+}
