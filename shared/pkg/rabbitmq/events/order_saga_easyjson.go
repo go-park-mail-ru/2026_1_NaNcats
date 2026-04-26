@@ -174,6 +174,12 @@ func easyjsonCd43231fDecodeGithubComGoParkMailRu20261NaNcatsSharedPkgRabbitmqEve
 			} else {
 				out.UserID = int64(in.Int64())
 			}
+		case "cart_id":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.CartID = string(in.String())
+			}
 		case "action":
 			if in.IsNull() {
 				in.Skip()
@@ -221,6 +227,11 @@ func easyjsonCd43231fEncodeGithubComGoParkMailRu20261NaNcatsSharedPkgRabbitmqEve
 		const prefix string = ",\"user_id\":"
 		out.RawString(prefix)
 		out.Int64(int64(in.UserID))
+	}
+	{
+		const prefix string = ",\"cart_id\":"
+		out.RawString(prefix)
+		out.String(string(in.CartID))
 	}
 	{
 		const prefix string = ",\"action\":"

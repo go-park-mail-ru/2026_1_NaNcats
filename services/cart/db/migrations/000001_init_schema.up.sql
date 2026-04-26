@@ -50,3 +50,12 @@ CREATE TABLE "cart_invite" (
 		REFERENCES "cart"(cart_id)
 		ON DELETE CASCADE
 );
+
+CREATE TABLE "outbox_events" (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    aggregate_id VARCHAR(255) NOT NULL,
+    event_type VARCHAR(255) NOT NULL,
+    payload JSONB NOT NULL,
+    status VARCHAR(50) DEFAULT 'PENDING',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);

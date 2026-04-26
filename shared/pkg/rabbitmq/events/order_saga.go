@@ -29,6 +29,7 @@ const (
 type SagaCommand struct {
 	OrderID        string `json:"order_id"` // public_id
 	UserID         int64  `json:"user_id"`
+	CartID         string `json:"cart_id"`
 	Action         string `json:"action"` // команда для выполнения
 	IdempotencyKey string `json:"idempotency_key"`
 

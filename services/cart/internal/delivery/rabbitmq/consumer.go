@@ -38,11 +38,11 @@ func (c *CartConsumer) Start(ctx context.Context) error {
 		var err error
 		switch cmd.Action {
 		case events.CommandLockCart:
-			err = c.usecase.LockCart(ctx, cmd.UserID, cmd.IdempotencyKey)
+			err = c.usecase.LockCart(ctx, cmd.CartID, cmd.UserID, cmd.IdempotencyKey)
 		case events.CommandUnlockCart:
-			err = c.usecase.UnlockCart(ctx, cmd.UserID, cmd.IdempotencyKey)
+			err = c.usecase.UnlockCart(ctx, cmd.CartID, cmd.UserID, cmd.IdempotencyKey)
 		case events.CommandClearCart:
-			err = c.usecase.ClearCart(ctx, cmd.UserID, cmd.IdempotencyKey)
+			err = c.usecase.ClearCart(ctx, cmd.CartID, cmd.UserID, cmd.IdempotencyKey)
 		default:
 			c.logger.Warn("Unknown action in cart saga", logger.String("action", cmd.Action))
 			return nil
