@@ -221,8 +221,25 @@ func main() {
 	mux.HandleFunc("POST /api/webhooks/yookassa", paymentHandler.YookassaWebhook) // ВАЖНО: без мидлварей авторизации!
 
 	// === CART ===
+	// Базовые операции
 	mux.Handle("GET /api/cart", authMW.RequireAuth(http.HandlerFunc(cartHandler.GetCart)))
-	mux.Handle("PUT /api/cart", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.UpdateCart))))
+	mux.Handle("DELETE /api/cart", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.ClearCart))))
+	mux.Handle("POST /api/cart/lock", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.LockCart))))
+
+	// Операции с товарами
+	mux.Handle("POST /api/cart/items", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.AddItem))))
+	mux.Handle("PUT /api/cart/items", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.UpdateQuantity))))
+	mux.Handle("DELETE /api/cart/items", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.RemoveItem))))
+	mux.Handle("PATCH /api/cart/items/owner", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.ReassignOwner))))
+
+	// Управление совместной корзиной
+	mux.Handle("POST /api/cart/invite", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.GenerateInvite))))
+	mux.Handle("POST /api/cart/join", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.JoinCart))))
+	mux.Handle("DELETE /api/cart/members", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.KickMember))))
+	mux.Handle("POST /api/cart/close", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.CloseSharedCart))))
+
+	// WebSockets
+	mux.Handle("GET /api/ws/cart", authMW.RequireAuth(http.HandlerFunc(cartHandler.ConnectCartWS)))
 
 	// === ORDERS ===
 	mux.Handle("POST /api/orders", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.CreateOrder))))

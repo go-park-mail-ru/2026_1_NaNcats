@@ -123,6 +123,20 @@ definitions:
         example: Иван
         type: string
     type: object
+  api-gateway_internal_delivery_http_cart.AddItemRequest:
+    properties:
+      cart_id:
+        type: string
+      dish_id:
+        type: integer
+      quantity:
+        type: integer
+    type: object
+  api-gateway_internal_delivery_http_cart.BasicCartOperationRequest:
+    properties:
+      cart_id:
+        type: string
+    type: object
   api-gateway_internal_delivery_http_cart.CartItemDTO:
     properties:
       dish_id:
@@ -131,29 +145,98 @@ definitions:
         type: string
       name:
         type: string
+      owner_user_id:
+        type: integer
       price:
         type: integer
       quantity:
         type: integer
     type: object
-  api-gateway_internal_delivery_http_cart.CartRequest:
+  api-gateway_internal_delivery_http_cart.CartMemberDTO:
     properties:
-      items:
-        items:
-          $ref: '#/definitions/api-gateway_internal_delivery_http_cart.CartItemDTO'
-        type: array
-      restaurant_id:
+      joined_at:
+        type: string
+      user_id:
         type: integer
     type: object
   api-gateway_internal_delivery_http_cart.CartResponse:
     properties:
+      admin_id:
+        type: integer
+      cart_id:
+        type: string
       items:
         items:
           $ref: '#/definitions/api-gateway_internal_delivery_http_cart.CartItemDTO'
         type: array
+      members:
+        description: Только для shared
+        items:
+          $ref: '#/definitions/api-gateway_internal_delivery_http_cart.CartMemberDTO'
+        type: array
+      mode:
+        type: string
       restaurant_id:
         type: integer
+      status:
+        type: string
       total_cost:
+        type: integer
+    type: object
+  api-gateway_internal_delivery_http_cart.InviteResponse:
+    properties:
+      expires_at:
+        type: string
+      token:
+        type: string
+    type: object
+  api-gateway_internal_delivery_http_cart.JoinCartRequest:
+    properties:
+      token:
+        type: string
+    type: object
+  api-gateway_internal_delivery_http_cart.KickMemberRequest:
+    properties:
+      cart_id:
+        type: string
+      target_user_id:
+        type: integer
+    type: object
+  api-gateway_internal_delivery_http_cart.LockCartRequest:
+    properties:
+      cart_id:
+        type: string
+      pay_for_all:
+        type: boolean
+      payer_mapping:
+        additionalProperties:
+          format: int64
+          type: integer
+        type: object
+    type: object
+  api-gateway_internal_delivery_http_cart.ReassignOwnerRequest:
+    properties:
+      cart_id:
+        type: string
+      dish_id:
+        type: integer
+      new_owner_id:
+        type: integer
+    type: object
+  api-gateway_internal_delivery_http_cart.RemoveItemRequest:
+    properties:
+      cart_id:
+        type: string
+      dish_id:
+        type: integer
+    type: object
+  api-gateway_internal_delivery_http_cart.UpdateQuantityRequest:
+    properties:
+      cart_id:
+        type: string
+      dish_id:
+        type: integer
+      quantity:
         type: integer
     type: object
   api-gateway_internal_delivery_http_order.CreateOrderRequest:
@@ -329,6 +412,28 @@ definitions:
         example: Андрей
         type: string
     type: object
+  github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_grpc_client_supportclient.SupportStats:
+    properties:
+      averageRating:
+        format: float64
+        type: number
+      avgResolutionTimeSec:
+        format: int64
+        type: integer
+      byCategory:
+        additionalProperties:
+          format: int64
+          type: integer
+        type: object
+      byStatus:
+        additionalProperties:
+          format: int64
+          type: integer
+        type: object
+      totalTickets:
+        format: int64
+        type: integer
+    type: object
   github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_api_clients_yookassa.WebhookNotification:
     properties:
       event:
@@ -356,6 +461,36 @@ info:
   title: NaNcats Delivery API
   version: "1.0"
 paths:
+  /admin/support/stats:
+    get:
+      description: 'Возвращает агрегированные данные по тикетам: общее количество,
+        распределение по статусам и категориям, средний рейтинг и среднее время решения.
+        Доступно только для ролей admin и support.'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Статистика успешно получена
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_grpc_client_supportclient.SupportStats'
+        "401":
+          description: Пользователь не авторизован
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+        "403":
+          description: Недостаточно прав (требуется роль admin или support)
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Получение статистики техподдержки
+      tags:
+      - admin
+      - support
   /agent/status:
     patch:
       consumes:
@@ -522,8 +657,64 @@ paths:
       tags:
       - agent
   /api/cart:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет все товары из указанной корзины. В Shared-режиме доступно
+        только админу.
+      parameters:
+      - description: Ключ идемпотентности
+        in: header
+        name: Idempotency-Key
+        required: true
+        type: string
+      - description: Данные
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_delivery_http_cart.BasicCartOperationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Корзина очищена
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверный формат запроса
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Нет прав на выполнение операции
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Очистить корзину
+      tags:
+      - cart
     get:
-      description: Возвращает текущую корзину авторизованного пользователя
+      description: Возвращает текущую корзину авторизованного пользователя (включая
+        статус комнаты и участников)
       produces:
       - application/json
       responses:
@@ -548,33 +739,47 @@ paths:
       summary: Получить корзину
       tags:
       - cart
-    put:
+  /api/cart/close:
+    post:
       consumes:
       - application/json
-      description: Перезаписывает содержимое корзины пользователя новыми товарами
+      description: Переводит корзину в Solo-режим. Удаляет всех участников кроме админа
+        и удаляет их блюда.
       parameters:
-      - description: Данные корзины
+      - description: Ключ идемпотентности
+        in: header
+        name: Idempotency-Key
+        required: true
+        type: string
+      - description: ID корзины
         in: body
         name: input
         required: true
         schema:
-          $ref: '#/definitions/api-gateway_internal_delivery_http_cart.CartRequest'
+          $ref: '#/definitions/api-gateway_internal_delivery_http_cart.BasicCartOperationRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: Успешное обновление
+          description: Корзина переведена в соло-режим
           schema:
-            additionalProperties: true
+            additionalProperties:
+              type: string
             type: object
         "400":
-          description: Неверный формат запроса или товары из разных ресторанов
+          description: Неверный формат запроса
           schema:
             additionalProperties:
               type: string
             type: object
         "401":
           description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Только админ может закрыть корзину
           schema:
             additionalProperties:
               type: string
@@ -587,7 +792,437 @@ paths:
             type: object
       security:
       - ApiKeyAuth: []
-      summary: Обновить корзину
+      summary: Закрыть совместную корзину
+      tags:
+      - cart
+  /api/cart/invite:
+    post:
+      description: Создает токен-приглашение в корзину. Переводит корзину в режим
+        'shared'. Доступно только админу.
+      parameters:
+      - description: ID корзины
+        in: query
+        name: cart_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api-gateway_internal_delivery_http_cart.InviteResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Только админ может генерировать ссылки
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Сгенерировать инвайт-ссылку
+      tags:
+      - cart
+  /api/cart/items:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет позицию из корзины. Гость может удалять только свое, админ
+        - любое.
+      parameters:
+      - description: Ключ идемпотентности
+        in: header
+        name: Idempotency-Key
+        required: true
+        type: string
+      - description: Данные для удаления
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_delivery_http_cart.RemoveItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Товар удален
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверный формат запроса
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Нет прав на удаление этой позиции
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Удалить товар
+      tags:
+      - cart
+    post:
+      consumes:
+      - application/json
+      description: Добавляет товар в корзину. Вызывающий пользователь становится владельцем
+        (owner) товара.
+      parameters:
+      - description: Ключ идемпотентности
+        in: header
+        name: Idempotency-Key
+        required: true
+        type: string
+      - description: Данные товара
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_delivery_http_cart.AddItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Товар добавлен
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверное количество или блюдо из другого ресторана
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Пользователь не состоит в этой корзине
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Добавить товар
+      tags:
+      - cart
+    put:
+      consumes:
+      - application/json
+      description: Изменяет количество существующего товара. Гость может менять только
+        свои позиции, админ - любые.
+      parameters:
+      - description: Ключ идемпотентности
+        in: header
+        name: Idempotency-Key
+        required: true
+        type: string
+      - description: Данные обновления
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_delivery_http_cart.UpdateQuantityRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Количество обновлено
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверный запрос или количество
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Нет прав на изменение этой позиции
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Изменить количество товара
+      tags:
+      - cart
+  /api/cart/items/owner:
+    patch:
+      consumes:
+      - application/json
+      description: Переназначает блюдо на другого участника комнаты (или делает позицию
+        ничейной, передав null). Только для админа.
+      parameters:
+      - description: Ключ идемпотентности
+        in: header
+        name: Idempotency-Key
+        required: true
+        type: string
+      - description: Новый владелец
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_delivery_http_cart.ReassignOwnerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Владелец изменен
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверный формат запроса
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Только админ может переназначать
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Изменить плательщика товара
+      tags:
+      - cart
+  /api/cart/join:
+    post:
+      consumes:
+      - application/json
+      description: Добавляет пользователя в совместную корзину по токену инвайта.
+      parameters:
+      - description: Токен приглашения
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_delivery_http_cart.JoinCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный вход (возвращает cart_id)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверный формат запроса
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Инвайт недействителен или протух
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Присоединиться к корзине
+      tags:
+      - cart
+  /api/cart/lock:
+    post:
+      consumes:
+      - application/json
+      description: Переводит корзину в статус locked, передает намерения об оплате
+        (Payment Intent) и запускает Saga Orchestrator.
+      parameters:
+      - description: Ключ идемпотентности
+        in: header
+        name: Idempotency-Key
+        required: true
+        type: string
+      - description: Настройки оплаты (кто за кого платит)
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_delivery_http_cart.LockCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Корзина заблокирована, сага запущена
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверный формат запроса
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Только админ может инициировать оплату
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: В корзине есть нераспределенные позиции (Conflict)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Зафиксировать корзину и перейти к оплате
+      tags:
+      - cart
+  /api/cart/members:
+    delete:
+      consumes:
+      - application/json
+      description: Кикает гостя из комнаты. Блюда гостя становятся 'ничейными' (owner_user_id
+        = null).
+      parameters:
+      - description: Ключ идемпотентности
+        in: header
+        name: Idempotency-Key
+        required: true
+        type: string
+      - description: Кого удаляем
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_delivery_http_cart.KickMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Участник удален
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверный формат запроса
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Только админ может удалять участников
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Удалить участника
       tags:
       - cart
   /api/orders:
@@ -639,6 +1274,36 @@ paths:
       summary: Создать заказ
       tags:
       - order
+  /api/ws/cart:
+    get:
+      description: Устанавливает WS соединение для получения live-обновлений совместной
+        корзины
+      parameters:
+      - description: ID корзины
+        in: query
+        name: cart_id
+        required: true
+        type: string
+      responses:
+        "101":
+          description: Switching Protocols
+        "400":
+          description: Bad Request (отсутствует cart_id)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: WebSocket соединение корзины
+      tags:
+      - cart
   /auth/login:
     post:
       consumes:
