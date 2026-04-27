@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/exaring/otelpgx"
 	infrastructureLogger "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/common/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/interceptors"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
@@ -15,6 +16,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
 	"github.com/joho/godotenv"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
 
 	restaurantDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/delivery/grpc"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/infrastructure/config"
@@ -44,8 +46,17 @@ func main() {
 	if err != nil {
 		appLogger.Fatal("database config parsing failed", err)
 	}
-	pgConfig.ConnConfig.Tracer = postgres.NewDBTracer(appLogger)
-
+	consoleTracer := postgres.NewDBTracer(appLogger)
+	otelOptions := []otelpgx.Option{
+		otelpgx.WithTracerAttributes(semconv.ServiceNameKey.String(cfg.OTEL.ServiceName)),
+	}
+	if cfg.Logger.Level == "debug" {
+		otelOptions = append(otelOptions, otelpgx.WithIncludeQueryParameters())
+	}
+	otelTracer := otelpgx.NewTracer(
+		otelOptions...,
+	)
+	pgConfig.ConnConfig.Tracer = postgres.NewMultiTracer(consoleTracer, otelTracer)
 	pool, err := pgxpool.NewWithConfig(ctx, pgConfig)
 	if err != nil {
 		appLogger.Fatal("database pool creation failed", err)
@@ -65,7 +76,6 @@ func main() {
 
 	restaurantHandler := restaurantDelivery.NewRestaurantHandler(brandUC, dishUC)
 
-	// Контекст, который отменяется по сигналу ОС
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -74,6 +84,12 @@ func main() {
 		appLogger.Fatal("failed to init metrics", err)
 	}
 	defer cleanup()
+
+	cleanupTracing, err := metrics.InitTracing(ctx, cfg.OTEL.ServiceName, cfg.OTEL.CollectorAddr)
+	if err != nil {
+		appLogger.Fatal("failed to init tracing", err)
+	}
+	defer cleanupTracing()
 
 	grpcServer := grpc.NewServer(
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),

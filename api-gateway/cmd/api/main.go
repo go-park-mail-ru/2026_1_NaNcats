@@ -94,6 +94,12 @@ func main() {
 	}
 	defer cleanup()
 
+	cleanupTraces, err := metrics.InitTracing(ctx, cfg.OTEL.ServiceName, cfg.OTEL.CollectorAddr)
+	if err != nil {
+		appLogger.Fatal("Failed to init tracing", err)
+	}
+	defer cleanupTraces()
+
 	validate := validator.New()
 
 	redisPool := &redis.Pool{

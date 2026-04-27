@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/common"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -18,13 +19,30 @@ func NewLoggerAdapter(zapLog *logger.ZapLogger) logger.Logger {
 }
 
 func (a *LoggerAdapter) WithContext(ctx context.Context) logger.Logger {
-	reqID, ok := ctx.Value(common.RequestIDKey).(string)
-	if !ok || reqID == "" {
+	if ctx == nil {
 		return a
 	}
-	// Если ID есть, создаем один раз привязанный логгер
+
+	fields := make([]zap.Field, 0, 2)
+
+	// Пытаемся достать request_id если он есть
+	if reqID, ok := ctx.Value(common.RequestIDKey).(string); ok && reqID != "" {
+		fields = append(fields, zap.String("request_id", reqID))
+	}
+
+	// Достаем TraceID из OpenTelemetry
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		fields = append(fields, zap.String("trace_id", span.SpanContext().TraceID().String()))
+	}
+
+	// Если ничего не нашли, возвращаем исходный логгер
+	if len(fields) == 0 {
+		return a
+	}
+
 	return &LoggerAdapter{
-		realLogger: a.realLogger.With(zap.String("request_id", reqID)),
+		realLogger: a.realLogger.With(fields...),
 	}
 }
 

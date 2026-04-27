@@ -31,7 +31,10 @@ func (r *sessionRepo) Create(ctx context.Context, session domain.Session, ttl ti
 		return err
 	}
 
-	conn := r.redisPool.Get()
+	conn, err := r.redisPool.GetContext(ctx)
+	if err != nil {
+		return err
+	}
 	defer conn.Close()
 
 	mkey := "sessions:" + session.ID.String()
@@ -47,7 +50,10 @@ func (r *sessionRepo) Create(ctx context.Context, session domain.Session, ttl ti
 }
 
 func (r *sessionRepo) GetByID(ctx context.Context, id uuid.UUID) (domain.Session, error) {
-	conn := r.redisPool.Get()
+	conn, err := r.redisPool.GetContext(ctx)
+	if err != nil {
+		return domain.Session{}, err
+	}
 	defer conn.Close()
 
 	mkey := "sessions:" + id.String()
@@ -69,11 +75,14 @@ func (r *sessionRepo) GetByID(ctx context.Context, id uuid.UUID) (domain.Session
 }
 
 func (r *sessionRepo) Delete(ctx context.Context, id uuid.UUID) error {
-	conn := r.redisPool.Get()
+	conn, err := r.redisPool.GetContext(ctx)
+	if err != nil {
+		return err
+	}
 	defer conn.Close()
 
 	mkey := "sessions:" + id.String()
-	_, err := redis.Int(conn.Do("DEL", mkey))
+	_, err = redis.Int(conn.Do("DEL", mkey))
 	if err != nil {
 		return err
 	}
@@ -82,7 +91,10 @@ func (r *sessionRepo) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 func (r *sessionRepo) SetCSRF(ctx context.Context, id uuid.UUID, token string) error {
-	conn := r.redisPool.Get()
+	conn, err := r.redisPool.GetContext(ctx)
+	if err != nil {
+		return err
+	}
 	defer conn.Close()
 
 	mkey := "csrf:" + id.String()
@@ -98,7 +110,10 @@ func (r *sessionRepo) SetCSRF(ctx context.Context, id uuid.UUID, token string) e
 }
 
 func (r *sessionRepo) GetCSRF(ctx context.Context, id uuid.UUID) (string, error) {
-	conn := r.redisPool.Get()
+	conn, err := r.redisPool.GetContext(ctx)
+	if err != nil {
+		return "", err
+	}
 	defer conn.Close()
 
 	mkey := "csrf:" + id.String()

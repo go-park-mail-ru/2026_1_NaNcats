@@ -66,6 +66,7 @@ func main() {
 	userConn, err := grpc.NewClient(
 		cfg.UserServiceAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	)
 	if err != nil {
 		appLogger.Fatal("Failed to create User Service client", err)
@@ -86,6 +87,12 @@ func main() {
 		appLogger.Fatal("failed to init metrics", err)
 	}
 	defer cleanup()
+
+	cleanupTracing, err := metrics.InitTracing(ctx, cfg.OTEL.ServiceName, cfg.OTEL.CollectorAddr)
+	if err != nil {
+		appLogger.Fatal("failed to init tracing", err)
+	}
+	defer cleanupTracing()
 
 	grpcServer := grpc.NewServer(
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
