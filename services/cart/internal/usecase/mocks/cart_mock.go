@@ -144,17 +144,17 @@ func (mr *MockCartUseCaseMockRecorder) KickMember(ctx, cartID, adminID, targetUs
 }
 
 // LockCart mocks base method.
-func (m *MockCartUseCase) LockCart(ctx context.Context, cartID string, userID int64, intent domain.PaymentIntent, idempotencyKey string) error {
+func (m *MockCartUseCase) LockCart(ctx context.Context, cartID string, userID int64, idempotencyKey string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LockCart", ctx, cartID, userID, intent, idempotencyKey)
+	ret := m.ctrl.Call(m, "LockCart", ctx, cartID, userID, idempotencyKey)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // LockCart indicates an expected call of LockCart.
-func (mr *MockCartUseCaseMockRecorder) LockCart(ctx, cartID, userID, intent, idempotencyKey any) *gomock.Call {
+func (mr *MockCartUseCaseMockRecorder) LockCart(ctx, cartID, userID, idempotencyKey any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LockCart", reflect.TypeOf((*MockCartUseCase)(nil).LockCart), ctx, cartID, userID, intent, idempotencyKey)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LockCart", reflect.TypeOf((*MockCartUseCase)(nil).LockCart), ctx, cartID, userID, idempotencyKey)
 }
 
 // ReassignItemOwner mocks base method.

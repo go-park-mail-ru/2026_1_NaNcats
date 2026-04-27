@@ -98,11 +98,10 @@ func (r *cartRepo) AddItem(ctx context.Context, cartID string, item domain.CartI
 	return nil
 }
 
-func (r *cartRepo) LockCart(ctx context.Context, cartID string, intent domain.PaymentIntent) error {
+func (r *cartRepo) LockCart(ctx context.Context, cartID string) error {
 	payload := map[string]any{
-		"status":        domain.CartStatusLocked,
-		"pay_for_all":   intent.PayForAll,
-		"payer_mapping": intent.PayerMapping,
+		"status":  domain.CartStatusLocked,
+		"cart_id": cartID,
 	}
 
 	return r.execWithOutbox(ctx, cartID, "CartLocked", payload, func(tx pgx.Tx) error {

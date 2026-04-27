@@ -3,7 +3,6 @@ package rabbitmq
 import (
 	"context"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq"
@@ -39,7 +38,7 @@ func (c *CartConsumer) Start(ctx context.Context) error {
 		var err error
 		switch cmd.Action {
 		case events.CommandLockCart:
-			err = c.usecase.LockCart(ctx, cmd.CartID, cmd.UserID, domain.PaymentIntent{}, cmd.IdempotencyKey)
+			err = c.usecase.LockCart(ctx, cmd.CartID, cmd.UserID, cmd.IdempotencyKey)
 		case events.CommandUnlockCart:
 			err = c.usecase.UnlockCart(ctx, cmd.CartID, cmd.UserID, cmd.IdempotencyKey)
 		case events.CommandClearCart:

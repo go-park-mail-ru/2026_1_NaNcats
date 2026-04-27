@@ -96,13 +96,6 @@ type KickMemberRequest struct {
 }
 
 //easyjson:json
-type LockCartRequest struct {
-	CartID       string          `json:"cart_id"`
-	PayForAll    bool            `json:"pay_for_all"`
-	PayerMapping map[int64]int64 `json:"payer_mapping"`
-}
-
-//easyjson:json
 type BasicCartOperationRequest struct {
 	CartID string `json:"cart_id"`
 }
@@ -592,61 +585,6 @@ func (h *CartHandler) CloseSharedCart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.JSON(w, http.StatusOK, map[string]string{"message": "cart is now solo"})
-}
-
-// LockCart godoc
-// @Summary      Зафиксировать корзину и перейти к оплате
-// @Description  Переводит корзину в статус locked, передает намерения об оплате (Payment Intent) и запускает Saga Orchestrator.
-// @Tags         cart
-// @Accept       json
-// @Produce      json
-// @Param        Idempotency-Key  header    string           true  "Ключ идемпотентности"
-// @Param        input            body      LockCartRequest  true  "Настройки оплаты (кто за кого платит)"
-// @Success      200  {object}  map[string]string "Корзина заблокирована, сага запущена"
-// @Failure      400  {object}  map[string]string "Неверный формат запроса"
-// @Failure      401  {object}  map[string]string "Unauthorized"
-// @Failure      403  {object}  map[string]string "Только админ может инициировать оплату"
-// @Failure      409  {object}  map[string]string "В корзине есть нераспределенные позиции (Conflict)"
-// @Failure      500  {object}  map[string]string "Internal server error"
-// @Security     ApiKeyAuth
-// @Router       /api/cart/lock [post]
-func (h *CartHandler) LockCart(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok {
-		response.Error(w, http.StatusUnauthorized, "Unauthorized")
-		return
-	}
-
-	idemKey := r.Header.Get("Idempotency-Key")
-	if idemKey == "" {
-		response.Error(w, http.StatusBadRequest, "Idempotency-Key header is required")
-		return
-	}
-
-	var req LockCartRequest
-	if err := request.JSON(r, &req); err != nil {
-		response.Error(w, http.StatusBadRequest, "invalid request body")
-		return
-	}
-
-	err := h.cartClient.LockCart(ctx, req.CartID, userID, req.PayForAll, req.PayerMapping, idemKey)
-	if err != nil {
-		if errors.Is(err, cartclient.ErrForbidden) {
-			response.Error(w, http.StatusForbidden, "only admin can initiate checkout")
-			return
-		}
-		// Например, если в корзине остались "ничейные" позиции
-		if errors.Is(err, cartclient.ErrInvalidCart) {
-			response.Error(w, http.StatusConflict, "cannot proceed: cart contains unassigned items or mapping is invalid")
-			return
-		}
-		h.logger.Error("failed to lock cart", err)
-		response.Error(w, http.StatusInternalServerError, "internal server error")
-		return
-	}
-
-	response.JSON(w, http.StatusOK, map[string]string{"message": "cart locked, saga started"})
 }
 
 // ClearCart godoc

@@ -143,17 +143,17 @@ func (mr *MockCartRepositoryMockRecorder) GetInviteByToken(ctx, token any) *gomo
 }
 
 // LockCart mocks base method.
-func (m *MockCartRepository) LockCart(ctx context.Context, cartID string, intent domain.PaymentIntent) error {
+func (m *MockCartRepository) LockCart(ctx context.Context, cartID string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LockCart", ctx, cartID, intent)
+	ret := m.ctrl.Call(m, "LockCart", ctx, cartID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // LockCart indicates an expected call of LockCart.
-func (mr *MockCartRepositoryMockRecorder) LockCart(ctx, cartID, intent any) *gomock.Call {
+func (mr *MockCartRepositoryMockRecorder) LockCart(ctx, cartID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LockCart", reflect.TypeOf((*MockCartRepository)(nil).LockCart), ctx, cartID, intent)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LockCart", reflect.TypeOf((*MockCartRepository)(nil).LockCart), ctx, cartID)
 }
 
 // OrphanUserItems mocks base method.

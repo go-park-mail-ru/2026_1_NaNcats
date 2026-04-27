@@ -165,15 +165,15 @@ func main() {
 		appLogger.Fatal("failed to init RabbitMq client", err)
 	}
 
-	orderChannel := "gateway:order:events"
-	wsManager := websocket.NewWsManager(redisPool, orderChannel, appLogger)
+	gatewayEventsChannel := "gateway:events"
+	wsManager := websocket.NewWsManager(redisPool, gatewayEventsChannel, appLogger)
 
 	go wsManager.RunPubSubListener(ctx)
 
 	authHandler := authHttp.NewAuthHandler(authClient, userClient, appLogger, validate)
 	userProfileHandler := userHttp.NewUserProfileHandler(userClient, appLogger)
 	restaurantHandler := restaurantHttp.NewRestaurantHandler(restClient, appLogger)
-	cartHandler := cartHttp.NewCartHandler(cartClient, appLogger)
+	cartHandler := cartHttp.NewCartHandler(cartClient, wsManager, appLogger)
 	addressHandler := addressHttp.NewAddressHandler(addrClient, appLogger)
 	paymentHandler := paymentHttp.NewPaymentHandler(payClient, appLogger)
 	orderHandler := orderHttp.NewOrderHandler(orderClient, wsManager, appLogger)
@@ -224,27 +224,19 @@ func main() {
 	mux.Handle("GET /api/profile/cards", authMW.RequireAuth(http.HandlerFunc(paymentHandler.GetUserCards)))
 	mux.Handle("DELETE /api/profile/cards/{id}", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(paymentHandler.DeleteCard))))
 	mux.Handle("PUT /api/profile/cards/{id}", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(paymentHandler.SetDefaultCard))))
-	mux.HandleFunc("POST /api/webhooks/yookassa", paymentHandler.YookassaWebhook) // ВАЖНО: без мидлварей авторизации!
+	mux.HandleFunc("POST /api/webhooks/yookassa", paymentHandler.YookassaWebhook)
 
 	// === CART ===
-	// Базовые операции
 	mux.Handle("GET /api/cart", authMW.RequireAuth(http.HandlerFunc(cartHandler.GetCart)))
 	mux.Handle("DELETE /api/cart", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.ClearCart))))
-	mux.Handle("POST /api/cart/lock", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.LockCart))))
-
-	// Операции с товарами
 	mux.Handle("POST /api/cart/items", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.AddItem))))
 	mux.Handle("PUT /api/cart/items", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.UpdateQuantity))))
 	mux.Handle("DELETE /api/cart/items", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.RemoveItem))))
 	mux.Handle("PATCH /api/cart/items/owner", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.ReassignOwner))))
-
-	// Управление совместной корзиной
 	mux.Handle("POST /api/cart/invite", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.GenerateInvite))))
 	mux.Handle("POST /api/cart/join", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.JoinCart))))
 	mux.Handle("DELETE /api/cart/members", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.KickMember))))
 	mux.Handle("POST /api/cart/close", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(cartHandler.CloseSharedCart))))
-
-	// WebSockets
 	mux.Handle("GET /api/ws/cart", authMW.RequireAuth(http.HandlerFunc(cartHandler.ConnectCartWS)))
 
 	// === ORDERS ===
@@ -253,7 +245,7 @@ func main() {
 	mux.Handle("GET /api/ws/orders/{id}", authMW.RequireAuth(http.HandlerFunc(orderHandler.TrackOrderWS)))
 	mux.Handle("POST /api/orders/splits/{id}/pay", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.PayForFriend))))
 
-	// === SUPPORT === (Пользовательская часть)
+	// === SUPPORT ===
 	mux.HandleFunc("GET /api/support/categories", supportHandler.GetCategories)
 	mux.HandleFunc("POST /api/support/tickets", supportHandler.CreateTicket)
 	mux.HandleFunc("GET /api/support/tickets", supportHandler.GetMyTickets)
@@ -261,7 +253,6 @@ func main() {
 	mux.HandleFunc("POST /api/support/tickets/{id}/rate", supportHandler.RateTicket)
 	mux.HandleFunc("GET /api/support/tickets/{id}/chat", supportHandler.ConnectChat)
 
-	// === SUPPORT === (Операторская часть / Админка)
 	mux.Handle("GET /api/admin/support/tickets", authMW.RequireAuth(http.HandlerFunc(supportHandler.GetAssignedTickets)))
 	mux.Handle("PATCH /api/admin/support/tickets/{id}/status", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(supportHandler.ChangeTicketStatus))))
 	mux.Handle("POST /api/admin/support/tickets/{id}/reassign", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(supportHandler.ReassignTicket))))

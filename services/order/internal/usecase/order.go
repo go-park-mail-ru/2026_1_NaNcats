@@ -91,7 +91,6 @@ func NewOrderUseCase(
 }
 
 func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderInput, idempotencyKey string) (string, error) {
-	// 1. Получаем данные
 	cart, cartTotalCost, err := o.cartClient.GetCart(ctx, req.UserID)
 	if err != nil {
 		return "", errutil.Wrap("INTERNAL_ERROR", "failed to get cart", err, codes.Internal)

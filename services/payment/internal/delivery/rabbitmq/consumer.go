@@ -32,10 +32,12 @@ func (c *PaymentConsumer) Start(ctx context.Context) error {
 			return nil
 		}
 
-		c.logger.Info("Received payment command", logger.String("order_id", cmd.OrderID))
+		c.logger.Info("Received payment command", logger.String("order_id", cmd.OrderID), logger.String("split_id", cmd.SplitID))
 
 		reply := events.SagaReply{
 			OrderID: cmd.OrderID,
+			SplitID: cmd.SplitID,
+			UserID:  cmd.UserID,
 			Step:    "PAYMENT",
 		}
 
