@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/domain"
@@ -235,21 +236,45 @@ func (u *cartUseCase) AddItem(ctx context.Context, cartID string, userID, dishID
 		return domain.ErrInvalidQuantity
 	}
 
-	cart, err := u.cartRepo.GetCartByID(ctx, cartID)
-	if err != nil {
-		return err
-	}
-
-	if !cart.HasMember(userID) {
-		return domain.ErrForbidden
-	}
-
 	dishes, err := u.restaurantClient.GetDishesByIDs(ctx, []int64{dishID})
 	if err != nil || len(dishes) == 0 {
 		return domain.ErrDishNotFound
 	}
+	dishBrandID := dishes[0].RestaurantBrandID
 
-	if dishes[0].RestaurantBrandID != cart.RestaurantBrandID {
+	var cart domain.Cart
+
+	if cartID != "" {
+		cart, err = u.cartRepo.GetCartByID(ctx, cartID)
+		if err != nil {
+			return err
+		}
+		if !cart.HasMember(userID) {
+			return domain.ErrForbidden
+		}
+		if cart.Status != domain.CartStatusActive {
+			return errors.New("cart is locked")
+		}
+	} else {
+		cart, err = u.cartRepo.GetActiveCartByUserID(ctx, userID)
+		if err != nil {
+			// Если корзины нет создаем новую
+			newCartID, createErr := u.cartRepo.CreateCart(ctx, userID, dishBrandID)
+			if createErr != nil {
+				return createErr
+			}
+			cartID = newCartID
+
+			cart = domain.Cart{
+				ID:                cartID,
+				RestaurantBrandID: dishBrandID,
+			}
+		} else {
+			cartID = cart.ID
+		}
+	}
+
+	if cart.RestaurantBrandID != dishBrandID {
 		return domain.ErrMultipleRestaurants
 	}
 

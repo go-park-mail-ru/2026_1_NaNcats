@@ -349,3 +349,55 @@ func (r *cartRepo) execWithOutbox(ctx context.Context, cartID string, eventType 
 
 	return tx.Commit(ctx)
 }
+
+func (r *cartRepo) GetActiveCartByUserID(ctx context.Context, userID int64) (domain.Cart, error) {
+	var cartID string
+	query := `
+		SELECT c.cart_id 
+		FROM "cart" c
+		JOIN "cart_member" cm ON c.cart_id = cm.cart_id
+		WHERE cm.user_id = $1 AND c.status = 'active'
+		LIMIT 1`
+
+	err := r.pool.QueryRow(ctx, query, userID).Scan(&cartID)
+	if err != nil {
+		return domain.Cart{}, err
+	}
+
+	return r.GetCartByID(ctx, cartID)
+}
+
+func (r *cartRepo) CreateCart(ctx context.Context, adminID int64, brandID int64) (string, error) {
+	var cartID string
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback(ctx)
+
+	queryCart := `
+		INSERT INTO "cart" (admin_id, restaurant_brand_id, status, mode)
+		VALUES ($1, $2, 'active', 'solo')
+		RETURNING cart_id`
+
+	err = tx.QueryRow(ctx, queryCart, adminID, brandID).Scan(&cartID)
+	if err != nil {
+		return "", err
+	}
+
+	queryMember := `
+		INSERT INTO "cart_member" (cart_id, user_id)
+		VALUES ($1, $2)`
+
+	_, err = tx.Exec(ctx, queryMember, cartID, adminID)
+	if err != nil {
+		return "", err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return "", err
+	}
+
+	return cartID, nil
+}

@@ -15,6 +15,8 @@ type CartRepository interface {
 	UnlockCart(ctx context.Context, cartID string) error
 	ClearCart(ctx context.Context, cartID string) error
 	UpdateCartMode(ctx context.Context, cartID string, mode string) error
+	GetActiveCartByUserID(ctx context.Context, userID int64) (domain.Cart, error)
+	CreateCart(ctx context.Context, adminID int64, brandID int64) (string, error)
 	// Гранулярные операции с позициями
 	AddItem(ctx context.Context, cartID string, item domain.CartItem) error
 	RemoveItem(ctx context.Context, cartID string, dishID int64) error
