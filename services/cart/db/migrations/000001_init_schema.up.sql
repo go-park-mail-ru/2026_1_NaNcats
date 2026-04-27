@@ -15,7 +15,7 @@ CREATE TABLE "cart" (
 );
 
 CREATE TABLE "cart_dish" (
-	cart_id UUID
+	cart_id UUID,
     dish_id BIGINT,
     PRIMARY KEY (cart_id, dish_id),
 	
