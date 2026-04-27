@@ -299,6 +299,18 @@ func easyjsonCd43231fDecodeGithubComGoParkMailRu20261NaNcatsSharedPkgRabbitmqEve
 			} else {
 				out.OrderID = string(in.String())
 			}
+		case "cart_id":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.CartID = string(in.String())
+			}
+		case "event_type":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.EventType = string(in.String())
+			}
 		case "status":
 			if in.IsNull() {
 				in.Skip()
@@ -331,24 +343,60 @@ func easyjsonCd43231fEncodeGithubComGoParkMailRu20261NaNcatsSharedPkgRabbitmqEve
 	out.RawByte('{')
 	first := true
 	_ = first
-	{
+	if in.OrderID != "" {
 		const prefix string = ",\"order_id\":"
+		first = false
 		out.RawString(prefix[1:])
 		out.String(string(in.OrderID))
 	}
-	{
+	if in.CartID != "" {
+		const prefix string = ",\"cart_id\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.CartID))
+	}
+	if in.EventType != "" {
+		const prefix string = ",\"event_type\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.EventType))
+	}
+	if in.Status != "" {
 		const prefix string = ",\"status\":"
-		out.RawString(prefix)
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
 		out.String(string(in.Status))
 	}
 	if in.PaymentURL != "" {
 		const prefix string = ",\"payment_url\":"
-		out.RawString(prefix)
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
 		out.String(string(in.PaymentURL))
 	}
 	if in.Error != "" {
 		const prefix string = ",\"error\":"
-		out.RawString(prefix)
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
 		out.String(string(in.Error))
 	}
 	out.RawByte('}')

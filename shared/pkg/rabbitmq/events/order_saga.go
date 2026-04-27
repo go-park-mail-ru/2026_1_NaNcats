@@ -55,8 +55,10 @@ type SagaReply struct {
 //
 //easyjson:json
 type GatewayEvent struct {
-	OrderID    string `json:"order_id"`
-	Status     string `json:"status"` // TODO: продумать и проработать статусы, для выполнения продуктового требования к РК3
+	OrderID    string `json:"order_id,omitempty"`
+	CartID     string `json:"cart_id,omitempty"`
+	EventType  string `json:"event_type,omitempty"`
+	Status     string `json:"status,omitempty"`
 	PaymentURL string `json:"payment_url,omitempty"`
 	Error      string `json:"error,omitempty"`
 }
