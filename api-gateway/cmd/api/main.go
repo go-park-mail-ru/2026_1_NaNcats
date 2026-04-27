@@ -251,6 +251,7 @@ func main() {
 	mux.Handle("POST /api/orders", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.CreateOrder))))
 	mux.Handle("GET /api/profile/orders", authMW.RequireAuth(http.HandlerFunc(orderHandler.GetMyOrders)))
 	mux.Handle("GET /api/ws/orders/{id}", authMW.RequireAuth(http.HandlerFunc(orderHandler.TrackOrderWS)))
+	mux.Handle("POST /api/orders/splits/{id}/pay", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.PayForFriend))))
 
 	// === SUPPORT === (Пользовательская часть)
 	mux.HandleFunc("GET /api/support/categories", supportHandler.GetCategories)
