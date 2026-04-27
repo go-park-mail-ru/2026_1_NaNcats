@@ -23,6 +23,7 @@ const (
 	OrderService_CreateOrder_FullMethodName                  = "/order.OrderService/CreateOrder"
 	OrderService_GetOrders_FullMethodName                    = "/order.OrderService/GetOrders"
 	OrderService_UpdateOrderStatusByPaymentID_FullMethodName = "/order.OrderService/UpdateOrderStatusByPaymentID"
+	OrderService_PayForFriend_FullMethodName                 = "/order.OrderService/PayForFriend"
 )
 
 // OrderServiceClient is the client API for OrderService service.
@@ -37,6 +38,8 @@ type OrderServiceClient interface {
 	GetOrders(ctx context.Context, in *GetOrdersRequest, opts ...grpc.CallOption) (*GetOrdersResponse, error)
 	// Метод смены статус заказа
 	UpdateOrderStatusByPaymentID(ctx context.Context, in *UpdateStatusRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Метод для оплаты счета за друга
+	PayForFriend(ctx context.Context, in *PayForFriendRequest, opts ...grpc.CallOption) (*PayForFriendResponse, error)
 }
 
 type orderServiceClient struct {
@@ -77,6 +80,16 @@ func (c *orderServiceClient) UpdateOrderStatusByPaymentID(ctx context.Context, i
 	return out, nil
 }
 
+func (c *orderServiceClient) PayForFriend(ctx context.Context, in *PayForFriendRequest, opts ...grpc.CallOption) (*PayForFriendResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PayForFriendResponse)
+	err := c.cc.Invoke(ctx, OrderService_PayForFriend_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OrderServiceServer is the server API for OrderService service.
 // All implementations must embed UnimplementedOrderServiceServer
 // for forward compatibility.
@@ -89,6 +102,8 @@ type OrderServiceServer interface {
 	GetOrders(context.Context, *GetOrdersRequest) (*GetOrdersResponse, error)
 	// Метод смены статус заказа
 	UpdateOrderStatusByPaymentID(context.Context, *UpdateStatusRequest) (*emptypb.Empty, error)
+	// Метод для оплаты счета за друга
+	PayForFriend(context.Context, *PayForFriendRequest) (*PayForFriendResponse, error)
 	mustEmbedUnimplementedOrderServiceServer()
 }
 
@@ -107,6 +122,9 @@ func (UnimplementedOrderServiceServer) GetOrders(context.Context, *GetOrdersRequ
 }
 func (UnimplementedOrderServiceServer) UpdateOrderStatusByPaymentID(context.Context, *UpdateStatusRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateOrderStatusByPaymentID not implemented")
+}
+func (UnimplementedOrderServiceServer) PayForFriend(context.Context, *PayForFriendRequest) (*PayForFriendResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method PayForFriend not implemented")
 }
 func (UnimplementedOrderServiceServer) mustEmbedUnimplementedOrderServiceServer() {}
 func (UnimplementedOrderServiceServer) testEmbeddedByValue()                      {}
@@ -183,6 +201,24 @@ func _OrderService_UpdateOrderStatusByPaymentID_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OrderService_PayForFriend_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PayForFriendRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).PayForFriend(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_PayForFriend_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).PayForFriend(ctx, req.(*PayForFriendRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // OrderService_ServiceDesc is the grpc.ServiceDesc for OrderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -201,6 +237,10 @@ var OrderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateOrderStatusByPaymentID",
 			Handler:    _OrderService_UpdateOrderStatusByPaymentID_Handler,
+		},
+		{
+			MethodName: "PayForFriend",
+			Handler:    _OrderService_PayForFriend_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

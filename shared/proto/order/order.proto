@@ -15,13 +15,22 @@ service OrderService {
   rpc GetOrders (GetOrdersRequest) returns (GetOrdersResponse);
   // Метод смены статус заказа
   rpc UpdateOrderStatusByPaymentID (UpdateStatusRequest) returns (google.protobuf.Empty);
+  // Метод для оплаты счета за друга
+  rpc PayForFriend (PayForFriendRequest) returns (PayForFriendResponse);
 }
-
 
 message OrderDish {
   int64 dish_id = 1;
   int32 quantity = 2;
   int64 price = 3;
+  optional int64 owner_user_id = 4;
+}
+
+message OrderSplit {
+  string split_id = 1;
+  int64 user_id = 2;
+  int64 amount = 3;
+  string status = 4;
 }
 
 message Order {
@@ -32,23 +41,27 @@ message Order {
   string status = 5;
   google.protobuf.Timestamp created_at = 6;
   repeated OrderDish items = 7;
+  repeated OrderSplit splits = 8;
 }
 
-
 message CreateOrderRequest {
-  int64 user_id = 1; 
+  int64 user_id = 1;
   string address_public_id = 2;
   int64 restaurant_branch_id = 3;
   int64 restaurant_brand_id = 4;
-  string payment_method_id = 5;
-  int64 delivery_cost = 6;
-  int64 service_fee = 7;
-  string idempotency_key = 8;
+  
+  string payment_method_id = 5; 
+  bool pay_for_all = 6; 
+  map<int64, int64> payer_mapping = 7;
+  
+  int64 delivery_cost = 8;
+  int64 service_fee = 9;
+  string idempotency_key = 10;
 }
 
 message CreateOrderResponse {
   string order_public_id = 1;
-  string confirmation_url = 2;
+  string confirmation_url = 2; 
 }
 
 message GetOrdersRequest {
@@ -63,4 +76,15 @@ message UpdateStatusRequest {
   string yookassa_payment_id = 1;
   string status = 2;
   string idempotency_key = 7;
+}
+
+message PayForFriendRequest {
+  string split_id = 1;
+  int64 payer_user_id = 2;
+  string payment_method_id = 3;
+  string idempotency_key = 4;
+}
+
+message PayForFriendResponse {
+  string confirmation_url = 1;
 }

@@ -28,6 +28,7 @@ type OrderDish struct {
 	DishId        int64                  `protobuf:"varint,1,opt,name=dish_id,json=dishId,proto3" json:"dish_id,omitempty"`
 	Quantity      int32                  `protobuf:"varint,2,opt,name=quantity,proto3" json:"quantity,omitempty"`
 	Price         int64                  `protobuf:"varint,3,opt,name=price,proto3" json:"price,omitempty"`
+	OwnerUserId   *int64                 `protobuf:"varint,4,opt,name=owner_user_id,json=ownerUserId,proto3,oneof" json:"owner_user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -83,6 +84,81 @@ func (x *OrderDish) GetPrice() int64 {
 	return 0
 }
 
+func (x *OrderDish) GetOwnerUserId() int64 {
+	if x != nil && x.OwnerUserId != nil {
+		return *x.OwnerUserId
+	}
+	return 0
+}
+
+type OrderSplit struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SplitId       string                 `protobuf:"bytes,1,opt,name=split_id,json=splitId,proto3" json:"split_id,omitempty"`
+	UserId        int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Amount        int64                  `protobuf:"varint,3,opt,name=amount,proto3" json:"amount,omitempty"`
+	Status        string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OrderSplit) Reset() {
+	*x = OrderSplit{}
+	mi := &file_order_order_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OrderSplit) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OrderSplit) ProtoMessage() {}
+
+func (x *OrderSplit) ProtoReflect() protoreflect.Message {
+	mi := &file_order_order_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OrderSplit.ProtoReflect.Descriptor instead.
+func (*OrderSplit) Descriptor() ([]byte, []int) {
+	return file_order_order_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *OrderSplit) GetSplitId() string {
+	if x != nil {
+		return x.SplitId
+	}
+	return ""
+}
+
+func (x *OrderSplit) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *OrderSplit) GetAmount() int64 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
+}
+
+func (x *OrderSplit) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
 type Order struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	PublicId          string                 `protobuf:"bytes,1,opt,name=public_id,json=publicId,proto3" json:"public_id,omitempty"`
@@ -92,13 +168,14 @@ type Order struct {
 	Status            string                 `protobuf:"bytes,5,opt,name=status,proto3" json:"status,omitempty"`
 	CreatedAt         *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	Items             []*OrderDish           `protobuf:"bytes,7,rep,name=items,proto3" json:"items,omitempty"`
+	Splits            []*OrderSplit          `protobuf:"bytes,8,rep,name=splits,proto3" json:"splits,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
 
 func (x *Order) Reset() {
 	*x = Order{}
-	mi := &file_order_order_proto_msgTypes[1]
+	mi := &file_order_order_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -110,7 +187,7 @@ func (x *Order) String() string {
 func (*Order) ProtoMessage() {}
 
 func (x *Order) ProtoReflect() protoreflect.Message {
-	mi := &file_order_order_proto_msgTypes[1]
+	mi := &file_order_order_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -123,7 +200,7 @@ func (x *Order) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Order.ProtoReflect.Descriptor instead.
 func (*Order) Descriptor() ([]byte, []int) {
-	return file_order_order_proto_rawDescGZIP(), []int{1}
+	return file_order_order_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Order) GetPublicId() string {
@@ -175,6 +252,13 @@ func (x *Order) GetItems() []*OrderDish {
 	return nil
 }
 
+func (x *Order) GetSplits() []*OrderSplit {
+	if x != nil {
+		return x.Splits
+	}
+	return nil
+}
+
 type CreateOrderRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	UserId             int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -182,16 +266,18 @@ type CreateOrderRequest struct {
 	RestaurantBranchId int64                  `protobuf:"varint,3,opt,name=restaurant_branch_id,json=restaurantBranchId,proto3" json:"restaurant_branch_id,omitempty"`
 	RestaurantBrandId  int64                  `protobuf:"varint,4,opt,name=restaurant_brand_id,json=restaurantBrandId,proto3" json:"restaurant_brand_id,omitempty"`
 	PaymentMethodId    string                 `protobuf:"bytes,5,opt,name=payment_method_id,json=paymentMethodId,proto3" json:"payment_method_id,omitempty"`
-	DeliveryCost       int64                  `protobuf:"varint,6,opt,name=delivery_cost,json=deliveryCost,proto3" json:"delivery_cost,omitempty"`
-	ServiceFee         int64                  `protobuf:"varint,7,opt,name=service_fee,json=serviceFee,proto3" json:"service_fee,omitempty"`
-	IdempotencyKey     string                 `protobuf:"bytes,8,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	PayForAll          bool                   `protobuf:"varint,6,opt,name=pay_for_all,json=payForAll,proto3" json:"pay_for_all,omitempty"`
+	PayerMapping       map[int64]int64        `protobuf:"bytes,7,rep,name=payer_mapping,json=payerMapping,proto3" json:"payer_mapping,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	DeliveryCost       int64                  `protobuf:"varint,8,opt,name=delivery_cost,json=deliveryCost,proto3" json:"delivery_cost,omitempty"`
+	ServiceFee         int64                  `protobuf:"varint,9,opt,name=service_fee,json=serviceFee,proto3" json:"service_fee,omitempty"`
+	IdempotencyKey     string                 `protobuf:"bytes,10,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *CreateOrderRequest) Reset() {
 	*x = CreateOrderRequest{}
-	mi := &file_order_order_proto_msgTypes[2]
+	mi := &file_order_order_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -203,7 +289,7 @@ func (x *CreateOrderRequest) String() string {
 func (*CreateOrderRequest) ProtoMessage() {}
 
 func (x *CreateOrderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_order_order_proto_msgTypes[2]
+	mi := &file_order_order_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -216,7 +302,7 @@ func (x *CreateOrderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateOrderRequest.ProtoReflect.Descriptor instead.
 func (*CreateOrderRequest) Descriptor() ([]byte, []int) {
-	return file_order_order_proto_rawDescGZIP(), []int{2}
+	return file_order_order_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CreateOrderRequest) GetUserId() int64 {
@@ -254,6 +340,20 @@ func (x *CreateOrderRequest) GetPaymentMethodId() string {
 	return ""
 }
 
+func (x *CreateOrderRequest) GetPayForAll() bool {
+	if x != nil {
+		return x.PayForAll
+	}
+	return false
+}
+
+func (x *CreateOrderRequest) GetPayerMapping() map[int64]int64 {
+	if x != nil {
+		return x.PayerMapping
+	}
+	return nil
+}
+
 func (x *CreateOrderRequest) GetDeliveryCost() int64 {
 	if x != nil {
 		return x.DeliveryCost
@@ -285,7 +385,7 @@ type CreateOrderResponse struct {
 
 func (x *CreateOrderResponse) Reset() {
 	*x = CreateOrderResponse{}
-	mi := &file_order_order_proto_msgTypes[3]
+	mi := &file_order_order_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -297,7 +397,7 @@ func (x *CreateOrderResponse) String() string {
 func (*CreateOrderResponse) ProtoMessage() {}
 
 func (x *CreateOrderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_order_order_proto_msgTypes[3]
+	mi := &file_order_order_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -310,7 +410,7 @@ func (x *CreateOrderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateOrderResponse.ProtoReflect.Descriptor instead.
 func (*CreateOrderResponse) Descriptor() ([]byte, []int) {
-	return file_order_order_proto_rawDescGZIP(), []int{3}
+	return file_order_order_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *CreateOrderResponse) GetOrderPublicId() string {
@@ -336,7 +436,7 @@ type GetOrdersRequest struct {
 
 func (x *GetOrdersRequest) Reset() {
 	*x = GetOrdersRequest{}
-	mi := &file_order_order_proto_msgTypes[4]
+	mi := &file_order_order_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -348,7 +448,7 @@ func (x *GetOrdersRequest) String() string {
 func (*GetOrdersRequest) ProtoMessage() {}
 
 func (x *GetOrdersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_order_order_proto_msgTypes[4]
+	mi := &file_order_order_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -361,7 +461,7 @@ func (x *GetOrdersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetOrdersRequest.ProtoReflect.Descriptor instead.
 func (*GetOrdersRequest) Descriptor() ([]byte, []int) {
-	return file_order_order_proto_rawDescGZIP(), []int{4}
+	return file_order_order_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetOrdersRequest) GetUserId() int64 {
@@ -380,7 +480,7 @@ type GetOrdersResponse struct {
 
 func (x *GetOrdersResponse) Reset() {
 	*x = GetOrdersResponse{}
-	mi := &file_order_order_proto_msgTypes[5]
+	mi := &file_order_order_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -392,7 +492,7 @@ func (x *GetOrdersResponse) String() string {
 func (*GetOrdersResponse) ProtoMessage() {}
 
 func (x *GetOrdersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_order_order_proto_msgTypes[5]
+	mi := &file_order_order_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -405,7 +505,7 @@ func (x *GetOrdersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetOrdersResponse.ProtoReflect.Descriptor instead.
 func (*GetOrdersResponse) Descriptor() ([]byte, []int) {
-	return file_order_order_proto_rawDescGZIP(), []int{5}
+	return file_order_order_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetOrdersResponse) GetOrders() []*Order {
@@ -426,7 +526,7 @@ type UpdateStatusRequest struct {
 
 func (x *UpdateStatusRequest) Reset() {
 	*x = UpdateStatusRequest{}
-	mi := &file_order_order_proto_msgTypes[6]
+	mi := &file_order_order_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -438,7 +538,7 @@ func (x *UpdateStatusRequest) String() string {
 func (*UpdateStatusRequest) ProtoMessage() {}
 
 func (x *UpdateStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_order_order_proto_msgTypes[6]
+	mi := &file_order_order_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -451,7 +551,7 @@ func (x *UpdateStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateStatusRequest.ProtoReflect.Descriptor instead.
 func (*UpdateStatusRequest) Descriptor() ([]byte, []int) {
-	return file_order_order_proto_rawDescGZIP(), []int{6}
+	return file_order_order_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *UpdateStatusRequest) GetYookassaPaymentId() string {
@@ -475,15 +575,135 @@ func (x *UpdateStatusRequest) GetIdempotencyKey() string {
 	return ""
 }
 
+type PayForFriendRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	SplitId         string                 `protobuf:"bytes,1,opt,name=split_id,json=splitId,proto3" json:"split_id,omitempty"`
+	PayerUserId     int64                  `protobuf:"varint,2,opt,name=payer_user_id,json=payerUserId,proto3" json:"payer_user_id,omitempty"`
+	PaymentMethodId string                 `protobuf:"bytes,3,opt,name=payment_method_id,json=paymentMethodId,proto3" json:"payment_method_id,omitempty"`
+	IdempotencyKey  string                 `protobuf:"bytes,4,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *PayForFriendRequest) Reset() {
+	*x = PayForFriendRequest{}
+	mi := &file_order_order_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PayForFriendRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PayForFriendRequest) ProtoMessage() {}
+
+func (x *PayForFriendRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_order_order_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PayForFriendRequest.ProtoReflect.Descriptor instead.
+func (*PayForFriendRequest) Descriptor() ([]byte, []int) {
+	return file_order_order_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *PayForFriendRequest) GetSplitId() string {
+	if x != nil {
+		return x.SplitId
+	}
+	return ""
+}
+
+func (x *PayForFriendRequest) GetPayerUserId() int64 {
+	if x != nil {
+		return x.PayerUserId
+	}
+	return 0
+}
+
+func (x *PayForFriendRequest) GetPaymentMethodId() string {
+	if x != nil {
+		return x.PaymentMethodId
+	}
+	return ""
+}
+
+func (x *PayForFriendRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
+type PayForFriendResponse struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	ConfirmationUrl string                 `protobuf:"bytes,1,opt,name=confirmation_url,json=confirmationUrl,proto3" json:"confirmation_url,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *PayForFriendResponse) Reset() {
+	*x = PayForFriendResponse{}
+	mi := &file_order_order_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PayForFriendResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PayForFriendResponse) ProtoMessage() {}
+
+func (x *PayForFriendResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_order_order_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PayForFriendResponse.ProtoReflect.Descriptor instead.
+func (*PayForFriendResponse) Descriptor() ([]byte, []int) {
+	return file_order_order_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *PayForFriendResponse) GetConfirmationUrl() string {
+	if x != nil {
+		return x.ConfirmationUrl
+	}
+	return ""
+}
+
 var File_order_order_proto protoreflect.FileDescriptor
 
 const file_order_order_proto_rawDesc = "" +
 	"\n" +
-	"\x11order/order.proto\x12\x05order\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"V\n" +
+	"\x11order/order.proto\x12\x05order\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x91\x01\n" +
 	"\tOrderDish\x12\x17\n" +
 	"\adish_id\x18\x01 \x01(\x03R\x06dishId\x12\x1a\n" +
 	"\bquantity\x18\x02 \x01(\x05R\bquantity\x12\x14\n" +
-	"\x05price\x18\x03 \x01(\x03R\x05price\"\x97\x02\n" +
+	"\x05price\x18\x03 \x01(\x03R\x05price\x12'\n" +
+	"\rowner_user_id\x18\x04 \x01(\x03H\x00R\vownerUserId\x88\x01\x01B\x10\n" +
+	"\x0e_owner_user_id\"p\n" +
+	"\n" +
+	"OrderSplit\x12\x19\n" +
+	"\bsplit_id\x18\x01 \x01(\tR\asplitId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x16\n" +
+	"\x06amount\x18\x03 \x01(\x03R\x06amount\x12\x16\n" +
+	"\x06status\x18\x04 \x01(\tR\x06status\"\xc2\x02\n" +
 	"\x05Order\x12\x1b\n" +
 	"\tpublic_id\x18\x01 \x01(\tR\bpublicId\x12'\n" +
 	"\x0frestaurant_name\x18\x02 \x01(\tR\x0erestaurantName\x12.\n" +
@@ -493,17 +713,24 @@ const file_order_order_proto_rawDesc = "" +
 	"\x06status\x18\x05 \x01(\tR\x06status\x129\n" +
 	"\n" +
 	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12&\n" +
-	"\x05items\x18\a \x03(\v2\x10.order.OrderDishR\x05items\"\xd6\x02\n" +
+	"\x05items\x18\a \x03(\v2\x10.order.OrderDishR\x05items\x12)\n" +
+	"\x06splits\x18\b \x03(\v2\x11.order.OrderSplitR\x06splits\"\x89\x04\n" +
 	"\x12CreateOrderRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12*\n" +
 	"\x11address_public_id\x18\x02 \x01(\tR\x0faddressPublicId\x120\n" +
 	"\x14restaurant_branch_id\x18\x03 \x01(\x03R\x12restaurantBranchId\x12.\n" +
 	"\x13restaurant_brand_id\x18\x04 \x01(\x03R\x11restaurantBrandId\x12*\n" +
-	"\x11payment_method_id\x18\x05 \x01(\tR\x0fpaymentMethodId\x12#\n" +
-	"\rdelivery_cost\x18\x06 \x01(\x03R\fdeliveryCost\x12\x1f\n" +
-	"\vservice_fee\x18\a \x01(\x03R\n" +
+	"\x11payment_method_id\x18\x05 \x01(\tR\x0fpaymentMethodId\x12\x1e\n" +
+	"\vpay_for_all\x18\x06 \x01(\bR\tpayForAll\x12P\n" +
+	"\rpayer_mapping\x18\a \x03(\v2+.order.CreateOrderRequest.PayerMappingEntryR\fpayerMapping\x12#\n" +
+	"\rdelivery_cost\x18\b \x01(\x03R\fdeliveryCost\x12\x1f\n" +
+	"\vservice_fee\x18\t \x01(\x03R\n" +
 	"serviceFee\x12'\n" +
-	"\x0fidempotency_key\x18\b \x01(\tR\x0eidempotencyKey\"h\n" +
+	"\x0fidempotency_key\x18\n" +
+	" \x01(\tR\x0eidempotencyKey\x1a?\n" +
+	"\x11PayerMappingEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\x03R\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\x03R\x05value:\x028\x01\"h\n" +
 	"\x13CreateOrderResponse\x12&\n" +
 	"\x0forder_public_id\x18\x01 \x01(\tR\rorderPublicId\x12)\n" +
 	"\x10confirmation_url\x18\x02 \x01(\tR\x0fconfirmationUrl\"+\n" +
@@ -514,11 +741,19 @@ const file_order_order_proto_rawDesc = "" +
 	"\x13UpdateStatusRequest\x12.\n" +
 	"\x13yookassa_payment_id\x18\x01 \x01(\tR\x11yookassaPaymentId\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\tR\x06status\x12'\n" +
-	"\x0fidempotency_key\x18\a \x01(\tR\x0eidempotencyKey2\xe8\x01\n" +
+	"\x0fidempotency_key\x18\a \x01(\tR\x0eidempotencyKey\"\xa9\x01\n" +
+	"\x13PayForFriendRequest\x12\x19\n" +
+	"\bsplit_id\x18\x01 \x01(\tR\asplitId\x12\"\n" +
+	"\rpayer_user_id\x18\x02 \x01(\x03R\vpayerUserId\x12*\n" +
+	"\x11payment_method_id\x18\x03 \x01(\tR\x0fpaymentMethodId\x12'\n" +
+	"\x0fidempotency_key\x18\x04 \x01(\tR\x0eidempotencyKey\"A\n" +
+	"\x14PayForFriendResponse\x12)\n" +
+	"\x10confirmation_url\x18\x01 \x01(\tR\x0fconfirmationUrl2\xb1\x02\n" +
 	"\fOrderService\x12D\n" +
 	"\vCreateOrder\x12\x19.order.CreateOrderRequest\x1a\x1a.order.CreateOrderResponse\x12>\n" +
 	"\tGetOrders\x12\x17.order.GetOrdersRequest\x1a\x18.order.GetOrdersResponse\x12R\n" +
-	"\x1cUpdateOrderStatusByPaymentID\x12\x1a.order.UpdateStatusRequest\x1a\x16.google.protobuf.EmptyB>Z<github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/orderb\x06proto3"
+	"\x1cUpdateOrderStatusByPaymentID\x12\x1a.order.UpdateStatusRequest\x1a\x16.google.protobuf.Empty\x12G\n" +
+	"\fPayForFriend\x12\x1a.order.PayForFriendRequest\x1a\x1b.order.PayForFriendResponseB>Z<github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/orderb\x06proto3"
 
 var (
 	file_order_order_proto_rawDescOnce sync.Once
@@ -532,33 +767,41 @@ func file_order_order_proto_rawDescGZIP() []byte {
 	return file_order_order_proto_rawDescData
 }
 
-var file_order_order_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_order_order_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_order_order_proto_goTypes = []any{
 	(*OrderDish)(nil),             // 0: order.OrderDish
-	(*Order)(nil),                 // 1: order.Order
-	(*CreateOrderRequest)(nil),    // 2: order.CreateOrderRequest
-	(*CreateOrderResponse)(nil),   // 3: order.CreateOrderResponse
-	(*GetOrdersRequest)(nil),      // 4: order.GetOrdersRequest
-	(*GetOrdersResponse)(nil),     // 5: order.GetOrdersResponse
-	(*UpdateStatusRequest)(nil),   // 6: order.UpdateStatusRequest
-	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),         // 8: google.protobuf.Empty
+	(*OrderSplit)(nil),            // 1: order.OrderSplit
+	(*Order)(nil),                 // 2: order.Order
+	(*CreateOrderRequest)(nil),    // 3: order.CreateOrderRequest
+	(*CreateOrderResponse)(nil),   // 4: order.CreateOrderResponse
+	(*GetOrdersRequest)(nil),      // 5: order.GetOrdersRequest
+	(*GetOrdersResponse)(nil),     // 6: order.GetOrdersResponse
+	(*UpdateStatusRequest)(nil),   // 7: order.UpdateStatusRequest
+	(*PayForFriendRequest)(nil),   // 8: order.PayForFriendRequest
+	(*PayForFriendResponse)(nil),  // 9: order.PayForFriendResponse
+	nil,                           // 10: order.CreateOrderRequest.PayerMappingEntry
+	(*timestamppb.Timestamp)(nil), // 11: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),         // 12: google.protobuf.Empty
 }
 var file_order_order_proto_depIdxs = []int32{
-	7, // 0: order.Order.created_at:type_name -> google.protobuf.Timestamp
-	0, // 1: order.Order.items:type_name -> order.OrderDish
-	1, // 2: order.GetOrdersResponse.orders:type_name -> order.Order
-	2, // 3: order.OrderService.CreateOrder:input_type -> order.CreateOrderRequest
-	4, // 4: order.OrderService.GetOrders:input_type -> order.GetOrdersRequest
-	6, // 5: order.OrderService.UpdateOrderStatusByPaymentID:input_type -> order.UpdateStatusRequest
-	3, // 6: order.OrderService.CreateOrder:output_type -> order.CreateOrderResponse
-	5, // 7: order.OrderService.GetOrders:output_type -> order.GetOrdersResponse
-	8, // 8: order.OrderService.UpdateOrderStatusByPaymentID:output_type -> google.protobuf.Empty
-	6, // [6:9] is the sub-list for method output_type
-	3, // [3:6] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	11, // 0: order.Order.created_at:type_name -> google.protobuf.Timestamp
+	0,  // 1: order.Order.items:type_name -> order.OrderDish
+	1,  // 2: order.Order.splits:type_name -> order.OrderSplit
+	10, // 3: order.CreateOrderRequest.payer_mapping:type_name -> order.CreateOrderRequest.PayerMappingEntry
+	2,  // 4: order.GetOrdersResponse.orders:type_name -> order.Order
+	3,  // 5: order.OrderService.CreateOrder:input_type -> order.CreateOrderRequest
+	5,  // 6: order.OrderService.GetOrders:input_type -> order.GetOrdersRequest
+	7,  // 7: order.OrderService.UpdateOrderStatusByPaymentID:input_type -> order.UpdateStatusRequest
+	8,  // 8: order.OrderService.PayForFriend:input_type -> order.PayForFriendRequest
+	4,  // 9: order.OrderService.CreateOrder:output_type -> order.CreateOrderResponse
+	6,  // 10: order.OrderService.GetOrders:output_type -> order.GetOrdersResponse
+	12, // 11: order.OrderService.UpdateOrderStatusByPaymentID:output_type -> google.protobuf.Empty
+	9,  // 12: order.OrderService.PayForFriend:output_type -> order.PayForFriendResponse
+	9,  // [9:13] is the sub-list for method output_type
+	5,  // [5:9] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_order_order_proto_init() }
@@ -566,13 +809,14 @@ func file_order_order_proto_init() {
 	if File_order_order_proto != nil {
 		return
 	}
+	file_order_order_proto_msgTypes[0].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_order_order_proto_rawDesc), len(file_order_order_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
