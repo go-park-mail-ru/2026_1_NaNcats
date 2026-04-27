@@ -987,100 +987,6 @@
                 }
             }
         },
-        "/api/cart/lock": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Переводит корзину в статус locked, передает намерения об оплате (Payment Intent) и запускает Saga Orchestrator.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "cart"
-                ],
-                "summary": "Зафиксировать корзину и перейти к оплате",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Ключ идемпотентности",
-                        "name": "Idempotency-Key",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "Настройки оплаты (кто за кого платит)",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_delivery_http_cart.LockCartRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Корзина заблокирована, сага запущена",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Неверный формат запроса",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Только админ может инициировать оплату",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "В корзине есть нераспределенные позиции (Conflict)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/api/cart/members": {
             "delete": {
                 "security": [
@@ -1173,7 +1079,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Создает заказ на основе корзины, возвращает ID заказа и ссылку на оплату YooKassa (при необходимости)",
+                "description": "Создает заказ на основе корзины, рассчитывает долги (Splits) и запускает Сагу",
                 "consumes": [
                     "application/json"
                 ],
@@ -1186,7 +1092,14 @@
                 "summary": "Создать заказ",
                 "parameters": [
                     {
-                        "description": "Данные для оформления заказа",
+                        "type": "string",
+                        "description": "Ключ идемпотентности",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные для оформления",
                         "name": "input",
                         "in": "body",
                         "required": true,
@@ -1197,13 +1110,13 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Заказ успешно создан",
+                        "description": "Заказ успешно создан (ссылки на оплату придут по WS)",
                         "schema": {
                             "$ref": "#/definitions/api-gateway_internal_delivery_http_order.CreateOrderResponse"
                         }
                     },
                     "400": {
-                        "description": "Bad request или пустая корзина",
+                        "description": "Bad request, пустая корзина или есть ничейные блюда",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1222,6 +1135,135 @@
                     },
                     "404": {
                         "description": "Указанный адрес не найден",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/orders/splits/{id}/pay": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Перехватывает чужой счет (Сплит) и запускает по нему транзакцию оплаты",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "order"
+                ],
+                "summary": "Оплатить за друга",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID сплита (счета)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Ключ идемпотентности",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные для оплаты",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_order.PayForFriendRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Процесс оплаты запущен",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/profile/orders": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Возвращает историю заказов пользователя со всеми позициями и детализацией счетов (Splits)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "order"
+                ],
+                "summary": "Получить историю заказов",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api-gateway_internal_delivery_http_order.OrderHistoryResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1268,6 +1310,52 @@
                     },
                     "400": {
                         "description": "Bad Request (отсутствует cart_id)",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ws/orders/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Подключение для получения live-обновлений по заказу и ссылок на оплату",
+                "tags": [
+                    "order"
+                ],
+                "summary": "WebSocket отслеживания заказа",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID заказа",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "101": {
+                        "description": "Switching Protocols"
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -2507,24 +2595,6 @@
                 }
             }
         },
-        "api-gateway_internal_delivery_http_cart.LockCartRequest": {
-            "type": "object",
-            "properties": {
-                "cart_id": {
-                    "type": "string"
-                },
-                "pay_for_all": {
-                    "type": "boolean"
-                },
-                "payer_mapping": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "integer",
-                        "format": "int64"
-                    }
-                }
-            }
-        },
         "api-gateway_internal_delivery_http_cart.ReassignOwnerRequest": {
             "type": "object",
             "properties": {
@@ -2579,6 +2649,16 @@
                 "delivery_cost": {
                     "type": "integer"
                 },
+                "pay_for_all": {
+                    "type": "boolean"
+                },
+                "payer_mapping": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                },
                 "payment_method_id": {
                     "type": "string"
                 },
@@ -2590,10 +2670,84 @@
         "api-gateway_internal_delivery_http_order.CreateOrderResponse": {
             "type": "object",
             "properties": {
-                "confirmation_url": {
+                "order_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "api-gateway_internal_delivery_http_order.OrderDishDTO": {
+            "type": "object",
+            "properties": {
+                "dish_id": {
+                    "type": "integer"
+                },
+                "owner_user_id": {
+                    "type": "integer"
+                },
+                "price": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api-gateway_internal_delivery_http_order.OrderHistoryResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
                     "type": "string"
                 },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api-gateway_internal_delivery_http_order.OrderDishDTO"
+                    }
+                },
                 "order_id": {
+                    "type": "string"
+                },
+                "restaurant_image_url": {
+                    "type": "string"
+                },
+                "restaurant_name": {
+                    "type": "string"
+                },
+                "splits": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api-gateway_internal_delivery_http_order.OrderSplitDTO"
+                    }
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total_cost": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api-gateway_internal_delivery_http_order.OrderSplitDTO": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "integer"
+                },
+                "split_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api-gateway_internal_delivery_http_order.PayForFriendRequest": {
+            "type": "object",
+            "properties": {
+                "payment_method_id": {
                     "type": "string"
                 }
             }
