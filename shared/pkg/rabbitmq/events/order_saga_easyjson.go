@@ -37,7 +37,13 @@ func easyjsonCd43231fDecodeGithubComGoParkMailRu20261NaNcatsSharedPkgRabbitmqEve
 			} else {
 				out.OrderID = string(in.String())
 			}
-		case "UserID":
+		case "split_id":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.SplitID = string(in.String())
+			}
+		case "user_id":
 			if in.IsNull() {
 				in.Skip()
 			} else {
@@ -92,8 +98,13 @@ func easyjsonCd43231fEncodeGithubComGoParkMailRu20261NaNcatsSharedPkgRabbitmqEve
 		out.RawString(prefix[1:])
 		out.String(string(in.OrderID))
 	}
+	if in.SplitID != "" {
+		const prefix string = ",\"split_id\":"
+		out.RawString(prefix)
+		out.String(string(in.SplitID))
+	}
 	{
-		const prefix string = ",\"UserID\":"
+		const prefix string = ",\"user_id\":"
 		out.RawString(prefix)
 		out.Int64(int64(in.UserID))
 	}
@@ -168,6 +179,12 @@ func easyjsonCd43231fDecodeGithubComGoParkMailRu20261NaNcatsSharedPkgRabbitmqEve
 			} else {
 				out.OrderID = string(in.String())
 			}
+		case "split_id":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.SplitID = string(in.String())
+			}
 		case "user_id":
 			if in.IsNull() {
 				in.Skip()
@@ -222,6 +239,11 @@ func easyjsonCd43231fEncodeGithubComGoParkMailRu20261NaNcatsSharedPkgRabbitmqEve
 		const prefix string = ",\"order_id\":"
 		out.RawString(prefix[1:])
 		out.String(string(in.OrderID))
+	}
+	if in.SplitID != "" {
+		const prefix string = ",\"split_id\":"
+		out.RawString(prefix)
+		out.String(string(in.SplitID))
 	}
 	{
 		const prefix string = ",\"user_id\":"
@@ -299,6 +321,18 @@ func easyjsonCd43231fDecodeGithubComGoParkMailRu20261NaNcatsSharedPkgRabbitmqEve
 			} else {
 				out.OrderID = string(in.String())
 			}
+		case "split_id":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.SplitID = string(in.String())
+			}
+		case "user_id":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.UserID = int64(in.Int64())
+			}
 		case "cart_id":
 			if in.IsNull() {
 				in.Skip()
@@ -349,54 +383,49 @@ func easyjsonCd43231fEncodeGithubComGoParkMailRu20261NaNcatsSharedPkgRabbitmqEve
 		out.RawString(prefix[1:])
 		out.String(string(in.OrderID))
 	}
-	if in.CartID != "" {
-		const prefix string = ",\"cart_id\":"
+	if in.SplitID != "" {
+		const prefix string = ",\"split_id\":"
 		if first {
 			first = false
 			out.RawString(prefix[1:])
 		} else {
 			out.RawString(prefix)
 		}
+		out.String(string(in.SplitID))
+	}
+	{
+		const prefix string = ",\"user_id\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int64(int64(in.UserID))
+	}
+	if in.CartID != "" {
+		const prefix string = ",\"cart_id\":"
+		out.RawString(prefix)
 		out.String(string(in.CartID))
 	}
 	if in.EventType != "" {
 		const prefix string = ",\"event_type\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
+		out.RawString(prefix)
 		out.String(string(in.EventType))
 	}
 	if in.Status != "" {
 		const prefix string = ",\"status\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
+		out.RawString(prefix)
 		out.String(string(in.Status))
 	}
 	if in.PaymentURL != "" {
 		const prefix string = ",\"payment_url\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
+		out.RawString(prefix)
 		out.String(string(in.PaymentURL))
 	}
 	if in.Error != "" {
 		const prefix string = ",\"error\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
+		out.RawString(prefix)
 		out.String(string(in.Error))
 	}
 	out.RawByte('}')

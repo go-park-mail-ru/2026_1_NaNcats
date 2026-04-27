@@ -11,24 +11,53 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func mapDomainToPBOrder(d domain.Order) *pb.Order {
-	items := make([]*pb.OrderDish, 0, len(d.Items))
-	for _, item := range d.Items {
-		items = append(items, &pb.OrderDish{
+func mapDomainToPBOrder(o domain.Order) *pb.Order {
+	items := make([]*pb.OrderDish, 0, len(o.Items))
+	for _, item := range o.Items {
+		pbItem := &pb.OrderDish{
 			DishId:   item.DishID,
 			Quantity: int32(item.Quantity),
 			Price:    item.Price,
+		}
+		if item.OwnerUserID != nil {
+			pbItem.OwnerUserId = item.OwnerUserID
+		}
+		items = append(items, pbItem)
+	}
+
+	splits := make([]*pb.OrderSplit, 0, len(o.Splits))
+	for _, split := range o.Splits {
+		splits = append(splits, &pb.OrderSplit{
+			SplitId: split.ID,
+			UserId:  split.UserID,
+			Amount:  split.Amount,
+			Status:  split.Status,
 		})
 	}
 
 	return &pb.Order{
-		PublicId:          d.PublicID,
-		RestaurantName:    d.RestaurantName,
-		RestaurantLogoUrl: d.RestaurantLogoURL,
-		TotalCost:         d.TotalCost,
-		Status:            d.Status,
-		CreatedAt:         timestamppb.New(d.CreatedAt),
+		PublicId:          o.PublicID,
+		RestaurantName:    o.RestaurantName,
+		RestaurantLogoUrl: o.RestaurantLogoURL,
+		TotalCost:         o.TotalCost,
+		Status:            o.Status,
+		CreatedAt:         timestamppb.New(o.CreatedAt),
 		Items:             items,
+		Splits:            splits,
+	}
+}
+
+func mapCreateOrderInputFromPB(req *pb.CreateOrderRequest) domain.CreateOrderInput {
+	return domain.CreateOrderInput{
+		UserID:             req.UserId,
+		AddressPublicID:    req.AddressPublicId,
+		RestaurantBranchID: req.RestaurantBranchId,
+		RestaurantBrandID:  req.RestaurantBrandId,
+		DeliveryCost:       req.DeliveryCost,
+		ServiceFee:         req.ServiceFee,
+		PaymentMethodID:    req.PaymentMethodId,
+		PayForAll:          req.PayForAll,
+		PayerMapping:       req.PayerMapping,
 	}
 }
 
@@ -44,24 +73,17 @@ func NewOrderHandler(uc usecase.OrderUseCase) *OrderHandler {
 }
 
 func (h *OrderHandler) CreateOrder(ctx context.Context, req *pb.CreateOrderRequest) (*pb.CreateOrderResponse, error) {
-	input := domain.CreateOrderInput{
-		AddressPublicID:    req.AddressPublicId,
-		RestaurantBranchID: req.RestaurantBranchId,
-		RestaurantBrandID:  req.RestaurantBrandId,
-		PaymentMethodID:    req.PaymentMethodId,
-		DeliveryCost:       req.DeliveryCost,
-		ServiceFee:         req.ServiceFee,
-	}
+	input := mapCreateOrderInputFromPB(req)
 
-	orderPublicID, confirmationURL, err := h.usecase.CreateOrder(ctx, req.UserId, input, req.IdempotencyKey)
+	orderPublicID, err := h.usecase.CreateOrder(ctx, input, req.IdempotencyKey)
 	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
 	}
 
 	return &pb.CreateOrderResponse{
-		OrderPublicId:   orderPublicID,
-		ConfirmationUrl: confirmationURL,
+		OrderPublicId: orderPublicID,
 	}, nil
+
 }
 
 func (h *OrderHandler) GetOrders(ctx context.Context, req *pb.GetOrdersRequest) (*pb.GetOrdersResponse, error) {
@@ -78,13 +100,19 @@ func (h *OrderHandler) GetOrders(ctx context.Context, req *pb.GetOrdersRequest) 
 	return &pb.GetOrdersResponse{
 		Orders: pbOrders,
 	}, nil
+
 }
 
 func (h *OrderHandler) UpdateOrderStatusByPaymentID(ctx context.Context, req *pb.UpdateStatusRequest) (*emptypb.Empty, error) {
 	err := h.usecase.UpdateOrderStatusByPaymentID(ctx, req.YookassaPaymentId, req.Status, req.IdempotencyKey)
+	return &emptypb.Empty{}, grpcutil.ToGRPCError(err)
+}
+
+func (h *OrderHandler) PayForFriend(ctx context.Context, req *pb.PayForFriendRequest) (*pb.PayForFriendResponse, error) {
+	err := h.usecase.PayForFriend(ctx, req.SplitId, req.PayerUserId, req.PaymentMethodId, req.IdempotencyKey)
 	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
 	}
 
-	return &emptypb.Empty{}, nil
+	return &pb.PayForFriendResponse{}, nil
 }

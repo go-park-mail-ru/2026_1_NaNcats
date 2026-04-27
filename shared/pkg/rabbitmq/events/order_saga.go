@@ -28,6 +28,7 @@ const (
 //easyjson:json
 type SagaCommand struct {
 	OrderID        string `json:"order_id"` // public_id
+	SplitID        string `json:"split_id,omitempty"`
 	UserID         int64  `json:"user_id"`
 	CartID         string `json:"cart_id"`
 	Action         string `json:"action"` // команда для выполнения
@@ -42,7 +43,8 @@ type SagaCommand struct {
 //easyjson:json
 type SagaReply struct {
 	OrderID      string `json:"order_id"` // public_id
-	UserID       int64
+	SplitID      string `json:"split_id,omitempty"`
+	UserID       int64  `json:"user_id"`
 	Step         string `json:"step"`   // какой шаг, т.е. сервис
 	Status       string `json:"status"` // SUCCESS/ERROR
 	ErrorMessage string `json:"error_message,omitempty"`
@@ -56,6 +58,8 @@ type SagaReply struct {
 //easyjson:json
 type GatewayEvent struct {
 	OrderID    string `json:"order_id,omitempty"`
+	SplitID    string `json:"split_id,omitempty"`
+	UserID     int64  `json:"user_id"`
 	CartID     string `json:"cart_id,omitempty"`
 	EventType  string `json:"event_type,omitempty"`
 	Status     string `json:"status,omitempty"`

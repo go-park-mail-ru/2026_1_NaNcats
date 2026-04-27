@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/domain"
@@ -10,8 +9,8 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq/events"
+	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 const (
@@ -25,6 +24,11 @@ const (
 	StatusFinished     = "finished"
 	StatusCancelled    = "cancelled"
 	StatusFailed       = "failed"
+
+	SplitStatusPending   = "pending"
+	SplitStatusPaid      = "paid"
+	SplitStatusFailed    = "failed"
+	SplitStatusCancelled = "cancelled"
 )
 
 //go:generate mockgen -destination=mocks/cart_client_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase CartClient
@@ -49,10 +53,11 @@ type MessagePublisher interface {
 
 //go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/order OrderUseCase
 type OrderUseCase interface {
-	CreateOrder(ctx context.Context, userID int64, req domain.CreateOrderInput, idempotencyKey string) (string, string, error)
+	CreateOrder(ctx context.Context, req domain.CreateOrderInput, idempotencyKey string) (string, error)
 	GetOrders(ctx context.Context, userID int64) ([]domain.Order, error)
 	UpdateOrderStatusByPaymentID(ctx context.Context, paymentID string, status string, idempotencyKey string) error
 	ProcessSagaReply(ctx context.Context, reply events.SagaReply) error
+	PayForFriend(ctx context.Context, splitID string, adminID int64, paymentMethodID, idempotencyKey string) error
 }
 
 type orderUseCase struct {
@@ -85,54 +90,74 @@ func NewOrderUseCase(
 	}
 }
 
-func (o *orderUseCase) CreateOrder(ctx context.Context, userID int64, req domain.CreateOrderInput, idempotencyKey string) (string, string, error) {
-	// Читаем корзину
-	cart, cartTotalCost, err := o.cartClient.GetCart(ctx, userID)
+func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderInput, idempotencyKey string) (string, error) {
+	// 1. Получаем данные
+	cart, cartTotalCost, err := o.cartClient.GetCart(ctx, req.UserID)
 	if err != nil {
-		return "", "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to get cart", err, codes.Internal)
+		return "", errutil.Wrap("INTERNAL_ERROR", "failed to get cart", err, codes.Internal)
 	}
 	if len(cart.Items) == 0 {
-		return "", "", errutil.New("CART_EMPTY", "cart is empty", codes.InvalidArgument)
+		return "", errutil.New("CART_EMPTY", "cart is empty", codes.InvalidArgument)
 	}
 
-	// Проверяем адрес
-	err = o.addressClient.CheckAddressExists(ctx, userID, req.AddressPublicID)
+	err = o.addressClient.CheckAddressExists(ctx, req.UserID, req.AddressPublicID)
 	if err != nil {
-		st, ok := status.FromError(err)
+		return "", errutil.Wrap("INVALID_ADDRESS", "address invalid", err, codes.InvalidArgument)
+	}
 
-		if ok && st.Code() == codes.NotFound {
-			return "", "", errutil.New("ADDRESS_NOT_FOUND_OR_INVALID", "user provided bad address", codes.NotFound)
+	resName, err := o.restaurantClient.GetRestaurantName(ctx, req.RestaurantBranchID)
+	if err != nil {
+		return "", errutil.Wrap("INTERNAL_ERROR", "failed to get restaurant", err, codes.Internal)
+	}
+
+	finalTotalCost := cartTotalCost + req.DeliveryCost + req.ServiceFee
+
+	userDebts := make(map[int64]int64)
+
+	if req.PayForAll {
+		userDebts[req.UserID] = finalTotalCost
+	} else {
+		for _, item := range cart.Items {
+			if item.OwnerUserID == nil {
+				return "", errutil.New("UNASSIGNED_ITEMS", "cannot checkout: cart has unassigned items", codes.FailedPrecondition)
+			}
+			userDebts[*item.OwnerUserID] += item.Price * int64(item.Quantity)
 		}
 
-		return "", "", fmt.Errorf("address service internal error: %w", err)
+		for targetID, payerID := range req.PayerMapping {
+			if debt, exists := userDebts[targetID]; exists {
+				userDebts[payerID] += debt
+				delete(userDebts, targetID)
+			}
+		}
+
+		userDebts[req.UserID] += req.DeliveryCost + req.ServiceFee
 	}
 
-	// Собираем блюда
 	items := make([]domain.OrderDish, 0, len(cart.Items))
 	for _, item := range cart.Items {
 		items = append(items, domain.OrderDish{
-			DishID:   item.DishID,
-			Quantity: item.Quantity,
-			Price:    item.Price,
+			DishID:      item.DishID,
+			Quantity:    item.Quantity,
+			Price:       item.Price,
+			OwnerUserID: item.OwnerUserID,
 		})
 	}
 
-	// Считаем итоговую сумму
-	/* // TODO:
-	/  // 1) Реализовать расчет стоимости на основе расстояния между рестиком и адресом пользователя
-	/  // 2) Попробовать интегрировать динамичную цену при помощи API погоды
-	*/
-	finalTotalCost := cartTotalCost + req.DeliveryCost + req.ServiceFee
-
-	// Собираем инфу о ресторане
-	resName, err := o.restaurantClient.GetRestaurantName(ctx, req.RestaurantBranchID)
-	if err != nil {
-		return "", "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to get restaurant info", err, codes.Internal)
+	splits := make([]domain.OrderSplit, 0, len(userDebts))
+	for uid, amount := range userDebts {
+		if amount > 0 {
+			splits = append(splits, domain.OrderSplit{
+				ID:     uuid.New().String(),
+				UserID: uid,
+				Amount: amount,
+				Status: SplitStatusPending,
+			})
+		}
 	}
 
-	// Записываем в БД со статусом "created" (см. файл миграции)
 	order := domain.Order{
-		ClientID:           userID,
+		AdminID:            req.UserID,
 		RestaurantBranchID: req.RestaurantBranchID,
 		RestaurantBrandID:  req.RestaurantBrandID,
 		RestaurantName:     resName,
@@ -140,36 +165,24 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, userID int64, req domain
 		TotalCost:          finalTotalCost,
 		Status:             StatusCreated,
 		Items:              items,
+		Splits:             splits,
 	}
 
 	orderPublicID, err := o.orderRepo.CreateOrder(ctx, order, idempotencyKey)
 	if err != nil {
-		return "", "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to create order in db", err, codes.Internal)
+		return "", errutil.Wrap("INTERNAL_ERROR", "failed to save order", err, codes.Internal)
 	}
 
-	// Запуск саги
-
-	// Формируем команду для корзины
+	// Запускаем Сагу
 	cmd := events.SagaCommand{
 		OrderID:        orderPublicID,
-		UserID:         userID,
+		UserID:         req.UserID,
 		Action:         events.CommandLockCart,
 		IdempotencyKey: idempotencyKey,
-		Amount:         finalTotalCost,
 	}
+	_ = o.rabbitPublisher.PublishJSON(ctx, events.QueueCartCommands, cmd)
 
-	// Публикуем в RabbitMQ
-	err = o.rabbitPublisher.PublishJSON(ctx, events.QueueCartCommands, cmd)
-	if err != nil {
-		// Компенсирующая операция
-		cancelErr := o.orderRepo.UpdateOrderStatus(ctx, orderPublicID, StatusFailed)
-		if cancelErr != nil {
-			o.logger.Error("failed while compensating operation", cancelErr)
-		}
-		return "", "", errutil.Wrap("INTERNAL_SERVER_ERROR", "broker unavailable, order cancelled", err, codes.Internal)
-	}
-
-	return orderPublicID, "", nil
+	return orderPublicID, nil
 }
 
 func (o *orderUseCase) GetOrders(ctx context.Context, userID int64) ([]domain.Order, error) {
@@ -210,102 +223,106 @@ func (o *orderUseCase) GetOrders(ctx context.Context, userID int64) ([]domain.Or
 }
 
 func (o *orderUseCase) UpdateOrderStatusByPaymentID(ctx context.Context, paymentID string, status string, idempotencyKey string) error {
-	var newStatus string
-	switch status {
-	case "succeeded", "finished":
-		newStatus = "in_progress"
-	case "canceled":
-		newStatus = "canceled"
-	default:
-		return errutil.New("UNKNOWN_STATUS", "unknown payment status", codes.InvalidArgument)
+	if status != "succeeded" {
+		return nil
 	}
 
-	return o.orderRepo.UpdateStatusByPaymentID(ctx, paymentID, newStatus)
+	orderPublicID, err := o.orderRepo.UpdateSplitStatusByPaymentID(ctx, paymentID, SplitStatusPaid)
+	if err != nil {
+		return err
+	}
+
+	allPaid, err := o.orderRepo.AreAllSplitsPaid(ctx, orderPublicID)
+	if err != nil {
+		return err
+	}
+
+	if allPaid {
+		err = o.orderRepo.UpdateOrderStatus(ctx, orderPublicID, StatusInProgress)
+		if err != nil {
+			return err
+		}
+
+		// TODO: можно отправить событие в RestaurantService для начала готовки
+		o.logger.Info("All splits paid! Order is in progress", logger.String("order_id", orderPublicID))
+	}
+
+	return nil
+}
+
+func (o *orderUseCase) PayForFriend(ctx context.Context, splitID string, adminID int64, paymentMethodID, idempotencyKey string) error {
+	// Меняем плательщика в БД (только если сплит не оплачен)
+	err := o.orderRepo.UpdateSplitPayer(ctx, splitID, adminID)
+	if err != nil {
+		return errutil.Wrap("CANNOT_REASSIGN", "failed to reassign split", err, codes.InvalidArgument)
+	}
+
+	split, err := o.orderRepo.GetSplitByID(ctx, splitID)
+	if err != nil {
+		return err
+	}
+
+	// Генерируем команду для платежки
+	payCmd := events.SagaCommand{
+		OrderID:         fmt.Sprintf("%d", split.OrderID), // Временный костыль, лучше вытащить PublicID
+		SplitID:         split.ID,
+		UserID:          adminID,
+		Action:          events.CommandCreatePayment,
+		Amount:          split.Amount,
+		PaymentMethodID: paymentMethodID,
+		IdempotencyKey:  idempotencyKey,
+	}
+
+	return o.rabbitPublisher.PublishJSON(ctx, events.QueuePaymentCommands, payCmd)
 }
 
 func (o *orderUseCase) ProcessSagaReply(ctx context.Context, reply events.SagaReply) error {
 	if reply.Status == events.StatusError {
-		o.logger.Error("Saga step failed", errors.New(reply.ErrorMessage), logger.String("step", reply.Step))
-
-		err := o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusFailed)
-		if err != nil {
-			o.logger.Error("failed to update order status while handling saga step error", err, logger.String("order_id", reply.OrderID))
+		_ = o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusFailed)
+		if reply.SplitID != "" {
+			_ = o.orderRepo.UpdateSplitStatus(ctx, reply.SplitID, SplitStatusFailed)
 		}
-
+		// Откат корзины
 		if reply.Step == "PAYMENT" {
-			compCmd := events.SagaCommand{
-				OrderID:        reply.OrderID,
-				Action:         events.CommandUnlockCart,
-				IdempotencyKey: reply.OrderID + "_compensate_cart",
-			}
-			// Компенсирующая операция
-			cancelErr := o.rabbitPublisher.PublishJSON(ctx, events.QueueCartCommands, compCmd)
-			if cancelErr != nil {
-				o.logger.Error("failed while compensating operation", cancelErr)
-			}
+			_ = o.rabbitPublisher.PublishJSON(ctx, events.QueueCartCommands, events.SagaCommand{
+				OrderID: reply.OrderID, Action: events.CommandUnlockCart, IdempotencyKey: reply.OrderID + "_compensate",
+			})
 		}
-
-		gatewayEvent := events.GatewayEvent{
-			OrderID: reply.OrderID,
-			Status:  StatusFailed,
-			Error:   reply.ErrorMessage,
-		}
-		err = o.rabbitPublisher.PublishJSON(ctx, events.QueueGatewayEvents, gatewayEvent)
-		if err != nil {
-			o.logger.Error("failed while compensating operation", err)
-		}
-
 		return nil
 	}
 
-	// Успешные шаги
 	switch reply.Step {
 	case "CART":
-		// Сейчас корзина залочена
-
-		order, err := o.orderRepo.GetOrderByPublicID(ctx, reply.OrderID, reply.UserID)
-		if err != nil {
-			return fmt.Errorf("failed to get order for payment: %w", err)
-		}
-
-		// Обновляем статус
-		err = o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusCartLocked)
+		order, err := o.orderRepo.GetOrderByPublicID(ctx, reply.OrderID)
 		if err != nil {
 			return err
 		}
 
-		payCmd := events.SagaCommand{
-			OrderID:         reply.OrderID,
-			UserID:          order.ClientID,
-			Action:          events.CommandCreatePayment,
-			Amount:          order.TotalCost,
-			PaymentMethodID: order.PaymentMethodID,
-			IdempotencyKey:  reply.OrderID + "_payment",
+		_ = o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusCartLocked)
+
+		for _, split := range order.Splits {
+			payCmd := events.SagaCommand{
+				OrderID:        order.PublicID,
+				SplitID:        split.ID,
+				UserID:         split.UserID,
+				Action:         events.CommandCreatePayment,
+				Amount:         split.Amount,
+				IdempotencyKey: split.ID + "_payment",
+			}
+			_ = o.rabbitPublisher.PublishJSON(ctx, events.QueuePaymentCommands, payCmd)
 		}
-		return o.rabbitPublisher.PublishJSON(ctx, events.QueuePaymentCommands, payCmd)
 
 	case "PAYMENT":
-		// Платеж создан
-
-		// Сохраняем ID платежа и меняем статус
-		err := o.orderRepo.SetYookassaID(ctx, reply.OrderID, reply.PaymentID)
-		if err != nil {
-			return err
-		}
-		err = o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusPaymentReady)
-		if err != nil {
-			return err
-		}
+		_ = o.orderRepo.SetSplitYookassaID(ctx, reply.SplitID, reply.PaymentID)
 
 		gatewayEvent := events.GatewayEvent{
 			OrderID:    reply.OrderID,
+			SplitID:    reply.SplitID,
+			UserID:     reply.UserID,
 			Status:     StatusPaymentReady,
 			PaymentURL: reply.PaymentURL,
 		}
-		return o.rabbitPublisher.PublishJSON(ctx, events.QueueGatewayEvents, gatewayEvent)
-
-	default:
-		o.logger.Warn("Unknown saga step", logger.String("step", reply.Step))
+		_ = o.rabbitPublisher.PublishJSON(ctx, events.QueueGatewayEvents, gatewayEvent)
 	}
 
 	return nil

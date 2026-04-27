@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	domain "github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/domain"
+	uuid "github.com/google/uuid"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -42,7 +43,7 @@ func (m *MockSupportUseCase) EXPECT() *MockSupportUseCaseMockRecorder {
 }
 
 // AddMessage mocks base method.
-func (m *MockSupportUseCase) AddMessage(ctx context.Context, ticketPublicID string, authorID *int64, authorRole, text, idempotencyKey string) error {
+func (m *MockSupportUseCase) AddMessage(ctx context.Context, ticketPublicID uuid.UUID, authorID *int64, authorRole, text, idempotencyKey string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddMessage", ctx, ticketPublicID, authorID, authorRole, text, idempotencyKey)
 	ret0, _ := ret[0].(error)
@@ -56,7 +57,7 @@ func (mr *MockSupportUseCaseMockRecorder) AddMessage(ctx, ticketPublicID, author
 }
 
 // ChangeTicketStatus mocks base method.
-func (m *MockSupportUseCase) ChangeTicketStatus(ctx context.Context, ticketPublicID, status string, agentID int64, idempotencyKey string) error {
+func (m *MockSupportUseCase) ChangeTicketStatus(ctx context.Context, ticketPublicID uuid.UUID, status string, agentID int64, idempotencyKey string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ChangeTicketStatus", ctx, ticketPublicID, status, agentID, idempotencyKey)
 	ret0, _ := ret[0].(error)
@@ -70,10 +71,10 @@ func (mr *MockSupportUseCaseMockRecorder) ChangeTicketStatus(ctx, ticketPublicID
 }
 
 // CreateTicket mocks base method.
-func (m *MockSupportUseCase) CreateTicket(ctx context.Context, input domain.CreateTicketInput) (string, error) {
+func (m *MockSupportUseCase) CreateTicket(ctx context.Context, input domain.CreateTicketInput) (uuid.UUID, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateTicket", ctx, input)
-	ret0, _ := ret[0].(string)
+	ret0, _ := ret[0].(uuid.UUID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -115,7 +116,7 @@ func (mr *MockSupportUseCaseMockRecorder) GetCategories(ctx any) *gomock.Call {
 }
 
 // GetMyTickets mocks base method.
-func (m *MockSupportUseCase) GetMyTickets(ctx context.Context, clientID *int64, guestID *string) ([]domain.Ticket, error) {
+func (m *MockSupportUseCase) GetMyTickets(ctx context.Context, clientID *int64, guestID *uuid.UUID) ([]domain.Ticket, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMyTickets", ctx, clientID, guestID)
 	ret0, _ := ret[0].([]domain.Ticket)
@@ -145,7 +146,7 @@ func (mr *MockSupportUseCaseMockRecorder) GetTemplates(ctx any) *gomock.Call {
 }
 
 // GetTicketChat mocks base method.
-func (m *MockSupportUseCase) GetTicketChat(ctx context.Context, ticketPublicID string) ([]domain.Event, error) {
+func (m *MockSupportUseCase) GetTicketChat(ctx context.Context, ticketPublicID uuid.UUID) ([]domain.Event, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTicketChat", ctx, ticketPublicID)
 	ret0, _ := ret[0].([]domain.Event)
@@ -160,7 +161,7 @@ func (mr *MockSupportUseCaseMockRecorder) GetTicketChat(ctx, ticketPublicID any)
 }
 
 // GetTicketEvents mocks base method.
-func (m *MockSupportUseCase) GetTicketEvents(ctx context.Context, publicID string, clientID *int64, guestID *string) ([]domain.Event, error) {
+func (m *MockSupportUseCase) GetTicketEvents(ctx context.Context, publicID uuid.UUID, clientID *int64, guestID *uuid.UUID) ([]domain.Event, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTicketEvents", ctx, publicID, clientID, guestID)
 	ret0, _ := ret[0].([]domain.Event)
@@ -175,7 +176,7 @@ func (mr *MockSupportUseCaseMockRecorder) GetTicketEvents(ctx, publicID, clientI
 }
 
 // RateTicket mocks base method.
-func (m *MockSupportUseCase) RateTicket(ctx context.Context, ticketPublicID string, rating int, authorID *int64, idempotencyKey string) error {
+func (m *MockSupportUseCase) RateTicket(ctx context.Context, ticketPublicID uuid.UUID, rating int, authorID *int64, idempotencyKey string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RateTicket", ctx, ticketPublicID, rating, authorID, idempotencyKey)
 	ret0, _ := ret[0].(error)
@@ -189,7 +190,7 @@ func (mr *MockSupportUseCaseMockRecorder) RateTicket(ctx, ticketPublicID, rating
 }
 
 // ReassignTicket mocks base method.
-func (m *MockSupportUseCase) ReassignTicket(ctx context.Context, ticketPublicID string, agentID int64, line int, authorID int64, idempotencyKey string) error {
+func (m *MockSupportUseCase) ReassignTicket(ctx context.Context, ticketPublicID uuid.UUID, agentID int64, line int, authorID int64, idempotencyKey string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReassignTicket", ctx, ticketPublicID, agentID, line, authorID, idempotencyKey)
 	ret0, _ := ret[0].(error)

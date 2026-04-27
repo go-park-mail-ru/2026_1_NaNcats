@@ -8,9 +8,14 @@ import (
 
 type OrderRepository interface {
 	CreateOrder(ctx context.Context, order domain.Order, idempotencyKey string) (string, error)
-	UpdateStatusByPaymentID(ctx context.Context, yookassaPaymentID, newStatus string) error
-	UpdateOrderStatus(ctx context.Context, publicID string, newStatus string) error
-	GetOrderByPublicID(ctx context.Context, publicID string, userID int64) (domain.Order, error)
-	SetYookassaID(ctx context.Context, orderPublicID, yookassaID string) error
+	GetOrderByPublicID(ctx context.Context, publicID string) (domain.Order, error)
 	GetOrdersByUserID(ctx context.Context, userID int64) ([]domain.Order, error)
+	UpdateOrderStatus(ctx context.Context, publicID string, newStatus string) error
+
+	UpdateSplitStatusByPaymentID(ctx context.Context, yookassaPaymentID, newStatus string) (string, error)
+	UpdateSplitStatus(ctx context.Context, splitID string, newStatus string) error
+	AreAllSplitsPaid(ctx context.Context, orderPublicID string) (bool, error)
+	SetSplitYookassaID(ctx context.Context, splitID string, yookassaID string) error
+	UpdateSplitPayer(ctx context.Context, splitID string, newPayerID int64) error
+	GetSplitByID(ctx context.Context, splitID string) (domain.OrderSplit, error)
 }
