@@ -104,6 +104,14 @@ func (u *cartUseCase) GetCart(ctx context.Context, userID int64) (domain.Cart, i
 }
 
 func (u *cartUseCase) LockCart(ctx context.Context, cartID string, userID int64, idempotencyKey string) error {
+	if cartID == "" {
+		activeCart, err := u.cartRepo.GetActiveCartByUserID(ctx, userID)
+		if err != nil {
+			return err
+		}
+		cartID = activeCart.ID
+	}
+
 	cart, err := u.cartRepo.GetCartByID(ctx, cartID)
 	if err != nil {
 		return err
