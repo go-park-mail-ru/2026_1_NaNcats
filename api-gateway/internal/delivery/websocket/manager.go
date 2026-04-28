@@ -42,8 +42,26 @@ func (m *WsManager) AddOrderConnection(orderID string, conn *websocket.Conn) {
 		}
 	}
 
+	rc := m.redisPool.Get()
+	cachedMsg, err := redis.Bytes(rc.Do("GET", "ws_cache:order:"+orderID))
+	rc.Close()
+
+	if err == nil && len(cachedMsg) > 0 {
+		_ = conn.WriteMessage(websocket.TextMessage, cachedMsg)
+	}
+
 	m.orderConns.Store(orderID, conn)
 	m.logger.Info("Order WebSocket connected", logger.String("order_id", orderID))
+
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(5*time.Second)); err != nil {
+				return
+			}
+		}
+	}()
 
 	go m.readOrderPump(orderID, conn)
 }
@@ -152,6 +170,10 @@ func (m *WsManager) BroadcastToRedis(event events.GatewayEvent) error {
 	if err != nil {
 		m.logger.Error("easyjson failed", err, logger.Err(err))
 		return err
+	}
+
+	if event.OrderID != "" {
+		_, _ = conn.Do("SETEX", "ws_cache:order:"+event.OrderID, 300, data)
 	}
 
 	_, err = conn.Do("PUBLISH", m.channel, data)
