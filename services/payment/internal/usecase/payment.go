@@ -214,17 +214,7 @@ func (p *paymentUseCase) ProcessPaymentWebhook(ctx context.Context, payment *yoo
 		return nil
 	}
 
-	var newStatus string
-	switch payment.Status {
-	case "succeeded":
-		newStatus = "finished"
-	case "canceled":
-		newStatus = "canceled"
-	default:
-		return nil
-	}
-
-	err := p.orderClient.UpdateOrderStatus(ctx, payment.ID, newStatus)
+	err := p.orderClient.UpdateOrderStatus(ctx, payment.ID, payment.Status)
 	if err != nil {
 		st, ok := status.FromError(err)
 
