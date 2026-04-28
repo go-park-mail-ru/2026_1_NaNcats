@@ -121,11 +121,12 @@ func (r *orderRepo) UpdateSplitStatusByPaymentID(ctx context.Context, yookassaPa
 
 func (r *orderRepo) AreAllSplitsPaid(ctx context.Context, orderPublicID string) (bool, error) {
 	query := `
-		SELECT COUNT(*) 
-		FROM "order_split" os
-		JOIN "order" o ON o.id = os.order_id
-		WHERE o.public_id = $1 AND os.status != 'paid' AND os.status != 'cancelled'
+	    UPDATE "order_split"
+	    SET status = $1, updated_at = NOW()
+	    WHERE yookassa_payment_id = $2
+	    RETURNING (SELECT public_id FROM "order" WHERE id = order_split.order_id);
 	`
+
 	var unpaidCount int
 	err := r.pool.QueryRow(ctx, query, orderPublicID).Scan(&unpaidCount)
 	if err != nil {
