@@ -244,6 +244,12 @@ func (o *orderUseCase) UpdateOrderStatusByPaymentID(ctx context.Context, payment
 
 		// TODO: можно отправить событие в RestaurantService для начала готовки
 		o.logger.Info("All splits paid! Order is in progress", logger.String("order_id", orderPublicID))
+
+		gatewayEvent := events.GatewayEvent{
+			OrderID: orderPublicID,
+			Status:  StatusInProgress,
+		}
+		_ = o.rabbitPublisher.PublishJSON(ctx, events.QueueGatewayEvents, gatewayEvent)
 	}
 
 	return nil
