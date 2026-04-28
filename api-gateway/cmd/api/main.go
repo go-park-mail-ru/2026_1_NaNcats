@@ -268,10 +268,8 @@ func main() {
 	otelHandler := otelhttp.NewHandler(handler, "api-gateway")
 
 	server := &http.Server{
-		Addr:         ":" + cfg.HTTP.Port,
-		Handler:      otelHandler,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		Addr:    ":" + cfg.HTTP.Port,
+		Handler: otelHandler,
 	}
 
 	go func() {

@@ -12,7 +12,6 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
-	"github.com/gomodule/redigo/redis"
 
 	"github.com/gorilla/websocket"
 )
@@ -77,7 +76,6 @@ type PayForFriendRequest struct {
 type OrderHandler struct {
 	orderClient orderclient.OrderClient
 	wsManager   *wsManager.WsManager
-	redisPool   *redis.Pool
 	logger      logger.Logger
 }
 
@@ -306,14 +304,6 @@ func (h *OrderHandler) TrackOrderWS(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.Error("failed to upgrade to websocket", err)
 		return
-	}
-
-	rc := h.redisPool.Get()
-	defer rc.Close()
-
-	cachedMsg, err := redis.String(rc.Do("GET", "ws_cache:order:"+orderID))
-	if err == nil && cachedMsg != "" {
-		_ = conn.WriteMessage(websocket.TextMessage, []byte(cachedMsg))
 	}
 
 	h.wsManager.AddOrderConnection(orderID, conn)
