@@ -47,7 +47,10 @@ func (m *WsManager) AddOrderConnection(orderID string, conn *websocket.Conn) {
 	rc.Close()
 
 	if err == nil && len(cachedMsg) > 0 {
+		m.logger.Info("CACHE HIT")
 		_ = conn.WriteMessage(websocket.TextMessage, cachedMsg)
+	} else {
+		m.logger.Info("CACHE MISS")
 	}
 
 	m.orderConns.Store(orderID, conn)
@@ -79,7 +82,6 @@ func (m *WsManager) RemoveOrderConnection(orderID string) {
 func (m *WsManager) readOrderPump(orderID string, conn *websocket.Conn) {
 	defer m.RemoveOrderConnection(orderID)
 	conn.SetReadLimit(512)
-	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 
 	conn.SetPongHandler(func(string) error {
 		err := conn.SetReadDeadline(time.Now().Add(60 * time.Second))
