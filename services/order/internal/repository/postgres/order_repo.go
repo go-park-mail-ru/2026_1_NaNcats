@@ -105,7 +105,7 @@ func (r *orderRepo) UpdateSplitStatusByPaymentID(ctx context.Context, yookassaPa
 		UPDATE "order_split"
 		SET status = $1, updated_at = NOW()
 		WHERE yookassa_payment_id = $2
-		RETURNING id;
+		RETURNING (SELECT public_id FROM "order" WHERE id = "order_split".order_id);
 	`
 	var splitID string
 	err := r.pool.QueryRow(ctx, query, newStatus, yookassaPaymentID).Scan(&splitID)
