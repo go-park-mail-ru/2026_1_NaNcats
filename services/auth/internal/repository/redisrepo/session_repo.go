@@ -59,6 +59,9 @@ func (r *sessionRepo) GetByID(ctx context.Context, id uuid.UUID) (domain.Session
 	mkey := "sessions:" + id.String()
 	data, err := redis.Bytes(conn.Do("GET", mkey))
 	if err != nil {
+		if err == redis.ErrNil {
+			return domain.Session{}, domain.ErrSessionNotFound
+		}
 		return domain.Session{}, err
 	}
 

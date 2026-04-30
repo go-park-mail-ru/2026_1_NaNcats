@@ -89,6 +89,7 @@ services:
   jaeger:
     image: jaegertracing/all-in-one:latest
     container_name: jaeger
+    entrypoint: ["sh", "-c", "echo '{\"themes\":{\"enabled\":true}}' > /tmp/ui.json && exec /go/bin/all-in-one-linux --query.ui-config=/tmp/ui.json"]
     ports:
       - "16686:16686" # Web UI
       - "4317"       # принимать трейсы от коллектора по OTLP
