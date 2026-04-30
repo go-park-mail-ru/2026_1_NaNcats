@@ -20,6 +20,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/infrastructure/config"
 	grpcClient "github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/infrastructure/grpc_client"
 	redisRepo "github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/repository/redisrepo"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/usecase"
 	authUsecase "github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/usecase"
 
 	pbAuth "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/auth"
@@ -79,8 +80,10 @@ func main() {
 
 	sessionRepo := redisRepo.NewSessionRepo(redisPool)
 	sessionUC := authUsecase.NewSessionUseCase(sessionRepo, cfg.SessionTTL)
-	authUC := authUsecase.NewAuthUseCase(userClient, sessionUC)
-	authHandler := authDelivery.NewAuthHandler(authUC)
+	tracedSessionUC := usecase.NewSessionUseCaseTracingMiddleware(sessionUC)
+	authUC := authUsecase.NewAuthUseCase(userClient, tracedSessionUC)
+	tracedAuthUC := usecase.NewAuthUseCaseTracingMiddleware(authUC)
+	authHandler := authDelivery.NewAuthHandler(tracedAuthUC)
 
 	cleanup, err := metrics.InitMetrics(ctx, cfg.OTEL.ServiceName, cfg.OTEL.CollectorAddr)
 	if err != nil {

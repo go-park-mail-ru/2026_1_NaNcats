@@ -105,7 +105,7 @@ clean: stop-all
 
 # Генерация моков
 gen:
-	go generate ./...
+	-go generate ./...
 
 # Генерация proto файлов
 PROTO_DIR = shared/proto

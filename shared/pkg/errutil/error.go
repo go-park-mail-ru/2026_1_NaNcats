@@ -57,5 +57,5 @@ func Message(slug, msg string) domainError {
 const InternalSlug = "INTERNAL_SERVER_ERROR"
 
 func Internal(msg string, err error) domainError {
-	return domainError{slug: InternalSlug, message: msg, code: codes.Internal}
+	return domainError{slug: InternalSlug, message: msg, code: codes.Internal, cause: err}
 }

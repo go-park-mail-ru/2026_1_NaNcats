@@ -18,6 +18,7 @@ import (
 	addressDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/address/internal/delivery/grpc"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/address/internal/infrastructure/config"
 	addressPG "github.com/go-park-mail-ru/2026_1_NaNcats/services/address/internal/repository/postgres"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/address/internal/usecase"
 	addressUseCase "github.com/go-park-mail-ru/2026_1_NaNcats/services/address/internal/usecase"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/address"
 
@@ -68,7 +69,8 @@ func main() {
 
 	addressRepo := addressPG.NewAddressRepo(pool)
 	addressUC := addressUseCase.NewAddressUseCase(addressRepo)
-	addressHandler := addressDelivery.NewAddressHandler(addressUC)
+	tracedAddressUC := usecase.NewAddressUseCaseTracingMiddleware(addressUC)
+	addressHandler := addressDelivery.NewAddressHandler(tracedAddressUC)
 
 	cleanup, err := metrics.InitMetrics(ctx, cfg.OTEL.ServiceName, cfg.OTEL.CollectorAddr)
 	if err != nil {

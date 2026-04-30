@@ -83,6 +83,21 @@ func (mr *MockCartRepositoryMockRecorder) ClearCart(ctx, cartID any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClearCart", reflect.TypeOf((*MockCartRepository)(nil).ClearCart), ctx, cartID)
 }
 
+// CreateCart mocks base method.
+func (m *MockCartRepository) CreateCart(ctx context.Context, adminID, brandID int64) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateCart", ctx, adminID, brandID)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateCart indicates an expected call of CreateCart.
+func (mr *MockCartRepositoryMockRecorder) CreateCart(ctx, adminID, brandID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCart", reflect.TypeOf((*MockCartRepository)(nil).CreateCart), ctx, adminID, brandID)
+}
+
 // DowngradeToSolo mocks base method.
 func (m *MockCartRepository) DowngradeToSolo(ctx context.Context, cartID string, adminID int64) error {
 	m.ctrl.T.Helper()
@@ -95,6 +110,21 @@ func (m *MockCartRepository) DowngradeToSolo(ctx context.Context, cartID string,
 func (mr *MockCartRepositoryMockRecorder) DowngradeToSolo(ctx, cartID, adminID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DowngradeToSolo", reflect.TypeOf((*MockCartRepository)(nil).DowngradeToSolo), ctx, cartID, adminID)
+}
+
+// GetActiveCartByUserID mocks base method.
+func (m *MockCartRepository) GetActiveCartByUserID(ctx context.Context, userID int64) (domain.Cart, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetActiveCartByUserID", ctx, userID)
+	ret0, _ := ret[0].(domain.Cart)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetActiveCartByUserID indicates an expected call of GetActiveCartByUserID.
+func (mr *MockCartRepositoryMockRecorder) GetActiveCartByUserID(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActiveCartByUserID", reflect.TypeOf((*MockCartRepository)(nil).GetActiveCartByUserID), ctx, userID)
 }
 
 // GetCartByID mocks base method.

@@ -9,7 +9,8 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/repository"
-	"google.golang.org/grpc/codes"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
 )
@@ -20,6 +21,7 @@ type RestaurantClient interface {
 }
 
 //go:generate mockgen -destination=mocks/cart_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/usecase CartUseCase
+//go:generate gowrap gen -i CartUseCase -t ../../../../shared/templates/tracing.tmpl -o cart_tracing_mw.go -v TracerName=cart-service
 type CartUseCase interface {
 	// Базовые
 	GetCart(ctx context.Context, userID int64) (domain.Cart, int64, error)
@@ -55,6 +57,9 @@ func NewCartUseCase(cr repository.CartRepository, rc RestaurantClient, dflurl st
 }
 
 func (u *cartUseCase) GetCart(ctx context.Context, userID int64) (domain.Cart, int64, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(attribute.Int64("user.id", userID))
+
 	cart, err := u.cartRepo.GetCartByUserID(ctx, userID)
 	if err != nil {
 		return domain.Cart{}, 0, err
@@ -64,6 +69,10 @@ func (u *cartUseCase) GetCart(ctx context.Context, userID int64) (domain.Cart, i
 		return cart, 0, nil
 	}
 
+	if cart.ID != "" {
+		span.SetAttributes(attribute.String("cart.id", cart.ID))
+	}
+
 	dishIDs := make([]int64, 0, len(cart.Items))
 	for _, item := range cart.Items {
 		dishIDs = append(dishIDs, item.DishID)
@@ -71,7 +80,7 @@ func (u *cartUseCase) GetCart(ctx context.Context, userID int64) (domain.Cart, i
 
 	dishes, err := u.restaurantClient.GetDishesByIDs(ctx, dishIDs)
 	if err != nil {
-		return domain.Cart{}, 0, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to reach restaurant service", err, codes.Internal)
+		return domain.Cart{}, 0, errutil.Internal("failed to fetch dishes info from restaurant service", err)
 	}
 
 	dishMap := make(map[int64]domain.Dish)
@@ -79,12 +88,15 @@ func (u *cartUseCase) GetCart(ctx context.Context, userID int64) (domain.Cart, i
 		dishMap[d.ID] = d
 	}
 
-	var totalCost int64
 	validItems := make([]domain.CartItem, 0, len(cart.Items))
+	var totalCost int64
 
 	for i := range cart.Items {
 		dishInfo, ok := dishMap[cart.Items[i].DishID]
 		if !ok {
+			span.AddEvent("dish_not_found_in_menu", trace.WithAttributes(
+				attribute.Int64("dish.id", cart.Items[i].DishID),
+			))
 			continue // Блюдо пропало из меню
 		}
 
@@ -100,10 +112,22 @@ func (u *cartUseCase) GetCart(ctx context.Context, userID int64) (domain.Cart, i
 	}
 
 	cart.Items = validItems
+
+	span.SetAttributes(
+		attribute.Int("cart.items_count", len(validItems)),
+		attribute.Int64("cart.total_cost", totalCost),
+	)
+
 	return cart, totalCost, nil
 }
 
 func (u *cartUseCase) LockCart(ctx context.Context, cartID string, userID int64, idempotencyKey string) error {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.String("cart.id", cartID),
+		attribute.Int64("user.id", userID),
+		attribute.String("lock.idempotency_key", idempotencyKey),
+	)
 	if cartID == "" {
 		activeCart, err := u.cartRepo.GetActiveCartByUserID(ctx, userID)
 		if err != nil {
@@ -117,12 +141,17 @@ func (u *cartUseCase) LockCart(ctx context.Context, cartID string, userID int64,
 		return err
 	}
 
+	span.SetAttributes(attribute.Int64("cart.admin_id", cart.AdminID))
+
 	if cart.AdminID != userID {
 		return domain.ErrForbidden
 	}
 
 	for _, item := range cart.Items {
 		if item.OwnerUserID == nil {
+			span.AddEvent("unassigned_item_error", trace.WithAttributes(
+				attribute.Int64("dish.id", item.DishID),
+			))
 			return domain.ErrUnassignedItems
 		}
 	}
@@ -132,43 +161,67 @@ func (u *cartUseCase) LockCart(ctx context.Context, cartID string, userID int64,
 }
 
 func (u *cartUseCase) UnlockCart(ctx context.Context, cartID string, userID int64, idempotencyKey string) error {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.String("cart.id", cartID),
+		attribute.Int64("user.id", userID),
+		attribute.String("unlock.idempotency_key", idempotencyKey),
+	)
+
 	cart, err := u.cartRepo.GetCartByID(ctx, cartID)
 	if err != nil {
 		return err
 	}
 
 	if !cart.HasMember(userID) {
-		return domain.ErrForbidden
+		err = domain.ErrForbidden
+		return err
 	}
 
 	return u.cartRepo.UnlockCart(ctx, cartID)
 }
 
 func (u *cartUseCase) ClearCart(ctx context.Context, cartID string, userID int64, idempotencyKey string) error {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.String("cart.id", cartID),
+		attribute.Int64("user.id", userID),
+		attribute.String("clear.idempotency_key", idempotencyKey),
+	)
+
 	cart, err := u.cartRepo.GetCartByID(ctx, cartID)
 	if err != nil {
 		return err
 	}
 
 	if cart.AdminID != userID {
-		return domain.ErrForbidden
+		err = domain.ErrForbidden
+		return err
 	}
 
 	return u.cartRepo.ClearCart(ctx, cartID)
 }
 
 func (u *cartUseCase) GenerateInvite(ctx context.Context, cartID string, adminID int64) (domain.CartInvite, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.String("cart.id", cartID),
+		attribute.Int64("admin.id", adminID),
+	)
+
 	cart, err := u.cartRepo.GetCartByID(ctx, cartID)
 	if err != nil {
 		return domain.CartInvite{}, err
 	}
 
 	if cart.AdminID != adminID {
-		return domain.CartInvite{}, domain.ErrForbidden
+		err = domain.ErrForbidden
+		return domain.CartInvite{}, err
 	}
 
 	// Переводим корзину в режим Shared, если она еще не там
 	if cart.Mode == domain.CartModeSolo {
+		span.AddEvent("switching_to_shared_mode")
 		if err := u.cartRepo.UpdateCartMode(ctx, cartID, domain.CartModeShared); err != nil {
 			return domain.CartInvite{}, err
 		}
@@ -197,6 +250,9 @@ func (u *cartUseCase) JoinCart(ctx context.Context, token string, userID int64) 
 		return "", err
 	}
 
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(attribute.String("cart.id", invite.CartID))
+
 	if time.Now().After(invite.ExpiresAt) {
 		return "", domain.ErrInviteExpired
 	}
@@ -209,6 +265,14 @@ func (u *cartUseCase) JoinCart(ctx context.Context, token string, userID int64) 
 }
 
 func (u *cartUseCase) KickMember(ctx context.Context, cartID string, adminID, targetUserID int64, idempotencyKey string) error {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.String("cart.id", cartID),
+		attribute.Int64("admin.id", adminID),
+		attribute.Int64("target_user.id", targetUserID),
+		attribute.String("kick.idempotency_key", idempotencyKey),
+	)
+
 	cart, err := u.cartRepo.GetCartByID(ctx, cartID)
 	if err != nil {
 		return err
@@ -227,6 +291,13 @@ func (u *cartUseCase) KickMember(ctx context.Context, cartID string, adminID, ta
 }
 
 func (u *cartUseCase) CloseSharedCart(ctx context.Context, cartID string, adminID int64, idempotencyKey string) error {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.String("cart.id", cartID),
+		attribute.Int64("admin.id", adminID),
+		attribute.String("close.idempotency_key", idempotencyKey),
+	)
+
 	cart, err := u.cartRepo.GetCartByID(ctx, cartID)
 	if err != nil {
 		return err
@@ -240,6 +311,13 @@ func (u *cartUseCase) CloseSharedCart(ctx context.Context, cartID string, adminI
 }
 
 func (u *cartUseCase) AddItem(ctx context.Context, cartID string, userID, dishID int64, quantity int32, idempotencyKey string) error {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.Int64("user.id", userID),
+		attribute.Int64("dish.id", dishID),
+		attribute.Int("quantity", int(quantity)),
+	)
+
 	if quantity <= 0 {
 		return domain.ErrInvalidQuantity
 	}
@@ -249,10 +327,12 @@ func (u *cartUseCase) AddItem(ctx context.Context, cartID string, userID, dishID
 		return domain.ErrDishNotFound
 	}
 	dishBrandID := dishes[0].RestaurantBrandID
+	span.SetAttributes(attribute.Int64("restaurant.brand_id", dishBrandID))
 
 	var cart domain.Cart
 
 	if cartID != "" {
+		span.SetAttributes(attribute.String("cart.id", cartID))
 		cart, err = u.cartRepo.GetCartByID(ctx, cartID)
 		if err != nil {
 			return err
@@ -267,6 +347,7 @@ func (u *cartUseCase) AddItem(ctx context.Context, cartID string, userID, dishID
 		cart, err = u.cartRepo.GetActiveCartByUserID(ctx, userID)
 		if err != nil {
 			// Если корзины нет создаем новую
+			span.AddEvent("creating_new_cart")
 			newCartID, createErr := u.cartRepo.CreateCart(ctx, userID, dishBrandID)
 			if createErr != nil {
 				return createErr
@@ -280,6 +361,7 @@ func (u *cartUseCase) AddItem(ctx context.Context, cartID string, userID, dishID
 		} else {
 			cartID = cart.ID
 		}
+		span.SetAttributes(attribute.String("cart.id", cartID))
 	}
 
 	if cart.RestaurantBrandID != dishBrandID {
@@ -296,15 +378,22 @@ func (u *cartUseCase) AddItem(ctx context.Context, cartID string, userID, dishID
 }
 
 func (u *cartUseCase) RemoveItem(ctx context.Context, cartID string, userID, dishID int64, idempotencyKey string) error {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.String("cart.id", cartID),
+		attribute.Int64("user.id", userID),
+		attribute.Int64("dish.id", dishID),
+	)
+
 	cart, err := u.cartRepo.GetCartByID(ctx, cartID)
 	if err != nil {
 		return err
 	}
 
-	// Гость может удалять только свои, Админ может удалять любые
 	item := cart.GetItem(dishID)
 	if item == nil {
-		return nil // идемпотентность
+		span.AddEvent("item_already_absent") // Событие для идемпотентного выхода
+		return nil
 	}
 
 	if cart.AdminID != userID {
@@ -317,6 +406,14 @@ func (u *cartUseCase) RemoveItem(ctx context.Context, cartID string, userID, dis
 }
 
 func (u *cartUseCase) UpdateItemQuantity(ctx context.Context, cartID string, userID, dishID int64, qty int32, idempotencyKey string) error {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.String("cart.id", cartID),
+		attribute.Int64("user.id", userID),
+		attribute.Int64("dish.id", dishID),
+		attribute.Int64("quantity.new", int64(qty)),
+	)
+
 	if qty <= 0 {
 		return domain.ErrInvalidQuantity
 	}
@@ -328,6 +425,7 @@ func (u *cartUseCase) UpdateItemQuantity(ctx context.Context, cartID string, use
 
 	item := cart.GetItem(dishID)
 	if item == nil {
+		span.AddEvent("item_not_found_in_cart")
 		return domain.ErrDishNotFound
 	}
 
@@ -342,6 +440,19 @@ func (u *cartUseCase) UpdateItemQuantity(ctx context.Context, cartID string, use
 }
 
 func (u *cartUseCase) ReassignItemOwner(ctx context.Context, cartID string, adminID, dishID int64, newOwnerID *int64, idempotencyKey string) error {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.String("cart.id", cartID),
+		attribute.Int64("admin.id", adminID),
+		attribute.Int64("dish.id", dishID),
+	)
+
+	if newOwnerID != nil {
+		span.SetAttributes(attribute.Int64("new_owner.id", *newOwnerID))
+	} else {
+		span.AddEvent("stripping_item_owner")
+	}
+
 	cart, err := u.cartRepo.GetCartByID(ctx, cartID)
 	if err != nil {
 		return err
@@ -352,6 +463,7 @@ func (u *cartUseCase) ReassignItemOwner(ctx context.Context, cartID string, admi
 	}
 
 	if newOwnerID != nil && !cart.HasMember(*newOwnerID) {
+		span.AddEvent("new_owner_not_in_cart")
 		return domain.ErrUserNotInCart
 	}
 

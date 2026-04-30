@@ -24,6 +24,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
 
 	orderRabbitMQ "github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/delivery/rabbitmq"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq"
 
 	addressPb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/address"
@@ -111,7 +112,8 @@ func main() {
 		cfg.DefaultRestaurantLogoURL,
 		appLogger,
 	)
-	orderHandler := orderDelivery.NewOrderHandler(orderUC)
+	tracedOrderUC := usecase.NewOrderUseCaseTracingMiddleware(orderUC)
+	orderHandler := orderDelivery.NewOrderHandler(tracedOrderUC)
 
 	orderConsumer := orderRabbitMQ.NewOrderConsumer(rabbitClient, orderUC, appLogger)
 	if err := orderConsumer.Start(ctx); err != nil {

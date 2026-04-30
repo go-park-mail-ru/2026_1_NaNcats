@@ -10,6 +10,8 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq/events"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 )
 
@@ -31,17 +33,14 @@ const (
 	SplitStatusCancelled = "cancelled"
 )
 
-//go:generate mockgen -destination=mocks/cart_client_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase CartClient
 type CartClient interface {
 	GetCart(ctx context.Context, userID int64) (domain.Cart, int64, error)
 }
 
-//go:generate mockgen -destination=mocks/address_client_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase AddressClient
 type AddressClient interface {
 	CheckAddressExists(ctx context.Context, userID int64, addressPublicID string) error
 }
 
-//go:generate mockgen -destination=mocks/restaurant_client_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase RestaurantClient
 type RestaurantClient interface {
 	GetRestaurantName(ctx context.Context, branchID int64) (string, error)
 	GetLogosByBrandIDs(ctx context.Context, brandIDs []int64) (map[int64]string, error)
@@ -51,7 +50,8 @@ type MessagePublisher interface {
 	PublishJSON(ctx context.Context, queueName string, data any) error
 }
 
-//go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/order OrderUseCase
+//go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase OrderUseCase
+//go:generate gowrap gen -i OrderUseCase -t ../../../../shared/templates/tracing.tmpl -o order_tracing_mw.go -v TracerName=order-service
 type OrderUseCase interface {
 	CreateOrder(ctx context.Context, req domain.CreateOrderInput, idempotencyKey string) (string, error)
 	GetOrders(ctx context.Context, userID int64) ([]domain.Order, error)
@@ -91,11 +91,21 @@ func NewOrderUseCase(
 }
 
 func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderInput, idempotencyKey string) (string, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.Int64("user.id", req.UserID),
+		attribute.Int64("restaurant.brand_id", req.RestaurantBrandID),
+		attribute.String("address.public_id", req.AddressPublicID),
+		attribute.Bool("order.pay_for_all", req.PayForAll),
+	)
+
 	cart, cartTotalCost, err := o.cartClient.GetCart(ctx, req.UserID)
 	if err != nil {
-		return "", errutil.Wrap("INTERNAL_ERROR", "failed to get cart", err, codes.Internal)
+		return "", errutil.Internal("failed to fetch cart for order", err)
 	}
+
 	if len(cart.Items) == 0 {
+		span.AddEvent("cart_empty_abort")
 		return "", errutil.New("CART_EMPTY", "cart is empty", codes.InvalidArgument)
 	}
 
@@ -106,10 +116,11 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderIn
 
 	resName, err := o.restaurantClient.GetRestaurantName(ctx, req.RestaurantBranchID)
 	if err != nil {
-		return "", errutil.Wrap("INTERNAL_ERROR", "failed to get restaurant", err, codes.Internal)
+		return "", errutil.Internal("failed to fetch restaurant name", err)
 	}
 
 	finalTotalCost := cartTotalCost + req.DeliveryCost + req.ServiceFee
+	span.SetAttributes(attribute.Int64("order.total_cost", finalTotalCost))
 
 	userDebts := make(map[int64]int64)
 
@@ -118,6 +129,7 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderIn
 	} else {
 		for _, item := range cart.Items {
 			if item.OwnerUserID == nil {
+				span.AddEvent("orphaned_items_found")
 				return "", errutil.New("UNASSIGNED_ITEMS", "cannot checkout: cart has unassigned items", codes.FailedPrecondition)
 			}
 			userDebts[*item.OwnerUserID] += item.Price * int64(item.Quantity)
@@ -154,6 +166,7 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderIn
 			})
 		}
 	}
+	span.SetAttributes(attribute.Int("order.splits_count", len(splits)))
 
 	order := domain.Order{
 		AdminID:            req.UserID,
@@ -169,28 +182,38 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderIn
 
 	orderPublicID, err := o.orderRepo.CreateOrder(ctx, order, idempotencyKey)
 	if err != nil {
-		return "", errutil.Wrap("INTERNAL_ERROR", "failed to save order", err, codes.Internal)
+		return "", errutil.Internal("failed to save order to database", err)
 	}
+	span.SetAttributes(attribute.String("order.public_id", orderPublicID))
 
-	// Запускаем Сагу
 	cmd := events.SagaCommand{
 		OrderID:        orderPublicID,
 		UserID:         req.UserID,
 		Action:         events.CommandLockCart,
 		IdempotencyKey: idempotencyKey,
 	}
-	_ = o.rabbitPublisher.PublishJSON(ctx, events.QueueCartCommands, cmd)
 
+	err = o.rabbitPublisher.PublishJSON(ctx, events.QueueCartCommands, cmd)
+	if err != nil {
+		span.AddEvent("saga_start_failed")
+		return "", errutil.Internal("failed to start order saga", err)
+	}
+
+	span.AddEvent("saga_started")
 	return orderPublicID, nil
 }
 
 func (o *orderUseCase) GetOrders(ctx context.Context, userID int64) ([]domain.Order, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(attribute.Int64("user.id", userID))
+
 	orders, err := o.orderRepo.GetOrdersByUserID(ctx, userID)
 	if err != nil {
-		return []domain.Order{}, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to get orders", err, codes.Internal)
+		return []domain.Order{}, errutil.Internal("failed to get orders from repository", err)
 	}
 
 	if len(orders) == 0 {
+		span.SetAttributes(attribute.Int("orders.count", 0))
 		return orders, nil
 	}
 
@@ -204,8 +227,14 @@ func (o *orderUseCase) GetOrders(ctx context.Context, userID int64) ([]domain.Or
 		}
 	}
 
+	span.SetAttributes(
+		attribute.Int("orders.count", len(orders)),
+		attribute.Int("brands.unique_count", len(brandIDs)),
+	)
+
 	logos, err := o.restaurantClient.GetLogosByBrandIDs(ctx, brandIDs)
 	if err != nil {
+		span.AddEvent("restaurant_logos_fetch_failed")
 		o.logger.Error("failed to get logos of restaurants", err)
 	}
 
@@ -221,8 +250,16 @@ func (o *orderUseCase) GetOrders(ctx context.Context, userID int64) ([]domain.Or
 	return orders, nil
 }
 
-func (o *orderUseCase) UpdateOrderStatusByPaymentID(ctx context.Context, paymentID string, status string, idempotencyKey string) error {
+func (o *orderUseCase) UpdateOrderStatusByPaymentID(ctx context.Context, paymentID string, status string, idempotencyKey string) (err error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.String("payment.id", paymentID),
+		attribute.String("payment.status", status),
+		attribute.String("idempotency_key", idempotencyKey),
+	)
+
 	if status != "succeeded" {
+		span.AddEvent("status_not_succeeded_skipping")
 		return nil
 	}
 
@@ -230,11 +267,13 @@ func (o *orderUseCase) UpdateOrderStatusByPaymentID(ctx context.Context, payment
 	if err != nil {
 		return err
 	}
+	span.SetAttributes(attribute.String("order.public_id", orderPublicID))
 
 	allPaid, err := o.orderRepo.AreAllSplitsPaid(ctx, orderPublicID)
 	if err != nil {
 		return err
 	}
+	span.SetAttributes(attribute.Bool("order.all_splits_paid", allPaid))
 
 	if allPaid {
 		err = o.orderRepo.UpdateOrderStatus(ctx, orderPublicID, StatusInProgress)
@@ -243,6 +282,7 @@ func (o *orderUseCase) UpdateOrderStatusByPaymentID(ctx context.Context, payment
 		}
 
 		// TODO: можно отправить событие в RestaurantService для начала готовки
+		span.AddEvent("order_transition_to_in_progress")
 		o.logger.Info("All splits paid! Order is in progress", logger.String("order_id", orderPublicID))
 
 		gatewayEvent := events.GatewayEvent{
@@ -255,9 +295,15 @@ func (o *orderUseCase) UpdateOrderStatusByPaymentID(ctx context.Context, payment
 	return nil
 }
 
-func (o *orderUseCase) PayForFriend(ctx context.Context, splitID string, adminID int64, paymentMethodID, idempotencyKey string) error {
-	// Меняем плательщика в БД (только если сплит не оплачен)
-	err := o.orderRepo.UpdateSplitPayer(ctx, splitID, adminID)
+func (o *orderUseCase) PayForFriend(ctx context.Context, splitID string, adminID int64, paymentMethodID, idempotencyKey string) (err error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.String("split.id", splitID),
+		attribute.Int64("admin.id", adminID),
+		attribute.String("payment_method.id", paymentMethodID),
+	)
+
+	err = o.orderRepo.UpdateSplitPayer(ctx, splitID, adminID)
 	if err != nil {
 		return errutil.Wrap("CANNOT_REASSIGN", "failed to reassign split", err, codes.InvalidArgument)
 	}
@@ -278,17 +324,28 @@ func (o *orderUseCase) PayForFriend(ctx context.Context, splitID string, adminID
 		IdempotencyKey:  idempotencyKey,
 	}
 
+	span.AddEvent("publishing_payment_command")
 	return o.rabbitPublisher.PublishJSON(ctx, events.QueuePaymentCommands, payCmd)
 }
 
-func (o *orderUseCase) ProcessSagaReply(ctx context.Context, reply events.SagaReply) error {
+func (o *orderUseCase) ProcessSagaReply(ctx context.Context, reply events.SagaReply) (err error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.String("order.id", reply.OrderID),
+		attribute.String("saga.step", reply.Step),
+		attribute.String("saga.status", reply.Status),
+	)
+
 	if reply.Status == events.StatusError {
+		span.SetAttributes(attribute.String("saga.error_details", reply.ErrorMessage))
+
 		_ = o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusFailed)
 		if reply.SplitID != "" {
 			_ = o.orderRepo.UpdateSplitStatus(ctx, reply.SplitID, SplitStatusFailed)
 		}
 		// Откат корзины
 		if reply.Step == "PAYMENT" {
+			span.AddEvent("compensating_cart_unlock")
 			_ = o.rabbitPublisher.PublishJSON(ctx, events.QueueCartCommands, events.SagaCommand{
 				OrderID: reply.OrderID, Action: events.CommandUnlockCart, IdempotencyKey: reply.OrderID + "_compensate",
 			})
@@ -304,6 +361,7 @@ func (o *orderUseCase) ProcessSagaReply(ctx context.Context, reply events.SagaRe
 		}
 
 		_ = o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusCartLocked)
+		span.SetAttributes(attribute.Int("order.splits_count", len(order.Splits)))
 
 		for _, split := range order.Splits {
 			payCmd := events.SagaCommand{
@@ -318,6 +376,11 @@ func (o *orderUseCase) ProcessSagaReply(ctx context.Context, reply events.SagaRe
 		}
 
 	case "PAYMENT":
+		span.SetAttributes(
+			attribute.String("split.id", reply.SplitID),
+			attribute.String("payment.external_id", reply.PaymentID),
+		)
+
 		_ = o.orderRepo.SetSplitYookassaID(ctx, reply.SplitID, reply.PaymentID)
 
 		gatewayEvent := events.GatewayEvent{

@@ -27,6 +27,7 @@ import (
 	supportDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/delivery/grpc"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/infrastructure/config"
 	supportPG "github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/repository/postgres"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/usecase"
 	supportUseCase "github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/usecase"
 )
 
@@ -68,7 +69,8 @@ func main() {
 
 	supportRepo := supportPG.NewSupportRepo(pool)
 	supportUC := supportUseCase.NewSupportUseCase(supportRepo)
-	supportHandler := supportDelivery.NewSupportHandler(supportUC)
+	tracedSupportUC := usecase.NewSupportUseCaseTracingMiddleware(supportUC)
+	supportHandler := supportDelivery.NewSupportHandler(tracedSupportUC)
 
 	cleanup, err := metrics.InitMetrics(ctx, cfg.OTEL.ServiceName, cfg.OTEL.CollectorAddr)
 	if err != nil {

@@ -26,6 +26,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
 
 	paymentRabbitMQ "github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/delivery/rabbitmq"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq"
 
 	orderPb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/order"
@@ -117,7 +118,8 @@ func main() {
 		cfg.Yookassa.ReturnURL,
 		appLogger,
 	)
-	paymentHandler := paymentDelivery.NewPaymentHandler(paymentUC)
+	tracedPaymentUC := usecase.NewPaymentUseCaseTracingMiddleware(paymentUC)
+	paymentHandler := paymentDelivery.NewPaymentHandler(tracedPaymentUC)
 
 	rabbitClient, err := rabbitmq.NewRabbitClient(cfg.RabbitMQURL, appLogger)
 	if err != nil {

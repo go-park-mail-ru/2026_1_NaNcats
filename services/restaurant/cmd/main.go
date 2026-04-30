@@ -21,6 +21,7 @@ import (
 	restaurantDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/delivery/grpc"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/infrastructure/config"
 	restaurantPG "github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/repository/postgres"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/usecase"
 	restaurantUseCase "github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/usecase"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
 
@@ -72,9 +73,11 @@ func main() {
 	dishRepo := restaurantPG.NewDishRepo(pool)
 
 	brandUC := restaurantUseCase.NewRestaurantBrandUseCase(brandRepo, cfg.DefaultRestaurantLogoURL)
+	tracedBrandUC := usecase.NewRestaurantBrandUseCaseTracingMiddleware(brandUC)
 	dishUC := restaurantUseCase.NewDishUseCase(dishRepo, cfg.DefaultFoodLogoURL)
+	tracedDishUC := usecase.NewDishUseCaseTracingMiddleware(dishUC)
 
-	restaurantHandler := restaurantDelivery.NewRestaurantHandler(brandUC, dishUC)
+	restaurantHandler := restaurantDelivery.NewRestaurantHandler(tracedBrandUC, tracedDishUC)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

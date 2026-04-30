@@ -22,6 +22,7 @@ import (
 	userDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/delivery/grpc"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/infrastructure/config"
 	userPG "github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/repository/postgres"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/usecase"
 	userUsecase "github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/usecase"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/user"
 
@@ -86,9 +87,11 @@ func main() {
 	clientProfileRepo := userPG.NewClientProfileRepo(pool)
 
 	userUC := userUsecase.NewUserUseCase(userRepo, s3Repo, cfg.DefaultAvatarURL)
+	tracedUserUC := usecase.NewUserUseCaseTracingMiddleware(userUC)
 	clientProfileUC := userUsecase.NewClientProfileUseCase(clientProfileRepo)
+	tracedProfileUC := usecase.NewClientProfileUseCaseTracingMiddleware(clientProfileUC)
 
-	userHandler := userDelivery.NewUserHandler(userUC, clientProfileUC)
+	userHandler := userDelivery.NewUserHandler(tracedUserUC, tracedProfileUC)
 
 	// Контекст, который отменяется по сигналу ОС
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

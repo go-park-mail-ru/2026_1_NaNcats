@@ -12,10 +12,12 @@ import (
 	passUtil "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/password"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/s3"
 	"github.com/google/uuid"
-	"google.golang.org/grpc/codes"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
-//go:generate mockgen -destination=mocks/user_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/user UserUseCase
+//go:generate mockgen -destination=mocks/user_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/usecase UserUseCase
+//go:generate gowrap gen -i UserUseCase -t ../../../../shared/templates/tracing.tmpl -o user_tracing_mw.go -v TracerName=user-service
 type UserUseCase interface {
 	Create(ctx context.Context, user domain.User, password, idempotencyKey string) (int64, error)
 	GetByID(ctx context.Context, userID int64) (domain.User, error)
@@ -40,11 +42,13 @@ func NewUserUseCase(ur repository.UserRepository, fs s3.FileStorage, daurl strin
 	}
 }
 
-// создаем юзера
 func (u *userUseCase) Create(ctx context.Context, user domain.User, password, idempotencyKey string) (int64, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(attribute.String("idempotency_key", idempotencyKey))
+
 	hashedPassword, err := passUtil.HashPassword(password, passUtil.DefaultParams)
 	if err != nil {
-		return 0, errutil.Wrap("HASH_PASSWORD_FAILED", "failed to hash password", err, codes.Internal)
+		return 0, errutil.Internal("failed to hash password", err)
 	}
 	user.PasswordHash = hashedPassword
 
@@ -53,20 +57,23 @@ func (u *userUseCase) Create(ctx context.Context, user domain.User, password, id
 		if errors.Is(err, domain.ErrEmailAlreadyExists) {
 			return 0, err
 		}
-		return 0, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to create user in db", err, codes.Internal)
+		return 0, errutil.Internal("failed to create user in db", err)
 	}
 
+	span.SetAttributes(attribute.Int64("user.id", id))
 	return id, nil
 }
 
-// возвращает юзера по переданному userID
 func (u *userUseCase) GetByID(ctx context.Context, userID int64) (domain.User, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(attribute.Int64("user.id", userID))
+
 	user, err := u.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, domain.ErrUserNotFound) {
 			return domain.User{}, err
 		}
-		return domain.User{}, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to get user from db", err, codes.Internal)
+		return domain.User{}, errutil.Internal("failed to get user from db", err)
 	}
 
 	if user.AvatarURL == "" {
@@ -76,15 +83,17 @@ func (u *userUseCase) GetByID(ctx context.Context, userID int64) (domain.User, e
 	return user, nil
 }
 
-// возвращает юзера по переданной почте
 func (u *userUseCase) GetByEmail(ctx context.Context, email string) (domain.User, error) {
 	user, err := u.userRepo.GetUserByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, domain.ErrUserNotFound) {
 			return domain.User{}, err
 		}
-		return domain.User{}, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to get user by email from db", err, codes.Internal)
+		return domain.User{}, errutil.Internal("failed to get user by email from db", err)
 	}
+
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(attribute.Int64("user.id", user.ID))
 
 	if user.AvatarURL == "" {
 		user.AvatarURL = u.defaultAvatarURL
@@ -93,62 +102,80 @@ func (u *userUseCase) GetByEmail(ctx context.Context, email string) (domain.User
 	return user, nil
 }
 
-// проверяет существует ли юзер
 func (u *userUseCase) Check(ctx context.Context, userID int64) (bool, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(attribute.Int64("user.id", userID))
+
 	isExists, err := u.userRepo.CheckUserByID(ctx, userID)
 	if err != nil {
-		return false, errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to check user existence in db", err, codes.Internal)
+		return false, errutil.Internal("failed to check user existence in db", err)
 	}
 
 	return isExists, nil
 }
 
-// обновляет поля юзера
 func (u *userUseCase) UpdateProfile(ctx context.Context, userID int64, name, email *string, idempotencyKey string) error {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.Int64("user.id", userID),
+		attribute.String("idempotency_key", idempotencyKey),
+		attribute.Bool("update.name_present", name != nil),
+		attribute.Bool("update.email_present", email != nil),
+	)
+
 	err := u.userRepo.UpdateProfile(ctx, userID, name, email)
 	if err != nil {
-		if errors.Is(err, domain.ErrUserNotFound) {
+		if errors.Is(err, domain.ErrUserNotFound) || errors.Is(err, domain.ErrEmailAlreadyExists) {
 			return err
 		}
-		if errors.Is(err, domain.ErrEmailAlreadyExists) {
-			return err
-		}
-		return errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to update user profile", err, codes.Internal)
+		return errutil.Internal("failed to update user profile", err)
 	}
 
 	return nil
 }
 
 func (u *userUseCase) UpdateAvatar(ctx context.Context, userID int64, imageData []byte, idempotencyKey string) (string, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.Int64("user.id", userID),
+		attribute.Int("image.input_size_bytes", len(imageData)),
+	)
+
 	user, err := u.GetByID(ctx, userID)
 	if err != nil {
-		// Ошибка уже обернута в errutil внутри GetByID
 		return "", err
 	}
 
 	imageReader := bytes.NewReader(imageData)
 
+	span.AddEvent("converting_image_to_webp")
 	webpData, err := imageutil.ConvertToWebp(imageReader)
 	if err != nil {
 		return "", domain.ErrInvalidImageExt
 	}
+	span.SetAttributes(attribute.Int("image.webp_size_bytes", webpData.Len()))
 
 	filename := "avatars/" + uuid.NewString() + ".webp"
+	span.SetAttributes(attribute.String("s3.target_filename", filename))
 
 	newAvatarURL, err := u.fileStorage.UploadFile(ctx, webpData, filename, "image/webp")
 	if err != nil {
-		return "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to upload to S3", err, codes.Internal)
+		return "", errutil.Internal("failed to upload to S3 storage", err)
 	}
 
 	err = u.userRepo.UpdateAvatarURL(ctx, userID, newAvatarURL)
 	if err != nil {
+		span.AddEvent("db_update_failed_cleaning_up_s3")
+		// Если не удалось обновить БД, удаляем файл, который уже успел улететь в S3
 		go func(urlToDelete string) {
 			_ = u.fileStorage.DeleteFile(context.Background(), urlToDelete)
 		}(newAvatarURL)
-		return "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to update avatar in db", err, codes.Internal)
+		return "", errutil.Internal("failed to update avatar path in database", err)
 	}
 
+	// Удаление старого аватара
 	if user.AvatarURL != u.defaultAvatarURL && user.AvatarURL != "" {
+		span.AddEvent("cleaning_up_old_avatar")
 		go func(urlToDelete string) {
 			_ = u.fileStorage.DeleteFile(context.Background(), urlToDelete)
 		}(user.AvatarURL)
@@ -158,26 +185,29 @@ func (u *userUseCase) UpdateAvatar(ctx context.Context, userID int64, imageData 
 }
 
 func (u *userUseCase) DeleteAvatar(ctx context.Context, userID int64, idempotencyKey string) (string, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(attribute.Int64("user.id", userID))
+
 	user, err := u.GetByID(ctx, userID)
 	if err != nil {
-		// Ошибка уже обернута в errutil внутри GetByID
 		return "", err
 	}
 
 	if user.AvatarURL == u.defaultAvatarURL || user.AvatarURL == "" {
+		span.AddEvent("avatar_is_already_default")
 		return u.defaultAvatarURL, nil
 	}
 
 	urlToDelete := user.AvatarURL
-
 	err = u.userRepo.UpdateAvatarURL(ctx, userID, "")
 	if err != nil {
 		if errors.Is(err, domain.ErrUserNotFound) {
 			return "", err
 		}
-		return "", errutil.Wrap("INTERNAL_SERVER_ERROR", "failed to reset avatar in db", err, codes.Internal)
+		return "", errutil.Internal("failed to reset avatar in database", err)
 	}
 
+	span.AddEvent("scheduling_old_avatar_deletion")
 	go func(urlToDelete string) {
 		_ = u.fileStorage.DeleteFile(context.Background(), urlToDelete)
 	}(urlToDelete)
