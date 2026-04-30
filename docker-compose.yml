@@ -21,7 +21,7 @@ services:
     volumes:
       # сохраняет таблицы и данные пользователей
       - postgres_data:/var/lib/postgresql/data
-      - ./init-dbs.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./infrastructure/postgres/init-dbs.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck: # Проверка готовности базы
       # бэкенд не начнет пытаться подключиться к базе, пока она не будет готова принимать соединения
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-user}"]
@@ -56,9 +56,9 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
     container_name: otel_collector
-    command: ["--config=/etc/otel-collector-config.yaml"]
+    command: ["--config=/etc/otel-collector/otel-collector.yaml"]
     volumes:
-      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+      - ./infrastructure/otel-collector/otel-collector.yaml:/etc/otel-collector/otel-collector.yaml
     ports:
       - "4317:4317" # порт, по которому микросервисы отправляют данные
       - "8889:8889" # порт, откуда Prometheus будет брать данные
@@ -67,8 +67,11 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+      - '--storage.tsdb.path=/prometheus'
     volumes:
-      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+      - ./infrastructure/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
     ports:
       - "9090:9090" # админка Prometheus
     restart: always
@@ -93,6 +96,20 @@ services:
     ports:
       - "16686:16686" # Web UI
       - "4317"       # принимать трейсы от коллектора по OTLP
+    restart: always
+  
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin} # Пароль для входа
+      - GF_AUTH_ANONYMOUS_ENABLED=false # Чтобы нельзя было смотреть без логина
+    volumes:
+      - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
     restart: always
     
   auth_service:
