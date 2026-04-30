@@ -25,7 +25,7 @@ func NewGatewayConsumer(client *rabbitmq.RabbitClient, wsManager *websocket.WsMa
 }
 
 func (c *GatewayConsumer) Start(ctx context.Context) error {
-	handler := func(body []byte) error {
+	handler := func(ctx context.Context, body []byte) error {
 		var event events.GatewayEvent
 		if err := easyjson.Unmarshal(body, &event); err != nil {
 			c.logger.Error("failed to unmarshal gateway event", err)
