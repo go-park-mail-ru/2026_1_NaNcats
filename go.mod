@@ -24,7 +24,7 @@ require (
 	github.com/swaggo/http-swagger v1.3.4
 	github.com/swaggo/swag v1.16.6
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.68.0
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.68.0
 	go.opentelemetry.io/otel v1.43.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.43.0
@@ -38,7 +38,14 @@ require (
 	google.golang.org/protobuf v1.36.11
 )
 
-require go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.43.0 // indirect
+require (
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.57.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.11.21 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sns v1.39.15 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sqs v1.42.25 // indirect
+	go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws v0.68.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.43.0 // indirect
+)
 
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect

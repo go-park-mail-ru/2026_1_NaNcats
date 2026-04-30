@@ -26,7 +26,7 @@ func NewOrderConsumer(client *rabbitmq.RabbitClient, uc usecase.OrderUseCase, l 
 }
 
 func (c *OrderConsumer) Start(ctx context.Context) error {
-	handler := func(body []byte) error {
+	handler := func(ctx context.Context, body []byte) error {
 		var reply events.SagaReply
 
 		if err := easyjson.Unmarshal(body, &reply); err != nil {

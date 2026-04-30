@@ -11,6 +11,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+
+	"go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws"
 )
 
 type s3Storage struct {
@@ -28,6 +30,8 @@ func NewS3Storage(ctx context.Context, keyID, secretKey, bucket, region string) 
 	if err != nil {
 		return nil, err
 	}
+
+	otelaws.AppendMiddlewares(&cfg.APIOptions)
 
 	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
 		o.UsePathStyle = true

@@ -25,7 +25,7 @@ func NewPaymentConsumer(client *rabbitmq.RabbitClient, uc usecase.PaymentUseCase
 }
 
 func (c *PaymentConsumer) Start(ctx context.Context) error {
-	handler := func(body []byte) error {
+	handler := func(ctx context.Context, body []byte) error {
 		var cmd events.SagaCommand
 		if err := easyjson.Unmarshal(body, &cmd); err != nil {
 			c.logger.Error("failed to unmarshal payment saga command", err)

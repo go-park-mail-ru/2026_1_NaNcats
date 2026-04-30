@@ -26,7 +26,7 @@ func NewCartConsumer(client *rabbitmq.RabbitClient, uc usecase.CartUseCase, l lo
 }
 
 func (c *CartConsumer) Start(ctx context.Context) error {
-	handler := func(body []byte) error {
+	handler := func(ctx context.Context, body []byte) error {
 		var cmd events.SagaCommand
 		if err := easyjson.Unmarshal(body, &cmd); err != nil {
 			c.logger.Error("failed to unmarshal cart saga command", err)

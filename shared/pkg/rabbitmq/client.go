@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/mailru/easyjson"
+	"go.opentelemetry.io/otel"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -66,6 +67,9 @@ func (rc *RabbitClient) PublishJSON(ctx context.Context, queueName string, data 
 		return fmt.Errorf("failed to marshal message: %w", err)
 	}
 
+	headers := make(map[string]interface{})
+	InjectContext(ctx, headers)
+
 	err = rc.ch.PublishWithContext(ctx,
 		"",
 		q.Name,
@@ -74,6 +78,7 @@ func (rc *RabbitClient) PublishJSON(ctx context.Context, queueName string, data 
 		amqp.Publishing{
 			ContentType:  "application/json",
 			DeliveryMode: amqp.Persistent,
+			Headers:      headers,
 			Body:         body,
 		},
 	)
@@ -84,7 +89,7 @@ func (rc *RabbitClient) PublishJSON(ctx context.Context, queueName string, data 
 	return nil
 }
 
-func (rc *RabbitClient) ConsumeJSON(ctx context.Context, queueName string, handler func(body []byte) error) error {
+func (rc *RabbitClient) ConsumeJSON(ctx context.Context, queueName string, handler func(ctx context.Context, body []byte) error) error {
 	q, err := rc.ch.QueueDeclare(
 		queueName,
 		true, false, false, false, nil,
@@ -109,8 +114,14 @@ func (rc *RabbitClient) ConsumeJSON(ctx context.Context, queueName string, handl
 
 	go func() {
 		for d := range msgs {
-			err := handler(d.Body)
+			msgCtx := ExtractContext(context.Background(), d.Headers)
+
+			tracer := otel.Tracer("rabbitmq-consumer")
+			msgCtx, span := tracer.Start(msgCtx, "RabbitMQ.Consume "+queueName)
+
+			err := handler(msgCtx, d.Body)
 			if err != nil {
+				span.RecordError(err)
 				rc.logger.Error("failed to process message", err, logger.Field{
 					Key:   "queue",
 					Value: queueName,
@@ -125,6 +136,7 @@ func (rc *RabbitClient) ConsumeJSON(ctx context.Context, queueName string, handl
 					rc.logger.Error("failed to delete message from RabbitMQ", err)
 				}
 			}
+			span.End()
 		}
 	}()
 

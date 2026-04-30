@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/mailru/easyjson"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 type Client struct {
@@ -24,7 +25,8 @@ func NewClient(shopID, secretKey string) *Client {
 		secretKey: secretKey,
 		baseURL:   "https://api.yookassa.ru/v3",
 		client: &http.Client{
-			Timeout: time.Second * 15,
+			Transport: otelhttp.NewTransport(http.DefaultTransport),
+			Timeout:   time.Second * 15,
 		},
 	}
 }

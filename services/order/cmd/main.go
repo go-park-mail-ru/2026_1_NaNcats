@@ -165,6 +165,7 @@ func createGrpcConn(addr, serviceName string, appLogger logger.Logger) *grpc.Cli
 	conn, err := grpc.NewClient(
 		addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	)
 	if err != nil {
 		appLogger.Fatal("Failed to create "+serviceName+" Service client", err)
