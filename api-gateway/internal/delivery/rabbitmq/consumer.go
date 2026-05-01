@@ -32,7 +32,11 @@ func (c *GatewayConsumer) Start(ctx context.Context) error {
 			return nil
 		}
 
-		c.logger.Info("Received gateway event from RMQ, publishing to Redis", logger.String("order_id", event.OrderID))
+		if event.OrderID != "" {
+			c.logger.Info("Received Order event", logger.String("order_id", event.OrderID))
+		} else if event.CartID != "" {
+			c.logger.Info("Received Cart event", logger.String("cart_id", event.CartID), logger.String("event_type", event.EventType))
+		}
 
 		return c.wsManager.BroadcastToRedis(event)
 	}

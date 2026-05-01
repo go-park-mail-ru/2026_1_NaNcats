@@ -363,6 +363,14 @@ func easyjsonCd43231fDecodeGithubComGoParkMailRu20261NaNcatsSharedPkgRabbitmqEve
 			} else {
 				out.Error = string(in.String())
 			}
+		case "payload":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				if data := in.Raw(); in.Ok() {
+					in.AddError((out.Payload).UnmarshalJSON(data))
+				}
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -393,7 +401,7 @@ func easyjsonCd43231fEncodeGithubComGoParkMailRu20261NaNcatsSharedPkgRabbitmqEve
 		}
 		out.String(string(in.SplitID))
 	}
-	{
+	if in.UserID != 0 {
 		const prefix string = ",\"user_id\":"
 		if first {
 			first = false
@@ -405,28 +413,63 @@ func easyjsonCd43231fEncodeGithubComGoParkMailRu20261NaNcatsSharedPkgRabbitmqEve
 	}
 	if in.CartID != "" {
 		const prefix string = ",\"cart_id\":"
-		out.RawString(prefix)
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
 		out.String(string(in.CartID))
 	}
 	if in.EventType != "" {
 		const prefix string = ",\"event_type\":"
-		out.RawString(prefix)
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
 		out.String(string(in.EventType))
 	}
 	if in.Status != "" {
 		const prefix string = ",\"status\":"
-		out.RawString(prefix)
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
 		out.String(string(in.Status))
 	}
 	if in.PaymentURL != "" {
 		const prefix string = ",\"payment_url\":"
-		out.RawString(prefix)
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
 		out.String(string(in.PaymentURL))
 	}
 	if in.Error != "" {
 		const prefix string = ",\"error\":"
-		out.RawString(prefix)
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
 		out.String(string(in.Error))
+	}
+	if len(in.Payload) != 0 {
+		const prefix string = ",\"payload\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Raw((in.Payload).MarshalJSON())
 	}
 	out.RawByte('}')
 }

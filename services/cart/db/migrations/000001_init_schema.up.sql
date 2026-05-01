@@ -40,7 +40,7 @@ CREATE TABLE "cart_member" (
 );
 
 CREATE TABLE "cart_invite" (
-    token VARCHAR(64) PRIMARY KEY, -- хэш для url
+    token TEXT PRIMARY KEY, -- хэш для url
     cart_id UUID NOT NULL,
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -53,9 +53,9 @@ CREATE TABLE "cart_invite" (
 
 CREATE TABLE "outbox_events" (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    aggregate_id VARCHAR(255) NOT NULL,
-    event_type VARCHAR(255) NOT NULL,
+    aggregate_id TEXT NOT NULL,
+    event_type TEXT NOT NULL,
     payload JSONB NOT NULL,
-    status VARCHAR(50) DEFAULT 'PENDING',
+    status TEXT DEFAULT 'PENDING',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );

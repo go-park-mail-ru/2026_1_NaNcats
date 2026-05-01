@@ -1,5 +1,7 @@
 package events
 
+import json "encoding/json"
+
 //go:generate easyjson $GOFILE
 
 // Очереди, в которые будет идти запись
@@ -57,12 +59,13 @@ type SagaReply struct {
 //
 //easyjson:json
 type GatewayEvent struct {
-	OrderID    string `json:"order_id,omitempty"`
-	SplitID    string `json:"split_id,omitempty"`
-	UserID     int64  `json:"user_id"`
-	CartID     string `json:"cart_id,omitempty"`
-	EventType  string `json:"event_type,omitempty"`
-	Status     string `json:"status,omitempty"`
-	PaymentURL string `json:"payment_url,omitempty"`
-	Error      string `json:"error,omitempty"`
+	OrderID    string          `json:"order_id,omitempty"`
+	SplitID    string          `json:"split_id,omitempty"`
+	UserID     int64           `json:"user_id,omitempty"`
+	CartID     string          `json:"cart_id,omitempty"`
+	EventType  string          `json:"event_type,omitempty"`
+	Status     string          `json:"status,omitempty"`
+	PaymentURL string          `json:"payment_url,omitempty"`
+	Error      string          `json:"error,omitempty"`
+	Payload    json.RawMessage `json:"payload,omitempty"`
 }

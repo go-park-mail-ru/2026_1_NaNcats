@@ -2,19 +2,20 @@ package outbox
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq"
+	gwEvent "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq/events"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type outboxEventDB struct {
-	ID        string `db:"id"`
-	EventType string `db:"event_type"`
-	Payload   []byte `db:"payload"`
+	ID          string `db:"id"`
+	AggregateID string `db:"aggregate_id"`
+	EventType   string `db:"event_type"`
+	Payload     []byte `db:"payload"`
 }
 
 type Relay struct {
@@ -52,7 +53,7 @@ func (r *Relay) Run(ctx context.Context) {
 
 func (r *Relay) processEvents(ctx context.Context) {
 	query := `
-		SELECT id, event_type, payload 
+		SELECT id, aggregate_id, event_type, payload 
 		FROM outbox_events 
 		WHERE status = 'PENDING' 
 		ORDER BY created_at ASC 
@@ -77,13 +78,13 @@ func (r *Relay) processEvents(ctx context.Context) {
 	var processedIDs []string
 
 	for _, event := range events {
-		var data map[string]any
-		if err := json.Unmarshal(event.Payload, &data); err != nil {
-			r.logger.Error("Failed to unmarshal outbox payload", err, logger.String("event_id", event.ID))
-			continue
+		gatewayMsg := gwEvent.GatewayEvent{
+			CartID:    event.AggregateID,
+			EventType: event.EventType,
+			Payload:   event.Payload,
 		}
 
-		err = r.rabbit.PublishJSON(ctx, r.targetQueue, data)
+		err = r.rabbit.PublishJSON(ctx, r.targetQueue, gatewayMsg)
 		if err != nil {
 			r.logger.Error("Failed to publish event to RabbitMQ", err, logger.String("event_id", event.ID))
 			break
