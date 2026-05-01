@@ -276,18 +276,18 @@ func (o *orderUseCase) UpdateOrderStatusByPaymentID(ctx context.Context, payment
 	span.SetAttributes(attribute.Bool("order.all_splits_paid", allPaid))
 
 	if allPaid {
-		err = o.orderRepo.UpdateOrderStatus(ctx, orderPublicID, StatusInProgress)
+		err = o.orderRepo.UpdateOrderStatus(ctx, orderPublicID, StatusPaid)
 		if err != nil {
 			return err
 		}
 
 		// TODO: можно отправить событие в RestaurantService для начала готовки
-		span.AddEvent("order_transition_to_in_progress")
-		o.logger.Info("All splits paid! Order is in progress", logger.String("order_id", orderPublicID))
+		span.AddEvent("order_transition_to_paid")
+		o.logger.Info("All splits paid!", logger.String("order_id", orderPublicID))
 
 		gatewayEvent := events.GatewayEvent{
 			OrderID: orderPublicID,
-			Status:  StatusInProgress,
+			Status:  StatusPaid,
 		}
 		_ = o.rabbitPublisher.PublishJSON(ctx, events.QueueGatewayEvents, gatewayEvent)
 	}

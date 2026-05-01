@@ -115,6 +115,16 @@ func (m *WsManager) AddCartConnection(cartID string, userID int64, conn *websock
 
 	m.logger.Info("Joined cart room", logger.String("cart_id", cartID), logger.Int("user_id", int(userID)))
 
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(5*time.Second)); err != nil {
+				return
+			}
+		}
+	}()
+
 	go m.readCartPump(cartID, userID, conn)
 }
 
@@ -146,7 +156,6 @@ func (m *WsManager) RemoveCartConnection(cartID string, userID int64) {
 func (m *WsManager) readCartPump(cartID string, userID int64, conn *websocket.Conn) {
 	defer m.RemoveCartConnection(cartID, userID)
 	conn.SetReadLimit(512)
-	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 
 	conn.SetPongHandler(func(string) error {
 		err := conn.SetReadDeadline(time.Now().Add(60 * time.Second))

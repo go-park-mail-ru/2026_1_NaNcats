@@ -14,6 +14,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/metrics"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq/events"
 	"github.com/joho/godotenv"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
@@ -21,6 +22,7 @@ import (
 	cartDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/delivery/grpc"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/infrastructure/config"
 	cartGrpcClient "github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/infrastructure/grpc_client"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/infrastructure/outbox"
 	cartPG "github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/repository/postgres"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/usecase"
 	cartUseCase "github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/usecase"
@@ -102,6 +104,9 @@ func main() {
 		appLogger.Fatal("Failed to connect to RabbitMQ", err)
 	}
 	defer rabbitClient.Close()
+
+	cartRelay := outbox.NewRelay(pool, rabbitClient, appLogger, events.QueueGatewayEvents)
+	go cartRelay.Run(ctx)
 
 	cartConsumer := cartRabbitMQ.NewCartConsumer(rabbitClient, cartUC, appLogger)
 	if err := cartConsumer.Start(ctx); err != nil {
