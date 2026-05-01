@@ -14,6 +14,7 @@ import (
 	"github.com/joho/godotenv"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -265,7 +266,22 @@ func main() {
 	handler := corsMW.Handler(mux)
 	handler = loggingMW.Handler(handler)
 	handler = reqIDMW.Handler(handler)
-	otelHandler := otelhttp.NewHandler(handler, "api-gateway")
+
+	handlerWithRoute := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, pattern := mux.Handler(r)
+
+		if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
+			if pattern != "" {
+				// Записываем паттерн роута в метрику
+				labeler.Add(semconv.HTTPRoute(pattern))
+			} else {
+				labeler.Add(semconv.HTTPRoute("not_found"))
+			}
+		}
+		handler.ServeHTTP(w, r)
+	})
+
+	otelHandler := otelhttp.NewHandler(handlerWithRoute, "api-gateway")
 
 	server := &http.Server{
 		Addr:    ":" + cfg.HTTP.Port,

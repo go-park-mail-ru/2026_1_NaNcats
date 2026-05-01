@@ -59,9 +59,9 @@ services:
     command: ["--config=/etc/otel-collector/otel-collector.yaml"]
     volumes:
       - ./infrastructure/otel-collector/otel-collector.yaml:/etc/otel-collector/otel-collector.yaml
-    ports:
-      - "4317:4317" # порт, по которому микросервисы отправляют данные
-      - "8889:8889" # порт, откуда Prometheus будет брать данные
+    # ports:
+      # - "4317:4317"
+      # - "8889:8889"
     restart: always
   
   prometheus:
@@ -72,8 +72,8 @@ services:
       - '--storage.tsdb.path=/prometheus'
     volumes:
       - ./infrastructure/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
-    ports:
-      - "9090:9090" # админка Prometheus
+    # ports:
+    #   - "9090:9090" # админка Prometheus
     restart: always
   
   node-exporter:
@@ -93,9 +93,9 @@ services:
     image: jaegertracing/all-in-one:latest
     container_name: jaeger
     entrypoint: ["sh", "-c", "echo '{\"themes\":{\"enabled\":true}}' > /tmp/ui.json && exec /go/bin/all-in-one-linux --query.ui-config=/tmp/ui.json"]
-    ports:
-      - "16686:16686" # Web UI
-      - "4317"       # принимать трейсы от коллектора по OTLP
+    # ports:
+      # - "16686:16686" # Web UI
+      # - "4317"
     restart: always
   
   grafana:
@@ -107,10 +107,29 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin} # Пароль для входа
       - GF_AUTH_ANONYMOUS_ENABLED=false # Чтобы нельзя было смотреть без логина
     volumes:
-      - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infrastructure/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
     restart: always
+  
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: always
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes:
+      - ./infrastructure/promtail/config.yaml:/etc/promtail/config.yaml
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/config.yaml
+    restart: always
+
     
   auth_service:
     build:
@@ -297,3 +316,4 @@ services:
 volumes:
   # Объявляем именованный том для базы
   postgres_data:
+  grafana_data:

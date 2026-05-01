@@ -5,7 +5,7 @@ http:
   port: "8080"
   timeout: "10s"
   allowed_origins:
-    - "http://localhost:3000"
+    - "http://localhost:2033"
 
 otel:
   service_name: "api-gateway"
