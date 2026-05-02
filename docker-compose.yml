@@ -104,7 +104,7 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
-      - "3000:3000"
+      - "8000:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin} # Пароль для входа
       - GF_AUTH_ANONYMOUS_ENABLED=false # Чтобы нельзя было смотреть без логина
