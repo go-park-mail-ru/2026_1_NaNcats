@@ -70,8 +70,10 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yaml'
       - '--storage.tsdb.path=/prometheus'
+      - "--storage.tsdb.retention.time=30d"
     volumes:
       - ./infrastructure/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - prometheus_data:/prometheus
     # ports:
     #   - "9090:9090" # админка Prometheus
     restart: always
@@ -317,3 +319,4 @@ volumes:
   # Объявляем именованный том для базы
   postgres_data:
   grafana_data:
+  prometheus_data:
