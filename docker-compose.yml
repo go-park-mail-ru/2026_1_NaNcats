@@ -104,10 +104,12 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
-      - "8000:3000"
+      - "127.0.0.1:8000:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin} # Пароль для входа
       - GF_AUTH_ANONYMOUS_ENABLED=false # Чтобы нельзя было смотреть без логина
+      - GF_SERVER_DOMAIN=grafana.foodcourt.fun
+      - GF_SERVER_ROOT_URL=https://grafana.foodcourt.fun
     volumes:
       - grafana_data:/var/lib/grafana
       - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning:ro
