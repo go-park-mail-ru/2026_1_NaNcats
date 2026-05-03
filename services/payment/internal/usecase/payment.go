@@ -74,18 +74,17 @@ func (p *paymentUseCase) CreatePayment(ctx context.Context, amount int64, paymen
 		},
 		Capture:           true,
 		SavePaymentMethod: false,
+		// Confirmation указываем всегда: для новой карты это redirect на форму YooKassa,
+		// для сохранённой — fallback на случай, когда YooKassa внезапно требует 3DS;
+		// без return_url пользователь застрянет на странице YooKassa после подтверждения.
+		Confirmation: &yookassa.CreatePaymentRequestConfirmation{
+			Type:      "redirect",
+			ReturnURL: p.returnURL,
+		},
 	}
 
 	if paymentMethodID != "" {
-		// Платёж по сохранённой карте: YooKassa списывает сразу без формы.
-		// Confirmation не указываем — пользователю не нужен редирект.
 		paymentRequest.PaymentMethodID = paymentMethodID
-	} else {
-		// Новая карта — стандартный redirect-flow на YooKassa форму.
-		paymentRequest.Confirmation = &yookassa.CreatePaymentRequestConfirmation{
-			Type:      "redirect",
-			ReturnURL: p.returnURL,
-		}
 	}
 
 	paymentResponse, err := p.yookassaClient.CreatePayment(ctx, paymentRequest, idempotencyKey)
