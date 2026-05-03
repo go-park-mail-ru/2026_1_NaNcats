@@ -38,11 +38,21 @@ run:
 	@if [ -f .tmp_pids/$(s).pid]; then echo "Сервис уже запущен"; exit 1; fi
 	@echo "Запускаем..."
 	@if [ "$(s)" = "api-gateway" ]; then \
-		nohup go run $(GATEWAY_PKG)> .tmp_pids/$(s).log 2>&1 & echo $$! > .tmp_pids/$(s).pid; \
+		CONFIG_PATH=api-gateway/config.yaml nohup go run $(GATEWAY_PKG) > .tmp_pids/$(s).log 2>&1 & echo $$! > .tmp_pids/$(s).pid; \
 	else \
-		nohup go run ./services/$(s)/cmd/main.go > .tmp_pids/$(s).log 2>&1 & echo $$! > .tmp_pids/$(s).pid; \
+		CONFIG_PATH=services/$(s)/config.yaml nohup go run ./services/$(s)/cmd/main.go > .tmp_pids/$(s).log 2>&1 & echo $$! > .tmp_pids/$(s).pid; \
 	fi
 	@echo "Запуск $(s) завершен"
+
+# Команда для принудительной очистки портов занятых микросервисами
+kill-ports:
+	@for port in 8080 50051 50052 50053 50054 50055 50056 50057 50058; do \
+		PID=$$(lsof -t -i:$$port); \
+		if [ -n "$$PID" ]; then \
+			kill -9 $$PID; \
+		fi; \
+	done
+	rm -f .tmp_pids/*.pid
 
 # Остановка всего
 stop-all:
