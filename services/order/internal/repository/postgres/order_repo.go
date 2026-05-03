@@ -284,6 +284,15 @@ func (r *orderRepo) GetOrdersByUserID(ctx context.Context, userID int64) ([]doma
 			}
 		}
 		splitRows.Close()
+
+		dishRows, _ := r.pool.Query(ctx, `SELECT dish_id, quantity, price, owner_user_id FROM "order_dish" WHERE order_id = $1`, orders[i].ID)
+		for dishRows.Next() {
+			var d domain.OrderDish
+			if err := dishRows.Scan(&d.DishID, &d.Quantity, &d.Price, &d.OwnerUserID); err == nil {
+				orders[i].Items = append(orders[i].Items, d)
+			}
+		}
+		dishRows.Close()
 	}
 
 	return orders, nil

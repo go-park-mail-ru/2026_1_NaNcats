@@ -178,7 +178,7 @@ func main() {
 	cartHandler := cartHttp.NewCartHandler(cartClient, wsManager, appLogger)
 	addressHandler := addressHttp.NewAddressHandler(addrClient, appLogger)
 	paymentHandler := paymentHttp.NewPaymentHandler(payClient, appLogger)
-	orderHandler := orderHttp.NewOrderHandler(orderClient, payClient, wsManager, appLogger)
+	orderHandler := orderHttp.NewOrderHandler(orderClient, payClient, restClient, wsManager, appLogger)
 
 	redisHub := supportHttp.NewRedisHub(redisPool, appLogger)
 	supportHandler := supportHttp.NewSupportHandler(supportClient, redisHub, appLogger)

@@ -406,6 +406,18 @@ func easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			} else {
 				out.DishID = int64(in.Int64())
 			}
+		case "name":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.Name = string(in.String())
+			}
+		case "image_url":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.ImageURL = string(in.String())
+			}
 		case "quantity":
 			if in.IsNull() {
 				in.Skip()
@@ -450,6 +462,16 @@ func easyjson120d1ca2EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		const prefix string = ",\"dish_id\":"
 		out.RawString(prefix[1:])
 		out.Int64(int64(in.DishID))
+	}
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix)
+		out.String(string(in.Name))
+	}
+	{
+		const prefix string = ",\"image_url\":"
+		out.RawString(prefix)
+		out.String(string(in.ImageURL))
 	}
 	{
 		const prefix string = ",\"quantity\":"

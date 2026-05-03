@@ -9,6 +9,7 @@ import (
 	wsManager "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/websocket"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/orderclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/paymentclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/restaurantclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/request"
@@ -44,6 +45,8 @@ type CreateOrderResponse struct {
 //easyjson:json
 type OrderDishDTO struct {
 	DishID      int64  `json:"dish_id"`
+	Name        string `json:"name"`
+	ImageURL    string `json:"image_url"`
 	Quantity    int32  `json:"quantity"`
 	Price       int64  `json:"price"`
 	OwnerUserID *int64 `json:"owner_user_id,omitempty"`
@@ -75,18 +78,20 @@ type PayForFriendRequest struct {
 }
 
 type OrderHandler struct {
-	orderClient   orderclient.OrderClient
-	paymentClient paymentclient.PaymentClient
-	wsManager     *wsManager.WsManager
-	logger        logger.Logger
+	orderClient      orderclient.OrderClient
+	paymentClient    paymentclient.PaymentClient
+	restaurantClient restaurantclient.RestaurantClient
+	wsManager        *wsManager.WsManager
+	logger           logger.Logger
 }
 
-func NewOrderHandler(oc orderclient.OrderClient, pc paymentclient.PaymentClient, wsm *wsManager.WsManager, l logger.Logger) *OrderHandler {
+func NewOrderHandler(oc orderclient.OrderClient, pc paymentclient.PaymentClient, rc restaurantclient.RestaurantClient, wsm *wsManager.WsManager, l logger.Logger) *OrderHandler {
 	return &OrderHandler{
-		orderClient:   oc,
-		paymentClient: pc,
-		wsManager:     wsm,
-		logger:        l,
+		orderClient:      oc,
+		paymentClient:    pc,
+		restaurantClient: rc,
+		wsManager:        wsm,
+		logger:           l,
 	}
 }
 
@@ -278,13 +283,52 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Сначала собираем уникальные dish_id со всех заказов, затем одним запросом
+	// в restaurant_service вытаскиваем имена/картинки. Без этого фронт получает
+	// заказ из одних dish_id и отображает пустые карточки.
+	dishIDSet := make(map[int64]struct{})
+	for _, o := range orders {
+		for _, item := range o.Items {
+			dishIDSet[item.DishID] = struct{}{}
+		}
+	}
+
+	dishMeta := make(map[int64]struct {
+		Name     string
+		ImageURL string
+	}, len(dishIDSet))
+
+	if len(dishIDSet) > 0 {
+		dishIDs := make([]int64, 0, len(dishIDSet))
+		for id := range dishIDSet {
+			dishIDs = append(dishIDs, id)
+		}
+
+		dishes, derr := h.restaurantClient.GetDishesByIDs(ctx, dishIDs)
+		if derr != nil {
+			// Логируем, но не валим запрос: лучше отдать заказы без имён,
+			// чем отдать 500 и оставить пользователя совсем без истории.
+			l.Error("failed to enrich order items with dish info", derr)
+		} else {
+			for _, d := range dishes {
+				dishMeta[d.Id] = struct {
+					Name     string
+					ImageURL string
+				}{Name: d.Name, ImageURL: d.ImageUrl}
+			}
+		}
+	}
+
 	resp := make([]OrderHistoryResponse, 0, len(orders))
 	for _, o := range orders {
 
 		items := make([]OrderDishDTO, 0, len(o.Items))
 		for _, item := range o.Items {
+			meta := dishMeta[item.DishID]
 			items = append(items, OrderDishDTO{
 				DishID:      item.DishID,
+				Name:        meta.Name,
+				ImageURL:    meta.ImageURL,
 				Quantity:    item.Quantity,
 				Price:       item.Price,
 				OwnerUserID: item.OwnerUserID,
