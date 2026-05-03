@@ -1,136 +1,142 @@
 package postgres
 
-// import (
-// 	"context"
-// 	"errors"
-// 	"testing"
+import (
+	"context"
+	"errors"
+	"regexp"
+	"testing"
 
-// 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/domain"
-// 	"github.com/jackc/pgx/v5"
-// 	"github.com/pashagolub/pgxmock/v5"
-// 	"github.com/stretchr/testify/assert"
-// )
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/domain"
+	"github.com/jackc/pgx/v5"
+	"github.com/pashagolub/pgxmock/v5"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
-// func TestClientProfileRepo_Create(t *testing.T) {
-// 	ctx := context.Background()
+func TestClientProfileRepo_Create(t *testing.T) {
+	ctx := context.Background()
+	var accountID int64 = 101
+	idemKey := "profile-create-key"
 
-// 	tests := []struct {
-// 		name      string
-// 		accountID int
-// 		setup     func(mock pgxmock.PgxPoolIface)
-// 		wantErr   error
-// 	}{
-// 		{
-// 			name:      "Успех",
-// 			accountID: 1,
-// 			setup: func(mock pgxmock.PgxPoolIface) {
-// 				mock.ExpectExec(`INSERT INTO "client_profile"`).
-// 					WithArgs(1).
-// 					WillReturnResult(pgxmock.NewResult("INSERT", 1))
-// 			},
-// 			wantErr: nil,
-// 		},
-// 		{
-// 			name:      "Ошибка db",
-// 			accountID: 2,
-// 			setup: func(mock pgxmock.PgxPoolIface) {
-// 				mock.ExpectExec(`INSERT INTO "client_profile"`).
-// 					WithArgs(2).
-// 					WillReturnError(errors.New("conn failed"))
-// 			},
-// 			wantErr: errors.New("conn failed"),
-// 		},
-// 	}
+	type mockInit func(m pgxmock.PgxPoolIface)
+	tests := []struct {
+		name     string
+		mockInit mockInit
+		wantErr  bool
+	}{
+		{
+			name: "Успешное создание профиля",
+			mockInit: func(m pgxmock.PgxPoolIface) {
+				m.ExpectExec(regexp.QuoteMeta(`INSERT INTO "client_profile" (account_id, idempotency_key) VALUES ($1, $2)`)).
+					WithArgs(accountID, idemKey).
+					WillReturnResult(pgxmock.NewResult("INSERT", 1))
+			},
+			wantErr: false,
+		},
+		{
+			name: "Кейс идемпотентности (ON CONFLICT DO UPDATE)",
+			mockInit: func(m pgxmock.PgxPoolIface) {
+				m.ExpectExec(regexp.QuoteMeta(`INSERT INTO "client_profile"`)).
+					WithArgs(accountID, idemKey).
+					WillReturnResult(pgxmock.NewResult("INSERT", 1))
+			},
+			wantErr: false,
+		},
+		{
+			name: "Ошибка базы данных",
+			mockInit: func(m pgxmock.PgxPoolIface) {
+				m.ExpectExec(regexp.QuoteMeta(`INSERT INTO "client_profile"`)).
+					WithArgs(accountID, idemKey).
+					WillReturnError(errors.New("db error"))
+			},
+			wantErr: true,
+		},
+	}
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			mock, _ := pgxmock.NewPool()
-// 			defer mock.Close()
-// 			repo := NewClientProfileRepo(mock)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock, err := pgxmock.NewPool()
+			require.NoError(t, err)
+			defer mock.Close()
 
-// 			tt.setup(mock)
-// 			err := repo.Create(ctx, tt.accountID)
+			repo := NewClientProfileRepo(mock)
+			tt.mockInit(mock)
 
-// 			if tt.wantErr != nil {
-// 				assert.Error(t, err)
-// 				assert.Contains(t, err.Error(), tt.wantErr.Error())
-// 			} else {
-// 				assert.NoError(t, err)
-// 			}
-// 			assert.NoError(t, mock.ExpectationsWereMet())
-// 		})
-// 	}
-// }
+			err = repo.Create(ctx, accountID, idemKey)
 
-// func TestClientProfileRepo_GetByAccountID(t *testing.T) {
-// 	ctx := context.Background()
-// 	errDB := errors.New("db error")
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
 
-// 	tests := []struct {
-// 		name      string
-// 		accountID int
-// 		setup     func(mock pgxmock.PgxPoolIface)
-// 		want      domain.ClientProfile
-// 		wantErr   error
-// 	}{
-// 		{
-// 			name:      "Успех",
-// 			accountID: 1,
-// 			setup: func(mock pgxmock.PgxPoolIface) {
-// 				rows := pgxmock.NewRows([]string{"account_id", "bonus_balance", "streak_count"}).
-// 					AddRow(1, 100, 5)
-// 				mock.ExpectQuery(`SELECT account_id, bonus_balance, streak_count FROM "client_profile"`).
-// 					WithArgs(1).
-// 					WillReturnRows(rows)
-// 			},
-// 			want: domain.ClientProfile{
-// 				AccountID:    1,
-// 				BonusBalance: 100,
-// 				StreakCount:  5,
-// 			},
-// 			wantErr: nil,
-// 		},
-// 		{
-// 			name:      "Ошибка not Found",
-// 			accountID: 404,
-// 			setup: func(mock pgxmock.PgxPoolIface) {
-// 				mock.ExpectQuery(`SELECT`).
-// 					WithArgs(404).
-// 					WillReturnError(pgx.ErrNoRows)
-// 			},
-// 			want:    domain.ClientProfile{},
-// 			wantErr: pgx.ErrNoRows,
-// 		},
-// 		{
-// 			name:      "Ошибка internal Error",
-// 			accountID: 500,
-// 			setup: func(mock pgxmock.PgxPoolIface) {
-// 				mock.ExpectQuery(`SELECT`).
-// 					WithArgs(500).
-// 					WillReturnError(errDB)
-// 			},
-// 			want:    domain.ClientProfile{},
-// 			wantErr: errDB,
-// 		},
-// 	}
+func TestClientProfileRepo_GetByAccountID(t *testing.T) {
+	ctx := context.Background()
+	var accountID int64 = 42
+	columns := []string{"account_id", "bonus_balance", "streak_count"}
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			mock, _ := pgxmock.NewPool()
-// 			defer mock.Close()
-// 			repo := NewClientProfileRepo(mock)
+	type mockInit func(m pgxmock.PgxPoolIface)
+	tests := []struct {
+		name          string
+		mockInit      mockInit
+		expectedRes   domain.ClientProfile
+		expectedError error
+	}{
+		{
+			name: "Успешное получение профиля",
+			mockInit: func(m pgxmock.PgxPoolIface) {
+				m.ExpectQuery(regexp.QuoteMeta(`SELECT account_id, bonus_balance, streak_count FROM "client_profile" WHERE account_id = $1`)).
+					WithArgs(accountID).
+					WillReturnRows(pgxmock.NewRows(columns).AddRow(accountID, int64(1000), 5))
+			},
+			expectedRes: domain.ClientProfile{
+				AccountID:    accountID,
+				BonusBalance: 1000,
+				StreakCount:  5,
+			},
+		},
+		{
+			name: "Профиль не найден",
+			mockInit: func(m pgxmock.PgxPoolIface) {
+				m.ExpectQuery(regexp.QuoteMeta(`SELECT account_id`)).
+					WithArgs(accountID).
+					WillReturnError(pgx.ErrNoRows)
+			},
+			expectedError: domain.ErrUserNotFound,
+		},
+		{
+			name: "Внутренняя ошибка базы",
+			mockInit: func(m pgxmock.PgxPoolIface) {
+				m.ExpectQuery(regexp.QuoteMeta(`SELECT account_id`)).
+					WithArgs(accountID).
+					WillReturnError(errors.New("conn fail"))
+			},
+			expectedError: errors.New("conn fail"),
+		},
+	}
 
-// 			tt.setup(mock)
-// 			res, err := repo.GetByAccountID(ctx, tt.accountID)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock, _ := pgxmock.NewPool()
+			defer mock.Close()
 
-// 			if tt.wantErr != nil {
-// 				assert.Error(t, err)
-// 				assert.ErrorIs(t, err, tt.wantErr)
-// 			} else {
-// 				assert.NoError(t, err)
-// 				assert.Equal(t, tt.want, res)
-// 			}
-// 			assert.NoError(t, mock.ExpectationsWereMet())
-// 		})
-// 	}
-// }
+			repo := NewClientProfileRepo(mock)
+			tt.mockInit(mock)
+
+			res, err := repo.GetByAccountID(ctx, accountID)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedError.Error())
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedRes, res)
+			}
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}

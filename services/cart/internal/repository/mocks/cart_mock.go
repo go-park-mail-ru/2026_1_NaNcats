@@ -256,6 +256,20 @@ func (mr *MockCartRepositoryMockRecorder) SaveInvite(ctx, invite any) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveInvite", reflect.TypeOf((*MockCartRepository)(nil).SaveInvite), ctx, invite)
 }
 
+// SetCartRestaurantBrand mocks base method.
+func (m *MockCartRepository) SetCartRestaurantBrand(ctx context.Context, cartID string, brandID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetCartRestaurantBrand", ctx, cartID, brandID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetCartRestaurantBrand indicates an expected call of SetCartRestaurantBrand.
+func (mr *MockCartRepositoryMockRecorder) SetCartRestaurantBrand(ctx, cartID, brandID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCartRestaurantBrand", reflect.TypeOf((*MockCartRepository)(nil).SetCartRestaurantBrand), ctx, cartID, brandID)
+}
+
 // UnlockCart mocks base method.
 func (m *MockCartRepository) UnlockCart(ctx context.Context, cartID string) error {
 	m.ctrl.T.Helper()

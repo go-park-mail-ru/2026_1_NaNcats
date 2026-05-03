@@ -130,6 +130,21 @@ func (mr *MockPaymentUseCaseMockRecorder) ProcessPaymentWebhook(ctx, payment any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessPaymentWebhook", reflect.TypeOf((*MockPaymentUseCase)(nil).ProcessPaymentWebhook), ctx, payment)
 }
 
+// RefreshPaymentStatus mocks base method.
+func (m *MockPaymentUseCase) RefreshPaymentStatus(ctx context.Context, paymentID string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RefreshPaymentStatus", ctx, paymentID)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RefreshPaymentStatus indicates an expected call of RefreshPaymentStatus.
+func (mr *MockPaymentUseCaseMockRecorder) RefreshPaymentStatus(ctx, paymentID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RefreshPaymentStatus", reflect.TypeOf((*MockPaymentUseCase)(nil).RefreshPaymentStatus), ctx, paymentID)
+}
+
 // SetDefaultCard mocks base method.
 func (m *MockPaymentUseCase) SetDefaultCard(ctx context.Context, cardID string, userID int64, idempotencyKey string) error {
 	m.ctrl.T.Helper()

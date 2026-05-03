@@ -168,6 +168,8 @@ proto:
 		--go-grpc_out=$(PROTO_DIR) --go-grpc_opt=paths=source_relative \
 		$(PROTO_FILES)
 
+EXCLUDE_PATTERNS = "mock|\.pb\.go|_easyjson\.go|_tracing_mw\.go|main\.go|config\.go|docs\.go|tracer\.go|migrator\.go|debug_gen\.go"
+
 # Тестирование с правильным подсчетом покрытия
 test:
 	@echo "Запуск тестов...\n"
@@ -176,7 +178,7 @@ test:
 
 	@echo "\nОчистка покрытия от моков...\n"
 # Удаляем все строчки, где есть слово "mock", из файла покрытия
-	grep -Ev "mock|main.go|tracer.go|migrator.go|_easyjson|\.pb\.go" $(COVERAGE_FILE) > coverage_clean.out
+	grep -Ev $(EXCLUDE_PATTERNS) $(COVERAGE_FILE) > coverage_clean.out
 	mv coverage_clean.out $(COVERAGE_FILE)
 
 	@echo "\nИтоговое покрытие кода:\n"

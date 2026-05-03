@@ -14,8 +14,6 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-// decodeMetadataValue safely URL-decodes a gRPC metadata value (used to carry
-// non-ASCII strings like Cyrillic queries through the wire).
 func decodeMetadataValue(v string) string {
 	if decoded, err := url.QueryUnescape(v); err == nil {
 		return decoded
@@ -62,7 +60,6 @@ func NewRestaurantHandler(buc usecase.RestaurantBrandUseCase, duc usecase.DishUs
 	}
 }
 
-// Получение списка ресторанов (поддерживает фильтрацию по категории и поиск через gRPC metadata)
 func (h *RestaurantHandler) GetRestaurantBrandsList(ctx context.Context, req *pb.GetRestaurantBrandsListRequest) (*pb.GetRestaurantBrandsListResponse, error) {
 	var brands []domain.RestaurantBrand
 	var err error
@@ -70,7 +67,6 @@ func (h *RestaurantHandler) GetRestaurantBrandsList(ctx context.Context, req *pb
 	md, hasMD := metadata.FromIncomingContext(ctx)
 
 	if hasMD {
-		// Поиск по запросу (URL-encoded, чтобы пройти ASCII-only ограничение gRPC metadata)
 		if vals := md.Get("x-search-query"); len(vals) > 0 && vals[0] != "" {
 			query := decodeMetadataValue(vals[0])
 			brands, err = h.extRepo.SearchRestaurantBrands(ctx, query, int(req.Limit), int(req.Offset))
@@ -84,7 +80,6 @@ func (h *RestaurantHandler) GetRestaurantBrandsList(ctx context.Context, req *pb
 			return &pb.GetRestaurantBrandsListResponse{RestaurantBrands: pbBrands}, nil
 		}
 
-		// Фильтрация по имени категории (URL-encoded для не-ASCII символов)
 		if vals := md.Get("x-category-name"); len(vals) > 0 && vals[0] != "" {
 			catName := decodeMetadataValue(vals[0])
 			brands, err = h.extRepo.GetRestaurantBrandsByCategoryName(ctx, catName, int(req.Limit), int(req.Offset))
@@ -129,7 +124,6 @@ func (h *RestaurantHandler) GetRestaurantBrandsList(ctx context.Context, req *pb
 	}, nil
 }
 
-// Получение одного ресторана по ID
 func (h *RestaurantHandler) GetRestaurantBrandByID(ctx context.Context, req *pb.GetRestaurantBrandByIDRequest) (*pb.GetRestaurantBrandByIDResponse, error) {
 	brand, err := h.brandUC.GetRestaurantBrandByID(ctx, req.Id)
 	if err != nil {
@@ -141,7 +135,6 @@ func (h *RestaurantHandler) GetRestaurantBrandByID(ctx context.Context, req *pb.
 	}, nil
 }
 
-// Пакетное получения данных о ресторанах
 func (h *RestaurantHandler) GetRestaurantBrandsByIDs(ctx context.Context, req *pb.GetRestaurantBrandsByIDsRequest) (*pb.GetRestaurantBrandsByIDsResponse, error) {
 	brands, err := h.brandUC.GetRestaurantBrandsByIDs(ctx, req.BrandIds)
 	if err != nil {
@@ -158,8 +151,6 @@ func (h *RestaurantHandler) GetRestaurantBrandsByIDs(ctx context.Context, req *p
 	}, nil
 }
 
-// Меню конкретного ресторана.
-// Поддерживает поиск по блюдам внутри бренда через gRPC metadata `x-dish-search`.
 func (h *RestaurantHandler) GetDishesByRestaurantBrandID(ctx context.Context, req *pb.GetDishesByRestaurantBrandIDRequest) (*pb.GetDishesByRestaurantBrandIDResponse, error) {
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
 		if vals := md.Get("x-dish-search"); len(vals) > 0 && vals[0] != "" {
@@ -191,9 +182,6 @@ func (h *RestaurantHandler) GetDishesByRestaurantBrandID(ctx context.Context, re
 	}, nil
 }
 
-// Получение конкретных блюд по айдишникам.
-// Поддерживает глобальный поиск по всем блюдам через metadata `x-dish-search`
-// (если задан, dish_ids игнорируются и возвращаются результаты поиска).
 func (h *RestaurantHandler) GetDishesByIDs(ctx context.Context, req *pb.GetDishesByIDsRequest) (*pb.GetDishesByIDsResponse, error) {
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
 		if vals := md.Get("x-dish-search"); len(vals) > 0 && vals[0] != "" {
@@ -251,7 +239,6 @@ func (h *RestaurantHandler) UpdateRestaurantBrand(ctx context.Context, req *pb.U
 		ID: req.Id,
 	}
 
-	// Обработка optional полей из proto3
 	if req.Name != nil {
 		domainBrand.Name = *req.Name
 	}

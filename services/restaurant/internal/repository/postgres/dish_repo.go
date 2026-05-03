@@ -53,10 +53,8 @@ func NewDishRepo(pool postgres.PgxPool) repository.DishFullRepository {
 	return &dishRepo{pool: pool}
 }
 
-// Verify interface compliance at compile time.
 var _ repository.ExtendedDishRepository = (*dishRepo)(nil)
 
-// SearchDishes возвращает блюда, в name/description которых встречается query (ILIKE).
 func (r *dishRepo) SearchDishes(ctx context.Context, query string, limit int) ([]domain.Dish, error) {
 	q := `
 		SELECT id, restaurant_brand_id, name, description, image_url, price, created_at, updated_at
@@ -84,7 +82,6 @@ func (r *dishRepo) SearchDishes(ctx context.Context, query string, limit int) ([
 	return dishes, nil
 }
 
-// SearchDishesByBrand — поиск блюд только в пределах одного бренда (для restaurant page).
 func (r *dishRepo) SearchDishesByBrand(ctx context.Context, brandID int64, query string, limit int) ([]domain.Dish, error) {
 	q := `
 		SELECT id, restaurant_brand_id, name, description, image_url, price, created_at, updated_at

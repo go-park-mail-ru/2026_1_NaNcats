@@ -238,7 +238,7 @@ func easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 				in.Delim('[')
 				if out.Items == nil {
 					if !in.IsDelim(']') {
-						out.Items = make([]OrderDishDTO, 0, 2)
+						out.Items = make([]OrderDishDTO, 0, 1)
 					} else {
 						out.Items = []OrderDishDTO{}
 					}

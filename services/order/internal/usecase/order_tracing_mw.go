@@ -30,6 +30,23 @@ func NewOrderUseCaseTracingMiddleware(next OrderUseCase) OrderUseCaseTracingMidd
 	}
 }
 
+// CancelOrder трассирует выполнение метода CancelOrder
+func (m OrderUseCaseTracingMiddleware) CancelOrder(ctx context.Context, orderPublicID string, userID int64) (err error) {
+
+	ctx, span := m.tracer.Start(ctx, "OrderUseCase.CancelOrder")
+
+	defer span.End()
+
+	err = m.next.CancelOrder(ctx, orderPublicID, userID)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
 // CreateOrder трассирует выполнение метода CreateOrder
 func (m OrderUseCaseTracingMiddleware) CreateOrder(ctx context.Context, req domain.CreateOrderInput, idempotencyKey string) (s1 string, err error) {
 
@@ -38,6 +55,23 @@ func (m OrderUseCaseTracingMiddleware) CreateOrder(ctx context.Context, req doma
 	defer span.End()
 
 	s1, err = m.next.CreateOrder(ctx, req, idempotencyKey)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
+// GetOrderPaymentID трассирует выполнение метода GetOrderPaymentID
+func (m OrderUseCaseTracingMiddleware) GetOrderPaymentID(ctx context.Context, orderPublicID string, userID int64) (s1 string, err error) {
+
+	ctx, span := m.tracer.Start(ctx, "OrderUseCase.GetOrderPaymentID")
+
+	defer span.End()
+
+	s1, err = m.next.GetOrderPaymentID(ctx, orderPublicID, userID)
 
 	if err != nil {
 		span.RecordError(err)
@@ -106,40 +140,6 @@ func (m OrderUseCaseTracingMiddleware) UpdateOrderStatusByPaymentID(ctx context.
 	defer span.End()
 
 	err = m.next.UpdateOrderStatusByPaymentID(ctx, paymentID, status, idempotencyKey)
-
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(otelcodes.Error, err.Error())
-	}
-
-	return
-}
-
-// GetOrderPaymentID трассирует выполнение метода GetOrderPaymentID
-func (m OrderUseCaseTracingMiddleware) GetOrderPaymentID(ctx context.Context, orderPublicID string, userID int64) (s1 string, err error) {
-
-	ctx, span := m.tracer.Start(ctx, "OrderUseCase.GetOrderPaymentID")
-
-	defer span.End()
-
-	s1, err = m.next.GetOrderPaymentID(ctx, orderPublicID, userID)
-
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(otelcodes.Error, err.Error())
-	}
-
-	return
-}
-
-// CancelOrder трассирует выполнение метода CancelOrder
-func (m OrderUseCaseTracingMiddleware) CancelOrder(ctx context.Context, orderPublicID string, userID int64) (err error) {
-
-	ctx, span := m.tracer.Start(ctx, "OrderUseCase.CancelOrder")
-
-	defer span.End()
-
-	err = m.next.CancelOrder(ctx, orderPublicID, userID)
 
 	if err != nil {
 		span.RecordError(err)

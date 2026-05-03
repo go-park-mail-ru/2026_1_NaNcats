@@ -130,6 +130,21 @@ func (mr *MockSupportUseCaseMockRecorder) GetMyTickets(ctx, clientID, guestID an
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMyTickets", reflect.TypeOf((*MockSupportUseCase)(nil).GetMyTickets), ctx, clientID, guestID)
 }
 
+// GetStats mocks base method.
+func (m *MockSupportUseCase) GetStats(ctx context.Context, agentID int64) (domain.SupportStats, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStats", ctx, agentID)
+	ret0, _ := ret[0].(domain.SupportStats)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetStats indicates an expected call of GetStats.
+func (mr *MockSupportUseCaseMockRecorder) GetStats(ctx, agentID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStats", reflect.TypeOf((*MockSupportUseCase)(nil).GetStats), ctx, agentID)
+}
+
 // GetTemplates mocks base method.
 func (m *MockSupportUseCase) GetTemplates(ctx context.Context) ([]domain.Template, error) {
 	m.ctrl.T.Helper()

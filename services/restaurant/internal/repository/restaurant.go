@@ -6,6 +6,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/restaurant_brand_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/repository RestaurantBrandRepository
 type RestaurantBrandRepository interface {
 	GetRestaurantBrandsList(ctx context.Context, limit, offset int) ([]domain.RestaurantBrand, error)
 	GetByID(ctx context.Context, id int64) (domain.RestaurantBrand, error)
@@ -15,15 +16,13 @@ type RestaurantBrandRepository interface {
 	Update(ctx context.Context, b domain.RestaurantBrand) (domain.RestaurantBrand, error)
 }
 
-// Category is the domain representation of a restaurant category.
 type Category struct {
 	ID    int64
 	Name  string
 	Emoji string
 }
 
-// ExtendedRestaurantRepository adds category/search methods that are NOT in the core interface
-// to avoid breaking the tracing middleware.
+//go:generate mockgen -destination=mocks/extended_restaurant_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/repository ExtendedRestaurantRepository
 type ExtendedRestaurantRepository interface {
 	GetRestaurantBrandsByCategory(ctx context.Context, categoryID int64, limit, offset int) ([]domain.RestaurantBrand, error)
 	GetRestaurantBrandsByCategoryName(ctx context.Context, categoryName string, limit, offset int) ([]domain.RestaurantBrand, error)
@@ -31,7 +30,6 @@ type ExtendedRestaurantRepository interface {
 	GetAllCategories(ctx context.Context) ([]Category, error)
 }
 
-// RestaurantBrandFullRepository combines core CRUD and extended category/search methods.
 type RestaurantBrandFullRepository interface {
 	RestaurantBrandRepository
 	ExtendedRestaurantRepository

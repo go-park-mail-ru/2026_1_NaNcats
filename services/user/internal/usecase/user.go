@@ -31,6 +31,7 @@ type UserUseCase interface {
 	UpdateRole(ctx context.Context, userID int64, newRole string, idempotencyKey string) error
 }
 
+//go:generate mockgen -destination=mocks/message_publisher_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/usecase MessagePublisher
 type MessagePublisher interface {
 	PublishJSON(ctx context.Context, queueName string, data any) error
 }

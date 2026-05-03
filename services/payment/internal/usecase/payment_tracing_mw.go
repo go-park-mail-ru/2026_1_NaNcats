@@ -132,14 +132,14 @@ func (m PaymentUseCaseTracingMiddleware) ProcessPaymentWebhook(ctx context.Conte
 	return
 }
 
-// SetDefaultCard трассирует выполнение метода SetDefaultCard
-func (m PaymentUseCaseTracingMiddleware) SetDefaultCard(ctx context.Context, cardID string, userID int64, idempotencyKey string) (err error) {
+// RefreshPaymentStatus трассирует выполнение метода RefreshPaymentStatus
+func (m PaymentUseCaseTracingMiddleware) RefreshPaymentStatus(ctx context.Context, paymentID string) (s1 string, err error) {
 
-	ctx, span := m.tracer.Start(ctx, "PaymentUseCase.SetDefaultCard")
+	ctx, span := m.tracer.Start(ctx, "PaymentUseCase.RefreshPaymentStatus")
 
 	defer span.End()
 
-	err = m.next.SetDefaultCard(ctx, cardID, userID, idempotencyKey)
+	s1, err = m.next.RefreshPaymentStatus(ctx, paymentID)
 
 	if err != nil {
 		span.RecordError(err)
@@ -149,14 +149,14 @@ func (m PaymentUseCaseTracingMiddleware) SetDefaultCard(ctx context.Context, car
 	return
 }
 
-// RefreshPaymentStatus трассирует выполнение метода RefreshPaymentStatus
-func (m PaymentUseCaseTracingMiddleware) RefreshPaymentStatus(ctx context.Context, paymentID string) (s1 string, err error) {
+// SetDefaultCard трассирует выполнение метода SetDefaultCard
+func (m PaymentUseCaseTracingMiddleware) SetDefaultCard(ctx context.Context, cardID string, userID int64, idempotencyKey string) (err error) {
 
-	ctx, span := m.tracer.Start(ctx, "PaymentUseCase.RefreshPaymentStatus")
+	ctx, span := m.tracer.Start(ctx, "PaymentUseCase.SetDefaultCard")
 
 	defer span.End()
 
-	s1, err = m.next.RefreshPaymentStatus(ctx, paymentID)
+	err = m.next.SetDefaultCard(ctx, cardID, userID, idempotencyKey)
 
 	if err != nil {
 		span.RecordError(err)

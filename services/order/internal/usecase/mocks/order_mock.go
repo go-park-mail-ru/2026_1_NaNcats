@@ -42,6 +42,20 @@ func (m *MockOrderUseCase) EXPECT() *MockOrderUseCaseMockRecorder {
 	return m.recorder
 }
 
+// CancelOrder mocks base method.
+func (m *MockOrderUseCase) CancelOrder(ctx context.Context, orderPublicID string, userID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CancelOrder", ctx, orderPublicID, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CancelOrder indicates an expected call of CancelOrder.
+func (mr *MockOrderUseCaseMockRecorder) CancelOrder(ctx, orderPublicID, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelOrder", reflect.TypeOf((*MockOrderUseCase)(nil).CancelOrder), ctx, orderPublicID, userID)
+}
+
 // CreateOrder mocks base method.
 func (m *MockOrderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderInput, idempotencyKey string) (string, error) {
 	m.ctrl.T.Helper()
@@ -55,6 +69,21 @@ func (m *MockOrderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrd
 func (mr *MockOrderUseCaseMockRecorder) CreateOrder(ctx, req, idempotencyKey any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrder", reflect.TypeOf((*MockOrderUseCase)(nil).CreateOrder), ctx, req, idempotencyKey)
+}
+
+// GetOrderPaymentID mocks base method.
+func (m *MockOrderUseCase) GetOrderPaymentID(ctx context.Context, orderPublicID string, userID int64) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrderPaymentID", ctx, orderPublicID, userID)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrderPaymentID indicates an expected call of GetOrderPaymentID.
+func (mr *MockOrderUseCaseMockRecorder) GetOrderPaymentID(ctx, orderPublicID, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrderPaymentID", reflect.TypeOf((*MockOrderUseCase)(nil).GetOrderPaymentID), ctx, orderPublicID, userID)
 }
 
 // GetOrders mocks base method.

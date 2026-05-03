@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
+//go:generate mockgen -destination=mocks/support_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/repository SupportRepository
 type SupportRepository interface {
 	// Тикеты
 	CreateTicket(ctx context.Context, input domain.CreateTicketInput) (uuid.UUID, error)

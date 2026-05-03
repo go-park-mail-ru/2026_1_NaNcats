@@ -132,6 +132,23 @@ func (m SupportUseCaseTracingMiddleware) GetMyTickets(ctx context.Context, clien
 	return
 }
 
+// GetStats трассирует выполнение метода GetStats
+func (m SupportUseCaseTracingMiddleware) GetStats(ctx context.Context, agentID int64) (s1 domain.SupportStats, err error) {
+
+	ctx, span := m.tracer.Start(ctx, "SupportUseCase.GetStats")
+
+	defer span.End()
+
+	s1, err = m.next.GetStats(ctx, agentID)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
 // GetTemplates трассирует выполнение метода GetTemplates
 func (m SupportUseCaseTracingMiddleware) GetTemplates(ctx context.Context) (ta1 []domain.Template, err error) {
 

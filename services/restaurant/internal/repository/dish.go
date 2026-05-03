@@ -6,7 +6,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/domain"
 )
 
-//go:generate mockgen -destination=mocks/dish_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/internal/repository DishRepository
+//go:generate mockgen -destination=mocks/dish_repository_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/repository DishRepository
 type DishRepository interface {
 	// GetDishesByRestaurantBrandID возвращает блюда конкретного бренда ресторана
 	GetDishesByRestaurantBrandID(ctx context.Context, restaurantBrandID int64, limit, offset int) ([]domain.Dish, error)
@@ -17,7 +17,7 @@ type DishRepository interface {
 	Delete(ctx context.Context, id int64) error
 }
 
-// ExtendedDishRepository — отдельно от DishRepository, чтобы не ломать tracing-обёртки.
+//go:generate mockgen -destination=mocks/extended_dish_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/repository ExtendedDishRepository
 type ExtendedDishRepository interface {
 	SearchDishes(ctx context.Context, query string, limit int) ([]domain.Dish, error)
 	SearchDishesByBrand(ctx context.Context, brandID int64, query string, limit int) ([]domain.Dish, error)

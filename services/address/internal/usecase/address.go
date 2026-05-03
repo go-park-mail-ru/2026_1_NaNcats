@@ -10,6 +10,7 @@ import (
 )
 
 //go:generate gowrap gen -i AddressUseCase -t ../../../../shared/templates/tracing.tmpl -o address_tracing_mw.go -v TracerName=address-service
+//go:generate mockgen -destination=mocks/address_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/address/internal/usecase AddressUseCase
 type AddressUseCase interface {
 	AddAddress(ctx context.Context, userID int64, addr domain.Address, idempotencyKey string) (string, error)
 	GetMyAddresses(ctx context.Context, userID int64) ([]domain.Address, error)

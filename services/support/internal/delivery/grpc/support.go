@@ -143,9 +143,6 @@ func (h *SupportHandler) SendMessage(ctx context.Context, req *pb.SendMessageReq
 		return nil, grpcutil.ToGRPCError(err)
 	}
 
-	// Так как usecase.AddMessage пока возвращает только ошибку,
-	// отдаем успешный респонс (id и дата сгенерируются в БД)
-	// Для идеальной работы можно доработать usecase, чтобы он возвращал ID созданного эвента
 	return &pb.EventResponse{
 		Id:        0,
 		CreatedAt: timestamppb.Now(),
