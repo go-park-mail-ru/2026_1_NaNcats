@@ -148,3 +148,20 @@ func (m PaymentUseCaseTracingMiddleware) SetDefaultCard(ctx context.Context, car
 
 	return
 }
+
+// RefreshPaymentStatus трассирует выполнение метода RefreshPaymentStatus
+func (m PaymentUseCaseTracingMiddleware) RefreshPaymentStatus(ctx context.Context, paymentID string) (s1 string, err error) {
+
+	ctx, span := m.tracer.Start(ctx, "PaymentUseCase.RefreshPaymentStatus")
+
+	defer span.End()
+
+	s1, err = m.next.RefreshPaymentStatus(ctx, paymentID)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}

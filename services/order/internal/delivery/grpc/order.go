@@ -116,3 +116,18 @@ func (h *OrderHandler) PayForFriend(ctx context.Context, req *pb.PayForFriendReq
 
 	return &pb.PayForFriendResponse{}, nil
 }
+
+func (h *OrderHandler) GetOrderPaymentID(ctx context.Context, req *pb.GetOrderPaymentIDRequest) (*pb.GetOrderPaymentIDResponse, error) {
+	paymentID, err := h.usecase.GetOrderPaymentID(ctx, req.OrderPublicId, req.UserId)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	return &pb.GetOrderPaymentIDResponse{YookassaPaymentId: paymentID}, nil
+}
+
+func (h *OrderHandler) CancelOrder(ctx context.Context, req *pb.CancelOrderRequest) (*emptypb.Empty, error) {
+	if err := h.usecase.CancelOrder(ctx, req.OrderPublicId, req.UserId); err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	return &emptypb.Empty{}, nil
+}

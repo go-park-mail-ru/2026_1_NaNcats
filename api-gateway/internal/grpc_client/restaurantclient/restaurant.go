@@ -3,9 +3,12 @@ package restaurantclient
 import (
 	"context"
 	"errors"
+	"net/url"
+	"strconv"
 
 	pbRestaurant "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -20,6 +23,11 @@ type RestaurantClient interface {
 	GetDishesByRestaurantBrandID(ctx context.Context, brandID int64, limit, offset int32) ([]*pbRestaurant.Dish, error)
 	GetDishesByIDs(ctx context.Context, dishIDs []int64) ([]*pbRestaurant.Dish, error)
 	GetRestaurantLogos(ctx context.Context, brandIDs []int64) (map[int64]string, error)
+	GetRestaurantBrandsListByCategory(ctx context.Context, categoryID int64, limit, offset int32) ([]*pbRestaurant.RestaurantBrand, error)
+	GetRestaurantBrandsListByCategoryName(ctx context.Context, categoryName string, limit, offset int32) ([]*pbRestaurant.RestaurantBrand, error)
+	SearchRestaurantBrands(ctx context.Context, query string, limit, offset int32) ([]*pbRestaurant.RestaurantBrand, error)
+	SearchDishes(ctx context.Context, query string, limit int32) ([]*pbRestaurant.Dish, error)
+	SearchDishesByBrand(ctx context.Context, brandID int64, query string, limit int32) ([]*pbRestaurant.Dish, error)
 }
 
 type restaurantClient struct {
@@ -175,4 +183,78 @@ func (c *restaurantClient) UpdateDish(ctx context.Context, id int64, name, desc 
 func (c *restaurantClient) DeleteDish(ctx context.Context, id int64) error {
 	_, err := c.client.DeleteDish(ctx, &pbRestaurant.DeleteDishRequest{Id: id})
 	return err
+}
+
+// GetRestaurantBrandsListByCategory fetches brands filtered by category via gRPC metadata.
+func (c *restaurantClient) GetRestaurantBrandsListByCategory(ctx context.Context, categoryID int64, limit, offset int32) ([]*pbRestaurant.RestaurantBrand, error) {
+	md := metadata.New(map[string]string{"x-category-id": strconv.FormatInt(categoryID, 10)})
+	ctx = metadata.NewOutgoingContext(ctx, md)
+	resp, err := c.client.GetRestaurantBrandsList(ctx, &pbRestaurant.GetRestaurantBrandsListRequest{
+		Limit:  limit,
+		Offset: offset,
+	})
+	if err != nil {
+		return nil, ErrInternal
+	}
+	return resp.RestaurantBrands, nil
+}
+
+// GetRestaurantBrandsListByCategoryName fetches brands filtered by category name via gRPC metadata
+// (URL-encoded since gRPC metadata only supports ASCII for non-binary keys).
+func (c *restaurantClient) GetRestaurantBrandsListByCategoryName(ctx context.Context, categoryName string, limit, offset int32) ([]*pbRestaurant.RestaurantBrand, error) {
+	md := metadata.New(map[string]string{"x-category-name": url.QueryEscape(categoryName)})
+	ctx = metadata.NewOutgoingContext(ctx, md)
+	resp, err := c.client.GetRestaurantBrandsList(ctx, &pbRestaurant.GetRestaurantBrandsListRequest{
+		Limit:  limit,
+		Offset: offset,
+	})
+	if err != nil {
+		return nil, ErrInternal
+	}
+	return resp.RestaurantBrands, nil
+}
+
+// SearchRestaurantBrands searches brands by name/description via gRPC metadata
+// (URL-encoded to support non-ASCII queries like Cyrillic).
+func (c *restaurantClient) SearchRestaurantBrands(ctx context.Context, query string, limit, offset int32) ([]*pbRestaurant.RestaurantBrand, error) {
+	md := metadata.New(map[string]string{"x-search-query": url.QueryEscape(query)})
+	ctx = metadata.NewOutgoingContext(ctx, md)
+	resp, err := c.client.GetRestaurantBrandsList(ctx, &pbRestaurant.GetRestaurantBrandsListRequest{
+		Limit:  limit,
+		Offset: offset,
+	})
+	if err != nil {
+		return nil, ErrInternal
+	}
+	return resp.RestaurantBrands, nil
+}
+
+// SearchDishes — глобальный поиск блюд (через GetDishesByIDs + metadata).
+func (c *restaurantClient) SearchDishes(ctx context.Context, query string, limit int32) ([]*pbRestaurant.Dish, error) {
+	md := metadata.New(map[string]string{
+		"x-dish-search":       url.QueryEscape(query),
+		"x-dish-search-limit": strconv.Itoa(int(limit)),
+	})
+	ctx = metadata.NewOutgoingContext(ctx, md)
+	// dish_ids передаём пустыми — handler их игнорирует при наличии x-dish-search.
+	resp, err := c.client.GetDishesByIDs(ctx, &pbRestaurant.GetDishesByIDsRequest{DishIds: []int64{}})
+	if err != nil {
+		return nil, ErrInternal
+	}
+	return resp.Dishes, nil
+}
+
+// SearchDishesByBrand — поиск блюд внутри одного ресторана.
+func (c *restaurantClient) SearchDishesByBrand(ctx context.Context, brandID int64, query string, limit int32) ([]*pbRestaurant.Dish, error) {
+	md := metadata.New(map[string]string{"x-dish-search": url.QueryEscape(query)})
+	ctx = metadata.NewOutgoingContext(ctx, md)
+	resp, err := c.client.GetDishesByRestaurantBrandID(ctx, &pbRestaurant.GetDishesByRestaurantBrandIDRequest{
+		RestaurantBrandId: brandID,
+		Limit:             limit,
+		Offset:            0,
+	})
+	if err != nil {
+		return nil, ErrInternal
+	}
+	return resp.Dishes, nil
 }

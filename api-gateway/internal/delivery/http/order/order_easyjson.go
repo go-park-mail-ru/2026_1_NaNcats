@@ -731,3 +731,90 @@ func (v *CreateOrderRequest) UnmarshalJSON(data []byte) error {
 func (v *CreateOrderRequest) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpOrder5(l, v)
 }
+func easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpOrder6(in *jlexer.Lexer, out *CheckPaymentResponse) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		switch key {
+		case "order_id":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.OrderID = string(in.String())
+			}
+		case "payment_id":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.PaymentID = string(in.String())
+			}
+		case "payment_status":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.PaymentStatus = string(in.String())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson120d1ca2EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpOrder6(out *jwriter.Writer, in CheckPaymentResponse) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"order_id\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.OrderID))
+	}
+	{
+		const prefix string = ",\"payment_id\":"
+		out.RawString(prefix)
+		out.String(string(in.PaymentID))
+	}
+	{
+		const prefix string = ",\"payment_status\":"
+		out.RawString(prefix)
+		out.String(string(in.PaymentStatus))
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v CheckPaymentResponse) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson120d1ca2EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpOrder6(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v CheckPaymentResponse) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson120d1ca2EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpOrder6(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *CheckPaymentResponse) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpOrder6(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *CheckPaymentResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpOrder6(l, v)
+}

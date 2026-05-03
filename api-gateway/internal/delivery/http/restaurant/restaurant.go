@@ -10,7 +10,68 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/restaurantclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
+	pbRestaurant "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
 )
+
+// hardcoded categories list — matches seed data in migration 000002/000003
+var hardcodedCategories = []CategoryResponse{
+	{ID: "popular", Name: "Популярное", Emoji: "🔥"},
+	{ID: "pizza", Name: "Пицца", Emoji: "🍕"},
+	{ID: "sushi", Name: "Суши", Emoji: "🍣"},
+	{ID: "burgers", Name: "Бургеры", Emoji: "🍔"},
+	{ID: "desserts", Name: "Десерты", Emoji: "🍰"},
+	{ID: "breakfast", Name: "Завтраки", Emoji: "🍳"},
+	{ID: "health", Name: "Здоровье", Emoji: "🥦"},
+	{ID: "coffee", Name: "Кофе", Emoji: "☕"},
+	{ID: "steaks", Name: "Стейки", Emoji: "🥩"},
+	{ID: "pasta", Name: "Паста", Emoji: "🍝"},
+	{ID: "asian", Name: "Азиатская кухня", Emoji: "🥢"},
+	{ID: "seafood", Name: "Морепродукты", Emoji: "🦞"},
+	{ID: "fastfood", Name: "Фастфуд", Emoji: "🍟"},
+	{ID: "russian", Name: "Русская кухня", Emoji: "🇷🇺"},
+	{ID: "chinese", Name: "Китайская кухня", Emoji: "🥠"},
+	{ID: "georgian", Name: "Грузинская кухня", Emoji: "🥙"},
+	{ID: "home", Name: "Домашняя кухня", Emoji: "🏠"},
+	{ID: "bread", Name: "Хлеб и выпечка", Emoji: "🥖"},
+	{ID: "salads", Name: "Салаты", Emoji: "🥗"},
+	{ID: "soups", Name: "Супы", Emoji: "🥣"},
+}
+
+// categoryIDMap maps slug IDs to DB category names for lookup
+var categoryNameMap = map[string]string{
+	"popular":   "Популярное",
+	"pizza":     "Пицца",
+	"sushi":     "Суши",
+	"burgers":   "Бургеры",
+	"desserts":  "Десерты",
+	"breakfast": "Завтраки",
+	"health":    "Здоровье",
+	"coffee":    "Кофе",
+	"steaks":    "Стейки",
+	"pasta":     "Паста",
+	"asian":     "Азиатская кухня",
+	"seafood":   "Морепродукты",
+	"fastfood":  "Фастфуд",
+	"russian":   "Русская",
+	"chinese":   "Китайская",
+	"georgian":  "Грузинская кухня",
+	"home":      "Домашняя кухня",
+	"bread":     "Хлеб и выпечка",
+	"salads":    "Салаты",
+	"soups":     "Супы",
+}
+
+//easyjson:json
+type CategoryResponse struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Emoji string `json:"emoji"`
+}
+
+//easyjson:json
+type CategoriesResponse struct {
+	Categories []CategoryResponse `json:"categories"`
+}
 
 //easyjson:json
 type RestaurantBrandResponse struct {
@@ -38,6 +99,27 @@ type DishResponse struct {
 //easyjson:json
 type DishesResponse struct {
 	Dishes []DishResponse `json:"dishes"`
+}
+
+// DishWithBrand расширяет DishResponse полем restaurant_brand_id —
+// нужно для search-результатов, чтобы фронт мог отрисовать ссылку на ресторан.
+//
+//easyjson:json
+type DishWithBrand struct {
+	ID                string `json:"id"`
+	Name              string `json:"name"`
+	Description       string `json:"description"`
+	ImageURL          string `json:"image_url"`
+	Price             int64  `json:"price"`
+	RestaurantBrandID string `json:"restaurant_brand_id"`
+}
+
+// SearchAllResponse — общий ответ глобального поиска: рестораны и блюда вместе.
+//
+//easyjson:json
+type SearchAllResponse struct {
+	Restaurants []RestaurantBrandResponse `json:"restaurants"`
+	Dishes      []DishWithBrand           `json:"dishes"`
 }
 type RestaurantHandler struct {
 	restaurantClient restaurantclient.RestaurantClient
@@ -150,7 +232,16 @@ func (h *RestaurantHandler) GetDishesByRestaurantBrandID(w http.ResponseWriter, 
 		}
 	}
 
-	dishes, err := h.restaurantClient.GetDishesByRestaurantBrandID(ctx, brandID, int32(limit), int32(offset))
+	// Если задан ?q=... — это поиск блюд внутри ресторана.
+	searchQuery := query.Get("q")
+	var (
+		dishes []*pbRestaurant.Dish
+	)
+	if searchQuery != "" {
+		dishes, err = h.restaurantClient.SearchDishesByBrand(ctx, brandID, searchQuery, int32(limit))
+	} else {
+		dishes, err = h.restaurantClient.GetDishesByRestaurantBrandID(ctx, brandID, int32(limit), int32(offset))
+	}
 	if err != nil {
 		if errors.Is(err, restaurantclient.ErrNotFound) {
 			response.Error(w, http.StatusNotFound, "Dishes or Restaurant not found")
@@ -173,4 +264,148 @@ func (h *RestaurantHandler) GetDishesByRestaurantBrandID(w http.ResponseWriter, 
 	}
 
 	response.JSON(w, http.StatusOK, DishesResponse{Dishes: dtoList})
+}
+
+// GetCategories returns the hardcoded list of restaurant categories.
+func (h *RestaurantHandler) GetCategories(w http.ResponseWriter, r *http.Request) {
+	response.JSON(w, http.StatusOK, CategoriesResponse{Categories: hardcodedCategories})
+}
+
+// GetRestaurantBrandsListByCategory filters brands by category slug.
+func (h *RestaurantHandler) GetRestaurantBrandsListByCategory(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
+
+	categorySlug := r.PathValue("slug")
+	if categorySlug == "" {
+		response.Error(w, http.StatusBadRequest, "Missing category slug")
+		return
+	}
+
+	// Find DB category id by slug name
+	// For simplicity, we pass the slug directly as a search query by category name to the service
+	// The service maps the category name to ID via SQL
+	// We'll use a temporary approach: get brands by slug using metadata-based gRPC filter
+	// Since we don't have DB IDs here, we pass the category NAME as x-category-name metadata
+	// and the service filters by name JOIN
+	//
+	// Alternative approach: just use the category name as a search filter for restaurant names
+	// For now, we just return all restaurants filtered by name pattern matching the category
+
+	limit := 20
+	offset := 0
+	query := r.URL.Query()
+	if qLimit := query.Get("limit"); qLimit != "" {
+		if val, err := strconv.Atoi(qLimit); err == nil && val > 0 {
+			limit = val
+		}
+	}
+	if qOffset := query.Get("offset"); qOffset != "" {
+		if val, err := strconv.Atoi(qOffset); err == nil && val >= 0 {
+			offset = val
+		}
+	}
+
+	catName := categoryNameMap[categorySlug]
+	if catName == "" {
+		// Unknown category — return all brands
+		brands, err := h.restaurantClient.GetRestaurantBrandsList(ctx, int32(limit), int32(offset))
+		if err != nil {
+			l.Error("failed to get brands list", err)
+			response.Error(w, http.StatusInternalServerError, "Internal server error")
+			return
+		}
+		dtoList := make([]RestaurantBrandResponse, 0, len(brands))
+		for _, b := range brands {
+			dtoList = append(dtoList, RestaurantBrandResponse{
+				ID: strconv.FormatInt(b.Id, 10), Name: b.Name,
+				Description: b.Description, PromotionTier: int(b.PromotionTier), LogoURL: b.LogoUrl,
+			})
+		}
+		response.JSON(w, http.StatusOK, RestaurantBrandsResponse{RestaurantBrands: dtoList})
+		return
+	}
+
+	// Filter by category name using JOIN on restaurant_brand_category table.
+	// Pass via gRPC metadata (URL-encoded) since proto can't be regenerated easily.
+	brands, err := h.restaurantClient.GetRestaurantBrandsListByCategoryName(ctx, catName, int32(limit), int32(offset))
+	if err != nil {
+		l.Error("failed to get brands by category name", err)
+		response.Error(w, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+
+	dtoList := make([]RestaurantBrandResponse, 0, len(brands))
+	for _, b := range brands {
+		dtoList = append(dtoList, RestaurantBrandResponse{
+			ID: strconv.FormatInt(b.Id, 10), Name: b.Name,
+			Description: b.Description, PromotionTier: int(b.PromotionTier), LogoURL: b.LogoUrl,
+		})
+	}
+	response.JSON(w, http.StatusOK, RestaurantBrandsResponse{RestaurantBrands: dtoList})
+}
+
+// SearchRestaurants searches restaurants and dishes by query string.
+func (h *RestaurantHandler) SearchRestaurants(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
+
+	q := r.URL.Query().Get("q")
+	if q == "" {
+		response.Error(w, http.StatusBadRequest, "Missing search query")
+		return
+	}
+
+	limit := 20
+	offset := 0
+	query := r.URL.Query()
+	if qLimit := query.Get("limit"); qLimit != "" {
+		if val, err := strconv.Atoi(qLimit); err == nil && val > 0 {
+			limit = val
+		}
+	}
+	if qOffset := query.Get("offset"); qOffset != "" {
+		if val, err := strconv.Atoi(qOffset); err == nil && val >= 0 {
+			offset = val
+		}
+	}
+
+	// Параллельно ищем рестораны и блюда. Если одно из направлений падает,
+	// просто возвращаем пустой список — UX важнее, чем 500.
+	brands, err := h.restaurantClient.SearchRestaurantBrands(ctx, q, int32(limit), int32(offset))
+	if err != nil {
+		l.Error("failed to search restaurants", err)
+		brands = nil
+	}
+
+	dishes, err := h.restaurantClient.SearchDishes(ctx, q, int32(limit))
+	if err != nil {
+		l.Error("failed to search dishes", err)
+		dishes = nil
+	}
+
+	brandList := make([]RestaurantBrandResponse, 0, len(brands))
+	for _, b := range brands {
+		brandList = append(brandList, RestaurantBrandResponse{
+			ID: strconv.FormatInt(b.Id, 10), Name: b.Name,
+			Description: b.Description, PromotionTier: int(b.PromotionTier), LogoURL: b.LogoUrl,
+		})
+	}
+
+	dishList := make([]DishWithBrand, 0, len(dishes))
+	for _, d := range dishes {
+		dishList = append(dishList, DishWithBrand{
+			ID:                strconv.FormatInt(d.Id, 10),
+			Name:              d.Name,
+			Description:       d.Description,
+			ImageURL:          d.ImageUrl,
+			Price:             d.Price,
+			RestaurantBrandID: strconv.FormatInt(d.RestaurantBrandId, 10),
+		})
+	}
+
+	response.JSON(w, http.StatusOK, SearchAllResponse{
+		Restaurants: brandList,
+		Dishes:      dishList,
+	})
 }

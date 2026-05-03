@@ -24,6 +24,7 @@ import (
 	orderHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/order"
 	paymentHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/payment"
 	restaurantHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/restaurant"
+	reviewHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/review"
 	supportHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/support"
 	userHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/user"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/rabbitmq"
@@ -177,10 +178,11 @@ func main() {
 	cartHandler := cartHttp.NewCartHandler(cartClient, wsManager, appLogger)
 	addressHandler := addressHttp.NewAddressHandler(addrClient, appLogger)
 	paymentHandler := paymentHttp.NewPaymentHandler(payClient, appLogger)
-	orderHandler := orderHttp.NewOrderHandler(orderClient, wsManager, appLogger)
+	orderHandler := orderHttp.NewOrderHandler(orderClient, payClient, wsManager, appLogger)
 
 	redisHub := supportHttp.NewRedisHub(redisPool, appLogger)
 	supportHandler := supportHttp.NewSupportHandler(supportClient, redisHub, appLogger)
+	reviewHandler := reviewHttp.NewReviewHandler(appLogger)
 
 	reqIDMW := middleware.NewRequestIDMiddleware()
 	loggingMW := middleware.NewLoggingMiddleware(appLogger)
@@ -222,6 +224,13 @@ func main() {
 	mux.HandleFunc("GET /api/restaurants/brands", restaurantHandler.GetRestaurantBrandsList)
 	mux.HandleFunc("GET /api/restaurants/brands/{id}", restaurantHandler.GetRestaurantBrandByID)
 	mux.HandleFunc("GET /api/restaurants/brands/{id}/dishes", restaurantHandler.GetDishesByRestaurantBrandID)
+	mux.HandleFunc("GET /api/restaurants/categories", restaurantHandler.GetCategories)
+	mux.HandleFunc("GET /api/restaurants/categories/{slug}/brands", restaurantHandler.GetRestaurantBrandsListByCategory)
+	mux.HandleFunc("GET /api/restaurants/search", restaurantHandler.SearchRestaurants)
+
+	// === REVIEWS ===
+	mux.HandleFunc("GET /api/reviews/restaurants/{id}", reviewHandler.GetReviews)
+	mux.Handle("POST /api/reviews/restaurants/{id}", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(reviewHandler.CreateReview))))
 
 	// === ADDRESSES ===
 	mux.Handle("POST /api/profile/addresses", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(addressHandler.AddAddress))))
@@ -254,6 +263,8 @@ func main() {
 	mux.Handle("GET /api/profile/orders", authMW.RequireAuth(http.HandlerFunc(orderHandler.GetMyOrders)))
 	mux.Handle("GET /api/ws/orders/{id}", authMW.RequireAuth(http.HandlerFunc(orderHandler.TrackOrderWS)))
 	mux.Handle("POST /api/orders/splits/{id}/pay", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.PayForFriend))))
+	mux.Handle("POST /api/orders/{id}/check-payment", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.CheckPayment))))
+	mux.Handle("POST /api/orders/{id}/cancel", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.CancelOrder))))
 
 	// === SUPPORT ===
 	mux.HandleFunc("GET /api/support/categories", supportHandler.GetCategories)

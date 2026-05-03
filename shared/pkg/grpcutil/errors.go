@@ -37,6 +37,7 @@ func ToGRPCError(err error) error {
 		return status.Error(s.GRPCStatus(), message)
 	}
 
-	// Если это посторонняя ошибка
-	return status.Error(codes.Internal, "INTERNAL_SERVER_ERROR")
+	// Если это посторонняя ошибка — пробрасываем оригинальный текст,
+	// чтобы при дебаге было видно реальную причину.
+	return status.Error(codes.Internal, err.Error())
 }

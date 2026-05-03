@@ -49,8 +49,68 @@ type dishRepo struct {
 	pool postgres.PgxPool
 }
 
-func NewDishRepo(pool postgres.PgxPool) repository.DishRepository {
+func NewDishRepo(pool postgres.PgxPool) repository.DishFullRepository {
 	return &dishRepo{pool: pool}
+}
+
+// Verify interface compliance at compile time.
+var _ repository.ExtendedDishRepository = (*dishRepo)(nil)
+
+// SearchDishes возвращает блюда, в name/description которых встречается query (ILIKE).
+func (r *dishRepo) SearchDishes(ctx context.Context, query string, limit int) ([]domain.Dish, error) {
+	q := `
+		SELECT id, restaurant_brand_id, name, description, image_url, price, created_at, updated_at
+		FROM "dish"
+		WHERE name ILIKE $1 OR description ILIKE $1
+		ORDER BY id ASC
+		LIMIT $2;
+	`
+	pattern := "%" + query + "%"
+	rows, err := r.pool.Query(ctx, q, pattern, limit)
+	if err != nil {
+		return nil, fmt.Errorf("search dishes: %w", err)
+	}
+	defer rows.Close()
+
+	dbDishes, err := pgx.CollectRows(rows, pgx.RowToStructByName[dishDB])
+	if err != nil {
+		return nil, fmt.Errorf("scan search dishes: %w", err)
+	}
+
+	dishes := make([]domain.Dish, 0, len(dbDishes))
+	for _, d := range dbDishes {
+		dishes = append(dishes, d.toDomain())
+	}
+	return dishes, nil
+}
+
+// SearchDishesByBrand — поиск блюд только в пределах одного бренда (для restaurant page).
+func (r *dishRepo) SearchDishesByBrand(ctx context.Context, brandID int64, query string, limit int) ([]domain.Dish, error) {
+	q := `
+		SELECT id, restaurant_brand_id, name, description, image_url, price, created_at, updated_at
+		FROM "dish"
+		WHERE restaurant_brand_id = $1
+		  AND (name ILIKE $2 OR description ILIKE $2)
+		ORDER BY id ASC
+		LIMIT $3;
+	`
+	pattern := "%" + query + "%"
+	rows, err := r.pool.Query(ctx, q, brandID, pattern, limit)
+	if err != nil {
+		return nil, fmt.Errorf("search dishes by brand: %w", err)
+	}
+	defer rows.Close()
+
+	dbDishes, err := pgx.CollectRows(rows, pgx.RowToStructByName[dishDB])
+	if err != nil {
+		return nil, fmt.Errorf("scan search dishes by brand: %w", err)
+	}
+
+	dishes := make([]domain.Dish, 0, len(dbDishes))
+	for _, d := range dbDishes {
+		dishes = append(dishes, d.toDomain())
+	}
+	return dishes, nil
 }
 
 func (r *dishRepo) GetDishesByRestaurantBrandID(ctx context.Context, restaurantBrandID int64, limit, offset int) ([]domain.Dish, error) {

@@ -8,6 +8,7 @@ import (
 
 	wsManager "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/websocket"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/orderclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/paymentclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/request"
@@ -74,17 +75,99 @@ type PayForFriendRequest struct {
 }
 
 type OrderHandler struct {
-	orderClient orderclient.OrderClient
-	wsManager   *wsManager.WsManager
-	logger      logger.Logger
+	orderClient   orderclient.OrderClient
+	paymentClient paymentclient.PaymentClient
+	wsManager     *wsManager.WsManager
+	logger        logger.Logger
 }
 
-func NewOrderHandler(oc orderclient.OrderClient, wsm *wsManager.WsManager, l logger.Logger) *OrderHandler {
+func NewOrderHandler(oc orderclient.OrderClient, pc paymentclient.PaymentClient, wsm *wsManager.WsManager, l logger.Logger) *OrderHandler {
 	return &OrderHandler{
-		orderClient: oc,
-		wsManager:   wsm,
-		logger:      l,
+		orderClient:   oc,
+		paymentClient: pc,
+		wsManager:     wsm,
+		logger:        l,
 	}
+}
+
+//easyjson:json
+type CheckPaymentResponse struct {
+	OrderID       string `json:"order_id"`
+	PaymentID     string `json:"payment_id"`
+	PaymentStatus string `json:"payment_status"`
+}
+
+// CancelOrder — пользователь отменяет свой заказ. Доступно только пока заказ
+// не in_progress / not finished.
+func (h *OrderHandler) CancelOrder(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
+
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	orderID := r.PathValue("id")
+	if orderID == "" {
+		response.Error(w, http.StatusBadRequest, "order id is required")
+		return
+	}
+
+	if err := h.orderClient.CancelOrder(ctx, orderID, userID); err != nil {
+		l.Error("cancel order failed", err)
+		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.JSON(w, http.StatusOK, map[string]string{"status": "cancelled"})
+}
+
+// CheckPayment — для dev-окружения: фронт зовёт эту ручку (например, после
+// возврата с YooKassa или периодически из открытого OrderStatusModal), мы
+// вытягиваем актуальный статус платежа из YooKassa REST и применяем как webhook.
+// Без этого статус заказа не обновится — YooKassa не достучится webhook'ом до
+// localhost.
+func (h *OrderHandler) CheckPayment(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
+
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	orderID := r.PathValue("id")
+	if orderID == "" {
+		response.Error(w, http.StatusBadRequest, "order id is required")
+		return
+	}
+
+	paymentID, err := h.orderClient.GetOrderPaymentID(ctx, orderID, userID)
+	if err != nil {
+		// "payment not ready" — нормальный case (saga ещё не дошла до payment).
+		// Возвращаем 202 чтобы фронт продолжил polling.
+		response.JSON(w, http.StatusAccepted, CheckPaymentResponse{
+			OrderID:       orderID,
+			PaymentStatus: "pending",
+		})
+		return
+	}
+
+	statusStr, err := h.paymentClient.RefreshPaymentStatus(ctx, paymentID)
+	if err != nil {
+		l.Error("refresh payment status failed", err)
+		response.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.JSON(w, http.StatusOK, CheckPaymentResponse{
+		OrderID:       orderID,
+		PaymentID:     paymentID,
+		PaymentStatus: statusStr,
+	})
 }
 
 // CreateOrder godoc
@@ -155,7 +238,9 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		}
 
 		l.Error("order creation failed via grpc", err)
-		response.Error(w, http.StatusInternalServerError, "Something went wrong")
+		// Пробрасываем настоящее сообщение из ошибки — иначе фронт получает
+		// бессмысленное «Something went wrong» и невозможно понять что чинить.
+		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 

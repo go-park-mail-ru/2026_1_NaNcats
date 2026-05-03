@@ -14,6 +14,9 @@ var (
 	ErrInternal              = errors.New("internal server error")
 )
 
+// PaymentMethod.ID — это yookassa external_id (см. GetUserCards: pbCard.ExternalId).
+// Фронт его получает в /api/profile/cards и отправляет в payment_method_id
+// при создании заказа — YooKassa тогда сразу списывает с этой карты, без формы.
 type PaymentMethod struct {
 	ID         string
 	CardType   string
@@ -38,6 +41,7 @@ type PaymentClient interface {
 	DeleteCard(ctx context.Context, userID int64, cardID string, idempotencyKey string) error
 	ProcessPaymentMethodWebhook(ctx context.Context, id, status, pType string, saved bool, card CardInfo) error
 	ProcessPaymentWebhook(ctx context.Context, id, status string) error
+	RefreshPaymentStatus(ctx context.Context, paymentID string) (string, error)
 }
 
 type paymentClient struct {
@@ -142,4 +146,14 @@ func (c *paymentClient) ProcessPaymentWebhook(ctx context.Context, id, status st
 		return ErrInternal
 	}
 	return nil
+}
+
+func (c *paymentClient) RefreshPaymentStatus(ctx context.Context, paymentID string) (string, error) {
+	resp, err := c.client.RefreshPaymentStatus(ctx, &pbPayment.RefreshPaymentStatusRequest{
+		YookassaPaymentId: paymentID,
+	})
+	if err != nil {
+		return "", ErrInternal
+	}
+	return resp.Status, nil
 }

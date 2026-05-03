@@ -129,12 +129,15 @@ func (r *cartRepo) UnlockCart(ctx context.Context, cartID string) error {
 
 func (r *cartRepo) ClearCart(ctx context.Context, cartID string) error {
 	return r.execWithOutbox(ctx, cartID, "CartCleared", map[string]any{}, func(tx pgx.Tx) error {
-		query := `DELETE FROM "cart_dish" WHERE cart_id = $1`
-		_, err := tx.Exec(ctx, query, cartID)
-		if err != nil {
+		// Чистим блюда И сбрасываем lock — иначе корзина, застрявшая в `locked`
+		// после неудачной оплаты, не может быть восстановлена UI-сценарием
+		// "очистить и начать заново".
+		if _, err := tx.Exec(ctx, `DELETE FROM "cart_dish" WHERE cart_id = $1`, cartID); err != nil {
 			return fmt.Errorf("clear cart dishes: %w", err)
 		}
-
+		if _, err := tx.Exec(ctx, `UPDATE "cart" SET status='active', mode='solo', updated_at=NOW() WHERE cart_id = $1`, cartID); err != nil {
+			return fmt.Errorf("reset cart status: %w", err)
+		}
 		return nil
 	})
 }
@@ -153,6 +156,21 @@ func (r *cartRepo) UpdateCartMode(ctx context.Context, cartID string, mode strin
 		}
 		return nil
 	})
+}
+
+// SetCartRestaurantBrand перепривязывает корзину к другому ресторану.
+// Используется когда пользователь чистит корзину и добавляет блюдо из другого
+// ресторана — корзина "забывает" предыдущий бренд (cart_dish уже пустой).
+func (r *cartRepo) SetCartRestaurantBrand(ctx context.Context, cartID string, brandID int64) error {
+	query := `UPDATE "cart" SET restaurant_brand_id = $1, updated_at = NOW() WHERE cart_id = $2`
+	res, err := r.pool.Exec(ctx, query, brandID, cartID)
+	if err != nil {
+		return fmt.Errorf("update cart brand: %w", err)
+	}
+	if res.RowsAffected() == 0 {
+		return fmt.Errorf("cart not found")
+	}
+	return nil
 }
 
 func (r *cartRepo) DowngradeToSolo(ctx context.Context, cartID string, adminID int64) error {

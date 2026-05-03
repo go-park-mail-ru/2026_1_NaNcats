@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -23,6 +24,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/metrics"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
 
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/infrastructure/autoadvance"
 	orderRabbitMQ "github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/delivery/rabbitmq"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq"
@@ -119,6 +121,12 @@ func main() {
 	if err := orderConsumer.Start(ctx); err != nil {
 		appLogger.Fatal("Failed to start RabbitMQ consumer", err)
 	}
+
+	// Фоновый «симулятор кухни/курьера»: продвигает paid → in_progress →
+	// delivering → finished каждые 15 сек. Нужно для dev/демо, чтобы статусы
+	// обновлялись без реальной интеграции с рестораном/курьерской службой.
+	advancer := autoadvance.New(orderRepo, rabbitClient, 15*time.Second, appLogger)
+	go advancer.Run(ctx)
 
 	cleanup, err := metrics.InitMetrics(ctx, cfg.OTEL.ServiceName, cfg.OTEL.CollectorAddr)
 	if err != nil {

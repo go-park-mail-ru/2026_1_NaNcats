@@ -114,3 +114,37 @@ func (m OrderUseCaseTracingMiddleware) UpdateOrderStatusByPaymentID(ctx context.
 
 	return
 }
+
+// GetOrderPaymentID трассирует выполнение метода GetOrderPaymentID
+func (m OrderUseCaseTracingMiddleware) GetOrderPaymentID(ctx context.Context, orderPublicID string, userID int64) (s1 string, err error) {
+
+	ctx, span := m.tracer.Start(ctx, "OrderUseCase.GetOrderPaymentID")
+
+	defer span.End()
+
+	s1, err = m.next.GetOrderPaymentID(ctx, orderPublicID, userID)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
+// CancelOrder трассирует выполнение метода CancelOrder
+func (m OrderUseCaseTracingMiddleware) CancelOrder(ctx context.Context, orderPublicID string, userID int64) (err error) {
+
+	ctx, span := m.tracer.Start(ctx, "OrderUseCase.CancelOrder")
+
+	defer span.End()
+
+	err = m.next.CancelOrder(ctx, orderPublicID, userID)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}

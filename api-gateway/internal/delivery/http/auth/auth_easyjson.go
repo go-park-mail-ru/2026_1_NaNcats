@@ -224,6 +224,12 @@ func easyjson4a0f95aaDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			} else {
 				out.Name = string(in.String())
 			}
+		case "email":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.Email = string(in.String())
+			}
 		case "avatar_url":
 			if in.IsNull() {
 				in.Skip()
@@ -254,6 +260,11 @@ func easyjson4a0f95aaEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		const prefix string = ",\"name\":"
 		out.RawString(prefix[1:])
 		out.String(string(in.Name))
+	}
+	{
+		const prefix string = ",\"email\":"
+		out.RawString(prefix)
+		out.String(string(in.Email))
 	}
 	{
 		const prefix string = ",\"avatar_url\":"

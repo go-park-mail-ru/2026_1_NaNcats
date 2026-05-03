@@ -14,6 +14,12 @@ DB_PASSWORD ?= password
 DB_HOST ?= localhost
 DB_PORT ?= 5432
 
+# Дефолты для брокеров / кэша. Чтобы локальный шелл с DATABASE_URL=...nancats или
+# другими env-переменными не «перебивал» yaml-конфиги микросервисов.
+# Можно переопределить через .env или через `make VAR=... run`.
+RABBITMQ_URL ?= amqp://guest:guest@localhost:5672/
+REDIS_URL ?= redis://localhost:6379/0
+
 MICROSERVICES = auth user restaurant cart address payment order support
 ALL_SERVICES = $(MICROSERVICES) api-gateway
 
@@ -32,15 +38,27 @@ run-all:
 	done
 	@echo "Все сервисы запущены в фоне, логи и PID процессов в директории .tmp_pids/"
 
-# Запуск конкретного сервиса
+# Запуск конкретного сервиса.
+#
+# Каждому сервису явно прокидываем DATABASE_URL/RABBITMQ_URL/REDIS_URL, чтобы
+# случайные env-переменные из шелла (например, `DATABASE_URL=postgres://...nancats`,
+# оставшаяся от другого окружения) не «перебивали» yaml-конфиги. Префикс `VAR=...`
+# у nohup переопределяет наследуемое значение для дочернего процесса.
 run:
 	@if [ -z "$(s)" ]; then echo "Укажите сервис"; exit 1; fi
-	@if [ -f .tmp_pids/$(s).pid]; then echo "Сервис уже запущен"; exit 1; fi
+	@if [ -f .tmp_pids/$(s).pid ]; then echo "Сервис уже запущен"; exit 1; fi
 	@echo "Запускаем..."
 	@if [ "$(s)" = "api-gateway" ]; then \
-		CONFIG_PATH=api-gateway/config.yaml nohup go run $(GATEWAY_PKG) > .tmp_pids/$(s).log 2>&1 & echo $$! > .tmp_pids/$(s).pid; \
+		CONFIG_PATH=api-gateway/config.yaml \
+		RABBITMQ_URL='$(RABBITMQ_URL)' \
+		REDIS_URL='$(REDIS_URL)' \
+		nohup go run $(GATEWAY_PKG) > .tmp_pids/$(s).log 2>&1 & echo $$! > .tmp_pids/$(s).pid; \
 	else \
-		CONFIG_PATH=services/$(s)/config.yaml nohup go run ./services/$(s)/cmd/main.go > .tmp_pids/$(s).log 2>&1 & echo $$! > .tmp_pids/$(s).pid; \
+		CONFIG_PATH=services/$(s)/config.yaml \
+		DATABASE_URL='$(call get_db_url,$(s))' \
+		RABBITMQ_URL='$(RABBITMQ_URL)' \
+		REDIS_URL='$(REDIS_URL)' \
+		nohup go run ./services/$(s)/cmd/main.go > .tmp_pids/$(s).log 2>&1 & echo $$! > .tmp_pids/$(s).pid; \
 	fi
 	@echo "Запуск $(s) завершен"
 
@@ -62,16 +80,38 @@ stop-all:
 	done
 	@echo "Все сервисы остановлены"
 
-# Остановка конкретного сервиса
+# Маппинг service -> port (нужен, чтобы при stop добить и дочерний бинарь,
+# который go run спавнит в процесс-обёртку. Без этого `make stop && make run`
+# оставляет старый бинарь висеть на порту, и новая версия кода не подхватывается).
+PORT_api-gateway = 8080
+PORT_address     = 50051
+PORT_user        = 50052
+PORT_restaurant  = 50053
+PORT_auth        = 50054
+PORT_cart        = 50055
+PORT_payment     = 50056
+PORT_order       = 50057
+PORT_support     = 50058
+
+# Остановка конкретного сервиса.
+# Убиваем И обёртку `go run` (по pid-файлу), И дочерний бинарь (по порту),
+# иначе при `make stop && make run` старый бинарь остаётся висеть.
 stop:
 	@if [ -z "$(s)" ]; then echo "Укажите сервис"; exit 1; fi
 	@if [ -f .tmp_pids/$(s).pid ]; then \
 		kill -15 `cat .tmp_pids/$(s).pid` 2>/dev/null || true; \
 		rm -f .tmp_pids/$(s).pid; \
-		echo "Сервис $(s) остановлен"; \
-	else \
-		echo "Сервис $(s) не запущен"; \
 	fi
+	@PORT=$(PORT_$(s)); \
+	if [ -n "$$PORT" ]; then \
+		CHILD_PID=$$(lsof -ti :$$PORT 2>/dev/null | head -1); \
+		if [ -n "$$CHILD_PID" ]; then \
+			kill -15 $$CHILD_PID 2>/dev/null || true; \
+			sleep 1; \
+			if kill -0 $$CHILD_PID 2>/dev/null; then kill -9 $$CHILD_PID 2>/dev/null || true; fi; \
+		fi; \
+	fi
+	@echo "Сервис $(s) остановлен"
 
 DC = docker compose
 

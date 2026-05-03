@@ -10,10 +10,13 @@ import (
 )
 
 var (
-	ErrInvalidCart = errors.New("invalid cart data (wrong quantity or multiple restaurants)")
-	ErrForbidden   = errors.New("forbidden")
-	ErrNotFound    = errors.New("not found")
-	ErrInternal    = errors.New("internal server error")
+	ErrInvalidCart         = errors.New("invalid cart data (wrong quantity or multiple restaurants)")
+	ErrMultipleRestaurants = errors.New("dish belongs to a different restaurant")
+	ErrInvalidQuantity     = errors.New("invalid dish quantity")
+	ErrCartLocked          = errors.New("cart is locked")
+	ErrForbidden           = errors.New("forbidden")
+	ErrNotFound            = errors.New("not found")
+	ErrInternal            = errors.New("internal server error")
 )
 
 // --- Внутренние модели BFF ---
@@ -230,7 +233,21 @@ func mapError(err error) error {
 	}
 	switch st.Code() {
 	case codes.InvalidArgument:
-		return ErrInvalidCart
+		// gRPC status message содержит slug из errutil (см. grpcutil.ToGRPCError):
+		// MULTIPLE_RESTAURANTS / INVALID_QUANTITY и т.п.
+		switch st.Message() {
+		case "MULTIPLE_RESTAURANTS":
+			return ErrMultipleRestaurants
+		case "INVALID_QUANTITY":
+			return ErrInvalidQuantity
+		default:
+			return ErrInvalidCart
+		}
+	case codes.FailedPrecondition:
+		if st.Message() == "CART_LOCKED" {
+			return ErrCartLocked
+		}
+		return ErrInternal
 	case codes.PermissionDenied:
 		return ErrForbidden
 	case codes.NotFound:

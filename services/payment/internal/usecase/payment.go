@@ -32,6 +32,7 @@ type PaymentUseCase interface {
 
 	ProcessPaymentMethodWebhook(ctx context.Context, paymentMethod *yookassa.WebhookPaymentMethodObject) error
 	ProcessPaymentWebhook(ctx context.Context, payment *yookassa.WebhookPaymentObject) error
+	RefreshPaymentStatus(ctx context.Context, paymentID string) (string, error)
 }
 
 type paymentUseCase struct {
@@ -75,13 +76,16 @@ func (p *paymentUseCase) CreatePayment(ctx context.Context, amount int64, paymen
 		SavePaymentMethod: false,
 	}
 
-	paymentRequest.Confirmation = &yookassa.CreatePaymentRequestConfirmation{
-		Type:      "redirect",
-		ReturnURL: p.returnURL,
-	}
-
 	if paymentMethodID != "" {
+		// Платёж по сохранённой карте: YooKassa списывает сразу без формы.
+		// Confirmation не указываем — пользователю не нужен редирект.
 		paymentRequest.PaymentMethodID = paymentMethodID
+	} else {
+		// Новая карта — стандартный redirect-flow на YooKassa форму.
+		paymentRequest.Confirmation = &yookassa.CreatePaymentRequestConfirmation{
+			Type:      "redirect",
+			ReturnURL: p.returnURL,
+		}
 	}
 
 	paymentResponse, err := p.yookassaClient.CreatePayment(ctx, paymentRequest, idempotencyKey)
@@ -255,6 +259,38 @@ func (p *paymentUseCase) ProcessPaymentMethodWebhook(ctx context.Context, pm *yo
 	}
 
 	return nil
+}
+
+// RefreshPaymentStatus тянет актуальный статус из YooKassa REST и применяет
+// его как обычный webhook (через ProcessPaymentWebhook). Используется когда
+// YooKassa-вебхук не доходит до нашего сервера (например, dev на localhost).
+func (p *paymentUseCase) RefreshPaymentStatus(ctx context.Context, paymentID string) (string, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(attribute.String("payment.external_id", paymentID))
+
+	if paymentID == "" {
+		return "", errutil.Wrap("PAYMENT_INVALID_DATA", "payment id is empty", errors.New("empty payment id"), codes.InvalidArgument)
+	}
+
+	resp, err := p.yookassaClient.GetPayment(ctx, paymentID)
+	if err != nil {
+		if errors.Is(err, yookassa.ErrNotFound) {
+			return "", errutil.Wrap("PAYMENT_NOT_FOUND", "payment not found in yookassa", err, codes.NotFound)
+		}
+		return "", errutil.Internal("failed to fetch payment from yookassa", err)
+	}
+
+	span.SetAttributes(attribute.String("payment.status", resp.Status))
+
+	// Применяем тот же путь, что и для веб-хука
+	if err := p.ProcessPaymentWebhook(ctx, &yookassa.WebhookPaymentObject{
+		ID:     resp.ID,
+		Status: resp.Status,
+	}); err != nil {
+		return resp.Status, err
+	}
+
+	return resp.Status, nil
 }
 
 func (p *paymentUseCase) ProcessPaymentWebhook(ctx context.Context, payment *yookassa.WebhookPaymentObject) error {

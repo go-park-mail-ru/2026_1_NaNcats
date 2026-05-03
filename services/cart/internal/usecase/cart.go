@@ -4,15 +4,12 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"errors"
 	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/repository"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-
-	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
 )
 
 //go:generate mockgen -destination=mocks/restaurant_client_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/usecase RestaurantClient
@@ -80,7 +77,13 @@ func (u *cartUseCase) GetCart(ctx context.Context, userID int64) (domain.Cart, i
 
 	dishes, err := u.restaurantClient.GetDishesByIDs(ctx, dishIDs)
 	if err != nil {
-		return domain.Cart{}, 0, errutil.Internal("failed to fetch dishes info from restaurant service", err)
+		// Не валим всю ручку — возвращаем корзину без обогащённых данных.
+		// Иначе при недоступности restaurant-сервиса (или временной ошибке)
+		// фронт не может ни прочитать корзину, ни добавить новый товар.
+		span.AddEvent("dishes_enrichment_failed", trace.WithAttributes(
+			attribute.String("error", err.Error()),
+		))
+		return cart, 0, nil
 	}
 
 	dishMap := make(map[int64]domain.Dish)
@@ -156,8 +159,23 @@ func (u *cartUseCase) LockCart(ctx context.Context, cartID string, userID int64,
 		}
 	}
 
-	// Просто лочим корзину (Outbox сгенерирует ивент CartLocked)
-	return u.cartRepo.LockCart(ctx, cartID)
+	// Сначала лочим (саге нужен ивент CartLocked для перехода к payment),
+	// потом сразу очищаем — корзина больше не нужна, все данные заказа
+	// уже в order_db. Это позволяет пользователю оформлять следующий заказ
+	// не дожидаясь завершения оплаты предыдущего и не висеть с залоченной
+	// корзиной если saga умрёт где-то в payment.
+	if err := u.cartRepo.LockCart(ctx, cartID); err != nil {
+		return err
+	}
+	if err := u.cartRepo.ClearCart(ctx, cartID); err != nil {
+		// Не валим всю сагу — ивент CartLocked уже отправлен. Очистка
+		// неудалась — корзина останется пустой+locked, фронт сам разлочит
+		// через CART_LOCKED auto-recover при следующей попытке добавить.
+		span.AddEvent("post_lock_clear_failed", trace.WithAttributes(
+			attribute.String("error", err.Error()),
+		))
+	}
+	return nil
 }
 
 func (u *cartUseCase) UnlockCart(ctx context.Context, cartID string, userID int64, idempotencyKey string) error {
@@ -341,7 +359,7 @@ func (u *cartUseCase) AddItem(ctx context.Context, cartID string, userID, dishID
 			return domain.ErrForbidden
 		}
 		if cart.Status != domain.CartStatusActive {
-			return errors.New("cart is locked")
+			return domain.ErrCartLocked
 		}
 	} else {
 		cart, err = u.cartRepo.GetActiveCartByUserID(ctx, userID)
@@ -365,7 +383,18 @@ func (u *cartUseCase) AddItem(ctx context.Context, cartID string, userID, dishID
 	}
 
 	if cart.RestaurantBrandID != dishBrandID {
-		return domain.ErrMultipleRestaurants
+		// Пустая корзина может быть привязана к ресторану от прошлой попытки
+		// (после ClearCart cart_dish=∅ но restaurant_brand_id остаётся).
+		// Перепривязываем к ресторану нового блюда — это корректно, так как
+		// корзина буквально пустая и ничего не теряем.
+		if len(cart.Items) == 0 {
+			if err := u.cartRepo.SetCartRestaurantBrand(ctx, cartID, dishBrandID); err != nil {
+				return err
+			}
+			cart.RestaurantBrandID = dishBrandID
+		} else {
+			return domain.ErrMultipleRestaurants
+		}
 	}
 
 	item := domain.CartItem{

@@ -245,8 +245,23 @@ func (h *CartHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 			response.Error(w, http.StatusForbidden, "you have no rights to add items to this cart")
 			return
 		}
-		if errors.Is(err, cartclient.ErrInvalidCart) {
+		if errors.Is(err, cartclient.ErrMultipleRestaurants) {
+			// 409 Conflict — фронт отдельно обрабатывает (показывает "очистить корзину?")
+			response.Error(w, http.StatusConflict, "MULTIPLE_RESTAURANTS")
+			return
+		}
+		if errors.Is(err, cartclient.ErrCartLocked) {
+			// 409 Conflict — корзина застряла в locked (например, после неудачной оплаты).
+			// Фронт ловит код, чистит корзину (clear работает на locked) и повторяет добавление.
+			response.Error(w, http.StatusConflict, "CART_LOCKED")
+			return
+		}
+		if errors.Is(err, cartclient.ErrInvalidQuantity) {
 			response.Error(w, http.StatusBadRequest, "invalid quantity")
+			return
+		}
+		if errors.Is(err, cartclient.ErrInvalidCart) {
+			response.Error(w, http.StatusBadRequest, "invalid cart data")
 			return
 		}
 

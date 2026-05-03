@@ -75,11 +75,11 @@ func (r *orderRepo) CreateOrder(ctx context.Context, order domain.Order, idempot
 
 	if len(order.Splits) > 0 {
 		splitQuery := `
-			INSERT INTO "order_split" (id, order_id, user_id, amount, status)
-			VALUES ($1, $2, $3, $4, 'pending')
+			INSERT INTO "order_split" (id, order_id, user_id, amount, status, payment_method_id)
+			VALUES ($1, $2, $3, $4, 'pending', $5)
 		`
 		for _, split := range order.Splits {
-			batch.Queue(splitQuery, split.ID, orderID, split.UserID, split.Amount)
+			batch.Queue(splitQuery, split.ID, orderID, split.UserID, split.Amount, split.PaymentMethodID)
 		}
 	}
 
@@ -287,4 +287,31 @@ func (r *orderRepo) GetOrdersByUserID(ctx context.Context, userID int64) ([]doma
 	}
 
 	return orders, nil
+}
+
+// GetOrdersByStatuses — нужен фоновому продвижению (auto-advancer).
+// Возвращает все заказы, чей status входит в переданный список.
+func (r *orderRepo) GetOrdersByStatuses(ctx context.Context, statuses []string) ([]domain.Order, error) {
+	if len(statuses) == 0 {
+		return nil, nil
+	}
+	query := `
+		SELECT id, public_id, admin_account_id, status
+		FROM "order"
+		WHERE status = ANY($1)
+		ORDER BY created_at ASC
+	`
+	rows, err := r.pool.Query(ctx, query, statuses)
+	if err != nil {
+		return nil, fmt.Errorf("query orders by statuses: %w", err)
+	}
+	defer rows.Close()
+	var out []domain.Order
+	for rows.Next() {
+		var o domain.Order
+		if err := rows.Scan(&o.ID, &o.PublicID, &o.AdminID, &o.Status); err == nil {
+			out = append(out, o)
+		}
+	}
+	return out, nil
 }

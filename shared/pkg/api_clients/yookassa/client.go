@@ -81,6 +81,43 @@ func (c *Client) CreatePayment(ctx context.Context, req CreatePaymentRequest, id
 	return &yookassaResponse, nil
 }
 
+// GetPayment получает текущий статус платежа из YooKassa.
+// Используется для poll-механизма, когда YooKassa-вебхук не доходит
+// (например, в dev-окружении на localhost).
+func (c *Client) GetPayment(ctx context.Context, paymentID string) (*PaymentResponse, error) {
+	url := c.baseURL + "/payments/" + paymentID
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create http request: %w", err)
+	}
+	httpReq.SetBasicAuth(c.shopID, c.secretKey)
+
+	resp, err := c.client.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("http request to yookassa failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		switch resp.StatusCode {
+		case http.StatusBadRequest:
+			return nil, ErrBadRequest
+		case http.StatusUnauthorized, http.StatusForbidden:
+			return nil, ErrUnauthorized
+		case http.StatusNotFound:
+			return nil, ErrNotFound
+		default:
+			return nil, fmt.Errorf("yookassa returned error status: %d", resp.StatusCode)
+		}
+	}
+
+	var paymentResp PaymentResponse
+	if err := easyjson.UnmarshalFromReader(resp.Body, &paymentResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal yookassa response: %w", err)
+	}
+	return &paymentResp, nil
+}
+
 func (c *Client) CreatePaymentMethod(ctx context.Context, req CreatePaymentMethodRequest, idempotencyKey string) (*PaymentMethodResponse, error) {
 	data, err := easyjson.Marshal(req)
 	if err != nil {

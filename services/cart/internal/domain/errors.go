@@ -9,6 +9,7 @@ var (
 	ErrInvalidQuantity     = errutil.New("INVALID_QUANTITY", "invalid dish quantity", codes.InvalidArgument)
 	ErrDishNotFound        = errutil.New("DISH_NOT_FOUND", "dish not found", codes.NotFound)
 	ErrMultipleRestaurants = errutil.New("MULTIPLE_RESTAURANTS", "restaurant is different in cart and dish", codes.InvalidArgument)
+	ErrCartLocked          = errutil.New("CART_LOCKED", "cart is locked (payment in progress or stuck)", codes.FailedPrecondition)
 
 	ErrForbidden       = errutil.New("FORBIDDEN", "user has no rights for this operation", codes.PermissionDenied)
 	ErrUnassignedItems = errutil.New("UNASSIGNED_ITEMS", "cart contains orphaned items", codes.FailedPrecondition)

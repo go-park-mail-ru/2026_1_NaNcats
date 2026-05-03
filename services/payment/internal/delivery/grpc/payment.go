@@ -135,3 +135,11 @@ func (h *PaymentHandler) ProcessPaymentWebhook(ctx context.Context, req *pb.Proc
 
 	return &emptypb.Empty{}, nil
 }
+
+func (h *PaymentHandler) RefreshPaymentStatus(ctx context.Context, req *pb.RefreshPaymentStatusRequest) (*pb.RefreshPaymentStatusResponse, error) {
+	statusStr, err := h.usecase.RefreshPaymentStatus(ctx, req.YookassaPaymentId)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	return &pb.RefreshPaymentStatusResponse{Status: statusStr}, nil
+}

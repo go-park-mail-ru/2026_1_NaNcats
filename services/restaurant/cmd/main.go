@@ -90,7 +90,7 @@ func main() {
 	dishUC := restaurantUseCase.NewDishUseCase(dishRepo, cfg.DefaultFoodLogoURL, s3Repo)
 	tracedDishUC := usecase.NewDishUseCaseTracingMiddleware(dishUC)
 
-	restaurantHandler := restaurantDelivery.NewRestaurantHandler(tracedBrandUC, tracedDishUC)
+	restaurantHandler := restaurantDelivery.NewRestaurantHandler(tracedBrandUC, tracedDishUC, brandRepo, dishRepo)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

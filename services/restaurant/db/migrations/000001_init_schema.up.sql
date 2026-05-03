@@ -68,11 +68,13 @@ CREATE TABLE "dish" (
 
 CREATE TABLE "category" (
 	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	
+
 	name TEXT NOT NULL UNIQUE,
+	-- emoji-иконка для отображения в UI; пустая строка по умолчанию.
+	emoji TEXT NOT NULL DEFAULT '',
 
 	idempotency_key TEXT UNIQUE,
-	
+
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );

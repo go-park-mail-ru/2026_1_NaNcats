@@ -3,6 +3,7 @@ package orderclient
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	pbOrder "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/order"
@@ -58,6 +59,8 @@ type OrderClient interface {
 	CreateOrder(ctx context.Context, userID int64, input CreateOrderInput, idempotencyKey string) (string, error)
 	GetOrders(ctx context.Context, userID int64) ([]Order, error)
 	PayForFriend(ctx context.Context, splitID string, payerID int64, paymentMethodID, idempotencyKey string) error
+	GetOrderPaymentID(ctx context.Context, orderPublicID string, userID int64) (string, error)
+	CancelOrder(ctx context.Context, orderPublicID string, userID int64) error
 }
 
 type orderClient struct {
@@ -94,6 +97,9 @@ func (c *orderClient) CreateOrder(ctx context.Context, userID int64, input Creat
 			case codes.InvalidArgument:
 				return "", ErrCartIsEmpty
 			}
+			// Сохраняем оригинальный текст ошибки чтобы выше можно было показать
+			// его пользователю, а не маскировать generic «Something went wrong».
+			return "", fmt.Errorf("order service error: %s", st.Message())
 		}
 		return "", ErrInternal
 	}
@@ -159,5 +165,50 @@ func (c *orderClient) PayForFriend(ctx context.Context, splitID string, payerID 
 		return ErrInternal
 	}
 
+	return nil
+}
+
+func (c *orderClient) GetOrderPaymentID(ctx context.Context, orderPublicID string, userID int64) (string, error) {
+	resp, err := c.client.GetOrderPaymentID(ctx, &pbOrder.GetOrderPaymentIDRequest{
+		OrderPublicId: orderPublicID,
+		UserId:        userID,
+	})
+	if err != nil {
+		st, ok := status.FromError(err)
+		if ok {
+			switch st.Code() {
+			case codes.NotFound:
+				return "", ErrAddressNotFound
+			case codes.PermissionDenied:
+				return "", ErrInternal
+			case codes.FailedPrecondition:
+				// payment ещё не создан — для фронта не катастрофа, retry позже
+				return "", fmt.Errorf("payment not ready: %s", st.Message())
+			}
+		}
+		return "", fmt.Errorf("get order payment id: %w", err)
+	}
+	return resp.YookassaPaymentId, nil
+}
+
+func (c *orderClient) CancelOrder(ctx context.Context, orderPublicID string, userID int64) error {
+	_, err := c.client.CancelOrder(ctx, &pbOrder.CancelOrderRequest{
+		OrderPublicId: orderPublicID,
+		UserId:        userID,
+	})
+	if err != nil {
+		st, ok := status.FromError(err)
+		if ok {
+			switch st.Code() {
+			case codes.NotFound:
+				return ErrAddressNotFound
+			case codes.PermissionDenied:
+				return ErrInternal
+			case codes.FailedPrecondition:
+				return fmt.Errorf("cannot cancel: %s", st.Message())
+			}
+		}
+		return fmt.Errorf("cancel order: %w", err)
+	}
 	return nil
 }

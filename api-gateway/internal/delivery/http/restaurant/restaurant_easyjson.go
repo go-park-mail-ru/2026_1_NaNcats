@@ -17,7 +17,147 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant(in *jlexer.Lexer, out *RestaurantBrandsResponse) {
+func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant(in *jlexer.Lexer, out *SearchAllResponse) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		switch key {
+		case "restaurants":
+			if in.IsNull() {
+				in.Skip()
+				out.Restaurants = nil
+			} else {
+				in.Delim('[')
+				if out.Restaurants == nil {
+					if !in.IsDelim(']') {
+						out.Restaurants = make([]RestaurantBrandResponse, 0, 0)
+					} else {
+						out.Restaurants = []RestaurantBrandResponse{}
+					}
+				} else {
+					out.Restaurants = (out.Restaurants)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v1 RestaurantBrandResponse
+					if in.IsNull() {
+						in.Skip()
+					} else {
+						(v1).UnmarshalEasyJSON(in)
+					}
+					out.Restaurants = append(out.Restaurants, v1)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "dishes":
+			if in.IsNull() {
+				in.Skip()
+				out.Dishes = nil
+			} else {
+				in.Delim('[')
+				if out.Dishes == nil {
+					if !in.IsDelim(']') {
+						out.Dishes = make([]DishWithBrand, 0, 0)
+					} else {
+						out.Dishes = []DishWithBrand{}
+					}
+				} else {
+					out.Dishes = (out.Dishes)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v2 DishWithBrand
+					if in.IsNull() {
+						in.Skip()
+					} else {
+						(v2).UnmarshalEasyJSON(in)
+					}
+					out.Dishes = append(out.Dishes, v2)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant(out *jwriter.Writer, in SearchAllResponse) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"restaurants\":"
+		out.RawString(prefix[1:])
+		if in.Restaurants == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v3, v4 := range in.Restaurants {
+				if v3 > 0 {
+					out.RawByte(',')
+				}
+				(v4).MarshalEasyJSON(out)
+			}
+			out.RawByte(']')
+		}
+	}
+	{
+		const prefix string = ",\"dishes\":"
+		out.RawString(prefix)
+		if in.Dishes == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v5, v6 := range in.Dishes {
+				if v5 > 0 {
+					out.RawByte(',')
+				}
+				(v6).MarshalEasyJSON(out)
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v SearchAllResponse) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v SearchAllResponse) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *SearchAllResponse) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *SearchAllResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant(l, v)
+}
+func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant1(in *jlexer.Lexer, out *RestaurantBrandsResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -47,13 +187,13 @@ func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 					out.RestaurantBrands = (out.RestaurantBrands)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v1 RestaurantBrandResponse
+					var v7 RestaurantBrandResponse
 					if in.IsNull() {
 						in.Skip()
 					} else {
-						(v1).UnmarshalEasyJSON(in)
+						(v7).UnmarshalEasyJSON(in)
 					}
-					out.RestaurantBrands = append(out.RestaurantBrands, v1)
+					out.RestaurantBrands = append(out.RestaurantBrands, v7)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -68,7 +208,7 @@ func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		in.Consumed()
 	}
 }
-func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant(out *jwriter.Writer, in RestaurantBrandsResponse) {
+func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant1(out *jwriter.Writer, in RestaurantBrandsResponse) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -79,11 +219,11 @@ func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v2, v3 := range in.RestaurantBrands {
-				if v2 > 0 {
+			for v8, v9 := range in.RestaurantBrands {
+				if v8 > 0 {
 					out.RawByte(',')
 				}
-				(v3).MarshalEasyJSON(out)
+				(v9).MarshalEasyJSON(out)
 			}
 			out.RawByte(']')
 		}
@@ -94,27 +234,27 @@ func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 // MarshalJSON supports json.Marshaler interface
 func (v RestaurantBrandsResponse) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant(&w, v)
+	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant1(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v RestaurantBrandsResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant(w, v)
+	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant1(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *RestaurantBrandsResponse) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant(&r, v)
+	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant1(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *RestaurantBrandsResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant(l, v)
+	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant1(l, v)
 }
-func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant1(in *jlexer.Lexer, out *RestaurantBrandResponse) {
+func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant2(in *jlexer.Lexer, out *RestaurantBrandResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -168,7 +308,7 @@ func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		in.Consumed()
 	}
 }
-func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant1(out *jwriter.Writer, in RestaurantBrandResponse) {
+func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant2(out *jwriter.Writer, in RestaurantBrandResponse) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -203,27 +343,27 @@ func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 // MarshalJSON supports json.Marshaler interface
 func (v RestaurantBrandResponse) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant1(&w, v)
+	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant2(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v RestaurantBrandResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant1(w, v)
+	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant2(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *RestaurantBrandResponse) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant1(&r, v)
+	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant2(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *RestaurantBrandResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant1(l, v)
+	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant2(l, v)
 }
-func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant2(in *jlexer.Lexer, out *DishesResponse) {
+func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant3(in *jlexer.Lexer, out *DishesResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -253,13 +393,13 @@ func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 					out.Dishes = (out.Dishes)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v4 DishResponse
+					var v10 DishResponse
 					if in.IsNull() {
 						in.Skip()
 					} else {
-						(v4).UnmarshalEasyJSON(in)
+						(v10).UnmarshalEasyJSON(in)
 					}
-					out.Dishes = append(out.Dishes, v4)
+					out.Dishes = append(out.Dishes, v10)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -274,7 +414,7 @@ func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		in.Consumed()
 	}
 }
-func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant2(out *jwriter.Writer, in DishesResponse) {
+func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant3(out *jwriter.Writer, in DishesResponse) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -285,11 +425,11 @@ func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v5, v6 := range in.Dishes {
-				if v5 > 0 {
+			for v11, v12 := range in.Dishes {
+				if v11 > 0 {
 					out.RawByte(',')
 				}
-				(v6).MarshalEasyJSON(out)
+				(v12).MarshalEasyJSON(out)
 			}
 			out.RawByte(']')
 		}
@@ -300,27 +440,147 @@ func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 // MarshalJSON supports json.Marshaler interface
 func (v DishesResponse) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant2(&w, v)
+	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant3(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v DishesResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant2(w, v)
+	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant3(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *DishesResponse) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant2(&r, v)
+	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant3(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *DishesResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant2(l, v)
+	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant3(l, v)
 }
-func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant3(in *jlexer.Lexer, out *DishResponse) {
+func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant4(in *jlexer.Lexer, out *DishWithBrand) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		switch key {
+		case "id":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.ID = string(in.String())
+			}
+		case "name":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.Name = string(in.String())
+			}
+		case "description":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.Description = string(in.String())
+			}
+		case "image_url":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.ImageURL = string(in.String())
+			}
+		case "price":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.Price = int64(in.Int64())
+			}
+		case "restaurant_brand_id":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.RestaurantBrandID = string(in.String())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant4(out *jwriter.Writer, in DishWithBrand) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"id\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.ID))
+	}
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix)
+		out.String(string(in.Name))
+	}
+	{
+		const prefix string = ",\"description\":"
+		out.RawString(prefix)
+		out.String(string(in.Description))
+	}
+	{
+		const prefix string = ",\"image_url\":"
+		out.RawString(prefix)
+		out.String(string(in.ImageURL))
+	}
+	{
+		const prefix string = ",\"price\":"
+		out.RawString(prefix)
+		out.Int64(int64(in.Price))
+	}
+	{
+		const prefix string = ",\"restaurant_brand_id\":"
+		out.RawString(prefix)
+		out.String(string(in.RestaurantBrandID))
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v DishWithBrand) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant4(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v DishWithBrand) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant4(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *DishWithBrand) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant4(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *DishWithBrand) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant4(l, v)
+}
+func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant5(in *jlexer.Lexer, out *DishResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -374,7 +634,7 @@ func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		in.Consumed()
 	}
 }
-func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant3(out *jwriter.Writer, in DishResponse) {
+func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant5(out *jwriter.Writer, in DishResponse) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -409,23 +669,207 @@ func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 // MarshalJSON supports json.Marshaler interface
 func (v DishResponse) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant3(&w, v)
+	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant5(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v DishResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant3(w, v)
+	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant5(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *DishResponse) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant3(&r, v)
+	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant5(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *DishResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant3(l, v)
+	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant5(l, v)
+}
+func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant6(in *jlexer.Lexer, out *CategoryResponse) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		switch key {
+		case "id":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.ID = string(in.String())
+			}
+		case "name":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.Name = string(in.String())
+			}
+		case "emoji":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.Emoji = string(in.String())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant6(out *jwriter.Writer, in CategoryResponse) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"id\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.ID))
+	}
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix)
+		out.String(string(in.Name))
+	}
+	{
+		const prefix string = ",\"emoji\":"
+		out.RawString(prefix)
+		out.String(string(in.Emoji))
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v CategoryResponse) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant6(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v CategoryResponse) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant6(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *CategoryResponse) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant6(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *CategoryResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant6(l, v)
+}
+func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant7(in *jlexer.Lexer, out *CategoriesResponse) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		switch key {
+		case "categories":
+			if in.IsNull() {
+				in.Skip()
+				out.Categories = nil
+			} else {
+				in.Delim('[')
+				if out.Categories == nil {
+					if !in.IsDelim(']') {
+						out.Categories = make([]CategoryResponse, 0, 1)
+					} else {
+						out.Categories = []CategoryResponse{}
+					}
+				} else {
+					out.Categories = (out.Categories)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v13 CategoryResponse
+					if in.IsNull() {
+						in.Skip()
+					} else {
+						(v13).UnmarshalEasyJSON(in)
+					}
+					out.Categories = append(out.Categories, v13)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant7(out *jwriter.Writer, in CategoriesResponse) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"categories\":"
+		out.RawString(prefix[1:])
+		if in.Categories == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v14, v15 := range in.Categories {
+				if v14 > 0 {
+					out.RawByte(',')
+				}
+				(v15).MarshalEasyJSON(out)
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v CategoriesResponse) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant7(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v CategoriesResponse) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant7(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *CategoriesResponse) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant7(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *CategoriesResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpRestaurant7(l, v)
 }
