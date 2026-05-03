@@ -14,6 +14,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/metrics"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/s3"
 	"github.com/joho/godotenv"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -86,7 +87,13 @@ func main() {
 	userRepo := userPG.NewUserRepo(pool)
 	clientProfileRepo := userPG.NewClientProfileRepo(pool)
 
-	userUC := userUsecase.NewUserUseCase(userRepo, s3Repo, cfg.DefaultAvatarURL)
+	rabbitClient, err := rabbitmq.NewRabbitClient(cfg.RabbitMQURL, appLogger)
+	if err != nil {
+		appLogger.Fatal("Failed to connect to RabbitMQ", err)
+	}
+	defer rabbitClient.Close()
+
+	userUC := userUsecase.NewUserUseCase(userRepo, s3Repo, cfg.DefaultAvatarURL, rabbitClient, appLogger)
 	tracedUserUC := usecase.NewUserUseCaseTracingMiddleware(userUC)
 	clientProfileUC := userUsecase.NewClientProfileUseCase(clientProfileRepo)
 	tracedProfileUC := usecase.NewClientProfileUseCaseTracingMiddleware(clientProfileUC)

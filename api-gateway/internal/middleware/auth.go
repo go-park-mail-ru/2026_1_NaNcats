@@ -60,3 +60,38 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctxWithUser))
 	})
 }
+
+func (m *AuthMiddleware) RequireRole(allowedRoles ...string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+
+			userRole, ok := GetUserRole(ctx)
+			if !ok {
+				m.logger.WithContext(ctx).Error("auth mw: role missing from context. ensure RequireAuth is called before RequireRole", nil)
+				response.Error(w, http.StatusInternalServerError, "Internal server error")
+				return
+			}
+
+			isAllowed := false
+			for _, role := range allowedRoles {
+				if userRole == role {
+					isAllowed = true
+					break
+				}
+			}
+
+			if !isAllowed {
+				m.logger.WithContext(ctx).Warn("auth mw: access denied for role",
+					logger.String("user_role", userRole),
+					logger.Any("required_roles", allowedRoles),
+				)
+				response.Error(w, http.StatusForbidden, "Access denied")
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+
+	}
+}

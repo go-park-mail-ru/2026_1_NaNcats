@@ -22,4 +22,6 @@ type UserRepository interface {
 	UpdateProfile(ctx context.Context, userID int64, name, email *string) error
 	// метод для обновления URL аватара
 	UpdateAvatarURL(ctx context.Context, userID int64, newAvatarURL string) error
+	// метод для изменения роли юзера
+	UpdateUserRole(ctx context.Context, userID int64, newRole string, idempotencyKey string) (string, bool, error)
 }

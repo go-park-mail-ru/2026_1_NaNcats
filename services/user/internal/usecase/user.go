@@ -9,7 +9,9 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/repository"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/imageutil"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	passUtil "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/password"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq/events"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/s3"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -26,19 +28,28 @@ type UserUseCase interface {
 	UpdateProfile(ctx context.Context, userID int64, name, email *string, idempotencyKey string) error
 	UpdateAvatar(ctx context.Context, userID int64, imageData []byte, idempotencyKey string) (string, error)
 	DeleteAvatar(ctx context.Context, userID int64, idempotencyKey string) (string, error)
+	UpdateRole(ctx context.Context, userID int64, newRole string, idempotencyKey string) error
+}
+
+type MessagePublisher interface {
+	PublishJSON(ctx context.Context, queueName string, data any) error
 }
 
 type userUseCase struct {
 	userRepo         repository.UserRepository
 	fileStorage      s3.FileStorage
 	defaultAvatarURL string
+	rabbitPublisher  MessagePublisher
+	logger           logger.Logger
 }
 
-func NewUserUseCase(ur repository.UserRepository, fs s3.FileStorage, daurl string) UserUseCase {
+func NewUserUseCase(ur repository.UserRepository, fs s3.FileStorage, daurl string, mp MessagePublisher, l logger.Logger) UserUseCase {
 	return &userUseCase{
 		userRepo:         ur,
 		fileStorage:      fs,
 		defaultAvatarURL: daurl,
+		rabbitPublisher:  mp,
+		logger:           l,
 	}
 }
 
@@ -213,4 +224,45 @@ func (u *userUseCase) DeleteAvatar(ctx context.Context, userID int64, idempotenc
 	}(urlToDelete)
 
 	return u.defaultAvatarURL, nil
+}
+
+func (u *userUseCase) UpdateRole(ctx context.Context, userID int64, newRole string, idempotencyKey string) error {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.Int64("admin.target_user_id", userID),
+		attribute.String("admin.new_role", newRole),
+	)
+
+	validRoles := map[string]bool{
+		domain.RoleClient: true, domain.RoleCourier: true,
+		domain.RoleOwner: true, domain.RoleAdmin: true, domain.RoleSupport: true,
+	}
+	if !validRoles[newRole] {
+		return domain.ErrInvalidInput
+	}
+
+	oldRole, shouldNotify, err := u.userRepo.UpdateUserRole(ctx, userID, newRole, idempotencyKey)
+	if err != nil {
+		return err
+	}
+
+	// Если это был повторный запрос с тем же ключом, shouldNotify будет false
+	if !shouldNotify {
+		return nil
+	}
+
+	if oldRole != newRole {
+		event := events.UserRoleChangedEvent{
+			UserID:  userID,
+			OldRole: oldRole,
+			NewRole: newRole,
+		}
+		err = u.rabbitPublisher.PublishJSON(ctx, events.QueueUserEvents, event)
+		if err != nil {
+			// Логируем, но ошибку не возвращаем, так как БД уже обновилась
+			u.logger.Error("failed to publish role change event", err)
+		}
+	}
+
+	return nil
 }

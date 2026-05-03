@@ -7,10 +7,11 @@ type Field struct {
 	Value any
 }
 
-func String(key, val string) Field  { return Field{Key: key, Value: val} }
-func Int(key string, val int) Field { return Field{Key: key, Value: val} }
-func Any(key string, val any) Field { return Field{Key: key, Value: val} }
-func Err(err error) Field           { return Field{Key: "error", Value: err} }
+func String(key, val string) Field      { return Field{Key: key, Value: val} }
+func Int(key string, val int) Field     { return Field{Key: key, Value: val} }
+func Int64(key string, val int64) Field { return Field{Key: key, Value: val} }
+func Any(key string, val any) Field     { return Field{Key: key, Value: val} }
+func Err(err error) Field               { return Field{Key: "error", Value: err} }
 
 type Logger interface {
 	Info(msg string, fields ...Field)

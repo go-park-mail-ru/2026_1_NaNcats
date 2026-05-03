@@ -19,3 +19,8 @@ func GetUserID(ctx context.Context) (int64, bool) {
 	id, ok := ctx.Value(UserIDKey).(int64)
 	return id, ok
 }
+
+func GetUserRole(ctx context.Context) (string, bool) {
+	role, ok := ctx.Value(RoleKey).(string)
+	return role, ok && role != ""
+}

@@ -204,7 +204,83 @@ func (v *UserProfileResponse) UnmarshalJSON(data []byte) error {
 func (v *UserProfileResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjsonBfe684dbDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpUser1(l, v)
 }
-func easyjsonBfe684dbDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpUser2(in *jlexer.Lexer, out *UpdateAvatarResponse) {
+func easyjsonBfe684dbDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpUser2(in *jlexer.Lexer, out *UpdateRoleRequest) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		switch key {
+		case "user_id":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.UserID = int64(in.Int64())
+			}
+		case "new_role":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.NewRole = string(in.String())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonBfe684dbEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpUser2(out *jwriter.Writer, in UpdateRoleRequest) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"user_id\":"
+		out.RawString(prefix[1:])
+		out.Int64(int64(in.UserID))
+	}
+	{
+		const prefix string = ",\"new_role\":"
+		out.RawString(prefix)
+		out.String(string(in.NewRole))
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v UpdateRoleRequest) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjsonBfe684dbEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpUser2(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v UpdateRoleRequest) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjsonBfe684dbEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpUser2(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *UpdateRoleRequest) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjsonBfe684dbDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpUser2(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *UpdateRoleRequest) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjsonBfe684dbDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpUser2(l, v)
+}
+func easyjsonBfe684dbDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpUser3(in *jlexer.Lexer, out *UpdateAvatarResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -240,7 +316,7 @@ func easyjsonBfe684dbDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		in.Consumed()
 	}
 }
-func easyjsonBfe684dbEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpUser2(out *jwriter.Writer, in UpdateAvatarResponse) {
+func easyjsonBfe684dbEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpUser3(out *jwriter.Writer, in UpdateAvatarResponse) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -260,23 +336,23 @@ func easyjsonBfe684dbEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 // MarshalJSON supports json.Marshaler interface
 func (v UpdateAvatarResponse) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonBfe684dbEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpUser2(&w, v)
+	easyjsonBfe684dbEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpUser3(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v UpdateAvatarResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonBfe684dbEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpUser2(w, v)
+	easyjsonBfe684dbEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpUser3(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *UpdateAvatarResponse) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonBfe684dbDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpUser2(&r, v)
+	easyjsonBfe684dbDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpUser3(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *UpdateAvatarResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonBfe684dbDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpUser2(l, v)
+	easyjsonBfe684dbDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpUser3(l, v)
 }

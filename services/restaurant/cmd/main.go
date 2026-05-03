@@ -14,6 +14,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/metrics"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/s3"
 	"github.com/joho/godotenv"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
@@ -69,12 +70,24 @@ func main() {
 	}
 	appLogger.Info("Connected to PostgreSQL")
 
+	s3Repo, err := s3.NewS3Storage(
+		ctx,
+		cfg.S3.KeyID,
+		cfg.S3.SecretKey,
+		cfg.S3.BucketName,
+		cfg.S3.Region,
+	)
+	if err != nil {
+		appLogger.Fatal("Failed to init S3", err)
+	}
+	appLogger.Info("Connected to S3 Storage", logger.String("bucket", cfg.S3.BucketName))
+
 	brandRepo := restaurantPG.NewRestaurantBrandRepo(pool)
 	dishRepo := restaurantPG.NewDishRepo(pool)
 
-	brandUC := restaurantUseCase.NewRestaurantBrandUseCase(brandRepo, cfg.DefaultRestaurantLogoURL)
+	brandUC := restaurantUseCase.NewRestaurantBrandUseCase(brandRepo, cfg.DefaultRestaurantLogoURL, s3Repo)
 	tracedBrandUC := usecase.NewRestaurantBrandUseCaseTracingMiddleware(brandUC)
-	dishUC := restaurantUseCase.NewDishUseCase(dishRepo, cfg.DefaultFoodLogoURL)
+	dishUC := restaurantUseCase.NewDishUseCase(dishRepo, cfg.DefaultFoodLogoURL, s3Repo)
 	tracedDishUC := usecase.NewDishUseCaseTracingMiddleware(dishUC)
 
 	restaurantHandler := restaurantDelivery.NewRestaurantHandler(tracedBrandUC, tracedDishUC)

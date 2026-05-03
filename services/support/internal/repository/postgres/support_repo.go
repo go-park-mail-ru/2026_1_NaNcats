@@ -664,3 +664,18 @@ func (r *supportRepo) GetStats(ctx context.Context) (domain.SupportStats, error)
 
 	return stats, nil
 }
+
+func (r *supportRepo) CreateAgentProfile(ctx context.Context, agentID int64) error {
+	query := `
+		INSERT INTO "support_agent_profile" (account_id, status, support_line, updated_at)
+		VALUES ($1, 'offline', 1, NOW())
+		ON CONFLICT (account_id) DO NOTHING;
+	`
+	_, err := r.pool.Exec(ctx, query, agentID)
+	return err
+}
+
+func (r *supportRepo) DeleteAgentProfile(ctx context.Context, agentID int64) error {
+	_, err := r.pool.Exec(ctx, `DELETE FROM "support_agent_profile" WHERE account_id = $1`, agentID)
+	return err
+}

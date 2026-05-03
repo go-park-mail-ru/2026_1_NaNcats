@@ -144,3 +144,17 @@ func (mr *MockUserUseCaseMockRecorder) UpdateProfile(ctx, userID, name, email, i
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateProfile", reflect.TypeOf((*MockUserUseCase)(nil).UpdateProfile), ctx, userID, name, email, idempotencyKey)
 }
+
+// UpdateRole mocks base method.
+func (m *MockUserUseCase) UpdateRole(ctx context.Context, userID int64, newRole, idempotencyKey string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateRole", ctx, userID, newRole, idempotencyKey)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateRole indicates an expected call of UpdateRole.
+func (mr *MockUserUseCaseMockRecorder) UpdateRole(ctx, userID, newRole, idempotencyKey any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRole", reflect.TypeOf((*MockUserUseCase)(nil).UpdateRole), ctx, userID, newRole, idempotencyKey)
+}

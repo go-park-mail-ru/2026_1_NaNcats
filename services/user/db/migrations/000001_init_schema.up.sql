@@ -12,7 +12,7 @@ CREATE TABLE "user" (
 	password_hash TEXT NOT NULL,
 	
 	user_role TEXT NOT NULL
-		CHECK (user_role IN ('client', 'courier', 'owner')),
+		CHECK (user_role IN ('client', 'courier', 'owner', 'admin', 'support')),
 	
 	avatar_url TEXT
 		CHECK (char_length(avatar_url) <= 2048),

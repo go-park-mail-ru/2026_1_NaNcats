@@ -41,6 +41,35 @@ func (m *MockRestaurantBrandUseCase) EXPECT() *MockRestaurantBrandUseCaseMockRec
 	return m.recorder
 }
 
+// CreateRestaurantBrand mocks base method.
+func (m *MockRestaurantBrandUseCase) CreateRestaurantBrand(ctx context.Context, b domain.RestaurantBrand, image []byte, idemKey string) (domain.RestaurantBrand, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateRestaurantBrand", ctx, b, image, idemKey)
+	ret0, _ := ret[0].(domain.RestaurantBrand)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateRestaurantBrand indicates an expected call of CreateRestaurantBrand.
+func (mr *MockRestaurantBrandUseCaseMockRecorder) CreateRestaurantBrand(ctx, b, image, idemKey any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRestaurantBrand", reflect.TypeOf((*MockRestaurantBrandUseCase)(nil).CreateRestaurantBrand), ctx, b, image, idemKey)
+}
+
+// DeleteRestaurantBrand mocks base method.
+func (m *MockRestaurantBrandUseCase) DeleteRestaurantBrand(ctx context.Context, id int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteRestaurantBrand", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteRestaurantBrand indicates an expected call of DeleteRestaurantBrand.
+func (mr *MockRestaurantBrandUseCaseMockRecorder) DeleteRestaurantBrand(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRestaurantBrand", reflect.TypeOf((*MockRestaurantBrandUseCase)(nil).DeleteRestaurantBrand), ctx, id)
+}
+
 // GetRestaurantBrandByID mocks base method.
 func (m *MockRestaurantBrandUseCase) GetRestaurantBrandByID(ctx context.Context, id int64) (domain.RestaurantBrand, error) {
 	m.ctrl.T.Helper()
@@ -84,4 +113,19 @@ func (m *MockRestaurantBrandUseCase) GetRestaurantBrandsList(ctx context.Context
 func (mr *MockRestaurantBrandUseCaseMockRecorder) GetRestaurantBrandsList(ctx, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestaurantBrandsList", reflect.TypeOf((*MockRestaurantBrandUseCase)(nil).GetRestaurantBrandsList), ctx, limit, offset)
+}
+
+// UpdateRestaurantBrand mocks base method.
+func (m *MockRestaurantBrandUseCase) UpdateRestaurantBrand(ctx context.Context, b domain.RestaurantBrand, newImage []byte, idemKey string) (domain.RestaurantBrand, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateRestaurantBrand", ctx, b, newImage, idemKey)
+	ret0, _ := ret[0].(domain.RestaurantBrand)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateRestaurantBrand indicates an expected call of UpdateRestaurantBrand.
+func (mr *MockRestaurantBrandUseCaseMockRecorder) UpdateRestaurantBrand(ctx, b, newImage, idemKey any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRestaurantBrand", reflect.TypeOf((*MockRestaurantBrandUseCase)(nil).UpdateRestaurantBrand), ctx, b, newImage, idemKey)
 }

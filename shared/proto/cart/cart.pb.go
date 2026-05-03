@@ -406,10 +406,8 @@ func (x *CartOperationRequest) GetIdempotencyKey() string {
 type LockCartRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	CartId         string                 `protobuf:"bytes,1,opt,name=cart_id,json=cartId,proto3" json:"cart_id,omitempty"`
-	UserId         int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`                                                                                              // Инициатор (админ)
-	PayForAll      bool                   `protobuf:"varint,3,opt,name=pay_for_all,json=payForAll,proto3" json:"pay_for_all,omitempty"`                                                                                   // Настройка оплаты
-	PayerMapping   map[int64]int64        `protobuf:"bytes,4,rep,name=payer_mapping,json=payerMapping,proto3" json:"payer_mapping,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"` // key: за кого платим (userID), value: кто платит (userID)
-	IdempotencyKey string                 `protobuf:"bytes,5,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	UserId         int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // Инициатор (админ)
+	IdempotencyKey string                 `protobuf:"bytes,3,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -456,20 +454,6 @@ func (x *LockCartRequest) GetUserId() int64 {
 		return x.UserId
 	}
 	return 0
-}
-
-func (x *LockCartRequest) GetPayForAll() bool {
-	if x != nil {
-		return x.PayForAll
-	}
-	return false
-}
-
-func (x *LockCartRequest) GetPayerMapping() map[int64]int64 {
-	if x != nil {
-		return x.PayerMapping
-	}
-	return nil
 }
 
 func (x *LockCartRequest) GetIdempotencyKey() string {
@@ -1167,16 +1151,11 @@ const file_cart_cart_proto_rawDesc = "" +
 	"\x14CartOperationRequest\x12\x17\n" +
 	"\acart_id\x18\x01 \x01(\tR\x06cartId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12'\n" +
-	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey\"\x9b\x02\n" +
+	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey\"l\n" +
 	"\x0fLockCartRequest\x12\x17\n" +
 	"\acart_id\x18\x01 \x01(\tR\x06cartId\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x1e\n" +
-	"\vpay_for_all\x18\x03 \x01(\bR\tpayForAll\x12L\n" +
-	"\rpayer_mapping\x18\x04 \x03(\v2'.cart.LockCartRequest.PayerMappingEntryR\fpayerMapping\x12'\n" +
-	"\x0fidempotency_key\x18\x05 \x01(\tR\x0eidempotencyKey\x1a?\n" +
-	"\x11PayerMappingEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\x03R\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x03R\x05value:\x028\x01\")\n" +
+	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12'\n" +
+	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey\")\n" +
 	"\x0eGetCartRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\"P\n" +
 	"\x0fGetCartResponse\x12\x1e\n" +
@@ -1262,7 +1241,7 @@ func file_cart_cart_proto_rawDescGZIP() []byte {
 }
 
 var file_cart_cart_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_cart_cart_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_cart_cart_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_cart_cart_proto_goTypes = []any{
 	(CartMode)(0),                      // 0: cart.CartMode
 	(CartStatus)(0),                    // 1: cart.CartStatus
@@ -1282,45 +1261,43 @@ var file_cart_cart_proto_goTypes = []any{
 	(*RemoveItemRequest)(nil),          // 15: cart.RemoveItemRequest
 	(*UpdateQuantityRequest)(nil),      // 16: cart.UpdateQuantityRequest
 	(*ReassignOwnerRequest)(nil),       // 17: cart.ReassignOwnerRequest
-	nil,                                // 18: cart.LockCartRequest.PayerMappingEntry
-	(*emptypb.Empty)(nil),              // 19: google.protobuf.Empty
+	(*emptypb.Empty)(nil),              // 18: google.protobuf.Empty
 }
 var file_cart_cart_proto_depIdxs = []int32{
 	0,  // 0: cart.Cart.mode:type_name -> cart.CartMode
 	1,  // 1: cart.Cart.status:type_name -> cart.CartStatus
 	2,  // 2: cart.Cart.items:type_name -> cart.CartItem
 	3,  // 3: cart.Cart.members:type_name -> cart.CartMember
-	18, // 4: cart.LockCartRequest.payer_mapping:type_name -> cart.LockCartRequest.PayerMappingEntry
-	4,  // 5: cart.GetCartResponse.cart:type_name -> cart.Cart
-	7,  // 6: cart.CartService.GetCart:input_type -> cart.GetCartRequest
-	6,  // 7: cart.CartService.LockCart:input_type -> cart.LockCartRequest
-	5,  // 8: cart.CartService.UnlockCart:input_type -> cart.CartOperationRequest
-	5,  // 9: cart.CartService.ClearCart:input_type -> cart.CartOperationRequest
-	9,  // 10: cart.CartService.GenerateInvite:input_type -> cart.GenerateInviteRequest
-	11, // 11: cart.CartService.JoinCart:input_type -> cart.JoinCartRequest
-	13, // 12: cart.CartService.KickMember:input_type -> cart.CartMemberOperationRequest
-	5,  // 13: cart.CartService.CloseSharedCart:input_type -> cart.CartOperationRequest
-	14, // 14: cart.CartService.AddItem:input_type -> cart.AddItemRequest
-	15, // 15: cart.CartService.RemoveItem:input_type -> cart.RemoveItemRequest
-	16, // 16: cart.CartService.UpdateItemQuantity:input_type -> cart.UpdateQuantityRequest
-	17, // 17: cart.CartService.ReassignItemOwner:input_type -> cart.ReassignOwnerRequest
-	8,  // 18: cart.CartService.GetCart:output_type -> cart.GetCartResponse
-	19, // 19: cart.CartService.LockCart:output_type -> google.protobuf.Empty
-	19, // 20: cart.CartService.UnlockCart:output_type -> google.protobuf.Empty
-	19, // 21: cart.CartService.ClearCart:output_type -> google.protobuf.Empty
-	10, // 22: cart.CartService.GenerateInvite:output_type -> cart.GenerateInviteResponse
-	12, // 23: cart.CartService.JoinCart:output_type -> cart.JoinCartResponse
-	19, // 24: cart.CartService.KickMember:output_type -> google.protobuf.Empty
-	19, // 25: cart.CartService.CloseSharedCart:output_type -> google.protobuf.Empty
-	19, // 26: cart.CartService.AddItem:output_type -> google.protobuf.Empty
-	19, // 27: cart.CartService.RemoveItem:output_type -> google.protobuf.Empty
-	19, // 28: cart.CartService.UpdateItemQuantity:output_type -> google.protobuf.Empty
-	19, // 29: cart.CartService.ReassignItemOwner:output_type -> google.protobuf.Empty
-	18, // [18:30] is the sub-list for method output_type
-	6,  // [6:18] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	4,  // 4: cart.GetCartResponse.cart:type_name -> cart.Cart
+	7,  // 5: cart.CartService.GetCart:input_type -> cart.GetCartRequest
+	6,  // 6: cart.CartService.LockCart:input_type -> cart.LockCartRequest
+	5,  // 7: cart.CartService.UnlockCart:input_type -> cart.CartOperationRequest
+	5,  // 8: cart.CartService.ClearCart:input_type -> cart.CartOperationRequest
+	9,  // 9: cart.CartService.GenerateInvite:input_type -> cart.GenerateInviteRequest
+	11, // 10: cart.CartService.JoinCart:input_type -> cart.JoinCartRequest
+	13, // 11: cart.CartService.KickMember:input_type -> cart.CartMemberOperationRequest
+	5,  // 12: cart.CartService.CloseSharedCart:input_type -> cart.CartOperationRequest
+	14, // 13: cart.CartService.AddItem:input_type -> cart.AddItemRequest
+	15, // 14: cart.CartService.RemoveItem:input_type -> cart.RemoveItemRequest
+	16, // 15: cart.CartService.UpdateItemQuantity:input_type -> cart.UpdateQuantityRequest
+	17, // 16: cart.CartService.ReassignItemOwner:input_type -> cart.ReassignOwnerRequest
+	8,  // 17: cart.CartService.GetCart:output_type -> cart.GetCartResponse
+	18, // 18: cart.CartService.LockCart:output_type -> google.protobuf.Empty
+	18, // 19: cart.CartService.UnlockCart:output_type -> google.protobuf.Empty
+	18, // 20: cart.CartService.ClearCart:output_type -> google.protobuf.Empty
+	10, // 21: cart.CartService.GenerateInvite:output_type -> cart.GenerateInviteResponse
+	12, // 22: cart.CartService.JoinCart:output_type -> cart.JoinCartResponse
+	18, // 23: cart.CartService.KickMember:output_type -> google.protobuf.Empty
+	18, // 24: cart.CartService.CloseSharedCart:output_type -> google.protobuf.Empty
+	18, // 25: cart.CartService.AddItem:output_type -> google.protobuf.Empty
+	18, // 26: cart.CartService.RemoveItem:output_type -> google.protobuf.Empty
+	18, // 27: cart.CartService.UpdateItemQuantity:output_type -> google.protobuf.Empty
+	18, // 28: cart.CartService.ReassignItemOwner:output_type -> google.protobuf.Empty
+	17, // [17:29] is the sub-list for method output_type
+	5,  // [5:17] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_cart_cart_proto_init() }
@@ -1336,7 +1313,7 @@ func file_cart_cart_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cart_cart_proto_rawDesc), len(file_cart_cart_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   17,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

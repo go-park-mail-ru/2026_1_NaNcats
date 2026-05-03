@@ -29,6 +29,40 @@ func NewRestaurantBrandUseCaseTracingMiddleware(next RestaurantBrandUseCase) Res
 	}
 }
 
+// CreateRestaurantBrand трассирует выполнение метода CreateRestaurantBrand
+func (m RestaurantBrandUseCaseTracingMiddleware) CreateRestaurantBrand(ctx context.Context, b domain.RestaurantBrand, image []byte, idemKey string) (r1 domain.RestaurantBrand, err error) {
+
+	ctx, span := m.tracer.Start(ctx, "RestaurantBrandUseCase.CreateRestaurantBrand")
+
+	defer span.End()
+
+	r1, err = m.next.CreateRestaurantBrand(ctx, b, image, idemKey)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
+// DeleteRestaurantBrand трассирует выполнение метода DeleteRestaurantBrand
+func (m RestaurantBrandUseCaseTracingMiddleware) DeleteRestaurantBrand(ctx context.Context, id int64) (err error) {
+
+	ctx, span := m.tracer.Start(ctx, "RestaurantBrandUseCase.DeleteRestaurantBrand")
+
+	defer span.End()
+
+	err = m.next.DeleteRestaurantBrand(ctx, id)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
 // GetRestaurantBrandByID трассирует выполнение метода GetRestaurantBrandByID
 func (m RestaurantBrandUseCaseTracingMiddleware) GetRestaurantBrandByID(ctx context.Context, id int64) (r1 domain.RestaurantBrand, err error) {
 
@@ -71,6 +105,23 @@ func (m RestaurantBrandUseCaseTracingMiddleware) GetRestaurantBrandsList(ctx con
 	defer span.End()
 
 	ra1, err = m.next.GetRestaurantBrandsList(ctx, limit, offset)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
+// UpdateRestaurantBrand трассирует выполнение метода UpdateRestaurantBrand
+func (m RestaurantBrandUseCaseTracingMiddleware) UpdateRestaurantBrand(ctx context.Context, b domain.RestaurantBrand, newImage []byte, idemKey string) (r1 domain.RestaurantBrand, err error) {
+
+	ctx, span := m.tracer.Start(ctx, "RestaurantBrandUseCase.UpdateRestaurantBrand")
+
+	defer span.End()
+
+	r1, err = m.next.UpdateRestaurantBrand(ctx, b, newImage, idemKey)
 
 	if err != nil {
 		span.RecordError(err)

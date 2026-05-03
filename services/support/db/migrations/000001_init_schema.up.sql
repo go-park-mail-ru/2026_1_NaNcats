@@ -1,5 +1,5 @@
 CREATE TYPE support_event_type AS ENUM ('ticket_created', 'message', 'status_changed', 'reassigned', 'rated');
-CREATE TYPE support_author_role AS ENUM ('user', 'support', 'system');
+CREATE TYPE support_author_role AS ENUM ('user', 'support', 'admin', 'system');
 CREATE TYPE support_agent_status AS ENUM ('online', 'offline');
 
 CREATE TABLE "support_category" (

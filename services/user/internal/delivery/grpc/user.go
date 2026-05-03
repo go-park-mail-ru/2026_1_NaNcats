@@ -172,3 +172,11 @@ func (h *UserHandler) GetUserProfile(ctx context.Context, req *pb.GetUserProfile
 		Profile: mapDomainToPBClientProfile(client),
 	}, nil
 }
+
+func (h *UserHandler) UpdateUserRole(ctx context.Context, req *pb.UpdateUserRoleRequest) (*emptypb.Empty, error) {
+	err := h.userUC.UpdateRole(ctx, req.UserId, req.NewRole, req.IdempotencyKey)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	return &emptypb.Empty{}, nil
+}

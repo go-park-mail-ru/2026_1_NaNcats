@@ -29,6 +29,7 @@ const (
 	UserService_GetByEmail_FullMethodName          = "/user.UserService/GetByEmail"
 	UserService_CheckUserExists_FullMethodName     = "/user.UserService/CheckUserExists"
 	UserService_GetUserProfile_FullMethodName      = "/user.UserService/GetUserProfile"
+	UserService_UpdateUserRole_FullMethodName      = "/user.UserService/UpdateUserRole"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -55,6 +56,8 @@ type UserServiceClient interface {
 	CheckUserExists(ctx context.Context, in *CheckUserExistsRequest, opts ...grpc.CallOption) (*CheckUserExistsResponse, error)
 	// Метод получения данных для профиля юзера
 	GetUserProfile(ctx context.Context, in *GetUserProfileRequest, opts ...grpc.CallOption) (*GetUserProfileResponse, error)
+	// Метод смены роли пользователя
+	UpdateUserRole(ctx context.Context, in *UpdateUserRoleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type userServiceClient struct {
@@ -155,6 +158,16 @@ func (c *userServiceClient) GetUserProfile(ctx context.Context, in *GetUserProfi
 	return out, nil
 }
 
+func (c *userServiceClient) UpdateUserRole(ctx context.Context, in *UpdateUserRoleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, UserService_UpdateUserRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
@@ -179,6 +192,8 @@ type UserServiceServer interface {
 	CheckUserExists(context.Context, *CheckUserExistsRequest) (*CheckUserExistsResponse, error)
 	// Метод получения данных для профиля юзера
 	GetUserProfile(context.Context, *GetUserProfileRequest) (*GetUserProfileResponse, error)
+	// Метод смены роли пользователя
+	UpdateUserRole(context.Context, *UpdateUserRoleRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -215,6 +230,9 @@ func (UnimplementedUserServiceServer) CheckUserExists(context.Context, *CheckUse
 }
 func (UnimplementedUserServiceServer) GetUserProfile(context.Context, *GetUserProfileRequest) (*GetUserProfileResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUserProfile not implemented")
+}
+func (UnimplementedUserServiceServer) UpdateUserRole(context.Context, *UpdateUserRoleRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateUserRole not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
@@ -399,6 +417,24 @@ func _UserService_GetUserProfile_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_UpdateUserRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UpdateUserRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_UpdateUserRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UpdateUserRole(ctx, req.(*UpdateUserRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -441,6 +477,10 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUserProfile",
 			Handler:    _UserService_GetUserProfile_Handler,
+		},
+		{
+			MethodName: "UpdateUserRole",
+			Handler:    _UserService_UpdateUserRole_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

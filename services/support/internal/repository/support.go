@@ -36,4 +36,7 @@ type SupportRepository interface {
 	AddMessageEvent(ctx context.Context, ticketID int64, authorID *int64, authorRole, text, idempotencyKey string) error
 	AddStatusChangedEvent(ctx context.Context, ticketID int64, authorID *int64, authorRole string, oldStatus, newStatus, reason string, idempotencyKey string) error
 	GetStats(ctx context.Context) (domain.SupportStats, error)
+
+	CreateAgentProfile(ctx context.Context, agentID int64) error
+	DeleteAgentProfile(ctx context.Context, agentID int64) error
 }

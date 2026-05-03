@@ -150,3 +150,42 @@ func (r *dishRepo) GetDishesByIDs(ctx context.Context, ids []int64) ([]domain.Di
 
 	return dishes, nil
 }
+
+func (r *dishRepo) Create(ctx context.Context, d domain.Dish, idemKey string) (domain.Dish, error) {
+	query := `
+		INSERT INTO "dish" (restaurant_brand_id, name, description, price, image_url, idempotency_key)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (idempotency_key) DO UPDATE SET idempotency_key = EXCLUDED.idempotency_key
+		RETURNING id, restaurant_brand_id, name, description, price, image_url, created_at, updated_at;
+	`
+	var res dishDB
+	err := r.pool.QueryRow(ctx, query, d.RestaurantBrandID, d.Name, d.Description, d.Price, d.ImageURL, idemKey).Scan(
+		&res.ID, &res.RestaurantBrandID, &res.Name, &res.Description, &res.Price, &res.ImageURL, &res.CreatedAt, &res.UpdatedAt,
+	)
+	return res.toDomain(), err
+}
+
+func (r *dishRepo) Update(ctx context.Context, d domain.Dish) (domain.Dish, error) {
+	query := `
+		UPDATE "dish" 
+		SET name = $1, description = $2, price = $3, image_url = $4, updated_at = NOW()
+		WHERE id = $5
+		RETURNING id, restaurant_brand_id, name, description, price, image_url, created_at, updated_at;
+	`
+	var res dishDB
+	err := r.pool.QueryRow(ctx, query, d.Name, d.Description, d.Price, d.ImageURL, d.ID).Scan(
+		&res.ID, &res.RestaurantBrandID, &res.Name, &res.Description, &res.Price, &res.ImageURL, &res.CreatedAt, &res.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.Dish{}, domain.ErrDishNotFound
+		}
+		return domain.Dish{}, err
+	}
+	return res.toDomain(), nil
+}
+
+func (r *dishRepo) Delete(ctx context.Context, id int64) error {
+	_, err := r.pool.Exec(ctx, `DELETE FROM "dish" WHERE id = $1`, id)
+	return err
+}

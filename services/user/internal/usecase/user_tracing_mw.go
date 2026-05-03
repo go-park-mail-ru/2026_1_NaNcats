@@ -147,3 +147,20 @@ func (m UserUseCaseTracingMiddleware) UpdateProfile(ctx context.Context, userID 
 
 	return
 }
+
+// UpdateRole трассирует выполнение метода UpdateRole
+func (m UserUseCaseTracingMiddleware) UpdateRole(ctx context.Context, userID int64, newRole string, idempotencyKey string) (err error) {
+
+	ctx, span := m.tracer.Start(ctx, "UserUseCase.UpdateRole")
+
+	defer span.End()
+
+	err = m.next.UpdateRole(ctx, userID, newRole, idempotencyKey)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}

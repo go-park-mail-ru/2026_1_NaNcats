@@ -41,6 +41,35 @@ func (m *MockDishUseCase) EXPECT() *MockDishUseCaseMockRecorder {
 	return m.recorder
 }
 
+// CreateDish mocks base method.
+func (m *MockDishUseCase) CreateDish(ctx context.Context, d domain.Dish, image []byte, idemKey string) (domain.Dish, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateDish", ctx, d, image, idemKey)
+	ret0, _ := ret[0].(domain.Dish)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateDish indicates an expected call of CreateDish.
+func (mr *MockDishUseCaseMockRecorder) CreateDish(ctx, d, image, idemKey any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDish", reflect.TypeOf((*MockDishUseCase)(nil).CreateDish), ctx, d, image, idemKey)
+}
+
+// DeleteDish mocks base method.
+func (m *MockDishUseCase) DeleteDish(ctx context.Context, id int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteDish", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteDish indicates an expected call of DeleteDish.
+func (mr *MockDishUseCaseMockRecorder) DeleteDish(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDish", reflect.TypeOf((*MockDishUseCase)(nil).DeleteDish), ctx, id)
+}
+
 // GetDishesByIDs mocks base method.
 func (m *MockDishUseCase) GetDishesByIDs(ctx context.Context, ids []int64) ([]domain.Dish, error) {
 	m.ctrl.T.Helper()
@@ -69,4 +98,19 @@ func (m *MockDishUseCase) GetDishesByRestaurantBrandID(ctx context.Context, rest
 func (mr *MockDishUseCaseMockRecorder) GetDishesByRestaurantBrandID(ctx, restaurantBrandID, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDishesByRestaurantBrandID", reflect.TypeOf((*MockDishUseCase)(nil).GetDishesByRestaurantBrandID), ctx, restaurantBrandID, limit, offset)
+}
+
+// UpdateDish mocks base method.
+func (m *MockDishUseCase) UpdateDish(ctx context.Context, d domain.Dish, newImage []byte, idemKey string) (domain.Dish, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateDish", ctx, d, newImage, idemKey)
+	ret0, _ := ret[0].(domain.Dish)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateDish indicates an expected call of UpdateDish.
+func (mr *MockDishUseCaseMockRecorder) UpdateDish(ctx, d, newImage, idemKey any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDish", reflect.TypeOf((*MockDishUseCase)(nil).UpdateDish), ctx, d, newImage, idemKey)
 }

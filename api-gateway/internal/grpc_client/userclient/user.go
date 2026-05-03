@@ -23,6 +23,7 @@ type UserClient interface {
 	UpdateProfile(ctx context.Context, userID int64, name, email *string, idempotencyKey string) error
 	UpdateAvatar(ctx context.Context, userID int64, fileBytes []byte, idempotencyKey string) (string, error)
 	DeleteAvatar(ctx context.Context, userID int64, idempotencyKey string) (string, error)
+	UpdateRole(ctx context.Context, userID int64, newRole string, idempotencyKey string) error
 }
 
 type userClient struct {
@@ -123,4 +124,25 @@ func (c *userClient) DeleteAvatar(ctx context.Context, userID int64, idempotency
 		return "", ErrInternal
 	}
 	return resp.DefaultAvatarUrl, nil
+}
+
+func (c *userClient) UpdateRole(ctx context.Context, userID int64, newRole string, idempotencyKey string) error {
+	_, err := c.client.UpdateUserRole(ctx, &pbUser.UpdateUserRoleRequest{
+		UserId:         userID,
+		NewRole:        newRole,
+		IdempotencyKey: idempotencyKey,
+	})
+	if err != nil {
+		st, ok := status.FromError(err)
+		if ok {
+			switch st.Code() {
+			case codes.InvalidArgument:
+				return ErrInvalidArgument
+			case codes.NotFound:
+				return ErrUserNotFound
+			}
+		}
+		return ErrInternal
+	}
+	return nil
 }

@@ -27,6 +27,8 @@ service UserService {
   rpc CheckUserExists (CheckUserExistsRequest) returns (CheckUserExistsResponse);
   // Метод получения данных для профиля юзера
   rpc GetUserProfile (GetUserProfileRequest) returns (GetUserProfileResponse);
+  // Метод смены роли пользователя
+  rpc UpdateUserRole (UpdateUserRoleRequest) returns (google.protobuf.Empty);
 }
 
 
@@ -119,4 +121,10 @@ message GetUserProfileRequest {
 message GetUserProfileResponse {
   User user = 1;
   ClientProfile profile = 2;
+}
+
+message UpdateUserRoleRequest {
+  int64 user_id = 1;
+  string new_role = 2;
+  string idempotency_key = 3;
 }

@@ -29,6 +29,40 @@ func NewDishUseCaseTracingMiddleware(next DishUseCase) DishUseCaseTracingMiddlew
 	}
 }
 
+// CreateDish трассирует выполнение метода CreateDish
+func (m DishUseCaseTracingMiddleware) CreateDish(ctx context.Context, d domain.Dish, image []byte, idemKey string) (d1 domain.Dish, err error) {
+
+	ctx, span := m.tracer.Start(ctx, "DishUseCase.CreateDish")
+
+	defer span.End()
+
+	d1, err = m.next.CreateDish(ctx, d, image, idemKey)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
+// DeleteDish трассирует выполнение метода DeleteDish
+func (m DishUseCaseTracingMiddleware) DeleteDish(ctx context.Context, id int64) (err error) {
+
+	ctx, span := m.tracer.Start(ctx, "DishUseCase.DeleteDish")
+
+	defer span.End()
+
+	err = m.next.DeleteDish(ctx, id)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
 // GetDishesByIDs трассирует выполнение метода GetDishesByIDs
 func (m DishUseCaseTracingMiddleware) GetDishesByIDs(ctx context.Context, ids []int64) (da1 []domain.Dish, err error) {
 
@@ -54,6 +88,23 @@ func (m DishUseCaseTracingMiddleware) GetDishesByRestaurantBrandID(ctx context.C
 	defer span.End()
 
 	da1, err = m.next.GetDishesByRestaurantBrandID(ctx, restaurantBrandID, limit, offset)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
+// UpdateDish трассирует выполнение метода UpdateDish
+func (m DishUseCaseTracingMiddleware) UpdateDish(ctx context.Context, d domain.Dish, newImage []byte, idemKey string) (d1 domain.Dish, err error) {
+
+	ctx, span := m.tracer.Start(ctx, "DishUseCase.UpdateDish")
+
+	defer span.End()
+
+	d1, err = m.next.UpdateDish(ctx, d, newImage, idemKey)
 
 	if err != nil {
 		span.RecordError(err)

@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -229,4 +230,66 @@ func (r *userRepo) UpdateAvatarURL(ctx context.Context, userID int64, newAvatarU
 	}
 
 	return nil
+}
+
+func (r *userRepo) UpdateUserRole(ctx context.Context, userID int64, newRole string, idempotencyKey string) (string, bool, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return "", false, err
+	}
+	defer tx.Rollback(ctx)
+
+	// Достаем текущую роль и последний использованный ключ этого юзера
+	var currentRole string
+	var lastKey *string
+	queryCheck := `SELECT user_role, idempotency_key FROM "user" WHERE id = $1 FOR UPDATE`
+	err = tx.QueryRow(ctx, queryCheck, userID).Scan(&currentRole, &lastKey)
+	if err != nil {
+		return "", false, err
+	}
+
+	if lastKey != nil && *lastKey == idempotencyKey {
+		return currentRole, false, nil
+	}
+
+	// Очистка старых профилей
+	profileTables := []string{"courier_profile", "owner_profile", "client_profile"}
+	for _, table := range profileTables {
+		query := fmt.Sprintf(`DELETE FROM "%s" WHERE account_id = $1`, table)
+		_, err := tx.Exec(ctx, query, userID)
+		if err != nil {
+			return "", false, fmt.Errorf("failed to cleanup profile in %s: %w", table, err)
+		}
+	}
+
+	// Обновление роли и запись нового ключа
+	queryUpdate := `
+		UPDATE "user" 
+		SET user_role = $1, 
+		    idempotency_key = $2, 
+		    updated_at = NOW() 
+		WHERE id = $3`
+	_, err = tx.Exec(ctx, queryUpdate, newRole, idempotencyKey, userID)
+	if err != nil {
+		return "", false, err
+	}
+
+	// Создание нового профиля
+	if newRole == "courier" {
+		_, err = tx.Exec(ctx, `INSERT INTO "courier_profile" (account_id, status) VALUES ($1, 'offline')`, userID)
+	} else if newRole == "owner" {
+		_, err = tx.Exec(ctx, `INSERT INTO "owner_profile" (account_id) VALUES ($1)`, userID)
+	}
+
+	if err != nil {
+		return "", false, err
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return "", false, err
+	}
+
+	// Возвращаем старую роль и флаг true (нужно отправить событие)
+	return currentRole, true, nil
 }

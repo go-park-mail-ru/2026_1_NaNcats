@@ -95,3 +95,84 @@ func (c *restaurantClient) GetRestaurantLogos(ctx context.Context, brandIDs []in
 
 	return logos, nil
 }
+
+func (c *restaurantClient) GetDishByID(ctx context.Context, dishID int64) (*pbRestaurant.Dish, error) {
+	resp, err := c.client.GetDishesByIDs(ctx, &pbRestaurant.GetDishesByIDsRequest{
+		DishIds: []int64{dishID},
+	})
+	if err != nil || len(resp.Dishes) == 0 {
+		return nil, ErrNotFound
+	}
+	return resp.Dishes[0], nil
+}
+
+func (c *restaurantClient) CreateRestaurantBrand(ctx context.Context, ownerID int64, name, desc string, logo []byte, idemKey string) (*pbRestaurant.RestaurantBrand, error) {
+	resp, err := c.client.CreateRestaurantBrand(ctx, &pbRestaurant.CreateBrandRequest{
+		OwnerId:        ownerID,
+		Name:           name,
+		Description:    desc,
+		LogoData:       logo,
+		IdempotencyKey: idemKey,
+	})
+	return resp, err
+}
+
+func (c *restaurantClient) UpdateRestaurantBrand(ctx context.Context, id int64, name, desc *string, logo []byte, tier *int32, idemKey string) (*pbRestaurant.RestaurantBrand, error) {
+	req := &pbRestaurant.UpdateBrandRequest{
+		Id:             id,
+		LogoData:       logo,
+		IdempotencyKey: idemKey,
+	}
+	if name != nil {
+		req.Name = name
+	}
+	if desc != nil {
+		req.Description = desc
+	}
+	if tier != nil {
+		req.PromotionTier = tier
+	}
+
+	return c.client.UpdateRestaurantBrand(ctx, req)
+}
+
+func (c *restaurantClient) DeleteRestaurantBrand(ctx context.Context, id int64) error {
+	_, err := c.client.DeleteRestaurantBrand(ctx, &pbRestaurant.DeleteBrandRequest{Id: id})
+	return err
+}
+
+func (c *restaurantClient) CreateDish(ctx context.Context, brandID int64, name, desc string, price int64, image []byte, idemKey string) (*pbRestaurant.Dish, error) {
+	resp, err := c.client.CreateDish(ctx, &pbRestaurant.CreateDishRequest{
+		RestaurantBrandId: brandID,
+		Name:              name,
+		Description:       desc,
+		Price:             price,
+		ImageData:         image,
+		IdempotencyKey:    idemKey,
+	})
+	return resp, err
+}
+
+func (c *restaurantClient) UpdateDish(ctx context.Context, id int64, name, desc *string, price *int64, image []byte, idemKey string) (*pbRestaurant.Dish, error) {
+	req := &pbRestaurant.UpdateDishRequest{
+		Id:             id,
+		ImageData:      image,
+		IdempotencyKey: idemKey,
+	}
+	if name != nil {
+		req.Name = name
+	}
+	if desc != nil {
+		req.Description = desc
+	}
+	if price != nil {
+		req.Price = price
+	}
+
+	return c.client.UpdateDish(ctx, req)
+}
+
+func (c *restaurantClient) DeleteDish(ctx context.Context, id int64) error {
+	_, err := c.client.DeleteDish(ctx, &pbRestaurant.DeleteDishRequest{Id: id})
+	return err
+}

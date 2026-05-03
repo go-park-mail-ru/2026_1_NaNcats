@@ -4,6 +4,14 @@ import (
 	"time"
 )
 
+const (
+	RoleClient  = "client"
+	RoleCourier = "courier"
+	RoleOwner   = "owner"
+	RoleAdmin   = "admin"
+	RoleSupport = "support"
+)
+
 // сущность юзера
 type User struct {
 	ID           int64

@@ -238,3 +238,43 @@ func (h *UserProfileHandler) DeleteAvatar(w http.ResponseWriter, r *http.Request
 		AvatarURL: newAvatarURL,
 	})
 }
+
+// easyjson:json
+type UpdateRoleRequest struct {
+	UserID  int64  `json:"user_id"`
+	NewRole string `json:"new_role"`
+}
+
+// AdminUpdateRole godoc
+// @Summary 		Смена роли пользователя (админ)
+// @Tags			admin
+// @Accept			json
+// @Produce			json
+// @Param			Idempotency-Key header string true "Ключ"
+// @Param			input	body	  UpdateRoleRequest	true	"Данные"
+// @Router			/admin/users/role [post]
+func (h *UserProfileHandler) AdminUpdateRole(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
+
+	idemKey := r.Header.Get("Idempotency-Key")
+	if idemKey == "" {
+		response.Error(w, http.StatusBadRequest, "Idempotency-Key header is required")
+		return
+	}
+
+	var req UpdateRoleRequest
+	if err := request.JSON(r, &req); err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	err := h.userClient.UpdateRole(ctx, req.UserID, req.NewRole, idemKey)
+	if err != nil {
+		l.Error("failed to update user role via grpc", err)
+		response.WriteError(w, err)
+		return
+	}
+
+	response.JSON(w, http.StatusOK, response.MessageResponse{Message: "role updated successfully"})
+}

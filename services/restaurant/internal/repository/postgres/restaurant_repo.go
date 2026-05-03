@@ -125,3 +125,40 @@ func (r *restaurantBrandRepo) GetRestaurantBrandsByIDs(ctx context.Context, ids 
 	}
 	return restaurantBrands, nil
 }
+
+func (r *restaurantBrandRepo) Create(ctx context.Context, b domain.RestaurantBrand, idempotencyKey string) (domain.RestaurantBrand, error) {
+	query := `
+		INSERT INTO "restaurant_brand" (owner_profile_id, name, description, logo_url, idempotency_key)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (idempotency_key) DO UPDATE SET 
+            idempotency_key = EXCLUDED.idempotency_key
+		RETURNING id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at;
+	`
+	var rb restaurantBrandDB
+	err := r.pool.QueryRow(ctx, query, b.OwnerProfileID, b.Name, b.Description, b.LogoURL, idempotencyKey).Scan(
+		&rb.ID, &rb.OwnerProfileID, &rb.Name, &rb.Description, &rb.PromotionTier, &rb.LogoURL, &rb.CreatedAt, &rb.UpdatedAt,
+	)
+	if err != nil {
+		return domain.RestaurantBrand{}, err
+	}
+	return rb.toDomain(), nil
+}
+
+func (r *restaurantBrandRepo) Delete(ctx context.Context, id int64) error {
+	_, err := r.pool.Exec(ctx, `DELETE FROM "restaurant_brand" WHERE id = $1`, id)
+	return err
+}
+
+func (r *restaurantBrandRepo) Update(ctx context.Context, b domain.RestaurantBrand) (domain.RestaurantBrand, error) {
+	query := `
+		UPDATE "restaurant_brand" 
+		SET name = $1, description = $2, logo_url = $3, promotion_tier = $4, updated_at = NOW()
+		WHERE id = $5
+	`
+	_, err := r.pool.Exec(ctx, query, b.Name, b.Description, b.LogoURL, b.PromotionTier, b.ID)
+	if err != nil {
+		return domain.RestaurantBrand{}, err
+	}
+
+	return b, err
+}

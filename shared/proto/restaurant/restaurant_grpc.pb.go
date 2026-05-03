@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -24,6 +25,12 @@ const (
 	RestaurantService_GetRestaurantBrandsByIDs_FullMethodName     = "/restaurant.RestaurantService/GetRestaurantBrandsByIDs"
 	RestaurantService_GetDishesByRestaurantBrandID_FullMethodName = "/restaurant.RestaurantService/GetDishesByRestaurantBrandID"
 	RestaurantService_GetDishesByIDs_FullMethodName               = "/restaurant.RestaurantService/GetDishesByIDs"
+	RestaurantService_CreateRestaurantBrand_FullMethodName        = "/restaurant.RestaurantService/CreateRestaurantBrand"
+	RestaurantService_UpdateRestaurantBrand_FullMethodName        = "/restaurant.RestaurantService/UpdateRestaurantBrand"
+	RestaurantService_DeleteRestaurantBrand_FullMethodName        = "/restaurant.RestaurantService/DeleteRestaurantBrand"
+	RestaurantService_CreateDish_FullMethodName                   = "/restaurant.RestaurantService/CreateDish"
+	RestaurantService_UpdateDish_FullMethodName                   = "/restaurant.RestaurantService/UpdateDish"
+	RestaurantService_DeleteDish_FullMethodName                   = "/restaurant.RestaurantService/DeleteDish"
 )
 
 // RestaurantServiceClient is the client API for RestaurantService service.
@@ -42,6 +49,14 @@ type RestaurantServiceClient interface {
 	GetDishesByRestaurantBrandID(ctx context.Context, in *GetDishesByRestaurantBrandIDRequest, opts ...grpc.CallOption) (*GetDishesByRestaurantBrandIDResponse, error)
 	// Метод получения блюд по их ID
 	GetDishesByIDs(ctx context.Context, in *GetDishesByIDsRequest, opts ...grpc.CallOption) (*GetDishesByIDsResponse, error)
+	// Управление ресторанами (Админы)
+	CreateRestaurantBrand(ctx context.Context, in *CreateBrandRequest, opts ...grpc.CallOption) (*RestaurantBrand, error)
+	UpdateRestaurantBrand(ctx context.Context, in *UpdateBrandRequest, opts ...grpc.CallOption) (*RestaurantBrand, error)
+	DeleteRestaurantBrand(ctx context.Context, in *DeleteBrandRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Управление блюдами (Админы/Овнеры)
+	CreateDish(ctx context.Context, in *CreateDishRequest, opts ...grpc.CallOption) (*Dish, error)
+	UpdateDish(ctx context.Context, in *UpdateDishRequest, opts ...grpc.CallOption) (*Dish, error)
+	DeleteDish(ctx context.Context, in *DeleteDishRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type restaurantServiceClient struct {
@@ -102,6 +117,66 @@ func (c *restaurantServiceClient) GetDishesByIDs(ctx context.Context, in *GetDis
 	return out, nil
 }
 
+func (c *restaurantServiceClient) CreateRestaurantBrand(ctx context.Context, in *CreateBrandRequest, opts ...grpc.CallOption) (*RestaurantBrand, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RestaurantBrand)
+	err := c.cc.Invoke(ctx, RestaurantService_CreateRestaurantBrand_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *restaurantServiceClient) UpdateRestaurantBrand(ctx context.Context, in *UpdateBrandRequest, opts ...grpc.CallOption) (*RestaurantBrand, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RestaurantBrand)
+	err := c.cc.Invoke(ctx, RestaurantService_UpdateRestaurantBrand_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *restaurantServiceClient) DeleteRestaurantBrand(ctx context.Context, in *DeleteBrandRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, RestaurantService_DeleteRestaurantBrand_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *restaurantServiceClient) CreateDish(ctx context.Context, in *CreateDishRequest, opts ...grpc.CallOption) (*Dish, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Dish)
+	err := c.cc.Invoke(ctx, RestaurantService_CreateDish_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *restaurantServiceClient) UpdateDish(ctx context.Context, in *UpdateDishRequest, opts ...grpc.CallOption) (*Dish, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Dish)
+	err := c.cc.Invoke(ctx, RestaurantService_UpdateDish_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *restaurantServiceClient) DeleteDish(ctx context.Context, in *DeleteDishRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, RestaurantService_DeleteDish_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RestaurantServiceServer is the server API for RestaurantService service.
 // All implementations must embed UnimplementedRestaurantServiceServer
 // for forward compatibility.
@@ -118,6 +193,14 @@ type RestaurantServiceServer interface {
 	GetDishesByRestaurantBrandID(context.Context, *GetDishesByRestaurantBrandIDRequest) (*GetDishesByRestaurantBrandIDResponse, error)
 	// Метод получения блюд по их ID
 	GetDishesByIDs(context.Context, *GetDishesByIDsRequest) (*GetDishesByIDsResponse, error)
+	// Управление ресторанами (Админы)
+	CreateRestaurantBrand(context.Context, *CreateBrandRequest) (*RestaurantBrand, error)
+	UpdateRestaurantBrand(context.Context, *UpdateBrandRequest) (*RestaurantBrand, error)
+	DeleteRestaurantBrand(context.Context, *DeleteBrandRequest) (*emptypb.Empty, error)
+	// Управление блюдами (Админы/Овнеры)
+	CreateDish(context.Context, *CreateDishRequest) (*Dish, error)
+	UpdateDish(context.Context, *UpdateDishRequest) (*Dish, error)
+	DeleteDish(context.Context, *DeleteDishRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedRestaurantServiceServer()
 }
 
@@ -142,6 +225,24 @@ func (UnimplementedRestaurantServiceServer) GetDishesByRestaurantBrandID(context
 }
 func (UnimplementedRestaurantServiceServer) GetDishesByIDs(context.Context, *GetDishesByIDsRequest) (*GetDishesByIDsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetDishesByIDs not implemented")
+}
+func (UnimplementedRestaurantServiceServer) CreateRestaurantBrand(context.Context, *CreateBrandRequest) (*RestaurantBrand, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateRestaurantBrand not implemented")
+}
+func (UnimplementedRestaurantServiceServer) UpdateRestaurantBrand(context.Context, *UpdateBrandRequest) (*RestaurantBrand, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateRestaurantBrand not implemented")
+}
+func (UnimplementedRestaurantServiceServer) DeleteRestaurantBrand(context.Context, *DeleteBrandRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteRestaurantBrand not implemented")
+}
+func (UnimplementedRestaurantServiceServer) CreateDish(context.Context, *CreateDishRequest) (*Dish, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateDish not implemented")
+}
+func (UnimplementedRestaurantServiceServer) UpdateDish(context.Context, *UpdateDishRequest) (*Dish, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateDish not implemented")
+}
+func (UnimplementedRestaurantServiceServer) DeleteDish(context.Context, *DeleteDishRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteDish not implemented")
 }
 func (UnimplementedRestaurantServiceServer) mustEmbedUnimplementedRestaurantServiceServer() {}
 func (UnimplementedRestaurantServiceServer) testEmbeddedByValue()                           {}
@@ -254,6 +355,114 @@ func _RestaurantService_GetDishesByIDs_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RestaurantService_CreateRestaurantBrand_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateBrandRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RestaurantServiceServer).CreateRestaurantBrand(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RestaurantService_CreateRestaurantBrand_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RestaurantServiceServer).CreateRestaurantBrand(ctx, req.(*CreateBrandRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RestaurantService_UpdateRestaurantBrand_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateBrandRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RestaurantServiceServer).UpdateRestaurantBrand(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RestaurantService_UpdateRestaurantBrand_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RestaurantServiceServer).UpdateRestaurantBrand(ctx, req.(*UpdateBrandRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RestaurantService_DeleteRestaurantBrand_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteBrandRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RestaurantServiceServer).DeleteRestaurantBrand(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RestaurantService_DeleteRestaurantBrand_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RestaurantServiceServer).DeleteRestaurantBrand(ctx, req.(*DeleteBrandRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RestaurantService_CreateDish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateDishRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RestaurantServiceServer).CreateDish(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RestaurantService_CreateDish_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RestaurantServiceServer).CreateDish(ctx, req.(*CreateDishRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RestaurantService_UpdateDish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateDishRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RestaurantServiceServer).UpdateDish(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RestaurantService_UpdateDish_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RestaurantServiceServer).UpdateDish(ctx, req.(*UpdateDishRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RestaurantService_DeleteDish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteDishRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RestaurantServiceServer).DeleteDish(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RestaurantService_DeleteDish_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RestaurantServiceServer).DeleteDish(ctx, req.(*DeleteDishRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RestaurantService_ServiceDesc is the grpc.ServiceDesc for RestaurantService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -280,6 +489,30 @@ var RestaurantService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetDishesByIDs",
 			Handler:    _RestaurantService_GetDishesByIDs_Handler,
+		},
+		{
+			MethodName: "CreateRestaurantBrand",
+			Handler:    _RestaurantService_CreateRestaurantBrand_Handler,
+		},
+		{
+			MethodName: "UpdateRestaurantBrand",
+			Handler:    _RestaurantService_UpdateRestaurantBrand_Handler,
+		},
+		{
+			MethodName: "DeleteRestaurantBrand",
+			Handler:    _RestaurantService_DeleteRestaurantBrand_Handler,
+		},
+		{
+			MethodName: "CreateDish",
+			Handler:    _RestaurantService_CreateDish_Handler,
+		},
+		{
+			MethodName: "UpdateDish",
+			Handler:    _RestaurantService_UpdateDish_Handler,
+		},
+		{
+			MethodName: "DeleteDish",
+			Handler:    _RestaurantService_DeleteDish_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

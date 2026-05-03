@@ -7,6 +7,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/grpcutil"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func mapDomainToPBRestaurant(b domain.RestaurantBrand) *pb.RestaurantBrand {
@@ -122,4 +123,98 @@ func (h *RestaurantHandler) GetDishesByIDs(ctx context.Context, req *pb.GetDishe
 	return &pb.GetDishesByIDsResponse{
 		Dishes: pbDishes,
 	}, nil
+}
+
+func (h *RestaurantHandler) CreateRestaurantBrand(ctx context.Context, req *pb.CreateBrandRequest) (*pb.RestaurantBrand, error) {
+	domainBrand := domain.RestaurantBrand{
+		OwnerProfileID: req.OwnerId,
+		Name:           req.Name,
+		Description:    req.Description,
+	}
+
+	brand, err := h.brandUC.CreateRestaurantBrand(ctx, domainBrand, req.LogoData, req.IdempotencyKey)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	return mapDomainToPBRestaurant(brand), nil
+}
+
+func (h *RestaurantHandler) UpdateRestaurantBrand(ctx context.Context, req *pb.UpdateBrandRequest) (*pb.RestaurantBrand, error) {
+	domainBrand := domain.RestaurantBrand{
+		ID: req.Id,
+	}
+
+	// Обработка optional полей из proto3
+	if req.Name != nil {
+		domainBrand.Name = *req.Name
+	}
+	if req.Description != nil {
+		domainBrand.Description = *req.Description
+	}
+	if req.PromotionTier != nil {
+		domainBrand.PromotionTier = int(*req.PromotionTier)
+	}
+
+	brand, err := h.brandUC.UpdateRestaurantBrand(ctx, domainBrand, req.LogoData, req.IdempotencyKey)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	return mapDomainToPBRestaurant(brand), nil
+}
+
+func (h *RestaurantHandler) DeleteRestaurantBrand(ctx context.Context, req *pb.DeleteBrandRequest) (*emptypb.Empty, error) {
+	err := h.brandUC.DeleteRestaurantBrand(ctx, req.Id)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (h *RestaurantHandler) CreateDish(ctx context.Context, req *pb.CreateDishRequest) (*pb.Dish, error) {
+	domainDish := domain.Dish{
+		RestaurantBrandID: req.RestaurantBrandId,
+		Name:              req.Name,
+		Description:       req.Description,
+		Price:             req.Price,
+	}
+
+	dish, err := h.dishUC.CreateDish(ctx, domainDish, req.ImageData, req.IdempotencyKey)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	return mapDomainToPBDish(dish), nil
+}
+
+func (h *RestaurantHandler) UpdateDish(ctx context.Context, req *pb.UpdateDishRequest) (*pb.Dish, error) {
+	domainDish := domain.Dish{
+		ID: req.Id,
+	}
+
+	if req.Name != nil {
+		domainDish.Name = *req.Name
+	}
+	if req.Description != nil {
+		domainDish.Description = *req.Description
+	}
+	if req.Price != nil {
+		domainDish.Price = *req.Price
+	}
+
+	dish, err := h.dishUC.UpdateDish(ctx, domainDish, req.ImageData, req.IdempotencyKey)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	return mapDomainToPBDish(dish), nil
+}
+
+func (h *RestaurantHandler) DeleteDish(ctx context.Context, req *pb.DeleteDishRequest) (*emptypb.Empty, error) {
+	err := h.dishUC.DeleteDish(ctx, req.Id)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	return &emptypb.Empty{}, nil
 }
