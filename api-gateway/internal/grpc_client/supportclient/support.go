@@ -79,7 +79,8 @@ type Template struct {
 }
 
 // Интерфейсы
-
+//
+//go:generate mockgen -destination=mocks/support_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/supportclient SupportClient
 type SupportClient interface {
 	// Пользовательская часть
 	CreateTicket(ctx context.Context, input CreateTicketInput, idempotencyKey string) (string, error)

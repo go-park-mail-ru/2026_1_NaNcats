@@ -16,6 +16,7 @@ var (
 	ErrInternal           = errors.New("internal server error")
 )
 
+//go:generate mockgen -destination=mocks/user_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/userclient UserClient
 type UserClient interface {
 	CreateUser(ctx context.Context, name, email, password, idempotencyKey string) (int64, error)
 	GetByID(ctx context.Context, userID int64) (*pbUser.User, error)

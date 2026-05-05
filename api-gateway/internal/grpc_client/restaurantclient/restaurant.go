@@ -17,6 +17,7 @@ var (
 	ErrInternal = errors.New("internal server error")
 )
 
+//go:generate mockgen -destination=mocks/restaurant_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/restaurantclient RestaurantClient
 type RestaurantClient interface {
 	GetRestaurantBrandsList(ctx context.Context, limit, offset int32) ([]*pbRestaurant.RestaurantBrand, error)
 	GetRestaurantBrandByID(ctx context.Context, id int64) (*pbRestaurant.RestaurantBrand, error)

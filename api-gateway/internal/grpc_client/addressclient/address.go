@@ -31,6 +31,7 @@ type Address struct {
 	Label          string
 }
 
+//go:generate mockgen -destination=mocks/address_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/addressclient AddressClient
 type AddressClient interface {
 	AddAddress(ctx context.Context, userID int64, addr Address, idempotencyKey string) (string, error)
 	GetMyAddresses(ctx context.Context, userID int64) ([]Address, error)

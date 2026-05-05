@@ -1,6 +1,5 @@
 package address
 
-/*
 import (
 	"bytes"
 	"context"
@@ -10,195 +9,368 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	domainMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain/mocks"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/mocks"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/addressclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/addressclient/mocks"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
 func TestAddressHandler_AddAddress(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockUseCase := mocks.NewMockAddressUseCase(ctrl)
-	mockLogger := domainMocks.NewNopLogger()
-	h := NewAddressHandler(mockUseCase, mockLogger)
-
-	addrReq := AddressRequest{
-		AddressText: "Москва",
-		Lat:         55.75,
-		Lon:         37.61,
+	type mockInit func(m *mocks.MockAddressClient)
+	tests := []struct {
+		name           string
+		userID         any
+		idemKey        string
+		body           any
+		mockInit       mockInit
+		expectedStatus int
+	}{
+		{
+			name:    "Успешное добавление адреса",
+			userID:  int64(1),
+			idemKey: "test-key",
+			body: AddressRequest{
+				AddressText: "Москва",
+				Lat:         55.75,
+				Lon:         37.61,
+				Label:       "Дом",
+			},
+			mockInit: func(m *mocks.MockAddressClient) {
+				m.EXPECT().
+					AddAddress(gomock.Any(), int64(1), gomock.Any(), "test-key").
+					Return("uuid-123", nil)
+			},
+			expectedStatus: http.StatusCreated,
+		},
+		{
+			name:           "Ошибка: пользователь не авторизован",
+			userID:         nil,
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:           "Ошибка: отсутствует заголовок идемпотентности",
+			userID:         int64(1),
+			idemKey:        "",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "Ошибка: невалидный JSON",
+			userID:         int64(1),
+			idemKey:        "key",
+			body:           "invalid-json",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:    "Ошибка gRPC клиента",
+			userID:  int64(1),
+			idemKey: "key",
+			body:    AddressRequest{AddressText: "Тест"},
+			mockInit: func(m *mocks.MockAddressClient) {
+				m.EXPECT().
+					AddAddress(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return("", errors.New("grpc error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
 	}
-	body, _ := json.Marshal(addrReq)
 
-	t.Run("Успешное добавление адреса", func(t *testing.T) {
-		r := httptest.NewRequest(http.MethodPost, "/address", bytes.NewBuffer(body))
-		ctx := context.WithValue(r.Context(), middleware.UserIDKey, 1)
-		r = r.WithContext(ctx)
-		w := httptest.NewRecorder()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-		mockUseCase.EXPECT().
-			AddAddress(gomock.Any(), 1, gomock.Any()).
-			Return("uuid-123", nil)
+			mockClient := mocks.NewMockAddressClient(ctrl)
+			if tt.mockInit != nil {
+				tt.mockInit(mockClient)
+			}
 
-		h.AddAddress(w, r)
+			handler := NewAddressHandler(mockClient, logger.NewNopLogger())
 
-		assert.Equal(t, http.StatusCreated, w.Code)
-		assert.Contains(t, w.Body.String(), "uuid-123")
-	})
+			var buf bytes.Buffer
+			if s, ok := tt.body.(string); ok {
+				buf.WriteString(s)
+			} else {
+				_ = json.NewEncoder(&buf).Encode(tt.body)
+			}
 
-	t.Run("Ошибка декодирования JSON", func(t *testing.T) {
-		r := httptest.NewRequest(http.MethodPost, "/address", bytes.NewBuffer([]byte("invalid")))
-		ctx := context.WithValue(r.Context(), middleware.UserIDKey, 1)
-		r = r.WithContext(ctx)
-		w := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodPost, "/profile/addresses", &buf)
+			if tt.userID != nil {
+				req = req.WithContext(context.WithValue(req.Context(), middleware.UserIDKey, tt.userID))
+			}
+			if tt.idemKey != "" {
+				req.Header.Set("Idempotency-Key", tt.idemKey)
+			}
 
-		h.AddAddress(w, r)
+			rec := httptest.NewRecorder()
+			handler.AddAddress(rec, req)
 
-		assert.Equal(t, http.StatusBadRequest, w.Code)
-	})
-
-	t.Run("Ошибка в UseCase", func(t *testing.T) {
-		r := httptest.NewRequest(http.MethodPost, "/address", bytes.NewBuffer(body))
-		ctx := context.WithValue(r.Context(), middleware.UserIDKey, 1)
-		r = r.WithContext(ctx)
-		w := httptest.NewRecorder()
-
-		mockUseCase.EXPECT().
-			AddAddress(gomock.Any(), 1, gomock.Any()).
-			Return("", errors.New("db error"))
-
-		h.AddAddress(w, r)
-
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
-	})
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+		})
+	}
 }
 
 func TestAddressHandler_GetAddresses(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	type mockInit func(m *mocks.MockAddressClient)
+	tests := []struct {
+		name           string
+		userID         any
+		mockInit       mockInit
+		expectedStatus int
+	}{
+		{
+			name:   "Успешное получение списка адресов",
+			userID: int64(1),
+			mockInit: func(m *mocks.MockAddressClient) {
+				m.EXPECT().
+					GetMyAddresses(gomock.Any(), int64(1)).
+					Return([]addressclient.Address{
+						{PublicID: "uuid-1", Label: "Дом", Location: addressclient.Location{AddressText: "Арбат"}},
+					}, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "Ошибка: пользователь не авторизован",
+			userID:         nil,
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:   "Ошибка gRPC клиента",
+			userID: int64(1),
+			mockInit: func(m *mocks.MockAddressClient) {
+				m.EXPECT().
+					GetMyAddresses(gomock.Any(), int64(1)).
+					Return(nil, errors.New("fail"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
 
-	mockUseCase := mocks.NewMockAddressUseCase(ctrl)
-	mockLogger := domainMocks.NewNopLogger()
-	h := NewAddressHandler(mockUseCase, mockLogger)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-	t.Run("Успешное получение списка адресов", func(t *testing.T) {
-		r := httptest.NewRequest(http.MethodGet, "/address", nil)
-		ctx := context.WithValue(r.Context(), middleware.UserIDKey, 1)
-		r = r.WithContext(ctx)
-		w := httptest.NewRecorder()
+			mockClient := mocks.NewMockAddressClient(ctrl)
+			if tt.mockInit != nil {
+				tt.mockInit(mockClient)
+			}
 
-		mockUseCase.EXPECT().
-			GetMyAddresses(gomock.Any(), 1).
-			Return([]domain.Address{{PublicID: "1"}}, nil)
+			handler := NewAddressHandler(mockClient, logger.NewNopLogger())
 
-		h.GetAddresses(w, r)
+			req := httptest.NewRequest(http.MethodGet, "/profile/addresses", nil)
+			if tt.userID != nil {
+				req = req.WithContext(context.WithValue(req.Context(), middleware.UserIDKey, tt.userID))
+			}
 
-		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Contains(t, w.Body.String(), "addresses")
-	})
+			rec := httptest.NewRecorder()
+			handler.GetAddresses(rec, req)
 
-	t.Run("Ошибка UseCase при получении", func(t *testing.T) {
-		r := httptest.NewRequest(http.MethodGet, "/address", nil)
-		ctx := context.WithValue(r.Context(), middleware.UserIDKey, 1)
-		r = r.WithContext(ctx)
-		w := httptest.NewRecorder()
-
-		mockUseCase.EXPECT().
-			GetMyAddresses(gomock.Any(), 1).
-			Return(nil, errors.New("error"))
-
-		h.GetAddresses(w, r)
-
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
-	})
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+		})
+	}
 }
 
 func TestAddressHandler_DeleteAddress(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	type mockInit func(m *mocks.MockAddressClient)
+	tests := []struct {
+		name           string
+		userID         any
+		idemKey        string
+		pathID         string
+		mockInit       mockInit
+		expectedStatus int
+	}{
+		{
+			name:    "Успешное удаление адреса",
+			userID:  int64(1),
+			idemKey: "idem-key",
+			pathID:  "uuid-123",
+			mockInit: func(m *mocks.MockAddressClient) {
+				m.EXPECT().
+					DeleteAddress(gomock.Any(), int64(1), "uuid-123", "idem-key").
+					Return(nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "Ошибка: не авторизован",
+			userID:         nil,
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:           "Ошибка: отсутствует Idempotency-Key",
+			userID:         int64(1),
+			idemKey:        "",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "Ошибка: пустой ID в пути",
+			userID:         int64(1),
+			idemKey:        "key",
+			pathID:         "",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:    "Ошибка: адрес не найден",
+			userID:  int64(1),
+			idemKey: "key",
+			pathID:  "not-found",
+			mockInit: func(m *mocks.MockAddressClient) {
+				m.EXPECT().
+					DeleteAddress(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(addressclient.ErrAddressNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+	}
 
-	mockUseCase := mocks.NewMockAddressUseCase(ctrl)
-	mockLogger := domainMocks.NewNopLogger()
-	h := NewAddressHandler(mockUseCase, mockLogger)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-	t.Run("Успешное удаление адреса", func(t *testing.T) {
-		r := httptest.NewRequest(http.MethodDelete, "/address/uuid-123", nil)
-		r.SetPathValue("id", "uuid-123")
-		ctx := context.WithValue(r.Context(), middleware.UserIDKey, 1)
-		r = r.WithContext(ctx)
-		w := httptest.NewRecorder()
+			mockClient := mocks.NewMockAddressClient(ctrl)
+			if tt.mockInit != nil {
+				tt.mockInit(mockClient)
+			}
 
-		mockUseCase.EXPECT().
-			DeleteAddress(gomock.Any(), 1, "uuid-123").
-			Return(nil)
+			handler := NewAddressHandler(mockClient, logger.NewNopLogger())
 
-		h.DeleteAddress(w, r)
+			req := httptest.NewRequest(http.MethodDelete, "/profile/addresses/"+tt.pathID, nil)
+			if tt.userID != nil {
+				req = req.WithContext(context.WithValue(req.Context(), middleware.UserIDKey, tt.userID))
+			}
+			if tt.idemKey != "" {
+				req.Header.Set("Idempotency-Key", tt.idemKey)
+			}
+			req.SetPathValue("id", tt.pathID)
 
-		assert.Equal(t, http.StatusOK, w.Code)
-	})
+			rec := httptest.NewRecorder()
+			handler.DeleteAddress(rec, req)
 
-	t.Run("Ошибка при удалении", func(t *testing.T) {
-		r := httptest.NewRequest(http.MethodDelete, "/address/uuid-123", nil)
-		r.SetPathValue("id", "uuid-123")
-		ctx := context.WithValue(r.Context(), middleware.UserIDKey, 1)
-		r = r.WithContext(ctx)
-		w := httptest.NewRecorder()
-
-		mockUseCase.EXPECT().
-			DeleteAddress(gomock.Any(), 1, "uuid-123").
-			Return(errors.New("fail"))
-
-		h.DeleteAddress(w, r)
-
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
-	})
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+		})
+	}
 }
 
 func TestAddressHandler_UpdateAddress(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	type mockInit func(m *mocks.MockAddressClient)
 
-	mockUseCase := mocks.NewMockAddressUseCase(ctrl)
-	mockLogger := domainMocks.NewNopLogger()
-	h := NewAddressHandler(mockUseCase, mockLogger)
+	tests := []struct {
+		name           string
+		userID         any
+		idemKey        string
+		pathID         string
+		body           any
+		mockInit       mockInit
+		expectedStatus int
+	}{
+		{
+			name:    "Успешное обновление адреса",
+			userID:  int64(1),
+			idemKey: "idem-upd-123",
+			pathID:  "addr-uuid-456",
+			body: AddressRequest{
+				AddressText: "Новая Москва",
+				Lat:         55.1,
+				Lon:         37.1,
+			},
+			mockInit: func(m *mocks.MockAddressClient) {
+				m.EXPECT().
+					UpdateAddress(gomock.Any(), int64(1), gomock.Any(), "idem-upd-123").
+					Return(nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "Ошибка: пользователь не авторизован",
+			userID:         nil,
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:           "Ошибка: отсутствует заголовок идемпотентности",
+			userID:         int64(1),
+			idemKey:        "",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "Ошибка: пустой ID адреса в пути",
+			userID:         int64(1),
+			idemKey:        "key",
+			pathID:         "",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "Ошибка: невалидный JSON в теле запроса",
+			userID:         int64(1),
+			idemKey:        "key",
+			pathID:         "uuid",
+			body:           "{invalid",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:    "Ошибка: адрес не найден",
+			userID:  int64(1),
+			idemKey: "key",
+			pathID:  "missing-uuid",
+			body:    AddressRequest{AddressText: "Тест"},
+			mockInit: func(m *mocks.MockAddressClient) {
+				m.EXPECT().
+					UpdateAddress(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(addressclient.ErrAddressNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:    "Ошибка: системная ошибка gRPC",
+			userID:  int64(1),
+			idemKey: "key",
+			pathID:  "uuid",
+			body:    AddressRequest{AddressText: "Тест"},
+			mockInit: func(m *mocks.MockAddressClient) {
+				m.EXPECT().
+					UpdateAddress(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(errors.New("grpc crash"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
 
-	addrReq := AddressRequest{AddressText: "Новый адрес"}
-	body, _ := json.Marshal(addrReq)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-	t.Run("Успешное обновление адреса", func(t *testing.T) {
-		r := httptest.NewRequest(http.MethodPut, "/address/uuid-123", bytes.NewBuffer(body))
-		r.SetPathValue("id", "uuid-123")
-		ctx := context.WithValue(r.Context(), middleware.UserIDKey, 1)
-		r = r.WithContext(ctx)
-		w := httptest.NewRecorder()
+			mockClient := mocks.NewMockAddressClient(ctrl)
+			if tt.mockInit != nil {
+				tt.mockInit(mockClient)
+			}
 
-		mockUseCase.EXPECT().
-			UpdateAddress(gomock.Any(), 1, gomock.Any()).
-			Return(nil)
+			handler := NewAddressHandler(mockClient, logger.NewNopLogger())
 
-		h.UpdateAddress(w, r)
+			var buf bytes.Buffer
+			if s, ok := tt.body.(string); ok {
+				buf.WriteString(s)
+			} else {
+				_ = json.NewEncoder(&buf).Encode(tt.body)
+			}
 
-		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Contains(t, w.Body.String(), "successfully")
-	})
+			req := httptest.NewRequest(http.MethodPatch, "/api/profile/addresses/"+tt.pathID, &buf)
+			if tt.userID != nil {
+				req = req.WithContext(context.WithValue(req.Context(), middleware.UserIDKey, tt.userID))
+			}
+			if tt.idemKey != "" {
+				req.Header.Set("Idempotency-Key", tt.idemKey)
+			}
+			req.SetPathValue("id", tt.pathID)
 
-	t.Run("Ошибка при обновлении", func(t *testing.T) {
-		r := httptest.NewRequest(http.MethodPut, "/address/uuid-123", bytes.NewBuffer(body))
-		r.SetPathValue("id", "uuid-123")
-		ctx := context.WithValue(r.Context(), middleware.UserIDKey, 1)
-		r = r.WithContext(ctx)
-		w := httptest.NewRecorder()
+			rec := httptest.NewRecorder()
+			handler.UpdateAddress(rec, req)
 
-		mockUseCase.EXPECT().
-			UpdateAddress(gomock.Any(), 1, gomock.Any()).
-			Return(errors.New("error"))
-
-		h.UpdateAddress(w, r)
-
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
-	})
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+		})
+	}
 }
-*/
