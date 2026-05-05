@@ -14,9 +14,7 @@ var (
 	ErrInternal              = errors.New("internal server error")
 )
 
-// PaymentMethod.ID — это yookassa external_id (см. GetUserCards: pbCard.ExternalId).
-// Фронт его получает в /api/profile/cards и отправляет в payment_method_id
-// при создании заказа — YooKassa тогда сразу списывает с этой карты, без формы.
+//go:generate mockgen -destination=../../../../shared/proto/payment/mocks/payment_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/payment PaymentServiceClient
 type PaymentMethod struct {
 	ID         string
 	CardType   string
