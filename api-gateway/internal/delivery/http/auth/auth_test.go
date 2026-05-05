@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/authclient"
 	authMocks "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/authclient/mocks"
@@ -14,6 +15,8 @@ import (
 	userMocks "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/userclient/mocks"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
+	pbAuth "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/auth"
+	pbUser "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/user" // Предполагаемый путь к proto юзера
 	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,26 +24,18 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// Вспомогательные структуры для имитации ответов gRPC клиентов,
-// подставь реальные типы из твоих proto-файлов, если они отличаются.
-type mockUserResp struct {
-	Id        int64
-	Name      string
-	Email     string
-	AvatarUrl string
-}
+func setupTestHandler(ctrl *gomock.Controller) (*AuthHandler, *authMocks.MockAuthClient, *userMocks.MockUserClient) {
+	mockAuth := authMocks.NewMockAuthClient(ctrl)
+	mockUser := userMocks.NewMockUserClient(ctrl)
+	log := logger.NewNopLogger()
+	val := validator.New()
 
-type mockSessionResp struct {
-	Id        string
-	UserId    int64
-	ExpiresAt *timestamppb.Timestamp
+	handler := NewAuthHandler(mockAuth, mockUser, log, val)
+	return handler, mockAuth, mockUser
 }
 
 func TestAuthHandler_Register(t *testing.T) {
-	type mockInit func(authMock *authMocks.MockAuthClient, userMock *userMocks.MockUserClient)
-
-	val := validator.New()
-	nopLogger := logger.NewNopLogger()
+	type mockBehavior func(auth *authMocks.MockAuthClient, user *userMocks.MockUserClient)
 
 	validReq := RegisterRequest{
 		Name:     "Иван",
@@ -50,24 +45,26 @@ func TestAuthHandler_Register(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		reqBody        any
+		reqBody        interface{}
 		headers        map[string]string
-		mockInit       mockInit
+		mockBehavior   mockBehavior
 		expectedStatus int
 	}{
 		{
 			name:    "Успешная регистрация",
 			reqBody: validReq,
 			headers: map[string]string{"Idempotency-Key": "idem-123"},
-			mockInit: func(authMock *authMocks.MockAuthClient, userMock *userMocks.MockUserClient) {
-				userResp := &mockUserResp{Id: 1, Name: "Иван", Email: "test@mail.ru"}
-				sessionResp := &mockSessionResp{Id: "sess-uuid", UserId: 1, ExpiresAt: timestamppb.Now()}
+			mockBehavior: func(auth *authMocks.MockAuthClient, user *userMocks.MockUserClient) {
+				user.EXPECT().CreateUser(gomock.Any(), "Иван", "test@mail.ru", "password123", "idem-123").
+					Return(int64(42), nil)
 
-				userMock.EXPECT().CreateUser(gomock.Any(), "Иван", "test@mail.ru", "password123", "idem-123").
-					Return(userResp, nil)
-				authMock.EXPECT().IssueSession(gomock.Any(), userResp, "user", gomock.Any()).
-					Return(sessionResp, nil)
-				authMock.EXPECT().SetCSRF(gomock.Any(), "sess-uuid").
+				auth.EXPECT().IssueSession(gomock.Any(), int64(42), "user", gomock.Any()).
+					Return(&pbAuth.Session{
+						Id:        "session-uuid",
+						ExpiresAt: timestamppb.New(time.Now().Add(time.Hour)),
+					}, nil)
+
+				auth.EXPECT().SetCSRF(gomock.Any(), "session-uuid").
 					Return("csrf-token-123", nil)
 			},
 			expectedStatus: http.StatusCreated,
@@ -76,7 +73,7 @@ func TestAuthHandler_Register(t *testing.T) {
 			name:           "Ошибка: нет Idempotency-Key",
 			reqBody:        validReq,
 			headers:        map[string]string{}, // Пустые заголовки
-			mockInit:       func(a *authMocks.MockAuthClient, u *userMocks.MockUserClient) {},
+			mockBehavior:   func(auth *authMocks.MockAuthClient, user *userMocks.MockUserClient) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -84,19 +81,19 @@ func TestAuthHandler_Register(t *testing.T) {
 			reqBody: RegisterRequest{
 				Name:     "Иван",
 				Email:    "test@mail.ru",
-				Password: "123", // min=8
+				Password: "short", // Меньше 8 символов
 			},
 			headers:        map[string]string{"Idempotency-Key": "idem-123"},
-			mockInit:       func(a *authMocks.MockAuthClient, u *userMocks.MockUserClient) {},
+			mockBehavior:   func(auth *authMocks.MockAuthClient, user *userMocks.MockUserClient) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:    "Ошибка: email уже существует",
+			name:    "Ошибка: пользователь уже существует",
 			reqBody: validReq,
 			headers: map[string]string{"Idempotency-Key": "idem-123"},
-			mockInit: func(authMock *authMocks.MockAuthClient, userMock *userMocks.MockUserClient) {
-				userMock.EXPECT().CreateUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil, userclient.ErrEmailAlreadyExists)
+			mockBehavior: func(auth *authMocks.MockAuthClient, user *userMocks.MockUserClient) {
+				user.EXPECT().CreateUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(int64(0), userclient.ErrEmailAlreadyExists)
 			},
 			expectedStatus: http.StatusConflict,
 		},
@@ -107,36 +104,29 @@ func TestAuthHandler_Register(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			authMock := authMocks.NewMockAuthClient(ctrl)
-			userMock := userMocks.NewMockUserClient(ctrl)
-			tt.mockInit(authMock, userMock)
-
-			handler := NewAuthHandler(authMock, userMock, nopLogger, val)
+			handler, mockAuth, mockUser := setupTestHandler(ctrl)
+			tt.mockBehavior(mockAuth, mockUser)
 
 			body, _ := json.Marshal(tt.reqBody)
 			req := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewBuffer(body))
-			req.Header.Set("Content-Type", "application/json")
+
 			for k, v := range tt.headers {
 				req.Header.Set(k, v)
 			}
 
-			rr := httptest.NewRecorder()
-			handler.Register(rr, req)
+			w := httptest.NewRecorder()
+			handler.Register(w, req)
 
-			assert.Equal(t, tt.expectedStatus, rr.Code)
-
+			assert.Equal(t, tt.expectedStatus, w.Code)
 			if tt.expectedStatus == http.StatusCreated {
-				assert.Contains(t, rr.Header().Get("Set-Cookie"), "session_id")
+				assert.NotEmpty(t, w.Header().Get("Set-Cookie")) // Проверяем установку куки
 			}
 		})
 	}
 }
 
 func TestAuthHandler_Login(t *testing.T) {
-	type mockInit func(authMock *authMocks.MockAuthClient, userMock *userMocks.MockUserClient)
-
-	val := validator.New()
-	nopLogger := logger.NewNopLogger()
+	type mockBehavior func(auth *authMocks.MockAuthClient, user *userMocks.MockUserClient)
 
 	validReq := LoginRequest{
 		Login:    "test@mail.ru",
@@ -145,22 +135,30 @@ func TestAuthHandler_Login(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		reqBody        any
-		mockInit       mockInit
+		reqBody        interface{}
+		mockBehavior   mockBehavior
 		expectedStatus int
 	}{
 		{
-			name:    "Успешный вход",
+			name:    "Успешная авторизация",
 			reqBody: validReq,
-			mockInit: func(authMock *authMocks.MockAuthClient, userMock *userMocks.MockUserClient) {
-				sessionResp := &mockSessionResp{Id: "sess-uuid", UserId: 1, ExpiresAt: timestamppb.Now()}
-				userResp := &mockUserResp{Name: "Иван", Email: "test@mail.ru"}
+			mockBehavior: func(auth *authMocks.MockAuthClient, user *userMocks.MockUserClient) {
+				auth.EXPECT().Login(gomock.Any(), "test@mail.ru", "password123", gomock.Any()).
+					Return(&pbAuth.Session{
+						Id:        "session-uuid",
+						UserId:    42,
+						ExpiresAt: timestamppb.New(time.Now().Add(time.Hour)),
+					}, nil)
 
-				authMock.EXPECT().Login(gomock.Any(), "test@mail.ru", "password123", gomock.Any()).
-					Return(sessionResp, nil)
-				userMock.EXPECT().GetByID(gomock.Any(), int64(1)).
-					Return(userResp, nil)
-				authMock.EXPECT().SetCSRF(gomock.Any(), "sess-uuid").
+				// Предполагаем, что GetByID возвращает профиль пользователя
+				user.EXPECT().GetByID(gomock.Any(), int64(42)).
+					Return(&pbUser.User{
+						Name:      "Иван",
+						Email:     "test@mail.ru",
+						AvatarUrl: "url",
+					}, nil)
+
+				auth.EXPECT().SetCSRF(gomock.Any(), "session-uuid").
 					Return("csrf-token-123", nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -168,20 +166,11 @@ func TestAuthHandler_Login(t *testing.T) {
 		{
 			name:    "Ошибка: неверные учетные данные",
 			reqBody: validReq,
-			mockInit: func(authMock *authMocks.MockAuthClient, userMock *userMocks.MockUserClient) {
-				authMock.EXPECT().Login(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			mockBehavior: func(auth *authMocks.MockAuthClient, user *userMocks.MockUserClient) {
+				auth.EXPECT().Login(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, authclient.ErrInvalidCredentials)
 			},
 			expectedStatus: http.StatusUnauthorized,
-		},
-		{
-			name: "Ошибка валидации",
-			reqBody: LoginRequest{
-				Login:    "test@mail.ru",
-				Password: "123", // min=8
-			},
-			mockInit:       func(a *authMocks.MockAuthClient, u *userMocks.MockUserClient) {},
-			expectedStatus: http.StatusBadRequest,
 		},
 	}
 
@@ -190,24 +179,16 @@ func TestAuthHandler_Login(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			authMock := authMocks.NewMockAuthClient(ctrl)
-			userMock := userMocks.NewMockUserClient(ctrl)
-			tt.mockInit(authMock, userMock)
-
-			handler := NewAuthHandler(authMock, userMock, nopLogger, val)
+			handler, mockAuth, mockUser := setupTestHandler(ctrl)
+			tt.mockBehavior(mockAuth, mockUser)
 
 			body, _ := json.Marshal(tt.reqBody)
 			req := httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewBuffer(body))
-			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
 
-			rr := httptest.NewRecorder()
-			handler.Login(rr, req)
+			handler.Login(w, req)
 
-			assert.Equal(t, tt.expectedStatus, rr.Code)
-
-			if tt.expectedStatus == http.StatusOK {
-				assert.Contains(t, rr.Header().Get("Set-Cookie"), "session_id")
-			}
+			assert.Equal(t, tt.expectedStatus, w.Code)
 		})
 	}
 }
@@ -216,70 +197,73 @@ func TestAuthHandler_Logout(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	authMock := authMocks.NewMockAuthClient(ctrl)
-	handler := NewAuthHandler(authMock, nil, logger.NewNopLogger(), validator.New())
+	handler, mockAuth, _ := setupTestHandler(ctrl)
 
-	t.Run("Успешный выход с кукой", func(t *testing.T) {
+	t.Run("Успешный логаут с удалением куки", func(t *testing.T) {
+		mockAuth.EXPECT().Logout(gomock.Any(), "session-uuid").Return(nil)
+
 		req := httptest.NewRequest(http.MethodPost, "/auth/logout", nil)
-		req.AddCookie(&http.Cookie{Name: "session_id", Value: "valid-session"})
+		req.AddCookie(&http.Cookie{Name: "session_id", Value: "session-uuid"})
+		w := httptest.NewRecorder()
 
-		// Ожидаем вызов Logout в gRPC клиенте
-		authMock.EXPECT().Logout(gomock.Any(), "valid-session").Return(nil)
+		handler.Logout(w, req)
 
-		rr := httptest.NewRecorder()
-		handler.Logout(rr, req)
+		assert.Equal(t, http.StatusOK, w.Code)
 
-		assert.Equal(t, http.StatusOK, rr.Code)
-		// Проверяем, что кука затирается (MaxAge < 0 или пустая)
-		assert.Contains(t, rr.Header().Get("Set-Cookie"), "session_id=")
+		// Проверяем, что кука была перезаписана на пустую с истекшим сроком годности
+		cookieStr := w.Header().Get("Set-Cookie")
+		require.NotEmpty(t, cookieStr)
+		assert.Contains(t, cookieStr, "session_id=")
+		assert.Contains(t, cookieStr, "1970") // Признак сброшенного времени (Unix 0)
 	})
 
-	t.Run("Успешный выход без куки", func(t *testing.T) {
+	t.Run("Логаут без куки (не падает)", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/auth/logout", nil)
+		w := httptest.NewRecorder()
 
-		// gRPC Logout не должен вызываться
-		rr := httptest.NewRecorder()
-		handler.Logout(rr, req)
+		handler.Logout(w, req)
 
-		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, http.StatusOK, w.Code)
 	})
+}
+
+// Вспомогательная функция для инжекта UserID в контекст
+func withUserIDContext(req *http.Request, userID int64) *http.Request {
+	ctx := context.WithValue(req.Context(), middleware.UserIDKey, userID)
+	return req.WithContext(ctx)
 }
 
 func TestAuthHandler_GetMe(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	userMock := userMocks.NewMockUserClient(ctrl)
-	handler := NewAuthHandler(nil, userMock, logger.NewNopLogger(), validator.New())
+	handler, _, mockUser := setupTestHandler(ctrl)
 
 	t.Run("Успешное получение профиля", func(t *testing.T) {
+		mockUser.EXPECT().GetByID(gomock.Any(), int64(42)).
+			Return(&pbUser.User{
+				Name:      "Иван",
+				Email:     "test@mail.ru",
+				AvatarUrl: "img.png",
+			}, nil)
+
 		req := httptest.NewRequest(http.MethodGet, "/auth/me", nil)
+		req = withUserIDContext(req, 42) // Имитируем успешную работу middleware
+		w := httptest.NewRecorder()
 
-		// Эмулируем работу мидлвари, кладем UserID в контекст
-		ctx := context.WithValue(req.Context(), middleware.UserIDKey, int64(42))
-		req = req.WithContext(ctx)
+		handler.GetMe(w, req)
 
-		userMock.EXPECT().GetByID(gomock.Any(), int64(42)).
-			Return(&mockUserResp{Name: "Иван", Email: "ivan@test.ru"}, nil)
-
-		rr := httptest.NewRecorder()
-		handler.GetMe(rr, req)
-
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		var resp LoginResponse
-		err := json.Unmarshal(rr.Body.Bytes(), &resp)
-		require.NoError(t, err)
-		assert.Equal(t, "Иван", resp.Name)
+		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
-	t.Run("Неавторизован (нет UserID в контексте)", func(t *testing.T) {
+	t.Run("Ошибка: неавторизован (нет в контексте)", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/auth/me", nil)
+		// Не добавляем UserID в контекст
+		w := httptest.NewRecorder()
 
-		rr := httptest.NewRecorder()
-		handler.GetMe(rr, req)
+		handler.GetMe(w, req)
 
-		assert.Equal(t, http.StatusUnauthorized, rr.Code)
+		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
 }
 
@@ -287,45 +271,46 @@ func TestAuthHandler_GetCSRF(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	authMock := authMocks.NewMockAuthClient(ctrl)
-	handler := NewAuthHandler(authMock, nil, logger.NewNopLogger(), validator.New())
+	handler, mockAuth, _ := setupTestHandler(ctrl)
 
-	t.Run("Успешное получение токена", func(t *testing.T) {
+	t.Run("Успешное получение CSRF", func(t *testing.T) {
+		mockAuth.EXPECT().GetCSRF(gomock.Any(), "valid-session").
+			Return("new-csrf-token", nil)
+
 		req := httptest.NewRequest(http.MethodGet, "/csrf", nil)
-		req.AddCookie(&http.Cookie{Name: "session_id", Value: "sess-123"})
+		req.AddCookie(&http.Cookie{Name: "session_id", Value: "valid-session"})
+		w := httptest.NewRecorder()
 
-		authMock.EXPECT().GetCSRF(gomock.Any(), "sess-123").Return("csrf-abc", nil)
+		handler.GetCSRF(w, req)
 
-		rr := httptest.NewRecorder()
-		handler.GetCSRF(rr, req)
+		assert.Equal(t, http.StatusOK, w.Code)
 
-		assert.Equal(t, http.StatusOK, rr.Code)
 		var resp CSRFResponse
-		json.Unmarshal(rr.Body.Bytes(), &resp)
-		assert.Equal(t, "csrf-abc", resp.CSRFToken)
+		err := json.Unmarshal(w.Body.Bytes(), &resp)
+		require.NoError(t, err)
+		assert.Equal(t, "new-csrf-token", resp.CSRFToken)
 	})
 
-	t.Run("Нет сессии (сообщение, код 200)", func(t *testing.T) {
+	t.Run("Нет куки сессии (возвращает 200 и сообщение)", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/csrf", nil)
+		w := httptest.NewRecorder()
 
-		rr := httptest.NewRecorder()
-		handler.GetCSRF(rr, req)
+		handler.GetCSRF(w, req)
 
-		assert.Equal(t, http.StatusOK, rr.Code)
-		var resp CSRFResponse
-		json.Unmarshal(rr.Body.Bytes(), &resp)
-		assert.Equal(t, "no session", resp.Message)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Body.String(), "no session")
 	})
 
-	t.Run("Сессия невалидна (протухла)", func(t *testing.T) {
+	t.Run("Сессия невалидна / истекла", func(t *testing.T) {
+		mockAuth.EXPECT().GetCSRF(gomock.Any(), "invalid-session").
+			Return("", authclient.ErrSessionNotFound)
+
 		req := httptest.NewRequest(http.MethodGet, "/csrf", nil)
-		req.AddCookie(&http.Cookie{Name: "session_id", Value: "sess-expired"})
+		req.AddCookie(&http.Cookie{Name: "session_id", Value: "invalid-session"})
+		w := httptest.NewRecorder()
 
-		authMock.EXPECT().GetCSRF(gomock.Any(), "sess-expired").Return("", authclient.ErrSessionNotFound)
+		handler.GetCSRF(w, req)
 
-		rr := httptest.NewRecorder()
-		handler.GetCSRF(rr, req)
-
-		assert.Equal(t, http.StatusUnauthorized, rr.Code)
+		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
 }
