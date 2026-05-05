@@ -6,6 +6,8 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository OrderRepository
+
 type OrderRepository interface {
 	CreateOrder(ctx context.Context, order domain.Order, idempotencyKey string) (string, error)
 	GetOrderByPublicID(ctx context.Context, publicID string) (domain.Order, error)

@@ -2,6 +2,8 @@ package logger
 
 import "context"
 
+//go:generate mockgen -source=logger.go -destination=mocks/logger.go -package=mocks Logger
+
 type Field struct {
 	Key   string
 	Value any

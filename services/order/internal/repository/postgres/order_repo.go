@@ -298,7 +298,7 @@ func (r *orderRepo) GetOrdersByUserID(ctx context.Context, userID int64) ([]doma
 	return orders, nil
 }
 
-// GetOrdersByStatuses — нужен фоновому продвижению (auto-advancer).
+// GetOrdersByStatuses - нужен фоновому продвижению (auto-advancer).
 // Возвращает все заказы, чей status входит в переданный список.
 func (r *orderRepo) GetOrdersByStatuses(ctx context.Context, statuses []string) ([]domain.Order, error) {
 	if len(statuses) == 0 {

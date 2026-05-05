@@ -33,6 +33,9 @@ const (
 	SplitStatusCancelled = "cancelled"
 )
 
+//go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase OrderUseCase,CartClient,AddressClient,RestaurantClient,MessagePublisher
+//go:generate gowrap gen -i OrderUseCase -t ../../../../shared/templates/tracing.tmpl -o order_tracing_mw.go -v TracerName=order-service
+
 type CartClient interface {
 	GetCart(ctx context.Context, userID int64) (domain.Cart, int64, error)
 }
@@ -50,8 +53,6 @@ type MessagePublisher interface {
 	PublishJSON(ctx context.Context, queueName string, data any) error
 }
 
-//go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase OrderUseCase
-//go:generate gowrap gen -i OrderUseCase -t ../../../../shared/templates/tracing.tmpl -o order_tracing_mw.go -v TracerName=order-service
 type OrderUseCase interface {
 	CreateOrder(ctx context.Context, req domain.CreateOrderInput, idempotencyKey string) (string, error)
 	GetOrders(ctx context.Context, userID int64) ([]domain.Order, error)

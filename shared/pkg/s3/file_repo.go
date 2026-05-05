@@ -15,8 +15,14 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws"
 )
 
+//go:generate mockgen -destination=mocks/s3_client_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/s3 S3ClientAPI
+type S3ClientAPI interface {
+	PutObject(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error)
+	DeleteObject(ctx context.Context, params *s3.DeleteObjectInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectOutput, error)
+}
+
 type s3Storage struct {
-	client *s3.Client
+	client S3ClientAPI
 	bucket string
 	region string
 }

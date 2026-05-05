@@ -29,9 +29,10 @@ func (c *cartClient) GetCart(ctx context.Context, userID int64) (domain.Cart, in
 	items := make([]domain.CartItem, 0, len(resp.Cart.Items))
 	for _, item := range resp.Cart.Items {
 		items = append(items, domain.CartItem{
-			DishID:   item.DishId,
-			Quantity: int(item.Quantity),
-			Price:    item.Price,
+			DishID:      item.DishId,
+			Quantity:    int(item.Quantity),
+			Price:       item.Price,
+			OwnerUserID: item.OwnerUserId,
 		})
 	}
 
@@ -41,12 +42,4 @@ func (c *cartClient) GetCart(ctx context.Context, userID int64) (domain.Cart, in
 	}
 
 	return cart, resp.TotalCost, nil
-}
-
-func (c *cartClient) ClearCart(ctx context.Context, userID int64, idempotencyKey string) error {
-	_, err := c.client.ClearCart(ctx, &pb.CartOperationRequest{
-		UserId:         userID,
-		IdempotencyKey: idempotencyKey,
-	})
-	return err
 }

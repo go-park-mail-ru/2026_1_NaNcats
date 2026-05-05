@@ -1,12 +1,13 @@
-// Package autoadvance — фоновый «симулятор кухни/курьера» для dev-окружения.
+// Package autoadvance - фоновый симулятор кухни/курьера
 // Каждый тик берёт неотложные заказы из БД и продвигает их вперёд по
-// фиксированной цепочке: paid → in_progress → delivering → finished.
-// После UPDATE публикует GatewayEvent в RabbitMQ — фронт получает live-апдейт
-// через WebSocket (модал заказа + история заказов).
+// фиксированной цепочке: paid -> in_progress -> delivering -> finished.
+// После UPDATE публикует GatewayEvent в RabbitMQ - фронт получает live-апдейт
+// через WebSocket
 package autoadvance
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository"
@@ -14,25 +15,25 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq/events"
 )
 
-// Чёрный ящик публикатора, чтобы не тащить весь rabbitmq.Client в этот пакет.
-type Publisher interface {
-	PublishJSON(ctx context.Context, queue string, payload any) error
-}
-
-// Цепочка статусов для авто-продвижения.
-var transitions = map[string]string{
-	"paid":        "in_progress",
-	"in_progress": "delivering",
-	"waiting":     "delivering",
-	"delivering":  "finished",
-}
-
 func sourceStatuses() []string {
 	out := make([]string, 0, len(transitions))
 	for k := range transitions {
 		out = append(out, k)
 	}
+	sort.Strings(out)
+
 	return out
+}
+
+type Publisher interface {
+	PublishJSON(ctx context.Context, queue string, payload any) error
+}
+
+var transitions = map[string]string{
+	"paid":        "in_progress",
+	"in_progress": "delivering",
+	"waiting":     "delivering",
+	"delivering":  "finished",
 }
 
 type Runner struct {
@@ -51,7 +52,6 @@ func New(repo repository.OrderRepository, pub Publisher, interval time.Duration,
 	}
 }
 
-// Run блокирующий — запускать в горутине. Останавливается при ctx.Done.
 func (r *Runner) Run(ctx context.Context) {
 	r.logger.Info("Order auto-advancer started", logger.String("interval", r.interval.String()))
 	ticker := time.NewTicker(r.interval)
@@ -91,7 +91,6 @@ func (r *Runner) tick(ctx context.Context) {
 			)
 			continue
 		}
-		// Шлём событие в WS (через RabbitMQ → api-gateway → клиент).
 		_ = r.publisher.PublishJSON(ctx, events.QueueGatewayEvents, events.GatewayEvent{
 			OrderID: o.PublicID,
 			Status:  next,

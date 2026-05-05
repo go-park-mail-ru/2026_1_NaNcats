@@ -1,5 +1,7 @@
 package rabbitmq
 
+//go:generate mockgen -source=client.go -destination=mocks/mock_amqp.go -package=mocks
+
 import (
 	"context"
 	"encoding/json"
@@ -12,10 +14,25 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+type AMQPChannel interface {
+	QueueDeclare(name string, durable, autoDelete, exclusive, noWait bool, args amqp.Table) (amqp.Queue, error)
+	PublishWithContext(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error
+	Qos(prefetchCount, prefetchSize int, global bool) error
+	ConsumeWithContext(ctx context.Context, queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args amqp.Table) (<-chan amqp.Delivery, error)
+	Close() error
+}
+
 type RabbitClient struct {
 	conn   *amqp.Connection
-	ch     *amqp.Channel
+	ch     AMQPChannel
 	logger logger.Logger
+}
+
+func NewTestRabbitClient(ch AMQPChannel, logger logger.Logger) *RabbitClient {
+	return &RabbitClient{
+		ch:     ch,
+		logger: logger,
+	}
 }
 
 func NewRabbitClient(url string, logger logger.Logger) (*RabbitClient, error) {

@@ -1,172 +1,203 @@
 package redisrepo
 
-// import (
-// 	"context"
-// 	"errors"
-// 	"testing"
-// 	"time"
+import (
+	"context"
+	"errors"
+	"testing"
+	"time"
 
-// 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/domain"
-// 	"github.com/gomodule/redigo/redis"
-// 	"github.com/rafaeljusto/redigomock/v3"
-// 	"github.com/stretchr/testify/assert"
-// )
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/domain"
+	"github.com/gomodule/redigo/redis"
+	"github.com/rafaeljusto/redigomock/v3"
+	"github.com/stretchr/testify/assert"
+)
 
-// func TestPaymentCacheRepo_SetPendingBinding(t *testing.T) {
-// 	mock := redigomock.NewConn()
-// 	pool := &redis.Pool{
-// 		Dial: func() (redis.Conn, error) { return mock, nil },
-// 	}
-// 	repo := NewPaymentCacheRepo(pool)
-// 	ctx := context.Background()
+func setupMockPool(conn *redigomock.Conn) *redis.Pool {
+	return &redis.Pool{
+		Dial: func() (redis.Conn, error) {
+			return conn, nil
+		},
+	}
+}
 
-// 	tests := []struct {
-// 		name      string
-// 		paymentID string
-// 		userID    int
-// 		ttl       time.Duration
-// 		setup     func()
-// 		wantErr   error
-// 	}{
-// 		{
-// 			name:      "Успешная установка значения",
-// 			paymentID: "pay_123",
-// 			userID:    1,
-// 			ttl:       time.Minute,
-// 			setup: func() {
-// 				mock.Command("SET", "payment:pay_123", 1, "EX", 60).Expect("OK")
-// 			},
-// 			wantErr: nil,
-// 		},
-// 		{
-// 			name:      "Ошибка Redis",
-// 			paymentID: "pay_123",
-// 			userID:    1,
-// 			ttl:       time.Minute,
-// 			setup: func() {
-// 				mock.Command("SET", "payment:pay_123", 1, "EX", 60).ExpectError(errors.New("redis fail"))
-// 			},
-// 			wantErr: errors.New("redis fail"),
-// 		},
-// 		{
-// 			name:      "Результат не OK",
-// 			paymentID: "pay_123",
-// 			userID:    1,
-// 			ttl:       time.Minute,
-// 			setup: func() {
-// 				mock.Command("SET", "payment:pay_123", 1, "EX", 60).Expect("NOT_OK")
-// 			},
-// 			wantErr: domain.ErrRedisResultIsNotOK,
-// 		},
-// 	}
+func TestPaymentCacheRepo_SetPendingBinding(t *testing.T) {
+	type mockBehavior func(conn *redigomock.Conn, paymentID string, userID int64, ttl time.Duration)
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			mock.Clear()
-// 			tt.setup()
-// 			err := repo.SetPendingBinding(ctx, tt.paymentID, tt.userID, tt.ttl)
-// 			if tt.wantErr != nil {
-// 				assert.Error(t, err)
-// 				assert.Equal(t, tt.wantErr.Error(), err.Error())
-// 			} else {
-// 				assert.NoError(t, err)
-// 			}
-// 		})
-// 	}
-// }
+	tests := []struct {
+		name         string
+		paymentID    string
+		userID       int64
+		ttl          time.Duration
+		mockBehavior mockBehavior
+		expectedErr  error
+	}{
+		{
+			name:      "Успешное сохранение биндинга",
+			paymentID: "pay-123",
+			userID:    10,
+			ttl:       60 * time.Second,
+			mockBehavior: func(conn *redigomock.Conn, paymentID string, userID int64, ttl time.Duration) {
+				mkey := "payment:" + paymentID
+				conn.Command("SET", mkey, userID, "EX", int(ttl.Seconds())).Expect("OK")
+			},
+			expectedErr: nil,
+		},
+		{
+			name:      "Ошибка сети Redis",
+			paymentID: "pay-123",
+			userID:    10,
+			ttl:       60 * time.Second,
+			mockBehavior: func(conn *redigomock.Conn, paymentID string, userID int64, ttl time.Duration) {
+				mkey := "payment:" + paymentID
+				conn.Command("SET", mkey, userID, "EX", int(ttl.Seconds())).ExpectError(errors.New("redis timeout"))
+			},
+			expectedErr: errors.New("redis timeout"),
+		},
+		{
+			name:      "Redis вернул не OK",
+			paymentID: "pay-123",
+			userID:    10,
+			ttl:       60 * time.Second,
+			mockBehavior: func(conn *redigomock.Conn, paymentID string, userID int64, ttl time.Duration) {
+				mkey := "payment:" + paymentID
+				conn.Command("SET", mkey, userID, "EX", int(ttl.Seconds())).Expect("FAIL")
+			},
+			expectedErr: domain.ErrRedisResultIsNotOK,
+		},
+	}
 
-// func TestPaymentCacheRepo_DeletePendingBinding(t *testing.T) {
-// 	mock := redigomock.NewConn()
-// 	pool := &redis.Pool{
-// 		Dial: func() (redis.Conn, error) { return mock, nil },
-// 	}
-// 	repo := NewPaymentCacheRepo(pool)
-// 	ctx := context.Background()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockConn := redigomock.NewConn()
+			pool := setupMockPool(mockConn)
 
-// 	tests := []struct {
-// 		name      string
-// 		paymentID string
-// 		setup     func()
-// 		wantErr   bool
-// 	}{
-// 		{
-// 			name:      "Успешное удаление",
-// 			paymentID: "pay_123",
-// 			setup: func() {
-// 				mock.Command("DEL", "payment:pay_123").Expect(int64(1))
-// 			},
-// 			wantErr: false,
-// 		},
-// 		{
-// 			name:      "Ошибка при удалении",
-// 			paymentID: "pay_123",
-// 			setup: func() {
-// 				mock.Command("DEL", "payment:pay_123").ExpectError(errors.New("del fail"))
-// 			},
-// 			wantErr: true,
-// 		},
-// 	}
+			tt.mockBehavior(mockConn, tt.paymentID, tt.userID, tt.ttl)
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			mock.Clear()
-// 			tt.setup()
-// 			err := repo.DeletePendingBinding(ctx, tt.paymentID)
-// 			if tt.wantErr {
-// 				assert.Error(t, err)
-// 			} else {
-// 				assert.NoError(t, err)
-// 			}
-// 		})
-// 	}
-// }
+			repo := NewPaymentCacheRepo(pool)
+			err := repo.SetPendingBinding(context.Background(), tt.paymentID, tt.userID, tt.ttl)
 
-// func TestPaymentCacheRepo_GetUserIDByPaymentID(t *testing.T) {
-// 	mock := redigomock.NewConn()
-// 	pool := &redis.Pool{
-// 		Dial: func() (redis.Conn, error) { return mock, nil },
-// 	}
-// 	repo := NewPaymentCacheRepo(pool)
-// 	ctx := context.Background()
+			if tt.expectedErr != nil {
+				assert.Error(t, err)
+				if errors.Is(tt.expectedErr, domain.ErrRedisResultIsNotOK) {
+					assert.ErrorIs(t, err, domain.ErrRedisResultIsNotOK)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
 
-// 	tests := []struct {
-// 		name      string
-// 		paymentID string
-// 		setup     func()
-// 		want      int
-// 		wantErr   bool
-// 	}{
-// 		{
-// 			name:      "Успешное получение ID",
-// 			paymentID: "pay_123",
-// 			setup: func() {
-// 				mock.Command("GET", "payment:pay_123").Expect(int64(10))
-// 			},
-// 			want:    10,
-// 			wantErr: false,
-// 		},
-// 		{
-// 			name:      "Ключ не найден",
-// 			paymentID: "pay_none",
-// 			setup: func() {
-// 				mock.Command("GET", "payment:pay_none").Expect(nil)
-// 			},
-// 			want:    0,
-// 			wantErr: true,
-// 		},
-// 	}
+func TestPaymentCacheRepo_DeletePendingBinding(t *testing.T) {
+	type mockBehavior func(conn *redigomock.Conn, paymentID string)
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			mock.Clear()
-// 			tt.setup()
-// 			got, err := repo.GetUserIDByPaymentID(ctx, tt.paymentID)
-// 			if tt.wantErr {
-// 				assert.Error(t, err)
-// 			} else {
-// 				assert.NoError(t, err)
-// 				assert.Equal(t, tt.want, got)
-// 			}
-// 		})
-// 	}
-// }
+	tests := []struct {
+		name         string
+		paymentID    string
+		mockBehavior mockBehavior
+		expectedErr  bool
+	}{
+		{
+			name:      "Успешное удаление",
+			paymentID: "pay-123",
+			mockBehavior: func(conn *redigomock.Conn, paymentID string) {
+				mkey := "payment:" + paymentID
+				conn.Command("DEL", mkey).Expect(int64(1))
+			},
+			expectedErr: false,
+		},
+		{
+			name:      "Ошибка при удалении",
+			paymentID: "pay-err",
+			mockBehavior: func(conn *redigomock.Conn, paymentID string) {
+				mkey := "payment:" + paymentID
+				conn.Command("DEL", mkey).ExpectError(errors.New("redis connection reset"))
+			},
+			expectedErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockConn := redigomock.NewConn()
+			pool := setupMockPool(mockConn)
+
+			tt.mockBehavior(mockConn, tt.paymentID)
+
+			repo := NewPaymentCacheRepo(pool)
+			err := repo.DeletePendingBinding(context.Background(), tt.paymentID)
+
+			if tt.expectedErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestPaymentCacheRepo_GetUserIDByPaymentID(t *testing.T) {
+	type mockBehavior func(conn *redigomock.Conn, paymentID string)
+
+	tests := []struct {
+		name         string
+		paymentID    string
+		mockBehavior mockBehavior
+		expectedID   int64
+		expectedErr  error
+	}{
+		{
+			name:      "Успешное получение ID пользователя",
+			paymentID: "pay-123",
+			mockBehavior: func(conn *redigomock.Conn, paymentID string) {
+				mkey := "payment:" + paymentID
+				conn.Command("GET", mkey).Expect(int64(42))
+			},
+			expectedID:  42,
+			expectedErr: nil,
+		},
+		{
+			name:      "Ошибка: ключ не найден (Nil)",
+			paymentID: "pay-404",
+			mockBehavior: func(conn *redigomock.Conn, paymentID string) {
+				mkey := "payment:" + paymentID
+				conn.Command("GET", mkey).ExpectError(redis.ErrNil)
+			},
+			expectedID:  0,
+			expectedErr: domain.ErrUserIDNotFoundInCache,
+		},
+		{
+			name:      "Системная ошибка Redis",
+			paymentID: "pay-err",
+			mockBehavior: func(conn *redigomock.Conn, paymentID string) {
+				mkey := "payment:" + paymentID
+				conn.Command("GET", mkey).ExpectError(errors.New("connection failed"))
+			},
+			expectedID:  0,
+			expectedErr: errors.New("connection failed"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockConn := redigomock.NewConn()
+			pool := setupMockPool(mockConn)
+
+			tt.mockBehavior(mockConn, tt.paymentID)
+
+			repo := NewPaymentCacheRepo(pool)
+			id, err := repo.GetUserIDByPaymentID(context.Background(), tt.paymentID)
+
+			if tt.expectedErr != nil {
+				assert.Error(t, err)
+				if errors.Is(tt.expectedErr, domain.ErrUserIDNotFoundInCache) {
+					assert.ErrorIs(t, err, domain.ErrUserIDNotFoundInCache)
+				}
+				assert.Equal(t, tt.expectedID, id)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedID, id)
+			}
+		})
+	}
+}

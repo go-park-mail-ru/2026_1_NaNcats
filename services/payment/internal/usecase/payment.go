@@ -17,12 +17,13 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+//go:generate mockgen -destination=mocks/payment_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/usecase PaymentUseCase,OrderClient
+//go:generate gowrap gen -i PaymentUseCase -t ../../../../shared/templates/tracing.tmpl -o payment_tracing_mw.go -v TracerName=payment-service
+
 type OrderClient interface {
 	UpdateOrderStatus(ctx context.Context, paymentID string, status string) error
 }
 
-//go:generate mockgen -destination=mocks/payment_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/usecase PaymentUseCase
-//go:generate gowrap gen -i PaymentUseCase -t ../../../../shared/templates/tracing.tmpl -o payment_tracing_mw.go -v TracerName=payment-service
 type PaymentUseCase interface {
 	CreatePayment(ctx context.Context, amount int64, paymentMethodID, idempotencyKey string) (string, string, error)
 	InitiateCardBinding(ctx context.Context, userID int64, idempotencyKey string) (string, error)
@@ -75,7 +76,7 @@ func (p *paymentUseCase) CreatePayment(ctx context.Context, amount int64, paymen
 		Capture:           true,
 		SavePaymentMethod: false,
 		// Confirmation указываем всегда: для новой карты это redirect на форму YooKassa,
-		// для сохранённой — fallback на случай, когда YooKassa внезапно требует 3DS;
+		// для сохранённой - fallback на случай, когда YooKassa внезапно требует 3DS;
 		// без return_url пользователь застрянет на странице YooKassa после подтверждения.
 		Confirmation: &yookassa.CreatePaymentRequestConfirmation{
 			Type:      "redirect",
@@ -262,7 +263,7 @@ func (p *paymentUseCase) ProcessPaymentMethodWebhook(ctx context.Context, pm *yo
 
 // RefreshPaymentStatus тянет актуальный статус из YooKassa REST и применяет
 // его как обычный webhook (через ProcessPaymentWebhook). Используется когда
-// YooKassa-вебхук не доходит до нашего сервера (например, dev на localhost).
+// YooKassa-вебхук не доходит до нашего сервера
 func (p *paymentUseCase) RefreshPaymentStatus(ctx context.Context, paymentID string) (string, error) {
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(attribute.String("payment.external_id", paymentID))

@@ -7,6 +7,9 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+//go:generate mockgen -source=pool.go -destination=mocks/pool.go -package=mocks PgxPool
+//go:generate mockgen -destination=mocks/pgx_tracer.go -package=mocks github.com/jackc/pgx/v5 QueryTracer
+
 type PgxPool interface {
 	Close()
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)

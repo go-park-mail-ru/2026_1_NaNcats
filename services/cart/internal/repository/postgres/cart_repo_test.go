@@ -1,270 +1,280 @@
 package postgres
 
-// import (
-// 	"context"
-// 	"errors"
-// 	"testing"
-// 	"time"
+import (
+	"context"
+	"errors"
+	"regexp"
+	"testing"
+	"time"
 
-// 	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-// 	"github.com/pashagolub/pgxmock/v5"
-// 	"github.com/stretchr/testify/assert"
-// 	"github.com/stretchr/testify/require"
-// )
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/domain"
+	"github.com/jackc/pgx/v5"
+	"github.com/pashagolub/pgxmock/v5"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
-// func TestCartRepo_GetCartByUserID(t *testing.T) {
-// 	ctx := context.Background()
-// 	userID := 1
-// 	now := time.Now().Truncate(time.Second) // Округляем для тестов
+func TestCartRepo_CreateCart(t *testing.T) {
+	type mockBehavior func(mock pgxmock.PgxPoolIface, adminID int64, brandID int64)
 
-// 	// Вспомогательные переменные для передачи указателей в AddRow
-// 	dID1, dID2 := 101, 102
-// 	qty1, qty2 := 2, 1
-// 	name1, name2 := "Burger", "Cola"
-// 	price1, price2 := int64(500), int64(300)
-// 	url1, url2 := "img1.png", "img2.png"
+	tests := []struct {
+		name         string
+		adminID      int64
+		brandID      int64
+		mockBehavior mockBehavior
+		expectedID   string
+		expectedErr  error
+	}{
+		{
+			name:    "Успешное создание корзины",
+			adminID: 1,
+			brandID: 10,
+			mockBehavior: func(mock pgxmock.PgxPoolIface, adminID int64, brandID int64) {
+				mock.ExpectBegin()
 
-// 	// Список колонок должен СТРОГО совпадать с тегами в cartRowDB
-// 	columns := []string{"restaurant_brand_id", "updated_at", "dish_id", "quantity", "name", "price", "image_url"}
+				mock.ExpectQuery(`INSERT INTO "cart"`).
+					WithArgs(adminID, brandID).
+					WillReturnRows(pgxmock.NewRows([]string{"cart_id"}).AddRow("cart-uuid-123"))
 
-// 	tests := []struct {
-// 		name    string
-// 		setup   func(mock pgxmock.PgxPoolIface)
-// 		want    domain.Cart
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name: "Успех: товары в корзине",
-// 			setup: func(mock pgxmock.PgxPoolIface) {
-// 				rows := pgxmock.NewRows(columns).
-// 					AddRow(10, now, &dID1, &qty1, &name1, &price1, &url1).
-// 					AddRow(10, now, &dID2, &qty2, &name2, &price2, &url2)
+				mock.ExpectExec(`INSERT INTO "cart_member"`).
+					WithArgs("cart-uuid-123", adminID).
+					WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
-// 				mock.ExpectQuery(`SELECT (.+) FROM cart c`).
-// 					WithArgs(userID).
-// 					WillReturnRows(rows)
-// 			},
-// 			want: domain.Cart{
-// 				UserID:            userID,
-// 				RestaurantBrandID: 10,
-// 				UpdatedAt:         now,
-// 				Items: []domain.CartItem{
-// 					{DishID: 101, Quantity: 2, Name: "Burger", Price: 500, ImageURL: "img1.png"},
-// 					{DishID: 102, Quantity: 1, Name: "Cola", Price: 300, ImageURL: "img2.png"},
-// 				},
-// 			},
-// 			wantErr: false,
-// 		},
-// 		{
-// 			name: "Успех: корзина существует, но она пустая (LEFT JOIN вернул NULL)",
-// 			setup: func(mock pgxmock.PgxPoolIface) {
-// 				// В этом случае база возвращает 1 строку, где данные корзины есть, а товара - NULL
-// 				rows := pgxmock.NewRows(columns).
-// 					AddRow(10, now, nil, nil, nil, nil, nil)
+				mock.ExpectCommit()
+			},
+			expectedID:  "cart-uuid-123",
+			expectedErr: nil,
+		},
+		{
+			name:    "Ошибка при вставке корзины (откат транзакции)",
+			adminID: 1,
+			brandID: 10,
+			mockBehavior: func(mock pgxmock.PgxPoolIface, adminID int64, brandID int64) {
+				mock.ExpectBegin()
 
-// 				mock.ExpectQuery(`SELECT`).
-// 					WithArgs(userID).
-// 					WillReturnRows(rows)
-// 			},
-// 			want: domain.Cart{
-// 				UserID:            userID,
-// 				RestaurantBrandID: 10,
-// 				UpdatedAt:         now,
-// 				Items:             []domain.CartItem{},
-// 			},
-// 			wantErr: false,
-// 		},
-// 		{
-// 			name: "Успех: запись о корзине вообще отсутствует в БД",
-// 			setup: func(mock pgxmock.PgxPoolIface) {
-// 				mock.ExpectQuery(`SELECT`).
-// 					WithArgs(userID).
-// 					WillReturnRows(pgxmock.NewRows(columns))
-// 			},
-// 			want: domain.Cart{
-// 				UserID: userID,
-// 				Items:  []domain.CartItem{},
-// 			},
-// 			wantErr: false,
-// 		},
-// 		{
-// 			name: "Ошибка: сбой базы данных",
-// 			setup: func(mock pgxmock.PgxPoolIface) {
-// 				mock.ExpectQuery(`SELECT`).
-// 					WithArgs(userID).
-// 					WillReturnError(errors.New("db connection failure"))
-// 			},
-// 			want:    domain.Cart{},
-// 			wantErr: true,
-// 		},
-// 	}
+				mock.ExpectQuery(`INSERT INTO "cart"`).
+					WithArgs(adminID, brandID).
+					WillReturnError(errors.New("db error"))
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			mock, err := pgxmock.NewPool()
-// 			require.NoError(t, err)
-// 			defer mock.Close()
+				mock.ExpectRollback()
+			},
+			expectedID:  "",
+			expectedErr: errors.New("db error"),
+		},
+	}
 
-// 			repo := NewCartRepo(mock)
-// 			tt.setup(mock)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock, err := pgxmock.NewPool()
+			require.NoError(t, err)
+			defer mock.Close()
 
-// 			got, err := repo.GetCartByUserID(ctx, userID)
+			tt.mockBehavior(mock, tt.adminID, tt.brandID)
 
-// 			if tt.wantErr {
-// 				assert.Error(t, err)
-// 			} else {
-// 				assert.NoError(t, err)
-// 				assert.Equal(t, tt.want.UserID, got.UserID)
-// 				assert.Equal(t, tt.want.RestaurantBrandID, got.RestaurantBrandID)
-// 				assert.Equal(t, tt.want.Items, got.Items)
+			repo := NewCartRepo(mock)
+			cartID, err := repo.CreateCart(context.Background(), tt.adminID, tt.brandID)
 
-// 				// Проверка времени с допуском в 1 секунду
-// 				if !tt.want.UpdatedAt.IsZero() {
-// 					assert.WithinDuration(t, tt.want.UpdatedAt, got.UpdatedAt, time.Second)
-// 				}
-// 			}
-// 			assert.NoError(t, mock.ExpectationsWereMet())
-// 		})
-// 	}
-// }
+			if tt.expectedErr != nil {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedErr.Error())
+				assert.Empty(t, cartID)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedID, cartID)
+			}
 
-// func TestCartRepo_UpdateCart(t *testing.T) {
-// 	ctx := context.Background()
-// 	userID := 1
-// 	resID := 10
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
 
-// 	tests := []struct {
-// 		name    string
-// 		items   []domain.CartItem
-// 		setup   func(mock pgxmock.PgxPoolIface)
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name: "Успех",
-// 			items: []domain.CartItem{
-// 				{DishID: 101, Quantity: 2},
-// 				{DishID: 102, Quantity: 1},
-// 			},
-// 			setup: func(mock pgxmock.PgxPoolIface) {
-// 				batch := mock.ExpectBatch()
+func TestCartRepo_AddItem(t *testing.T) {
+	type mockBehavior func(mock pgxmock.PgxPoolIface, cartID string, item domain.CartItem)
 
-// 				batch.ExpectExec(`INSERT INTO cart`).
-// 					WithArgs(userID, resID).
-// 					WillReturnResult(pgxmock.NewResult("INSERT", 1))
+	ownerID := int64(1)
+	item := domain.CartItem{DishID: 100, Quantity: 2, OwnerUserID: &ownerID}
 
-// 				batch.ExpectExec(`DELETE FROM cart_dish`).
-// 					WithArgs(userID).
-// 					WillReturnResult(pgxmock.NewResult("DELETE", 2))
+	tests := []struct {
+		name         string
+		cartID       string
+		item         domain.CartItem
+		mockBehavior mockBehavior
+		expectedErr  string
+	}{
+		{
+			name:   "Успешное добавление блюда",
+			cartID: "cart-123",
+			item:   item,
+			mockBehavior: func(mock pgxmock.PgxPoolIface, cartID string, item domain.CartItem) {
+				mock.ExpectBegin()
 
-// 				batch.ExpectExec(`INSERT INTO cart_dish`).
-// 					WithArgs(userID, []int{101, 102}, []int{2, 1}).
-// 					WillReturnResult(pgxmock.NewResult("INSERT", 2))
-// 			},
-// 			wantErr: false,
-// 		},
-// 		{
-// 			name:  "Успех: пустая корзина",
-// 			items: []domain.CartItem{},
-// 			setup: func(mock pgxmock.PgxPoolIface) {
-// 				batch := mock.ExpectBatch()
+				mock.ExpectQuery(regexp.QuoteMeta(`SELECT status FROM "cart" WHERE cart_id = $1 FOR UPDATE`)).
+					WithArgs(cartID).
+					WillReturnRows(pgxmock.NewRows([]string{"status"}).AddRow("active"))
 
-// 				batch.ExpectExec(`INSERT INTO cart`).
-// 					WithArgs(userID, resID).
-// 					WillReturnResult(pgxmock.NewResult("INSERT", 1))
+				mock.ExpectExec(`INSERT INTO "cart_dish"`).
+					WithArgs(cartID, item.DishID, item.OwnerUserID, item.Quantity).
+					WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
-// 				batch.ExpectExec(`DELETE FROM cart_dish`).
-// 					WithArgs(userID).
-// 					WillReturnResult(pgxmock.NewResult("DELETE", 1))
-// 			},
-// 			wantErr: false,
-// 		},
-// 		{
-// 			name:  "Ошибка бд: сбой на вставке товаров",
-// 			items: []domain.CartItem{{DishID: 101, Quantity: 1}},
-// 			setup: func(mock pgxmock.PgxPoolIface) {
-// 				batch := mock.ExpectBatch()
+				mock.ExpectExec(`INSERT INTO "outbox_events"`).
+					WithArgs(cartID, "CartItemAdded", pgxmock.AnyArg()).
+					WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
-// 				batch.ExpectExec(`INSERT INTO cart`).
-// 					WithArgs(userID, resID).
-// 					WillReturnResult(pgxmock.NewResult("INSERT", 1))
+				mock.ExpectCommit()
+			},
+			expectedErr: "",
+		},
+		{
+			name:   "Ошибка: корзина заблокирована (locked)",
+			cartID: "cart-locked",
+			item:   item,
+			mockBehavior: func(mock pgxmock.PgxPoolIface, cartID string, item domain.CartItem) {
+				mock.ExpectBegin()
 
-// 				batch.ExpectExec(`DELETE FROM cart_dish`).
-// 					WithArgs(userID).
-// 					WillReturnResult(pgxmock.NewResult("DELETE", 1))
+				mock.ExpectQuery(regexp.QuoteMeta(`SELECT status FROM "cart" WHERE cart_id = $1 FOR UPDATE`)).
+					WithArgs(cartID).
+					WillReturnRows(pgxmock.NewRows([]string{"status"}).AddRow(domain.CartStatusLocked))
 
-// 				batch.ExpectExec(`INSERT INTO cart_dish`).
-// 					WithArgs(userID, []int{101}, []int{1}).
-// 					WillReturnError(errors.New("db write error"))
-// 			},
-// 			wantErr: true,
-// 		},
-// 	}
+				mock.ExpectRollback()
+			},
+			expectedErr: "cannot add item: cart is locked",
+		},
+		{
+			name:   "Ошибка: корзина не найдена",
+			cartID: "cart-404",
+			item:   item,
+			mockBehavior: func(mock pgxmock.PgxPoolIface, cartID string, item domain.CartItem) {
+				mock.ExpectBegin()
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			mock, err := pgxmock.NewPool()
-// 			require.NoError(t, err)
-// 			defer mock.Close()
+				mock.ExpectQuery(regexp.QuoteMeta(`SELECT status FROM "cart" WHERE cart_id = $1 FOR UPDATE`)).
+					WithArgs(cartID).
+					WillReturnError(pgx.ErrNoRows)
 
-// 			repo := NewCartRepo(mock)
-// 			tt.setup(mock)
+				mock.ExpectRollback()
+			},
+			expectedErr: "cart not found",
+		},
+	}
 
-// 			err = repo.UpdateCart(ctx, userID, resID, tt.items)
-// 			if tt.wantErr {
-// 				assert.Error(t, err)
-// 			} else {
-// 				assert.NoError(t, err)
-// 			}
-// 			assert.NoError(t, mock.ExpectationsWereMet())
-// 		})
-// 	}
-// }
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock, err := pgxmock.NewPool()
+			require.NoError(t, err)
+			defer mock.Close()
 
-// func TestCartRepo_ClearCart(t *testing.T) {
-// 	ctx := context.Background()
-// 	userID := 1
+			tt.mockBehavior(mock, tt.cartID, tt.item)
 
-// 	tests := []struct {
-// 		name    string
-// 		setup   func(mock pgxmock.PgxPoolIface)
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name: "Успех",
-// 			setup: func(mock pgxmock.PgxPoolIface) {
-// 				mock.ExpectExec(`DELETE FROM cart WHERE client_account_id = \$1`).
-// 					WithArgs(userID).
-// 					WillReturnResult(pgxmock.NewResult("DELETE", 1))
-// 			},
-// 			wantErr: false,
-// 		},
-// 		{
-// 			name: "Ошибка бд",
-// 			setup: func(mock pgxmock.PgxPoolIface) {
-// 				mock.ExpectExec(`DELETE FROM cart`).
-// 					WithArgs(userID).
-// 					WillReturnError(errors.New("fail"))
-// 			},
-// 			wantErr: true,
-// 		},
-// 	}
+			repo := NewCartRepo(mock)
+			err = repo.AddItem(context.Background(), tt.cartID, tt.item)
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			mock, err := pgxmock.NewPool()
-// 			require.NoError(t, err)
-// 			defer mock.Close()
+			if tt.expectedErr != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedErr)
+			} else {
+				assert.NoError(t, err)
+			}
 
-// 			repo := NewCartRepo(mock)
-// 			tt.setup(mock)
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
 
-// 			err = repo.ClearCart(ctx, userID)
-// 			if tt.wantErr {
-// 				assert.Error(t, err)
-// 			} else {
-// 				assert.NoError(t, err)
-// 			}
-// 			assert.NoError(t, mock.ExpectationsWereMet())
-// 		})
-// 	}
-// }
+func TestCartRepo_LockCart(t *testing.T) {
+	t.Run("Успешная блокировка с outbox", func(t *testing.T) {
+		mock, err := pgxmock.NewPool()
+		require.NoError(t, err)
+		defer mock.Close()
+
+		cartID := "cart-123"
+
+		mock.ExpectBegin()
+
+		mock.ExpectExec(`UPDATE "cart" SET status`).
+			WithArgs(domain.CartStatusLocked, cartID).
+			WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+
+		mock.ExpectExec(`INSERT INTO "outbox_events"`).
+			WithArgs(cartID, "CartLocked", pgxmock.AnyArg()).
+			WillReturnResult(pgxmock.NewResult("INSERT", 1))
+
+		mock.ExpectCommit()
+
+		repo := NewCartRepo(mock)
+		err = repo.LockCart(context.Background(), cartID)
+
+		assert.NoError(t, err)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+}
+
+func TestCartRepo_GetCartByID(t *testing.T) {
+	type mockBehavior func(mock pgxmock.PgxPoolIface, cartID string)
+
+	cols := []string{
+		"cart_id", "admin_id", "restaurant_brand_id", "mode", "status", "updated_at",
+		"dish_id", "quantity", "owner_user_id", "member_user_id", "joined_at",
+	}
+
+	tests := []struct {
+		name         string
+		cartID       string
+		mockBehavior mockBehavior
+		expectedErr  error
+	}{
+		{
+			name:   "Успешное получение корзины",
+			cartID: "cart-123",
+			mockBehavior: func(mock pgxmock.PgxPoolIface, cartID string) {
+				now := time.Now()
+				var dishID int64 = 100
+				var quantity int32 = 2
+				var ownerID int64 = 1
+				var memberID int64 = 2
+
+				rows := pgxmock.NewRows(cols).
+					AddRow("cart-123", int64(1), int64(10), "shared", "active", now, &dishID, &quantity, &ownerID, &memberID, &now).
+					AddRow("cart-123", int64(1), int64(10), "shared", "active", now, &dishID, &quantity, &ownerID, &ownerID, &now)
+
+				mock.ExpectQuery(`SELECT c\.cart_id, c\.admin_id, c\.restaurant_brand_id`).
+					WithArgs(cartID).
+					WillReturnRows(rows)
+			},
+			expectedErr: nil,
+		},
+		{
+			name:   "Корзина не найдена",
+			cartID: "cart-404",
+			mockBehavior: func(mock pgxmock.PgxPoolIface, cartID string) {
+				mock.ExpectQuery(`SELECT c\.cart_id, c\.admin_id, c\.restaurant_brand_id`).
+					WithArgs(cartID).
+					WillReturnRows(pgxmock.NewRows(cols))
+			},
+			expectedErr: domain.ErrDishNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock, err := pgxmock.NewPool()
+			require.NoError(t, err)
+			defer mock.Close()
+
+			tt.mockBehavior(mock, tt.cartID)
+
+			repo := NewCartRepo(mock)
+			cart, err := repo.GetCartByID(context.Background(), tt.cartID)
+
+			if tt.expectedErr != nil {
+				assert.ErrorIs(t, err, tt.expectedErr)
+				assert.Empty(t, cart.ID)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.cartID, cart.ID)
+				assert.Len(t, cart.Items, 1)
+				assert.Len(t, cart.Members, 2)
+			}
+
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
