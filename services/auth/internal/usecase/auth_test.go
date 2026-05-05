@@ -1,149 +1,267 @@
 package usecase
 
-// import (
-// 	"context"
-// 	"testing"
+import (
+	"context"
+	"errors"
+	"testing"
 
-// 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/domain"
-// 	ucMocks "github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/usecase/mocks"
-// 	"github.com/google/uuid"
-// 	"github.com/stretchr/testify/assert"
-// 	"go.uber.org/mock/gomock"
-// )
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/usecase/mocks"
+	passUtil "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/password"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
+	"google.golang.org/grpc/codes"
+)
 
-// func TestAuthUseCase_Register(t *testing.T) {
-// 	// Группируем моки в структуру для удобной передачи
-// 	type mocks struct {
-// 		userUC          *ucMocks.MockUserUseCase
-// 		sessionUC       *ucMocks.MockSessionUseCase
-// 		clientProfileUC *ucMocks.MockClientProfileUseCase
-// 	}
+type statusCoder interface {
+	GRPCStatus() codes.Code
+}
 
-// 	// Тип для инициализации моков (mockInit)
-// 	type mockInit func(m mocks, input domain.User, resID int, userAgent string)
+func TestAuthUseCase_IssueSession(t *testing.T) {
+	type mockInit func(userMock *mocks.MockUserClient, sessMock *mocks.MockSessionUseCase)
 
-// 	mockUserID := 1
-// 	mockSessionID := uuid.MustParse("99999999-9999-9999-9999-999999999999")
+	sessID := uuid.New()
+	tests := []struct {
+		name        string
+		userID      int64
+		role        string
+		userAgent   string
+		mockInit    mockInit
+		expectedID  uuid.UUID
+		expectedErr bool
+	}{
+		{
+			name:      "Успешное создание сессии",
+			userID:    1,
+			role:      "user",
+			userAgent: "Mozilla",
+			mockInit: func(userMock *mocks.MockUserClient, sessMock *mocks.MockSessionUseCase) {
+				sessMock.EXPECT().Create(gomock.Any(), int64(1), "user", "Mozilla").
+					Return(domain.Session{ID: sessID, UserID: 1}, nil)
+			},
+			expectedID:  sessID,
+			expectedErr: false,
+		},
+		{
+			name:      "Ошибка создания в SessionUseCase",
+			userID:    1,
+			role:      "user",
+			userAgent: "Mozilla",
+			mockInit: func(userMock *mocks.MockUserClient, sessMock *mocks.MockSessionUseCase) {
+				sessMock.EXPECT().Create(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(domain.Session{}, errors.New("redis timeout"))
+			},
+			expectedID:  uuid.Nil,
+			expectedErr: true,
+		},
+	}
 
-// 	tests := []struct {
-// 		name      string
-// 		input     domain.User
-// 		mockInit  mockInit
-// 		expectErr error
-// 	}{
-// 		{
-// 			name: "Успешная регистрация",
-// 			input: domain.User{
-// 				Name:         "Ivan",
-// 				Email:        "valid@mail.ru",
-// 				PasswordHash: "valid_password_123",
-// 			},
-// 			mockInit: func(m mocks, input domain.User, resID int, userAgent string) {
-// 				m.userUC.EXPECT().
-// 					Create(gomock.Any(), gomock.Any()).
-// 					Return(resID, nil)
-// 				m.sessionUC.EXPECT().
-// 					Create(gomock.Any(), resID, userAgent).
-// 					Return(domain.Session{ID: mockSessionID}, nil)
-// 				m.clientProfileUC.EXPECT().
-// 					CreateProfile(gomock.Any(), gomock.Any()).
-// 					Return(nil)
-// 			},
-// 			expectErr: nil,
-// 		},
-// 		{
-// 			name: "Успех: допускается точка в названии почты",
-// 			input: domain.User{
-// 				Email:        "m.a.i.l@mail.ru",
-// 				PasswordHash: "password123",
-// 			},
-// 			mockInit: func(m mocks, input domain.User, resID int, userAgent string) {
-// 				m.userUC.EXPECT().
-// 					Create(gomock.Any(), gomock.Any()).
-// 					Return(resID, nil)
-// 				m.clientProfileUC.EXPECT().
-// 					CreateProfile(gomock.Any(), resID).
-// 					Return(nil)
-// 				m.sessionUC.EXPECT().
-// 					Create(gomock.Any(), resID, userAgent).
-// 					Return(domain.Session{ID: mockSessionID}, nil)
-// 			},
-// 			expectErr: nil,
-// 		},
-// 		{
-// 			name: "Ошибка: пользователь уже существует",
-// 			input: domain.User{
-// 				Email:        "exists@mail.ru",
-// 				PasswordHash: "password123",
-// 			},
-// 			mockInit: func(m mocks, input domain.User, resID int, userAgent string) {
-// 				m.userUC.EXPECT().
-// 					Create(gomock.Any(), gomock.Any()).
-// 					Return(0, domain.ErrEmailAlreadyExists)
-// 			},
-// 			expectErr: domain.ErrEmailAlreadyExists,
-// 		},
-// 		{
-// 			name: "Ошибка: спецсимволы в почте",
-// 			input: domain.User{
-// 				Email:        "()<>[]:;\\.,@mail.ru",
-// 				PasswordHash: "password123",
-// 			},
-// 			mockInit:  nil, // Моки не должны вызываться
-// 			expectErr: domain.ErrInvalidEmail,
-// 		},
-// 		{
-// 			name: "Ошибка: две точки подряд",
-// 			input: domain.User{
-// 				Email:        "ma..il@mail.ru",
-// 				PasswordHash: "password123",
-// 			},
-// 			mockInit:  nil, // Моки не должны вызываться
-// 			expectErr: domain.ErrInvalidEmail,
-// 		},
-// 		{
-// 			name: "Ошибка: эмодзи в почте",
-// 			input: domain.User{
-// 				Email:        "😂😂😂😂😂😂😂@mail.ru",
-// 				PasswordHash: "password123",
-// 			},
-// 			mockInit:  nil,
-// 			expectErr: domain.ErrInvalidEmail,
-// 		},
-// 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-// 	for _, testCase := range tests {
-// 		t.Run(testCase.name, func(t *testing.T) {
-// 			// Инициализация контроллера и моков
-// 			ctrl := gomock.NewController(t)
-// 			defer ctrl.Finish()
+			userMock := mocks.NewMockUserClient(ctrl)
+			sessMock := mocks.NewMockSessionUseCase(ctrl)
+			tt.mockInit(userMock, sessMock)
 
-// 			m := mocks{
-// 				userUC:          ucMocks.NewMockUserUseCase(ctrl),
-// 				sessionUC:       ucMocks.NewMockSessionUseCase(ctrl),
-// 				clientProfileUC: ucMocks.NewMockClientProfileUseCase(ctrl),
-// 			}
+			uc := NewAuthUseCase(userMock, sessMock)
+			sess, err := uc.IssueSession(context.Background(), tt.userID, tt.role, tt.userAgent)
 
-// 			authUseCase := NewAuthUseCase(m.userUC, m.sessionUC, m.clientProfileUC)
+			if tt.expectedErr {
+				assert.Error(t, err)
 
-// 			userAgent := "Mozilla/5.0 (Test Agent)"
+				// Проверяем, что ошибка обернута в errutil
+				domainErr, ok := err.(statusCoder)
+				assert.True(t, ok)
+				assert.Equal(t, codes.Internal, domainErr.GRPCStatus())
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedID, sess.ID)
+			}
+		})
+	}
+}
 
-// 			// Если mockInit задан, настраиваем поведение моков
-// 			if testCase.mockInit != nil {
-// 				testCase.mockInit(m, testCase.input, mockUserID, userAgent)
-// 			}
+func TestAuthUseCase_Login(t *testing.T) {
+	type mockInit func(userMock *mocks.MockUserClient, sessMock *mocks.MockSessionUseCase)
 
-// 			// Выполнение тестируемого метода
-// 			user, session, err := authUseCase.Register(context.Background(), testCase.input, userAgent)
+	// Генерируем реальный валидный argon2id хэш для пароля "secret"
+	// с помощью твоего пакета, чтобы тест всегда был совместим с текущей реализацией
+	validHash, err := passUtil.HashPassword("secret", nil)
+	require.NoError(t, err, "Не удалось сгенерировать хэш для теста")
 
-// 			// Проверки результата
-// 			if testCase.expectErr != nil {
-// 				assert.ErrorIs(t, err, testCase.expectErr)
-// 			} else {
-// 				assert.NoError(t, err)
-// 				assert.Equal(t, mockUserID, user.ID)
-// 				assert.Equal(t, mockSessionID, session.ID)
-// 			}
-// 		})
-// 	}
-// }
+	sessID := uuid.New()
+
+	tests := []struct {
+		name        string
+		email       string
+		password    string
+		userAgent   string
+		mockInit    mockInit
+		expectedErr bool
+		errCode     codes.Code
+	}{
+		{
+			name:      "Успешный логин",
+			email:     "test@mail.ru",
+			password:  "secret",
+			userAgent: "Chrome",
+			mockInit: func(userMock *mocks.MockUserClient, sessMock *mocks.MockSessionUseCase) {
+				userMock.EXPECT().GetUserByEmail(gomock.Any(), "test@mail.ru").
+					Return(domain.User{ID: 10, Email: "test@mail.ru", PasswordHash: validHash, Role: "user"}, nil)
+
+				sessMock.EXPECT().Create(gomock.Any(), int64(10), "user", "Chrome").
+					Return(domain.Session{ID: sessID, UserID: 10}, nil)
+			},
+			expectedErr: false,
+		},
+		{
+			name:      "Ошибка: неверный пароль",
+			email:     "test@mail.ru",
+			password:  "wrong_password",
+			userAgent: "Chrome",
+			mockInit: func(userMock *mocks.MockUserClient, sessMock *mocks.MockSessionUseCase) {
+				userMock.EXPECT().GetUserByEmail(gomock.Any(), "test@mail.ru").
+					Return(domain.User{ID: 10, PasswordHash: validHash}, nil)
+				// Create не должен вызываться
+			},
+			expectedErr: true,
+			errCode:     codes.Unauthenticated,
+		},
+		{
+			name:      "Ошибка: пользователь не найден",
+			email:     "notfound@mail.ru",
+			password:  "secret",
+			userAgent: "Chrome",
+			mockInit: func(userMock *mocks.MockUserClient, sessMock *mocks.MockSessionUseCase) {
+				userMock.EXPECT().GetUserByEmail(gomock.Any(), "notfound@mail.ru").
+					Return(domain.User{}, errors.New("not found in db"))
+			},
+			expectedErr: true,
+			errCode:     codes.Unauthenticated,
+		},
+		{
+			name:      "Ошибка создания сессии после успешной валидации",
+			email:     "test@mail.ru",
+			password:  "secret",
+			userAgent: "Chrome",
+			mockInit: func(userMock *mocks.MockUserClient, sessMock *mocks.MockSessionUseCase) {
+				userMock.EXPECT().GetUserByEmail(gomock.Any(), "test@mail.ru").
+					Return(domain.User{ID: 10, PasswordHash: validHash, Role: "user"}, nil)
+
+				sessMock.EXPECT().Create(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(domain.Session{}, errors.New("redis fail"))
+			},
+			expectedErr: true,
+			errCode:     codes.Internal,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			userMock := mocks.NewMockUserClient(ctrl)
+			sessMock := mocks.NewMockSessionUseCase(ctrl)
+			tt.mockInit(userMock, sessMock)
+
+			uc := NewAuthUseCase(userMock, sessMock)
+			sess, err := uc.Login(context.Background(), tt.email, tt.password, tt.userAgent)
+
+			if tt.expectedErr {
+				assert.Error(t, err)
+				st, ok := err.(statusCoder)
+				assert.True(t, ok)
+				assert.Equal(t, tt.errCode, st.GRPCStatus())
+				assert.Empty(t, sess.ID)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, sessID, sess.ID)
+			}
+		})
+	}
+}
+
+func TestAuthUseCase_Logout(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	userMock := mocks.NewMockUserClient(ctrl)
+	sessMock := mocks.NewMockSessionUseCase(ctrl)
+	uc := NewAuthUseCase(userMock, sessMock)
+
+	sessID := uuid.New()
+
+	t.Run("Успешный логаут", func(t *testing.T) {
+		sessMock.EXPECT().Destroy(gomock.Any(), sessID).Return(nil)
+		err := uc.Logout(context.Background(), sessID)
+		assert.NoError(t, err)
+	})
+
+	t.Run("Ошибка удаления сессии", func(t *testing.T) {
+		sessMock.EXPECT().Destroy(gomock.Any(), sessID).Return(errors.New("db error"))
+		err := uc.Logout(context.Background(), sessID)
+		assert.Error(t, err)
+	})
+}
+
+func TestAuthUseCase_CheckUserSession(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	userMock := mocks.NewMockUserClient(ctrl)
+	sessMock := mocks.NewMockSessionUseCase(ctrl)
+	uc := NewAuthUseCase(userMock, sessMock)
+
+	sessID := uuid.New()
+
+	t.Run("Сессия валидна", func(t *testing.T) {
+		sessMock.EXPECT().Check(gomock.Any(), sessID).
+			Return(domain.Session{UserID: 42, Role: "admin"}, nil)
+
+		userID, role, err := uc.CheckUserSession(context.Background(), sessID)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(42), userID)
+		assert.Equal(t, "admin", role)
+	})
+
+	t.Run("Сессия протухла", func(t *testing.T) {
+		sessMock.EXPECT().Check(gomock.Any(), sessID).
+			Return(domain.Session{}, domain.ErrSessionExpired)
+
+		userID, role, err := uc.CheckUserSession(context.Background(), sessID)
+		assert.ErrorIs(t, err, domain.ErrSessionExpired)
+		assert.Equal(t, int64(0), userID)
+		assert.Empty(t, role)
+	})
+}
+
+func TestAuthUseCase_CSRF(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	userMock := mocks.NewMockUserClient(ctrl)
+	sessMock := mocks.NewMockSessionUseCase(ctrl)
+	uc := NewAuthUseCase(userMock, sessMock)
+
+	sessID := uuid.New()
+	token := "csrf-token-123"
+
+	t.Run("SetCSRFForUser", func(t *testing.T) {
+		sessMock.EXPECT().SetCSRF(gomock.Any(), sessID).Return(token, nil)
+		res, err := uc.SetCSRFForUser(context.Background(), sessID)
+		assert.NoError(t, err)
+		assert.Equal(t, token, res)
+	})
+
+	t.Run("GetCSRFBySessionID", func(t *testing.T) {
+		sessMock.EXPECT().GetCSRF(gomock.Any(), sessID).Return(token, nil)
+		res, err := uc.GetCSRFBySessionID(context.Background(), sessID)
+		assert.NoError(t, err)
+		assert.Equal(t, token, res)
+	})
+}

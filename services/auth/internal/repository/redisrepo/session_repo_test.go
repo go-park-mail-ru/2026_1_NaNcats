@@ -1,6 +1,5 @@
 package redisrepo
 
-/*
 import (
 	"context"
 	"errors"
@@ -15,57 +14,69 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSessionRepo_Create(t *testing.T) {
-	mock := redigomock.NewConn()
-	pool := &redis.Pool{
-		Dial: func() (redis.Conn, error) { return mock, nil },
+func setupMockPool(conn *redigomock.Conn) *redis.Pool {
+	return &redis.Pool{
+		Dial: func() (redis.Conn, error) {
+			return conn, nil
+		},
 	}
-	repo := NewSessionRepo(pool)
-	ctx := context.Background()
+}
 
-	sessID := uuid.New()
-	session := domain.Session{ID: sessID, UserID: 1}
+func TestSessionRepo_Create(t *testing.T) {
+	sessionID := uuid.New()
+	session := domain.Session{
+		ID:        sessionID,
+		UserID:    1,
+		Role:      "user",
+		UserAgent: "Mozilla",
+		ExpiresAt: time.Now().Add(time.Hour),
+	}
 	ttl := time.Hour
-	expectedData, _ := easyjson.Marshal(session)
-	key := "sessions:" + sessID.String()
+	serialized, _ := easyjson.Marshal(session)
+	mkey := "sessions:" + sessionID.String()
 
 	tests := []struct {
-		name    string
-		setup   func()
-		wantErr error
+		name         string
+		mockBehavior func(conn *redigomock.Conn)
+		expectedErr  bool
 	}{
 		{
 			name: "Успешное создание сессии",
-			setup: func() {
-				mock.Command("SET", key, expectedData, "EX", int(ttl.Seconds())).
+			mockBehavior: func(conn *redigomock.Conn) {
+				conn.Command("SET", mkey, serialized, "EX", int(ttl.Seconds())).
 					Expect("OK")
 			},
-			wantErr: nil,
+			expectedErr: false,
 		},
 		{
-			name: "Ошибка Redis при записи",
-			setup: func() {
-				mock.Command("SET", key, expectedData, "EX", int(ttl.Seconds())).
-					ExpectError(errors.New("redis connection lost"))
+			name: "Ошибка Redis при выполнении SET",
+			mockBehavior: func(conn *redigomock.Conn) {
+				conn.Command("SET", mkey, serialized, "EX", int(ttl.Seconds())).
+					ExpectError(errors.New("redis connection error"))
 			},
-			wantErr: errors.New("redis connection lost"),
+			expectedErr: true,
 		},
 		{
-			name: "Redis вернул не OK",
-			setup: func() {
-				mock.Command("SET", key, expectedData, "EX", int(ttl.Seconds())).
+			name: "Redis вернул результат отличный от OK",
+			mockBehavior: func(conn *redigomock.Conn) {
+				conn.Command("SET", mkey, serialized, "EX", int(ttl.Seconds())).
 					Expect("NOT_OK")
 			},
-			wantErr: domain.ErrRedisResultIsNotOK,
+			expectedErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mock.Clear()
-			tt.setup()
-			err := repo.Create(ctx, session, ttl)
-			if tt.wantErr != nil {
+			mockConn := redigomock.NewConn()
+			pool := setupMockPool(mockConn)
+			repo := NewSessionRepo(pool)
+
+			tt.mockBehavior(mockConn)
+
+			err := repo.Create(context.Background(), session, ttl)
+
+			if tt.expectedErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
@@ -75,109 +86,101 @@ func TestSessionRepo_Create(t *testing.T) {
 }
 
 func TestSessionRepo_GetByID(t *testing.T) {
-	mock := redigomock.NewConn()
-	pool := &redis.Pool{
-		Dial: func() (redis.Conn, error) { return mock, nil },
-	}
-	repo := NewSessionRepo(pool)
-	ctx := context.Background()
-
-	sessID := uuid.New()
-	session := domain.Session{ID: sessID, UserID: 1}
-	validData, _ := easyjson.Marshal(session)
+	sessionID := uuid.New()
+	mkey := "sessions:" + sessionID.String()
+	session := domain.Session{ID: sessionID, UserID: 1}
+	serialized, _ := easyjson.Marshal(session)
 
 	tests := []struct {
-		name    string
-		id      uuid.UUID
-		setup   func()
-		want    domain.Session
-		wantErr bool
+		name          string
+		mockBehavior  func(conn *redigomock.Conn)
+		expectedSess  domain.Session
+		expectedErrIs error
 	}{
 		{
-			name: "Сессия найдена",
-			id:   sessID,
-			setup: func() {
-				mock.Command("GET", "sessions:"+sessID.String()).Expect(validData)
+			name: "Успешное получение сессии",
+			mockBehavior: func(conn *redigomock.Conn) {
+				conn.Command("GET", mkey).Expect(serialized)
 			},
-			want:    session,
-			wantErr: false,
+			expectedSess:  session,
+			expectedErrIs: nil,
 		},
 		{
-			name: "Сессия не найдена",
-			id:   sessID,
-			setup: func() {
-				mock.Command("GET", "sessions:"+sessID.String()).ExpectError(redis.ErrNil)
+			name: "Сессия не найдена (ErrNil)",
+			mockBehavior: func(conn *redigomock.Conn) {
+				conn.Command("GET", mkey).ExpectError(redis.ErrNil)
 			},
-			want:    domain.Session{},
-			wantErr: true,
+			expectedSess:  domain.Session{},
+			expectedErrIs: domain.ErrSessionNotFound,
 		},
 		{
 			name: "Ошибка десериализации (битые данные)",
-			id:   sessID,
-			setup: func() {
-				mock.Command("GET", "sessions:"+sessID.String()).Expect([]byte("invalid json"))
+			mockBehavior: func(conn *redigomock.Conn) {
+				conn.Command("GET", mkey).Expect([]byte("invalid json"))
 			},
-			want:    domain.Session{},
-			wantErr: true,
+			expectedSess:  domain.Session{},
+			expectedErrIs: nil, // Тут будет ошибка Unmarshal, не domainErr
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mock.Clear()
-			tt.setup()
-			got, err := repo.GetByID(ctx, tt.id)
-			if tt.wantErr {
+			mockConn := redigomock.NewConn()
+			pool := setupMockPool(mockConn)
+			repo := NewSessionRepo(pool)
+
+			tt.mockBehavior(mockConn)
+
+			sess, err := repo.GetByID(context.Background(), sessionID)
+
+			if tt.expectedErrIs != nil {
+				assert.ErrorIs(t, err, tt.expectedErrIs)
+			} else if tt.name == "Ошибка десериализации (битые данные)" {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.want.ID, got.ID)
-				assert.Equal(t, tt.want.UserID, got.UserID)
+				assert.Equal(t, tt.expectedSess.ID, sess.ID)
 			}
 		})
 	}
 }
 
 func TestSessionRepo_Delete(t *testing.T) {
-	mock := redigomock.NewConn()
-	pool := &redis.Pool{
-		Dial: func() (redis.Conn, error) { return mock, nil },
-	}
-	repo := NewSessionRepo(pool)
-	ctx := context.Background()
-
-	sessID := uuid.New()
+	sessionID := uuid.New()
+	mkey := "sessions:" + sessionID.String()
 
 	tests := []struct {
-		name    string
-		id      uuid.UUID
-		setup   func()
-		wantErr bool
+		name         string
+		mockBehavior func(conn *redigomock.Conn)
+		expectedErr  bool
 	}{
 		{
 			name: "Успешное удаление",
-			id:   sessID,
-			setup: func() {
-				mock.Command("DEL", "sessions:"+sessID.String()).Expect(int64(1))
+			mockBehavior: func(conn *redigomock.Conn) {
+				conn.Command("DEL", mkey).Expect(int64(1))
 			},
-			wantErr: false,
+			expectedErr: false,
 		},
 		{
 			name: "Ошибка Redis при удалении",
-			id:   sessID,
-			setup: func() {
-				mock.Command("DEL", "sessions:"+sessID.String()).ExpectError(errors.New("fail"))
+			mockBehavior: func(conn *redigomock.Conn) {
+				conn.Command("DEL", mkey).ExpectError(errors.New("redis error"))
 			},
-			wantErr: true,
+			expectedErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mock.Clear()
-			tt.setup()
-			err := repo.Delete(ctx, tt.id)
-			if tt.wantErr {
+			mockConn := redigomock.NewConn()
+			pool := setupMockPool(mockConn)
+			repo := NewSessionRepo(pool)
+
+			tt.mockBehavior(mockConn)
+
+			err := repo.Delete(context.Background(), sessionID)
+
+			if tt.expectedErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
@@ -185,4 +188,107 @@ func TestSessionRepo_Delete(t *testing.T) {
 		})
 	}
 }
-*/
+
+func TestSessionRepo_SetCSRF(t *testing.T) {
+	sessionID := uuid.New()
+	token := "csrf-token-123"
+	mkey := "csrf:" + sessionID.String()
+
+	tests := []struct {
+		name         string
+		mockBehavior func(conn *redigomock.Conn)
+		expectedErr  bool
+	}{
+		{
+			name: "Успешная установка CSRF",
+			mockBehavior: func(conn *redigomock.Conn) {
+				conn.Command("SET", mkey, token, "EX", CSRFTokenTTL).
+					Expect("OK")
+			},
+			expectedErr: false,
+		},
+		{
+			name: "Redis вернул не OK",
+			mockBehavior: func(conn *redigomock.Conn) {
+				conn.Command("SET", mkey, token, "EX", CSRFTokenTTL).
+					Expect("FAIL")
+			},
+			expectedErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockConn := redigomock.NewConn()
+			pool := setupMockPool(mockConn)
+			repo := NewSessionRepo(pool)
+
+			tt.mockBehavior(mockConn)
+
+			err := repo.SetCSRF(context.Background(), sessionID, token)
+
+			if tt.expectedErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestSessionRepo_GetCSRF(t *testing.T) {
+	sessionID := uuid.New()
+	mkey := "csrf:" + sessionID.String()
+	token := "token-val"
+
+	tests := []struct {
+		name          string
+		mockBehavior  func(conn *redigomock.Conn)
+		expectedToken string
+		expectedErr   bool
+	}{
+		{
+			name: "Успешное получение CSRF",
+			mockBehavior: func(conn *redigomock.Conn) {
+				conn.Command("GET", mkey).Expect(token)
+			},
+			expectedToken: token,
+			expectedErr:   false,
+		},
+		{
+			name: "Токен не найден (нормальное поведение)",
+			mockBehavior: func(conn *redigomock.Conn) {
+				conn.Command("GET", mkey).ExpectError(redis.ErrNil)
+			},
+			expectedToken: "",
+			expectedErr:   false,
+		},
+		{
+			name: "Ошибка Redis",
+			mockBehavior: func(conn *redigomock.Conn) {
+				conn.Command("GET", mkey).ExpectError(errors.New("redis fail"))
+			},
+			expectedToken: "",
+			expectedErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockConn := redigomock.NewConn()
+			pool := setupMockPool(mockConn)
+			repo := NewSessionRepo(pool)
+
+			tt.mockBehavior(mockConn)
+
+			result, err := repo.GetCSRF(context.Background(), sessionID)
+
+			if tt.expectedErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedToken, result)
+			}
+		})
+	}
+}

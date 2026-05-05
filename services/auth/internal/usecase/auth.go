@@ -15,8 +15,13 @@ import (
 
 // контракт бизнес-логики авторизации
 //
-//go:generate mockgen -destination=mocks/auth_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/usecase AuthUseCase
+//go:generate mockgen -destination=mocks/auth_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/usecase AuthUseCase,UserClient
 //go:generate gowrap gen -i AuthUseCase -t ../../../../shared/templates/tracing.tmpl -o auth_tracing_mw.go -v TracerName=auth-service
+
+type UserClient interface {
+	GetUserByEmail(ctx context.Context, email string) (domain.User, error)
+}
+
 type AuthUseCase interface {
 	IssueSession(ctx context.Context, userID int64, role, userAgent string) (domain.Session, error)
 	Login(ctx context.Context, email, password, userAgent string) (domain.Session, error)
