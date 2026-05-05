@@ -166,7 +166,6 @@ func (r *restaurantBrandRepo) Update(ctx context.Context, b domain.RestaurantBra
 	return b, err
 }
 
-// GetRestaurantBrandsByCategory returns brands filtered by category id.
 func (r *restaurantBrandRepo) GetRestaurantBrandsByCategory(ctx context.Context, categoryID int64, limit, offset int) ([]domain.RestaurantBrand, error) {
 	query := `
 		SELECT rb.id, rb.owner_profile_id, rb.name, rb.description, rb.promotion_tier, rb.logo_url, rb.created_at, rb.updated_at
@@ -194,7 +193,6 @@ func (r *restaurantBrandRepo) GetRestaurantBrandsByCategory(ctx context.Context,
 	return brands, nil
 }
 
-// GetRestaurantBrandsByCategoryName returns brands joined with category by category name (case-insensitive).
 func (r *restaurantBrandRepo) GetRestaurantBrandsByCategoryName(ctx context.Context, categoryName string, limit, offset int) ([]domain.RestaurantBrand, error) {
 	query := `
 		SELECT rb.id, rb.owner_profile_id, rb.name, rb.description, rb.promotion_tier, rb.logo_url, rb.created_at, rb.updated_at
@@ -223,7 +221,6 @@ func (r *restaurantBrandRepo) GetRestaurantBrandsByCategoryName(ctx context.Cont
 	return brands, nil
 }
 
-// SearchRestaurantBrands returns brands matching a search query (case-insensitive).
 func (r *restaurantBrandRepo) SearchRestaurantBrands(ctx context.Context, query string, limit, offset int) ([]domain.RestaurantBrand, error) {
 	q := `
 		SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at
@@ -257,7 +254,6 @@ type categoryDB struct {
 	Emoji string `db:"emoji"`
 }
 
-// GetAllCategories returns all categories with their emoji.
 func (r *restaurantBrandRepo) GetAllCategories(ctx context.Context) ([]repository.Category, error) {
 	query := `SELECT id, name, COALESCE(emoji, '') as emoji FROM "category" ORDER BY id ASC;`
 	rows, err := r.pool.Query(ctx, query)

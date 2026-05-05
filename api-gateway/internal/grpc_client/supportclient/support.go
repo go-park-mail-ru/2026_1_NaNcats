@@ -18,7 +18,7 @@ var (
 	ErrTicketNotFound = errors.New("ticket not found")
 )
 
-// --- DTOs ---
+// DTO
 
 type CreateTicketInput struct {
 	ClientID     *int64
@@ -78,7 +78,7 @@ type Template struct {
 	Content string
 }
 
-// --- Interface ---
+// Интерфейсы
 
 type SupportClient interface {
 	// Пользовательская часть
@@ -110,7 +110,7 @@ func NewSupportClient(cl pbSupport.SupportServiceClient) SupportClient {
 	}
 }
 
-// === Пользовательская часть ===
+// Пользовательская часть
 
 func (c *supportClient) CreateTicket(ctx context.Context, input CreateTicketInput, idempotencyKey string) (string, error) {
 	req := &pbSupport.CreateTicketRequest{

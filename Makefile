@@ -167,6 +167,7 @@ proto:
 		--go_out=$(PROTO_DIR) --go_opt=paths=source_relative \
 		--go-grpc_out=$(PROTO_DIR) --go-grpc_opt=paths=source_relative \
 		$(PROTO_FILES)
+	go generate ./shared/proto/...
 
 EXCLUDE_PATTERNS = "mock|\.pb\.go|_easyjson\.go|_tracing_mw\.go|main\.go|config\.go|docs\.go|tracer\.go|migrator\.go|debug_gen\.go"
 

@@ -28,6 +28,13 @@ type RestaurantClient interface {
 	SearchRestaurantBrands(ctx context.Context, query string, limit, offset int32) ([]*pbRestaurant.RestaurantBrand, error)
 	SearchDishes(ctx context.Context, query string, limit int32) ([]*pbRestaurant.Dish, error)
 	SearchDishesByBrand(ctx context.Context, brandID int64, query string, limit int32) ([]*pbRestaurant.Dish, error)
+	GetDishByID(ctx context.Context, dishID int64) (*pbRestaurant.Dish, error)
+	DeleteRestaurantBrand(ctx context.Context, id int64) error
+	UpdateRestaurantBrand(ctx context.Context, id int64, name, desc *string, logo []byte, tier *int32, idemKey string) (*pbRestaurant.RestaurantBrand, error)
+	CreateRestaurantBrand(ctx context.Context, ownerID int64, name, desc string, logo []byte, idemKey string) (*pbRestaurant.RestaurantBrand, error)
+	DeleteDish(ctx context.Context, id int64) error
+	UpdateDish(ctx context.Context, id int64, name, desc *string, price *int64, image []byte, idemKey string) (*pbRestaurant.Dish, error)
+	CreateDish(ctx context.Context, brandID int64, name, desc string, price int64, image []byte, idemKey string) (*pbRestaurant.Dish, error)
 }
 
 type restaurantClient struct {
@@ -185,7 +192,6 @@ func (c *restaurantClient) DeleteDish(ctx context.Context, id int64) error {
 	return err
 }
 
-// GetRestaurantBrandsListByCategory fetches brands filtered by category via gRPC metadata.
 func (c *restaurantClient) GetRestaurantBrandsListByCategory(ctx context.Context, categoryID int64, limit, offset int32) ([]*pbRestaurant.RestaurantBrand, error) {
 	md := metadata.New(map[string]string{"x-category-id": strconv.FormatInt(categoryID, 10)})
 	ctx = metadata.NewOutgoingContext(ctx, md)
@@ -199,8 +205,6 @@ func (c *restaurantClient) GetRestaurantBrandsListByCategory(ctx context.Context
 	return resp.RestaurantBrands, nil
 }
 
-// GetRestaurantBrandsListByCategoryName fetches brands filtered by category name via gRPC metadata
-// (URL-encoded since gRPC metadata only supports ASCII for non-binary keys).
 func (c *restaurantClient) GetRestaurantBrandsListByCategoryName(ctx context.Context, categoryName string, limit, offset int32) ([]*pbRestaurant.RestaurantBrand, error) {
 	md := metadata.New(map[string]string{"x-category-name": url.QueryEscape(categoryName)})
 	ctx = metadata.NewOutgoingContext(ctx, md)
@@ -214,8 +218,6 @@ func (c *restaurantClient) GetRestaurantBrandsListByCategoryName(ctx context.Con
 	return resp.RestaurantBrands, nil
 }
 
-// SearchRestaurantBrands searches brands by name/description via gRPC metadata
-// (URL-encoded to support non-ASCII queries like Cyrillic).
 func (c *restaurantClient) SearchRestaurantBrands(ctx context.Context, query string, limit, offset int32) ([]*pbRestaurant.RestaurantBrand, error) {
 	md := metadata.New(map[string]string{"x-search-query": url.QueryEscape(query)})
 	ctx = metadata.NewOutgoingContext(ctx, md)
@@ -229,14 +231,12 @@ func (c *restaurantClient) SearchRestaurantBrands(ctx context.Context, query str
 	return resp.RestaurantBrands, nil
 }
 
-// SearchDishes — глобальный поиск блюд (через GetDishesByIDs + metadata).
 func (c *restaurantClient) SearchDishes(ctx context.Context, query string, limit int32) ([]*pbRestaurant.Dish, error) {
 	md := metadata.New(map[string]string{
 		"x-dish-search":       url.QueryEscape(query),
 		"x-dish-search-limit": strconv.Itoa(int(limit)),
 	})
 	ctx = metadata.NewOutgoingContext(ctx, md)
-	// dish_ids передаём пустыми — handler их игнорирует при наличии x-dish-search.
 	resp, err := c.client.GetDishesByIDs(ctx, &pbRestaurant.GetDishesByIDsRequest{DishIds: []int64{}})
 	if err != nil {
 		return nil, ErrInternal
@@ -244,7 +244,6 @@ func (c *restaurantClient) SearchDishes(ctx context.Context, query string, limit
 	return resp.Dishes, nil
 }
 
-// SearchDishesByBrand — поиск блюд внутри одного ресторана.
 func (c *restaurantClient) SearchDishesByBrand(ctx context.Context, brandID int64, query string, limit int32) ([]*pbRestaurant.Dish, error) {
 	md := metadata.New(map[string]string{"x-dish-search": url.QueryEscape(query)})
 	ctx = metadata.NewOutgoingContext(ctx, md)
