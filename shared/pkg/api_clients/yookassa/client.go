@@ -1,0 +1,151 @@
+package yookassa
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"net/http"
+	"time"
+
+	"github.com/mailru/easyjson"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+)
+
+type Client struct {
+	shopID    string
+	secretKey string
+	baseURL   string
+	client    *http.Client
+}
+
+func NewClient(shopID, secretKey string) *Client {
+	return &Client{
+		shopID:    shopID,
+		secretKey: secretKey,
+		baseURL:   "https://api.yookassa.ru/v3",
+		client: &http.Client{
+			Transport: otelhttp.NewTransport(http.DefaultTransport),
+			Timeout:   time.Second * 15,
+		},
+	}
+}
+
+var (
+	ErrBadRequest   = errors.New("yookassa: bad request (invalid data)")
+	ErrUnauthorized = errors.New("yookassa: unauthorized (check shop_id/secret_key)")
+	ErrNotFound     = errors.New("yookassa: object not found")
+)
+
+func (c *Client) CreatePayment(ctx context.Context, req CreatePaymentRequest, idempotencyKey string) (*PaymentResponse, error) {
+	data, err := easyjson.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal yookassa request: %w", err)
+	}
+
+	url := c.baseURL + "/payments"
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(data))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create http request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Idempotence-Key", idempotencyKey)
+	httpReq.SetBasicAuth(c.shopID, c.secretKey)
+
+	resp, err := c.client.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("http request to yookassa failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		switch resp.StatusCode {
+		case http.StatusBadRequest:
+			return nil, ErrBadRequest
+		case http.StatusUnauthorized, http.StatusForbidden:
+			return nil, ErrUnauthorized
+		case http.StatusNotFound:
+			return nil, ErrNotFound
+		default:
+			return nil, fmt.Errorf("yookassa returned error status: %d", resp.StatusCode)
+		}
+
+	}
+
+	var yookassaResponse PaymentResponse
+	if err := easyjson.UnmarshalFromReader(resp.Body, &yookassaResponse); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal yookassa response: %w", err)
+	}
+
+	return &yookassaResponse, nil
+}
+
+// Получает текущий статус платежа из YooKassa
+func (c *Client) GetPayment(ctx context.Context, paymentID string) (*PaymentResponse, error) {
+	url := c.baseURL + "/payments/" + paymentID
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create http request: %w", err)
+	}
+	httpReq.SetBasicAuth(c.shopID, c.secretKey)
+
+	resp, err := c.client.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("http request to yookassa failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		switch resp.StatusCode {
+		case http.StatusBadRequest:
+			return nil, ErrBadRequest
+		case http.StatusUnauthorized, http.StatusForbidden:
+			return nil, ErrUnauthorized
+		case http.StatusNotFound:
+			return nil, ErrNotFound
+		default:
+			return nil, fmt.Errorf("yookassa returned error status: %d", resp.StatusCode)
+		}
+	}
+
+	var paymentResp PaymentResponse
+	if err := easyjson.UnmarshalFromReader(resp.Body, &paymentResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal yookassa response: %w", err)
+	}
+	return &paymentResp, nil
+}
+
+func (c *Client) CreatePaymentMethod(ctx context.Context, req CreatePaymentMethodRequest, idempotencyKey string) (*PaymentMethodResponse, error) {
+	data, err := easyjson.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal yookassa request: %w", err)
+	}
+
+	url := c.baseURL + "/payment_methods"
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(data))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create http request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Idempotence-Key", idempotencyKey)
+	httpReq.SetBasicAuth(c.shopID, c.secretKey)
+
+	resp, err := c.client.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("http request to yookassa failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("yookassa API returned error status: %d", resp.StatusCode)
+	}
+
+	var yookassaResponse PaymentMethodResponse
+	if err := easyjson.UnmarshalFromReader(resp.Body, &yookassaResponse); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal yookassa response: %w", err)
+	}
+
+	return &yookassaResponse, nil
+}

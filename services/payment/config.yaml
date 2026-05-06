@@ -1,0 +1,23 @@
+logger:
+  level: "debug"
+
+postgres:
+  url: "postgres://user:password@localhost:5437/payment_db?sslmode=disable"
+
+redis:
+  url: "redis://localhost:6380/0"
+  max_idle: 10
+  idle_timeout: "60s"
+
+grpc:
+  port: "50056"
+  timeout: "5s"
+
+order_service_addr: "localhost:50057"
+
+otel:
+  service_name: "payment-service"
+  collector_addr: "otel-collector:4317"
+
+yookassa:
+  return_url: "http://localhost:3000/profile/wallet"

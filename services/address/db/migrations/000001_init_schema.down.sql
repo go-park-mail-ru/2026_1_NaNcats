@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS "client_address" CASCADE;
+DROP TABLE IF EXISTS "location" CASCADE;

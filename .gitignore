@@ -1,5 +1,7 @@
 # Бинарные файлы (скомпилированные)
 bin/
+foodcourt
+main
 *.exe
 *.exe~
 *.dll
@@ -14,6 +16,7 @@ vendor/
 .env
 .env.*
 !.env.example
+docker-compose.local.yml
 
 # Локальный докер
 docker-compose.local.yml
@@ -22,11 +25,20 @@ docker-compose.local.yml
 .idea/
 .vscode/
 *.swp
+.DS_Store
+Thumbs.db
 
 # Логи и временные файлы
+.tmp_pids/
 *.log
 tmp/
+
+# Данные
+uploads/
+postgres_data/
 
 # Тестовое покрытие
 coverage.out
 coverage.html
+coverage_clean.out
+coverage*.out

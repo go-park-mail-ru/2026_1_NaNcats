@@ -1,0 +1,21 @@
+logger:
+  level: "debug"
+
+postgres:
+  url: "postgres://user:pass@localhost:5432/cart_db?sslmode=disable"
+
+grpc:
+  port: "50054"
+  timeout: "2s"
+
+redis:
+  url: "redis://localhost:6379/0"
+  max_idle: 5
+  idle_timeout: "30s"
+
+otel:
+  service_name: "auth-service"
+  collector_addr: "otel-collector:4317"
+
+user_service_addr: "localhost:50052"
+session_ttl: "24h"

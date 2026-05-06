@@ -1,18 +1,30 @@
 version: '3.8'
+
+x-shared-env: &shared-env
+  LOG_LEVEL: ${LOG_LEVEL:-debug}
+  DEFAULT_AVATAR_URL: "https://nancats-bucket.storage.yandexcloud.net/avatars/default-avatar.webp"
+  DEFAULT_RESTAURANT_LOGO_URL: "https://nancats-bucket.storage.yandexcloud.net/restaurants/default-restaurant-logo.webp"
+  DEFAULT_FOOD_LOGO_URL: "https://nancats-bucket.storage.yandexcloud.net/foods/default-food-logo.webp"
+  S3_KEY_ID: ${S3_KEY_ID}
+  S3_SECRET_KEY: ${S3_SECRET_KEY}
+  OTEL_COLLECTOR_ADDR: "otel-collector:4317"
+
 services:
   db:
     image: postgis/postgis:18-3.6-alpine # Образ с Postgres + PostGIS
     container_name: postgres_db
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER:-user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+    ports:
+      - "5432:5432"
     volumes:
       # сохраняет таблицы и данные пользователей
       - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init-dbs.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck: # Проверка готовности базы
       # бэкенд не начнет пытаться подключиться к базе, пока она не будет готова принимать соединения
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-user}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -21,32 +33,298 @@ services:
   redis:
     image: redis:7-alpine
     container_name: redis_db
-    restart: always
-    
-  backend:
-    build: .
-    container_name: go_backend
     ports:
-      - "8080:8080"
-    volumes:
-      - ./uploads:/app/uploads
+      - "6379:6379"
+    restart: always
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq_broker
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_USER:-guest}
+    ports:
+      - "5672:5672" # порт для микросервисов
+      - "8081:15672" # порт для веб-админки
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel_collector
+    command: ["--config=/etc/otel-collector/otel-collector.yaml"]
+    volumes:
+      - ./infrastructure/otel-collector/otel-collector.yaml:/etc/otel-collector/otel-collector.yaml
+    # ports:
+      # - "4317:4317"
+      # - "8889:8889"
+    restart: always
+  
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+      - '--storage.tsdb.path=/prometheus'
+      - "--storage.tsdb.retention.time=30d"
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - prometheus_data:/prometheus
+    # ports:
+    #   - "9090:9090" # админка Prometheus
+    restart: always
+  
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node_exporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: always
+  
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    entrypoint: ["sh", "-c", "echo '{\"themes\":{\"enabled\":true}}' > /tmp/ui.json && exec /go/bin/all-in-one-linux --query.ui-config=/tmp/ui.json"]
+    # ports:
+      # - "16686:16686" # Web UI
+      # - "4317"
+    restart: always
+  
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "127.0.0.1:8000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin} # Пароль для входа
+      - GF_AUTH_ANONYMOUS_ENABLED=false # Чтобы нельзя было смотреть без логина
+      - GF_SERVER_DOMAIN=grafana.foodcourt.fun
+      - GF_SERVER_ROOT_URL=https://grafana.foodcourt.fun
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infrastructure/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    restart: always
+  
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: always
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes:
+      - ./infrastructure/promtail/config.yaml:/etc/promtail/config.yaml
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/config.yaml
+    restart: always
+
+    
+  auth_service:
+    build:
+      context: .
+      args:
+        BUILD_PATH: ./services/auth/cmd/main.go
+    container_name: auth_service
+    environment:
+      <<: *shared-env
+      CONFIG_PATH: ./services/auth/config.yaml
       REDIS_URL: redis://redis:6379/0
-      DEFAULT_AVATAR_URL: "https://nancats-bucket.storage.yandexcloud.net/avatars/default-avatar.webp"
-      DEFAULT_RESTAURANT_LOGO_URL: "https://nancats-bucket.storage.yandexcloud.net/restaurants/default-restaurant-logo.webp"
-      DEFAULT_FOOD_LOGO_URL: "https://nancats-bucket.storage.yandexcloud.net/foods/default-food-logo.webp"
+      USER_SERVICE_ADDR: user_service:50052
+    depends_on:
+      redis:
+        condition: service_started
+      user_service:
+        condition: service_started
+
+  user_service:
+    build:
+      context: .
+      args:
+        BUILD_PATH: ./services/user/cmd/main.go
+    container_name: user_service
+    environment:
+      <<: *shared-env
+      CONFIG_PATH: ./services/user/config.yaml
+      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/user_db?sslmode=disable
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  restaurant_service:
+    build:
+      context: .
+      args:
+        BUILD_PATH: ./services/restaurant/cmd/main.go
+    container_name: restaurant_service
+    environment:
+      <<: *shared-env
+      CONFIG_PATH: ./services/restaurant/config.yaml
+      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/restaurant_db?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+
+  cart_service:
+    build:
+      context: .
+      args:
+        BUILD_PATH: ./services/cart/cmd/main.go
+    container_name: cart_service
+    environment:
+      <<: *shared-env
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      CONFIG_PATH: ./services/cart/config.yaml
+      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/cart_db?sslmode=disable
+      RESTAURANT_SERVICE_ADDR: restaurant_service:50053
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  address_service:
+    build:
+      context: .
+      args:
+        BUILD_PATH: ./services/address/cmd/main.go
+    container_name: address_service
+    environment:
+      <<: *shared-env
+      CONFIG_PATH: ./services/address/config.yaml
+      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/address_db?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+
+  payment_service:
+    build:
+      context: .
+      args:
+        BUILD_PATH: ./services/payment/cmd/main.go
+    container_name: payment_service
+    environment:
+      <<: *shared-env
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      CONFIG_PATH: ./services/payment/config.yaml
+      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/payment_db?sslmode=disable
+      REDIS_URL: redis://redis:6379/0
+      ORDER_SERVICE_ADDR: order_service:50057
       YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID}
       YOOKASSA_SECRET_KEY: ${YOOKASSA_SECRET_KEY}
       YOOKASSA_RETURN_URL: ${YOOKASSA_RETURN_URL}
-      S3_KEY_ID: ${S3_KEY_ID}
-      S3_SECRET_KEY: ${S3_SECRET_KEY}
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+
+  order_service:
+    build:
+      context: .
+      args:
+        BUILD_PATH: ./services/order/cmd/main.go
+    container_name: order_service
+    environment:
+      <<: *shared-env
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      CONFIG_PATH: ./services/order/config.yaml
+      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/order_db?sslmode=disable
+      ADDRESS_SERVICE_ADDR: address_service:50051
+      CART_SERVICE_ADDR: cart_service:50055
+      PAYMENT_SERVICE_ADDR: payment_service:50056
+      RESTAURANT_SERVICE_ADDR: restaurant_service:50053
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+  
+  support_service:
+    build:
+      context: .
+      args:
+        BUILD_PATH: ./services/support/cmd/main.go
+    container_name: support_service
+    environment:
+      <<: *shared-env
+      CONFIG_PATH: ./services/support/config.yaml
+      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/support_db?sslmode=disable
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+  
+  api_gateway:
+    build:
+      context: .
+      args:
+        BUILD_PATH: ./api-gateway/cmd/api/main.go
+    container_name: api_gateway
+    ports:
+      - "8080:8080"
+    environment:
+      <<: *shared-env
+      CONFIG_PATH: ./api-gateway/config.yaml 
+      OTEL_SERVICE_NAME: "api-gateway"
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      PORT: 8080
+      REDIS_ADDR: redis:6379
+      AUTH_SERVICE_ADDR: auth_service:50054
+      USER_SERVICE_ADDR: user_service:50052
+      RESTAURANT_SERVICE_ADDR: restaurant_service:50053
+      CART_SERVICE_ADDR: cart_service:50055
+      ADDRESS_SERVICE_ADDR: address_service:50051
+      PAYMENT_SERVICE_ADDR: payment_service:50056
+      ORDER_SERVICE_ADDR: order_service:50057
+      SUPPORT_SERVICE_ADDR: support_service:50058
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      auth_service:
+        condition: service_started
+      user_service:
+        condition: service_started
+      restaurant_service:
+        condition: service_started
+      cart_service:
+        condition: service_started
+      address_service:
+        condition: service_started
+      payment_service:
+        condition: service_started
+      order_service:
+        condition: service_started
+      support_service:
+        condition: service_started
+      redis:
+        condition: service_started
     restart: always
 
 volumes:
   # Объявляем именованный том для базы
   postgres_data:
+  grafana_data:
+  prometheus_data:

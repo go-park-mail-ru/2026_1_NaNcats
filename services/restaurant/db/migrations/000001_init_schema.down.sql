@@ -1,0 +1,6 @@
+DROP TABLE IF EXISTS "dish_category" CASCADE;
+DROP TABLE IF EXISTS "restaurant_brand_category" CASCADE;
+DROP TABLE IF EXISTS "dish" CASCADE;
+DROP TABLE IF EXISTS "restaurant_branch" CASCADE;
+DROP TABLE IF EXISTS "category" CASCADE;
+DROP TABLE IF EXISTS "restaurant_brand" CASCADE;

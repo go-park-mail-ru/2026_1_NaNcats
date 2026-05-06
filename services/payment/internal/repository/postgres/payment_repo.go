@@ -1,0 +1,160 @@
+package postgres
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/payment/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+)
+
+type paymentMethodDB struct {
+	ID          int64   `db:"id"`
+	UserID      int64   `db:"user_id"`
+	ExternalID  string  `db:"external_id"`
+	First6      string  `db:"first6"`
+	Last4       string  `db:"last4"`
+	ExpiryMonth string  `db:"expiry_month"`
+	ExpiryYear  string  `db:"expiry_year"`
+	CardType    string  `db:"card_type"`
+	IssuerName  *string `db:"issuer_name"`
+	IsDefault   bool    `db:"is_default"`
+}
+
+func (p paymentMethodDB) toDomain() domain.PaymentMethod {
+	issuerName := ""
+	if p.IssuerName != nil {
+		issuerName = *p.IssuerName
+	}
+
+	return domain.PaymentMethod{
+		ID:          p.ID,
+		UserID:      p.UserID,
+		ExternalID:  p.ExternalID,
+		First6:      p.First6,
+		Last4:       p.Last4,
+		ExpiryMonth: p.ExpiryMonth,
+		ExpiryYear:  p.ExpiryYear,
+		CardType:    p.CardType,
+		IssuerName:  issuerName,
+		IsDefault:   p.IsDefault,
+	}
+}
+
+type paymentRepo struct {
+	pool postgres.PgxPool
+}
+
+func NewPaymentRepo(pool postgres.PgxPool) repository.PaymentRepository {
+	return &paymentRepo{
+		pool: pool,
+	}
+}
+
+func (r *paymentRepo) Create(ctx context.Context, method domain.PaymentMethod, idempotencyKey string) (int64, error) {
+	query := `
+    	INSERT INTO "payment_method" 
+    	(user_id, external_id, first6, last4, expiry_month, expiry_year, card_type, issuer_name, is_default, idempotency_key)
+    	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		ON CONFLICT (idempotency_key) DO UPDATE 
+		SET idempotency_key = EXCLUDED.idempotency_key
+		RETURNING id;
+	`
+
+	var lastInsertedID int64
+	err := r.pool.QueryRow(ctx, query,
+		method.UserID,
+		method.ExternalID,
+		method.First6,
+		method.Last4,
+		method.ExpiryMonth,
+		method.ExpiryYear,
+		method.CardType,
+		method.IssuerName,
+		method.IsDefault,
+		idempotencyKey,
+	).Scan(&lastInsertedID)
+
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			if pgErr.ConstraintName == "payment_method_user_id_external_id_key" {
+				return 0, domain.ErrPaymentMethodAlreadyExists
+			}
+			return 0, err
+		}
+		return 0, err
+	}
+
+	return lastInsertedID, nil
+}
+
+func (r *paymentRepo) Delete(ctx context.Context, cardID string, userID int64) error {
+	query := `
+		DELETE FROM "payment_method"
+		WHERE external_id = $1 AND user_id = $2
+	`
+
+	tag, err := r.pool.Exec(ctx, query, cardID, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete payment method: %w", err)
+	}
+
+	rowsAffected := tag.RowsAffected()
+	if rowsAffected == 0 {
+		return domain.ErrPaymentMethodNotFound
+	}
+
+	return nil
+}
+
+func (r *paymentRepo) GetByUserID(ctx context.Context, userID int64) ([]domain.PaymentMethod, error) {
+	query := `
+		SELECT id, user_id, external_id, first6, last4, expiry_month, expiry_year, card_type, issuer_name, is_default
+		FROM "payment_method" WHERE user_id = $1
+		ORDER BY is_default DESC, created_at DESC;
+	`
+
+	rows, err := r.pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	dbPaymentMethods, err := pgx.CollectRows(rows, pgx.RowToStructByName[paymentMethodDB])
+	if err != nil {
+		return nil, err
+	}
+
+	domainPaymentMethods := make([]domain.PaymentMethod, 0, len(dbPaymentMethods))
+	for _, dbPaymentMethod := range dbPaymentMethods {
+		domainPaymentMethods = append(domainPaymentMethods, dbPaymentMethod.toDomain())
+	}
+
+	return domainPaymentMethods, nil
+}
+
+func (r *paymentRepo) SetDefault(ctx context.Context, cardID string, userID int64) error {
+	query := `
+		UPDATE "payment_method"
+		SET is_default = (external_id = $1)
+		WHERE user_id = $2 AND (is_default = true OR external_id = $1);
+	`
+
+	tag, err := r.pool.Exec(ctx, query, cardID, userID)
+	if err != nil {
+		return fmt.Errorf("failed to set default payment method: %w", err)
+	}
+
+	rowsAffected := tag.RowsAffected()
+	if rowsAffected == 0 {
+		return domain.ErrPaymentMethodNotFound
+	}
+
+	return nil
+}

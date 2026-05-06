@@ -1,0 +1,43 @@
+receivers:
+  # Принимаем данные от сервисов по протоколу OTLP
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317 # микросервисы стучатся сюда
+      http:
+        endpoint: 0.0.0.0:4318 # если кто-то будет слать по HTTP
+
+processors:
+  # Группируем данные, чтобы не слать их по одному
+  batch:
+    send_batch_size: 50
+    timeout: 10s
+
+exporters:
+  # Экспортер для Prometheus
+  prometheus:
+    endpoint: "0.0.0.0:8889" # Коллектор откроет этот порт, Prometheus придет и заберет данные
+    namespace: "nancats"    # Префикс для всех метрик
+
+  # Экспортер для Jaeger
+  otlp/jaeger:
+    endpoint: "jaeger:4317" # Шлем трейсы в контейнер Jaeger
+    tls:
+      insecure: true
+
+  debug:
+    verbosity: basic # Выводить краткую инфу о пришедших данных в логи контейнера Collector
+
+service:
+  pipelines: # Описываем маршруты данных
+    # Конвейер для метрик
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus, debug]
+    
+    # Конвейер для трейсов
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/jaeger]

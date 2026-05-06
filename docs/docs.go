@@ -15,6 +15,342 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/support/stats": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Возвращает агрегированные данные по тикетам: общее количество, распределение по статусам и категориям, средний рейтинг и среднее время решения. Доступно только для ролей admin и support.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin",
+                    "support"
+                ],
+                "summary": "Получение статистики техподдержки",
+                "responses": {
+                    "200": {
+                        "description": "Статистика успешно получена",
+                        "schema": {
+                            "$ref": "#/definitions/supportclient.SupportStats"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Недостаточно прав (требуется роль admin или support)",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/users/role": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Смена роли пользователя (админ)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Ключ",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.UpdateRoleRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/agent/status": {
+            "patch": {
+                "description": "Позволяет агенту изменить свой статус (например: активен, отошел)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "agent"
+                ],
+                "summary": "Установка рабочего статуса агента",
+                "parameters": [
+                    {
+                        "description": "Новый статус агента",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.SetAgentStatusRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Статус успешно обновлен",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка запроса",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизован",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/templates": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Возвращает список готовых шаблонов(отбивок) для использования агентами в чате",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "agent"
+                ],
+                "summary": "Получение шаблонов ответов (Для агентов)",
+                "responses": {
+                    "200": {
+                        "description": "Список шаблонов",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/support.TemplateDTO"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизован",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/tickets": {
+            "get": {
+                "description": "Возвращает список тикетов, назначенных на текущего агента поддержки",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "agent"
+                ],
+                "summary": "Получение назначенных тикетов (Для агентов)",
+                "responses": {
+                    "200": {
+                        "description": "Список назначенных тикетов",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/support.TicketDTO"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизован",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/tickets/{id}/reassign": {
+            "post": {
+                "description": "Передает тикет другому агенту или на другую линию поддержки",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "agent"
+                ],
+                "summary": "Переназначение тикета (Для агентов)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Public ID тикета",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Ключ идемпотентности",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные для переназначения",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.ReassignTicketRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Тикет успешно переназначен",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка запроса",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизован",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/tickets/{id}/status": {
+            "patch": {
+                "description": "Меняет статус указанного тикета",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "agent"
+                ],
+                "summary": "Изменение статуса тикета (Для агентов)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Public ID тикета",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Ключ идемпотентности",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Новый статус",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/support.ChangeStatusRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Статус успешно изменен",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка запроса",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизован",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/cart": {
             "get": {
                 "security": [
@@ -22,7 +358,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Возвращает текущую корзину авторизованного пользователя",
+                "description": "Возвращает текущую корзину авторизованного пользователя (включая статус комнаты и участников)",
                 "produces": [
                     "application/json"
                 ],
@@ -34,7 +370,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_cart.CartResponse"
+                            "$ref": "#/definitions/cart.CartResponse"
                         }
                     },
                     "401": {
@@ -57,13 +393,13 @@ const docTemplate = `{
                     }
                 }
             },
-            "put": {
+            "delete": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Перезаписывает содержимое корзины пользователя новыми товарами",
+                "description": "Удаляет все товары из указанной корзины. В Shared-режиме доступно только админу.",
                 "consumes": [
                     "application/json"
                 ],
@@ -73,28 +409,37 @@ const docTemplate = `{
                 "tags": [
                     "cart"
                 ],
-                "summary": "Обновить корзину",
+                "summary": "Очистить корзину",
                 "parameters": [
                     {
-                        "description": "Данные корзины",
+                        "type": "string",
+                        "description": "Ключ идемпотентности",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные",
                         "name": "input",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_cart.CartRequest"
+                            "$ref": "#/definitions/cart.BasicCartOperationRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Успешное обновление",
+                        "description": "Корзина очищена",
                         "schema": {
                             "type": "object",
-                            "additionalProperties": true
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
-                        "description": "Неверный формат запроса или товары из разных ресторанов",
+                        "description": "Неверный формат запроса",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -104,6 +449,660 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Нет прав на выполнение операции",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cart/close": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Переводит корзину в Solo-режим. Удаляет всех участников кроме админа и удаляет их блюда.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Закрыть совместную корзину",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Ключ идемпотентности",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "ID корзины",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/cart.BasicCartOperationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Корзина переведена в соло-режим",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Только админ может закрыть корзину",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cart/invite": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Создает токен-приглашение в корзину. Переводит корзину в режим 'shared'. Доступно только админу.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Сгенерировать инвайт-ссылку",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID корзины",
+                        "name": "cart_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/cart.InviteResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Только админ может генерировать ссылки",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cart/items": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Изменяет количество существующего товара. Гость может менять только свои позиции, админ - любые.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Изменить количество товара",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Ключ идемпотентности",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные обновления",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_cart.UpdateQuantityRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Количество обновлено",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный запрос или количество",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Нет прав на изменение этой позиции",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Добавляет товар в корзину. Вызывающий пользователь становится владельцем (owner) товара.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Добавить товар",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Ключ идемпотентности",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные товара",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_cart.AddItemRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Товар добавлен",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверное количество или блюдо из другого ресторана",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Пользователь не состоит в этой корзине",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Удаляет позицию из корзины. Гость может удалять только свое, админ - любое.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Удалить товар",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Ключ идемпотентности",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные для удаления",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_cart.RemoveItemRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Товар удален",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Нет прав на удаление этой позиции",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cart/items/owner": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Переназначает блюдо на другого участника комнаты (или делает позицию ничейной, передав null). Только для админа.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Изменить плательщика товара",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Ключ идемпотентности",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Новый владелец",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_cart.ReassignOwnerRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Владелец изменен",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Только админ может переназначать",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cart/join": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Добавляет пользователя в совместную корзину по токену инвайта.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Присоединиться к корзине",
+                "parameters": [
+                    {
+                        "description": "Токен приглашения",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_cart.JoinCartRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешный вход (возвращает cart_id)",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Инвайт недействителен или протух",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cart/members": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Кикает гостя из комнаты. Блюда гостя становятся 'ничейными' (owner_user_id = null).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Удалить участника",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Ключ идемпотентности",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Кого удаляем",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/cart.KickMemberRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Участник удален",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Только админ может удалять участников",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -130,7 +1129,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Создает заказ на основе корзины, возвращает ID заказа и ссылку на оплату YooKassa (при необходимости)",
+                "description": "Создает заказ на основе корзины, рассчитывает долги (Splits) и запускает Сагу",
                 "consumes": [
                     "application/json"
                 ],
@@ -143,24 +1142,31 @@ const docTemplate = `{
                 "summary": "Создать заказ",
                 "parameters": [
                     {
-                        "description": "Данные для оформления заказа",
+                        "type": "string",
+                        "description": "Ключ идемпотентности",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные для оформления",
                         "name": "input",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_order.CreateOrderRequest"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_order.CreateOrderRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Заказ успешно создан",
+                        "description": "Заказ успешно создан (ссылки на оплату придут по WS)",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_order.CreateOrderResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_order.CreateOrderResponse"
                         }
                     },
                     "400": {
-                        "description": "Bad request или пустая корзина",
+                        "description": "Bad request, пустая корзина или есть ничейные блюда",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -198,6 +1204,227 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/orders/splits/{id}/pay": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Перехватывает чужой счет (Сплит) и запускает по нему транзакцию оплаты",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "order"
+                ],
+                "summary": "Оплатить за друга",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID сплита (счета)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Ключ идемпотентности",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные для оплаты",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_order.PayForFriendRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Процесс оплаты запущен",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/profile/orders": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Возвращает историю заказов пользователя со всеми позициями и детализацией счетов (Splits)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "order"
+                ],
+                "summary": "Получить историю заказов",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/order.OrderHistoryResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ws/cart": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Устанавливает WS соединение для получения live-обновлений совместной корзины",
+                "tags": [
+                    "cart"
+                ],
+                "summary": "WebSocket соединение корзины",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID корзины",
+                        "name": "cart_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "101": {
+                        "description": "Switching Protocols"
+                    },
+                    "400": {
+                        "description": "Bad Request (отсутствует cart_id)",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ws/orders/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Подключение для получения live-обновлений по заказу и ссылок на оплату",
+                "tags": [
+                    "order"
+                ],
+                "summary": "WebSocket отслеживания заказа",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID заказа",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "101": {
+                        "description": "Switching Protocols"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Проверяет учетные данные и устанавливает сессионную куку",
@@ -218,7 +1445,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_auth.LoginRequest"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_auth.LoginRequest"
                         }
                     }
                 ],
@@ -226,25 +1453,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешный вход",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_auth.LoginResponse"
+                            "$ref": "#/definitions/auth.LoginResponse"
                         }
                     },
                     "400": {
                         "description": "Неверный формат JSON",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Неверный логин или пароль",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -287,19 +1514,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешный вход и создание сессии",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_auth.LoginResponse"
+                            "$ref": "#/definitions/auth.LoginResponse"
                         }
                     },
                     "401": {
                         "description": "Неавторизован",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -325,7 +1552,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_auth.RegisterRequest"
+                            "$ref": "#/definitions/auth.RegisterRequest"
                         }
                     }
                 ],
@@ -333,25 +1560,104 @@ const docTemplate = `{
                     "201": {
                         "description": "Успешная регистрация",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_auth.RegisterResponse"
+                            "$ref": "#/definitions/auth.RegisterResponse"
                         }
                     },
                     "400": {
                         "description": "Ошибка валидации (email/пароль)",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Пользователь с такой почтой уже существует",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/categories": {
+            "get": {
+                "description": "Возвращает статический список доступных категорий кухни с их идентификаторами и эмодзи",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Получение списка категорий",
+                "responses": {
+                    "200": {
+                        "description": "Успешное получение списка категорий",
+                        "schema": {
+                            "$ref": "#/definitions/restaurant.CategoriesResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/categories/{slug}/restaurants": {
+            "get": {
+                "description": "Возвращает список брендов ресторанов, отфильтрованный по переданному слагу категории (например: pizza, sushi)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Получение ресторанов по категории",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Слаг категории",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Количество возвращаемых элементов (по умолчанию 20)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Смещение для пагинации (по умолчанию 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешное получение ресторанов по категории",
+                        "schema": {
+                            "$ref": "#/definitions/restaurant.RestaurantBrandsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Отсутствует слаг категории",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -371,13 +1677,146 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное получение токена или сообщение об отсутствии сессии",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_auth.CSRFResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_auth.CSRFResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/order/{id}/cancel": {
+            "post": {
+                "description": "Пользователь отменяет свой заказ. Доступно только пока заказ не in_progress / not finished.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "order"
+                ],
+                "summary": "Отмена заказа",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID заказа",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешная отмена заказа",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Отсутствует ID заказа или ошибка при отмене",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизован",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Заказ не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/order/{id}/check-payment": {
+            "get": {
+                "description": "Для dev-окружения: актуализирует статус платежа через YooKassa REST, эмулируя webhook.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "order"
+                ],
+                "summary": "Проверка статуса платежа",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID заказа",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешное обновление статуса",
+                        "schema": {
+                            "$ref": "#/definitions/order.CheckPaymentResponse"
+                        }
+                    },
+                    "202": {
+                        "description": "Платеж еще не готов (pending)",
+                        "schema": {
+                            "$ref": "#/definitions/order.CheckPaymentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Отсутствует ID заказа",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизован",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Заказ или платеж не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -400,19 +1839,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное получение данных профиля",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_user.UserProfileResponse"
+                            "$ref": "#/definitions/user.UserProfileResponse"
                         }
                     },
                     "404": {
                         "description": "Пользователь не найден",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -436,7 +1875,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_user.UserProfileUpdateRequest"
+                            "$ref": "#/definitions/user.UserProfileUpdateRequest"
                         }
                     }
                 ],
@@ -453,19 +1892,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Ошибка валидации JSON или нет данных для обновления",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Указанный email уже используется другим пользователем",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -485,19 +1924,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Список адресов пользователя",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_address.AddressListResponse"
+                            "$ref": "#/definitions/address.AddressListResponse"
                         }
                     },
                     "401": {
                         "description": "Неавторизован",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -521,7 +1960,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_address.AddressRequest"
+                            "$ref": "#/definitions/address.AddressRequest"
                         }
                     }
                 ],
@@ -529,25 +1968,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Успешное создание (возвращает public_id)",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_address.CreateAddressResponse"
+                            "$ref": "#/definitions/address.CreateAddressResponse"
                         }
                     },
                     "400": {
                         "description": "Ошибка в формате запроса",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Неавторизован",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -573,19 +2012,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Адрес успешно удален",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_address.MessageResponse"
+                            "$ref": "#/definitions/address.MessageResponse"
                         }
                     },
                     "401": {
                         "description": "Неавторизован",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -616,7 +2055,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_address.AddressRequest"
+                            "$ref": "#/definitions/address.AddressRequest"
                         }
                     }
                 ],
@@ -624,25 +2063,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Адрес успешно обновлен",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_address.MessageResponse"
+                            "$ref": "#/definitions/address.MessageResponse"
                         }
                     },
                     "400": {
                         "description": "Ошибка в формате запроса",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Неавторизован",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -674,19 +2113,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Аватар успешно обновлен",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_user.UpdateAvatarResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_user.UpdateAvatarResponse"
                         }
                     },
                     "400": {
                         "description": "Ошибка запроса (файл слишком большой, неверный формат или отсутствует)",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -704,13 +2143,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Аватар успешно удален",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_user.UpdateAvatarResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_user.UpdateAvatarResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -733,7 +2172,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal_delivery_handler_payment.PaymentMethodResponse"
+                                "$ref": "#/definitions/payment.PaymentMethodResponse"
                             }
                         }
                     },
@@ -773,7 +2212,7 @@ const docTemplate = `{
                     "200": {
                         "description": "URL для подтверждения привязки",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_payment.BindingResponse"
+                            "$ref": "#/definitions/payment.BindingResponse"
                         }
                     },
                     "401": {
@@ -851,9 +2290,12 @@ const docTemplate = `{
                 }
             }
         },
-        "/restaurants/brands": {
+        "/restaurants": {
             "get": {
-                "description": "Возвращает список брендов ресторанов с поддержкой пагинации (limit и offset)",
+                "description": "Возвращает список всех брендов ресторанов с поддержкой пагинации",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -864,15 +2306,13 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "default": 20,
-                        "description": "Количество получаемых ресторанов",
+                        "description": "Количество возвращаемых элементов (по умолчанию 20)",
                         "name": "limit",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "default": 0,
-                        "description": "Смещение от начала списка",
+                        "description": "Смещение для пагинации (по умолчанию 0)",
                         "name": "offset",
                         "in": "query"
                     }
@@ -881,15 +2321,74 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное получение списка ресторанов",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_restaurant.RestaurantBrandsResponse"
+                            "$ref": "#/definitions/restaurant.RestaurantBrandsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/restaurants/brands/{id}/dishes": {
+        "/restaurants/{id}": {
             "get": {
-                "description": "Возвращает список блюд ресторана (по restaurant_brand_id) с поддержкой пагинации (limit и offset)",
+                "description": "Возвращает детальную информацию о бренде ресторана по его уникальному идентификатору",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "restaurants"
+                ],
+                "summary": "Получение ресторана по ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID ресторана",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешное получение ресторана",
+                        "schema": {
+                            "$ref": "#/definitions/restaurant.RestaurantBrandResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат ID",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Ресторан не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/restaurants/{id}/dishes": {
+            "get": {
+                "description": "Возвращает список блюд для конкретного ресторана с возможностью пагинации и поиска по названию",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -899,24 +2398,28 @@ const docTemplate = `{
                 "summary": "Получение списка блюд ресторана",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "ID бренда ресторана (restaurant_brand_id)",
+                        "type": "string",
+                        "description": "ID ресторана",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "integer",
-                        "default": 20,
-                        "description": "Количество получаемых блюд",
+                        "description": "Количество возвращаемых элементов (по умолчанию 20)",
                         "name": "limit",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "default": 0,
-                        "description": "Смещение от начала списка",
+                        "description": "Смещение для пагинации (по умолчанию 0)",
                         "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Поисковый запрос для фильтрации блюд",
+                        "name": "q",
                         "in": "query"
                     }
                 ],
@@ -924,7 +2427,400 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное получение списка блюд",
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_handler_restaurant.DishesResponse"
+                            "$ref": "#/definitions/restaurant.DishesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат ID ресторана",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Блюда или ресторан не найдены",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/restaurants/{id}/reviews": {
+            "get": {
+                "description": "Возвращает список всех отзывов для конкретного ресторана по его ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "review"
+                ],
+                "summary": "Получение списка отзывов",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID ресторана",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешное получение отзывов",
+                        "schema": {
+                            "$ref": "#/definitions/review.ReviewsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный ID ресторана",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Создает новый отзыв для указанного ресторана с оценкой и комментарием",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "review"
+                ],
+                "summary": "Создание отзыва",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID ресторана",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные для создания отзыва",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/review.CreateReviewRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Отзыв успешно создан",
+                        "schema": {
+                            "$ref": "#/definitions/review.Review"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат JSON, ID ресторана или ошибка валидации полей",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/search": {
+            "get": {
+                "description": "Осуществляет поиск по ресторанам и блюдам на основе переданного ключевого слова",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "search"
+                ],
+                "summary": "Глобальный поиск",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Поисковый запрос",
+                        "name": "q",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Количество возвращаемых элементов (по умолчанию 20)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Смещение для пагинации (по умолчанию 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешный поиск (возвращает списки ресторанов и блюд)",
+                        "schema": {
+                            "$ref": "#/definitions/restaurant.SearchAllResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Отсутствует поисковый запрос",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/support/categories": {
+            "get": {
+                "description": "Возвращает список доступных категорий для создания тикетов",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "support"
+                ],
+                "summary": "Получение категорий обращений",
+                "responses": {
+                    "200": {
+                        "description": "Список категорий",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/support.CategoryDTO"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/support/tickets": {
+            "get": {
+                "description": "Возвращает все обращения текущего пользователя (идентифицируется по токену или куке guest_id)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "support"
+                ],
+                "summary": "Получение списка тикетов пользователя",
+                "responses": {
+                    "200": {
+                        "description": "Список тикетов пользователя",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/support.TicketDTO"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Создает новое обращение в службу поддержки (для авторизованных и неавторизованных пользователей)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "support"
+                ],
+                "summary": "Создание тикета",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Ключ идемпотентности",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные тикета",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.CreateTicketRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешное создание (возвращает ticket_id)",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.CreateTicketResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка в формате запроса или отсутствие заголовка",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/support/tickets/{id}/chat": {
+            "get": {
+                "description": "Устанавливает WebSocket соединение для общения в чате поддержки по конкретному тикету. Ожидает HTTP GET для апгрейда протокола.",
+                "tags": [
+                    "support"
+                ],
+                "summary": "Подключение к чату поддержки (WebSocket)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Public ID тикета",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "101": {
+                        "description": "Протокол успешно изменен на WebSocket"
+                    },
+                    "400": {
+                        "description": "Неверный ID тикета или ошибка апгрейда соединения"
+                    }
+                }
+            }
+        },
+        "/support/tickets/{id}/events": {
+            "get": {
+                "description": "Возвращает историю переписки и событий по конкретному тикету",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "support"
+                ],
+                "summary": "Получение событий тикета",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Public ID тикета",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список событий",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/support.EventDTO"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Тикет не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/support/tickets/{id}/rate": {
+            "post": {
+                "description": "Позволяет пользователю поставить оценку решенному тикету",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "support"
+                ],
+                "summary": "Оценка решения тикета",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Public ID тикета",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Ключ идемпотентности",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Оценка тикета",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.RateTicketRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешная оценка",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка в формате запроса",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -951,7 +2847,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookNotification"
+                            "$ref": "#/definitions/yookassa.WebhookNotification"
                         }
                     }
                 ],
@@ -973,48 +2869,18 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_go-park-mail-ru_2026_1_NaNcats_pkg_api_clients_yookassa.WebhookNotification": {
-            "type": "object",
-            "properties": {
-                "event": {
-                    "type": "string"
-                },
-                "object": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_go-park-mail-ru_2026_1_NaNcats_pkg_response.ErrorResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 400
-                },
-                "message": {
-                    "type": "string",
-                    "example": "Неверный формат запроса"
-                }
-            }
-        },
-        "internal_delivery_handler_address.AddressListResponse": {
+        "address.AddressListResponse": {
             "type": "object",
             "properties": {
                 "addresses": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_delivery_handler_address.AddressResponse"
+                        "$ref": "#/definitions/address.AddressResponse"
                     }
                 }
             }
         },
-        "internal_delivery_handler_address.AddressRequest": {
+        "address.AddressRequest": {
             "type": "object",
             "properties": {
                 "address_text": {
@@ -1046,7 +2912,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler_address.AddressResponse": {
+        "address.AddressResponse": {
             "type": "object",
             "properties": {
                 "apartment": {
@@ -1071,11 +2937,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "location": {
-                    "$ref": "#/definitions/internal_delivery_handler_address.LocationResponse"
+                    "$ref": "#/definitions/address.LocationResponse"
                 }
             }
         },
-        "internal_delivery_handler_address.CreateAddressResponse": {
+        "address.CreateAddressResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -1083,7 +2949,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler_address.LocationResponse": {
+        "address.LocationResponse": {
             "type": "object",
             "properties": {
                 "address_text": {
@@ -1097,7 +2963,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler_address.MessageResponse": {
+        "address.MessageResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -1105,33 +2971,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler_auth.CSRFResponse": {
-            "type": "object",
-            "properties": {
-                "csrf_token": {
-                    "type": "string"
-                },
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_delivery_handler_auth.LoginRequest": {
-            "type": "object",
-            "properties": {
-                "login": {
-                    "type": "string",
-                    "example": "user@mail.ru"
-                },
-                "password": {
-                    "type": "string",
-                    "maxLength": 128,
-                    "minLength": 8,
-                    "example": "qwerty12345"
-                }
-            }
-        },
-        "internal_delivery_handler_auth.LoginResponse": {
+        "auth.LoginResponse": {
             "type": "object",
             "properties": {
                 "avatar_url": {
@@ -1141,13 +2981,17 @@ const docTemplate = `{
                 "csrf_token": {
                     "type": "string"
                 },
+                "email": {
+                    "type": "string",
+                    "example": "ivan@example.com"
+                },
                 "name": {
                     "type": "string",
                     "example": "Иван"
                 }
             }
         },
-        "internal_delivery_handler_auth.RegisterRequest": {
+        "auth.RegisterRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -1166,7 +3010,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler_auth.RegisterResponse": {
+        "auth.RegisterResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -1186,7 +3030,15 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler_cart.CartItemDTO": {
+        "cart.BasicCartOperationRequest": {
+            "type": "object",
+            "properties": {
+                "cart_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "cart.CartItemDTO": {
             "type": "object",
             "properties": {
                 "dish_id": {
@@ -1198,6 +3050,9 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "owner_user_id": {
+                    "type": "integer"
+                },
                 "price": {
                     "type": "integer"
                 },
@@ -1206,41 +3061,163 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler_cart.CartRequest": {
+        "cart.CartMemberDTO": {
             "type": "object",
             "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/internal_delivery_handler_cart.CartItemDTO"
-                    }
+                "joined_at": {
+                    "type": "string"
                 },
-                "restaurant_id": {
+                "user_id": {
                     "type": "integer"
                 }
             }
         },
-        "internal_delivery_handler_cart.CartResponse": {
+        "cart.CartResponse": {
             "type": "object",
             "properties": {
+                "admin_id": {
+                    "type": "integer"
+                },
+                "cart_id": {
+                    "type": "string"
+                },
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_delivery_handler_cart.CartItemDTO"
+                        "$ref": "#/definitions/cart.CartItemDTO"
                     }
+                },
+                "members": {
+                    "description": "Только для shared",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cart.CartMemberDTO"
+                    }
+                },
+                "mode": {
+                    "type": "string"
                 },
                 "restaurant_id": {
                     "type": "integer"
                 },
+                "status": {
+                    "type": "string"
+                },
                 "total_cost": {
                     "type": "integer"
+                }
+            }
+        },
+        "cart.InviteResponse": {
+            "type": "object",
+            "properties": {
+                "expires_at": {
+                    "type": "string"
                 },
-                "updated_at": {
+                "token": {
                     "type": "string"
                 }
             }
         },
-        "internal_delivery_handler_order.CreateOrderRequest": {
+        "cart.KickMemberRequest": {
+            "type": "object",
+            "properties": {
+                "cart_id": {
+                    "type": "string"
+                },
+                "target_user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_auth.CSRFResponse": {
+            "type": "object",
+            "properties": {
+                "csrf_token": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_auth.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "login": {
+                    "type": "string",
+                    "example": "user@mail.ru"
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 8,
+                    "example": "qwerty12345"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_cart.AddItemRequest": {
+            "type": "object",
+            "properties": {
+                "cart_id": {
+                    "type": "string"
+                },
+                "dish_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_cart.JoinCartRequest": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_cart.ReassignOwnerRequest": {
+            "type": "object",
+            "properties": {
+                "cart_id": {
+                    "type": "string"
+                },
+                "dish_id": {
+                    "type": "integer"
+                },
+                "new_owner_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_cart.RemoveItemRequest": {
+            "type": "object",
+            "properties": {
+                "cart_id": {
+                    "type": "string"
+                },
+                "dish_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_cart.UpdateQuantityRequest": {
+            "type": "object",
+            "properties": {
+                "cart_id": {
+                    "type": "string"
+                },
+                "dish_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_order.CreateOrderRequest": {
             "type": "object",
             "properties": {
                 "address_id": {
@@ -1249,32 +3226,207 @@ const docTemplate = `{
                 "branch_id": {
                     "type": "integer"
                 },
+                "brand_id": {
+                    "type": "integer"
+                },
                 "delivery_cost": {
                     "type": "integer"
+                },
+                "pay_for_all": {
+                    "type": "boolean"
+                },
+                "payer_mapping": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
                 },
                 "payment_method_id": {
                     "type": "string"
                 },
                 "service_fee": {
                     "type": "integer"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_order.CreateOrderResponse": {
+            "type": "object",
+            "properties": {
+                "order_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_order.PayForFriendRequest": {
+            "type": "object",
+            "properties": {
+                "payment_method_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.CreateTicketRequest": {
+            "type": "object",
+            "properties": {
+                "category_id": {
+                    "type": "integer"
+                },
+                "client_meta": {
+                    "type": "string"
+                },
+                "contact_email": {
+                    "type": "string"
+                },
+                "first_message": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.CreateTicketResponse": {
+            "type": "object",
+            "properties": {
+                "ticket_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.RateTicketRequest": {
+            "type": "object",
+            "properties": {
+                "rating": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.ReassignTicketRequest": {
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "type": "integer"
+                },
+                "line": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.SetAgentStatusRequest": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_user.UpdateAvatarResponse": {
+            "type": "object",
+            "properties": {
+                "avatar_url": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "order.CheckPaymentResponse": {
+            "type": "object",
+            "properties": {
+                "order_id": {
+                    "type": "string"
+                },
+                "payment_id": {
+                    "type": "string"
+                },
+                "payment_status": {
+                    "type": "string"
+                }
+            }
+        },
+        "order.OrderDishDTO": {
+            "type": "object",
+            "properties": {
+                "dish_id": {
+                    "type": "integer"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "owner_user_id": {
+                    "type": "integer"
+                },
+                "price": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "integer"
+                }
+            }
+        },
+        "order.OrderHistoryResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/order.OrderDishDTO"
+                    }
+                },
+                "order_id": {
+                    "type": "string"
+                },
+                "restaurant_image_url": {
+                    "type": "string"
+                },
+                "restaurant_name": {
+                    "type": "string"
+                },
+                "splits": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/order.OrderSplitDTO"
+                    }
+                },
+                "status": {
+                    "type": "string"
                 },
                 "total_cost": {
                     "type": "integer"
                 }
             }
         },
-        "internal_delivery_handler_order.CreateOrderResponse": {
+        "order.OrderSplitDTO": {
             "type": "object",
             "properties": {
-                "confirmation_url": {
+                "amount": {
+                    "type": "integer"
+                },
+                "split_id": {
                     "type": "string"
                 },
-                "order_id": {
+                "status": {
                     "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
-        "internal_delivery_handler_payment.BindingResponse": {
+        "payment.BindingResponse": {
             "type": "object",
             "properties": {
                 "confirmation_url": {
@@ -1282,7 +3434,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler_payment.PaymentMethodResponse": {
+        "payment.PaymentMethodResponse": {
             "type": "object",
             "properties": {
                 "card_type": {
@@ -1306,7 +3458,45 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler_restaurant.DishResponse": {
+        "response.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 400
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Неверный формат запроса"
+                }
+            }
+        },
+        "restaurant.CategoriesResponse": {
+            "type": "object",
+            "properties": {
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/restaurant.CategoryResponse"
+                    }
+                }
+            }
+        },
+        "restaurant.CategoryResponse": {
+            "type": "object",
+            "properties": {
+                "emoji": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "restaurant.DishResponse": {
             "type": "object",
             "properties": {
                 "description": {
@@ -1318,8 +3508,7 @@ const docTemplate = `{
                     "example": "1"
                 },
                 "image_url": {
-                    "type": "string",
-                    "example": "/api/images/dishes/cheeseburger.png"
+                    "type": "string"
                 },
                 "name": {
                     "type": "string",
@@ -1327,39 +3516,57 @@ const docTemplate = `{
                 },
                 "price": {
                     "type": "integer",
-                    "example": 19900
+                    "example": 199000000
                 }
             }
         },
-        "internal_delivery_handler_restaurant.DishesResponse": {
+        "restaurant.DishWithBrand": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "integer"
+                },
+                "restaurant_brand_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "restaurant.DishesResponse": {
             "type": "object",
             "properties": {
                 "dishes": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_delivery_handler_restaurant.DishResponse"
+                        "$ref": "#/definitions/restaurant.DishResponse"
                     }
                 }
             }
         },
-        "internal_delivery_handler_restaurant.RestaurantBrandResponse": {
+        "restaurant.RestaurantBrandResponse": {
             "type": "object",
             "properties": {
-                "banner_url": {
-                    "type": "string",
-                    "example": "restaurangs/banners/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"
-                },
                 "description": {
                     "type": "string",
-                    "example": "Острые крылошки"
+                    "example": "Острые крылышки"
                 },
                 "id": {
                     "type": "string",
-                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                    "example": "1"
                 },
                 "logo_url": {
-                    "type": "string",
-                    "example": "restaurants/logos/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"
+                    "type": "string"
                 },
                 "name": {
                     "type": "string",
@@ -1371,34 +3578,240 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler_restaurant.RestaurantBrandsResponse": {
+        "restaurant.RestaurantBrandsResponse": {
             "type": "object",
             "properties": {
                 "restaurants": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_delivery_handler_restaurant.RestaurantBrandResponse"
+                        "$ref": "#/definitions/restaurant.RestaurantBrandResponse"
                     }
                 }
             }
         },
-        "internal_delivery_handler_user.UpdateAvatarResponse": {
+        "restaurant.SearchAllResponse": {
             "type": "object",
             "properties": {
-                "avatar_url": {
+                "dishes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/restaurant.DishWithBrand"
+                    }
+                },
+                "restaurants": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/restaurant.RestaurantBrandResponse"
+                    }
+                }
+            }
+        },
+        "review.CreateReviewRequest": {
+            "type": "object",
+            "properties": {
+                "author_name": {
+                    "type": "string",
+                    "example": "Алексей"
+                },
+                "comment": {
+                    "type": "string",
+                    "example": "Очень вкусно, доставили быстро!"
+                },
+                "rating": {
+                    "type": "integer",
+                    "example": 5
+                }
+            }
+        },
+        "review.Review": {
+            "type": "object",
+            "properties": {
+                "author_name": {
+                    "type": "string",
+                    "example": "Алексей"
+                },
+                "comment": {
+                    "type": "string",
+                    "example": "Очень вкусно, доставили быстро!"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2026-04-20"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "rating": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "restaurant_id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "review.ReviewsResponse": {
+            "type": "object",
+            "properties": {
+                "reviews": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/review.Review"
+                    }
+                },
+                "total": {
+                    "type": "integer",
+                    "example": 2
+                }
+            }
+        },
+        "support.CategoryDTO": {
+            "type": "object",
+            "properties": {
+                "default_line": {
+                    "type": "integer"
+                },
+                "description": {
                     "type": "string"
                 },
-                "message": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
                     "type": "string"
                 }
             }
         },
-        "internal_delivery_handler_user.UserProfileResponse": {
+        "support.ChangeStatusRequest": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "support.EventDTO": {
+            "type": "object",
+            "properties": {
+                "author_id": {
+                    "type": "integer"
+                },
+                "author_role": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "event_type": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "payload": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "ticket_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "support.TemplateDTO": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "support.TicketDTO": {
+            "type": "object",
+            "properties": {
+                "assignee_id": {
+                    "type": "integer"
+                },
+                "category_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "current_status": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "public_id": {
+                    "type": "string"
+                },
+                "resolution_rating": {
+                    "type": "integer"
+                },
+                "support_line": {
+                    "type": "integer"
+                }
+            }
+        },
+        "supportclient.SupportStats": {
+            "type": "object",
+            "properties": {
+                "averageRating": {
+                    "type": "number",
+                    "format": "float64"
+                },
+                "avgResolutionTimeSec": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "byCategory": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                },
+                "byStatus": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                },
+                "totalTickets": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "user.UpdateRoleRequest": {
+            "type": "object",
+            "properties": {
+                "new_role": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "user.UserProfileResponse": {
             "type": "object",
             "properties": {
                 "avatar_url": {
                     "type": "string",
-                    "example": "users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"
+                    "example": "users/avatars/fjaun99f.png"
                 },
                 "email": {
                     "type": "string",
@@ -1410,7 +3823,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_delivery_handler_user.UserProfileUpdateRequest": {
+        "user.UserProfileUpdateRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -1420,6 +3833,23 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "Андрей"
+                }
+            }
+        },
+        "yookassa.WebhookNotification": {
+            "type": "object",
+            "properties": {
+                "event": {
+                    "type": "string"
+                },
+                "object": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "type": {
+                    "type": "string"
                 }
             }
         }

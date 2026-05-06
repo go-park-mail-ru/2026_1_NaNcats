@@ -1,0 +1,20 @@
+logger:
+  level: "debug"
+
+postgres:
+  url: "postgres://user:pass@localhost:5436/cart_db?sslmode=disable"
+
+grpc:
+  port: "50057"
+  timeout: "2s"
+
+address_service_addr: "localhost:50051"
+cart_service_addr: "localhost:50055"
+payment_service_addr: "localhost:50056"
+restaurant_service_addr: "localhost:50053"
+
+otel:
+  service_name: "order-service"
+  collector_addr: "otel-collector:4317"
+
+default_restaurant_logo_url: "https://nancats-bucket.storage.yandexcloud.net/restaurants/default-restaurant-logo.webp"

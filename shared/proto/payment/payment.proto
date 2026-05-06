@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+package payment;
+
+import "google/protobuf/empty.proto";
+
+option go_package = "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/payment";
+
+// Микросервис оплаты
+service PaymentService {
+  // Метод создания платежа
+  rpc CreatePayment (CreatePaymentRequest) returns (CreatePaymentResponse);
+  // Метод привязки карты
+  rpc InitiateCardBinding (InitiateCardBindingRequest) returns (InitiateCardBindingResponse);
+  // Метод получения карт пользователя
+  rpc GetUserCards (GetUserCardsRequest) returns (GetUserCardsResponse);
+  // Метод установки дефолтной карты
+  rpc SetDefaultCard (ChangeCardRequest) returns (google.protobuf.Empty);
+  // Метод удаления карты
+  rpc DeleteCard (ChangeCardRequest) returns (google.protobuf.Empty);
+  // Вебхук для обработки привязки карты
+  rpc ProcessPaymentMethodWebhook (ProcessPaymentMethodWebhookRequest) returns (google.protobuf.Empty);
+  // Вебхук для создания платежа
+  rpc ProcessPaymentWebhook (ProcessPaymentWebhookRequest) returns (google.protobuf.Empty);
+  // Принудительно тянет статус платежа из YooKassa и применяет его (как обычный
+  // webhook). Нужно для dev-окружения / случаев когда YooKassa не может
+  // достучаться webhook'ом до localhost
+  rpc RefreshPaymentStatus (RefreshPaymentStatusRequest) returns (RefreshPaymentStatusResponse);
+}
+
+message RefreshPaymentStatusRequest {
+  string yookassa_payment_id = 1;
+}
+
+message RefreshPaymentStatusResponse {
+  string status = 1;
+}
+
+
+message PaymentMethod {
+  int64 id = 1;
+  int64 user_id = 2;
+  string external_id = 3;
+  string first6 = 4;
+  string last4 = 5;
+  string expiry_month = 6;
+  string expiry_year = 7;
+  string card_type = 8;
+  string issuer_name = 9;
+  bool is_default = 10;
+}
+
+message CardInfo {
+  string first6 = 1;
+  string last4 = 2;
+  string expiry_month = 3;
+  string expiry_year = 4;
+  string card_type = 5;
+  string issuer_name = 6;
+}
+
+message CreatePaymentRequest {
+  int64 amount = 1;
+  string payment_method_id = 2;
+  string idempotency_key = 3;
+}
+
+message CreatePaymentResponse {
+  string payment_id = 1;
+  string confirmation_url = 2;
+}
+
+message InitiateCardBindingRequest {
+  int64 user_id = 1;
+  string idempotency_key = 2;
+}
+
+message InitiateCardBindingResponse {
+  string confirmation_url = 1;
+}
+
+message GetUserCardsRequest {
+  int64 user_id = 1;
+}
+
+message GetUserCardsResponse {
+  int64 user_id = 1;
+  repeated PaymentMethod cards = 2;
+}
+
+message ChangeCardRequest {
+  int64 user_id = 1;
+  string card_id = 2;
+  string idempotency_key = 3;
+}
+
+message ProcessPaymentMethodWebhookRequest {
+  string id = 1;
+  string status = 2;
+  bool saved = 3;
+  string type = 4;
+  CardInfo card = 5;
+}
+
+message ProcessPaymentWebhookRequest {
+  string id = 1;
+  string status = 2;
+}

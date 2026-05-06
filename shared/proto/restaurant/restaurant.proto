@@ -1,0 +1,137 @@
+syntax = "proto3";
+
+package restaurant;
+
+import "google/protobuf/empty.proto";
+
+option go_package = "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant";
+
+// Микросервис каталога (Рестораны и Блюда)
+service RestaurantService {
+  // Метод получения списка ресторанов
+  rpc GetRestaurantBrandsList (GetRestaurantBrandsListRequest) returns (GetRestaurantBrandsListResponse);
+  // Метод получения ресторана по ID
+  rpc GetRestaurantBrandByID (GetRestaurantBrandByIDRequest) returns (GetRestaurantBrandByIDResponse);
+  // Метод пакетного получения данных о ресторанах
+  rpc GetRestaurantBrandsByIDs (GetRestaurantBrandsByIDsRequest) returns (GetRestaurantBrandsByIDsResponse);
+
+  // Метод получения блюд из ресторана по его ID
+  rpc GetDishesByRestaurantBrandID (GetDishesByRestaurantBrandIDRequest) returns (GetDishesByRestaurantBrandIDResponse);
+  // Метод получения блюд по их ID
+  rpc GetDishesByIDs (GetDishesByIDsRequest) returns (GetDishesByIDsResponse);
+
+  // Управление ресторанами (Админы)
+  rpc CreateRestaurantBrand (CreateBrandRequest) returns (RestaurantBrand);
+  rpc UpdateRestaurantBrand (UpdateBrandRequest) returns (RestaurantBrand);
+  rpc DeleteRestaurantBrand (DeleteBrandRequest) returns (google.protobuf.Empty);
+
+  // Управление блюдами (Админы/Овнеры)
+  rpc CreateDish (CreateDishRequest) returns (Dish);
+  rpc UpdateDish (UpdateDishRequest) returns (Dish);
+  rpc DeleteDish (DeleteDishRequest) returns (google.protobuf.Empty);
+}
+
+
+message RestaurantBrand {
+  int64 id = 1;
+  int64 owner_profile_id = 2;
+  string name = 3;
+  string description =  4;
+  int32 promotion_tier = 5;
+  string logo_url = 6;
+}
+
+message Dish {
+  int64 id = 1;
+  int64 restaurant_brand_id = 2;
+  string name = 3;
+  string description = 4;
+  int64 price = 5;
+  string image_url = 6;
+}
+
+message GetRestaurantBrandsListRequest {
+  int32 limit = 1;
+  int32 offset = 2;
+}
+
+message GetRestaurantBrandsListResponse {
+  repeated RestaurantBrand restaurant_brands = 1;
+}
+
+message GetRestaurantBrandByIDRequest {
+  int64 id = 1;
+}
+
+message GetRestaurantBrandByIDResponse {
+  RestaurantBrand restaurant_brand = 1;
+}
+
+message GetRestaurantBrandsByIDsRequest {
+  repeated int64 brand_ids = 1;
+}
+
+message GetRestaurantBrandsByIDsResponse {
+  repeated RestaurantBrand restaurant_brands = 1;
+}
+
+message GetDishesByRestaurantBrandIDRequest {
+  int64 restaurant_brand_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message GetDishesByRestaurantBrandIDResponse {
+  repeated Dish dishes = 1;
+}
+
+message GetDishesByIDsRequest {
+  repeated int64 dish_ids = 1;
+}
+
+message GetDishesByIDsResponse {
+  repeated Dish dishes = 1; 
+}
+
+message CreateBrandRequest {
+  int64 owner_id = 1;
+  string name = 2;
+  string description = 3;
+  bytes logo_data = 4;
+  string idempotency_key = 5;
+}
+
+message UpdateBrandRequest {
+  int64 id = 1;
+  optional string name = 2;
+  optional string description = 3;
+  optional bytes logo_data = 4;
+  optional int32 promotion_tier = 5;
+  string idempotency_key = 6;
+}
+
+message DeleteBrandRequest {
+  int64 id = 1;
+}
+
+message CreateDishRequest {
+  int64 restaurant_brand_id = 1;
+  string name = 2;
+  int64 price = 3;
+  string description = 4;
+  bytes image_data = 5;
+  string idempotency_key = 6;
+}
+
+message UpdateDishRequest {
+  int64 id = 1;
+  optional string name = 2;
+  optional int64 price = 3;
+  optional string description = 4;
+  optional bytes image_data = 5; // Новое фото (опционально)
+  string idempotency_key = 6;
+}
+
+message DeleteDishRequest {
+  int64 id = 1;
+}
