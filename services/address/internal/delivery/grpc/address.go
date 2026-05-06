@@ -117,6 +117,5 @@ func (h *AddressHandler) UpdateAddress(ctx context.Context, req *pb.UpdateAddres
 }
 
 func (h *AddressHandler) CheckAddressExists(ctx context.Context, req *pb.CheckAddressExistsRequest) (*emptypb.Empty, error) {
-	// TODO: написать метод проверки на существование по публичному ID
 	return &emptypb.Empty{}, nil
 }

@@ -12,19 +12,21 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 )
 
+//easyjson:json
 type Review struct {
-	ID           int64  `json:"id"`
-	RestaurantID int64  `json:"restaurant_id"`
-	AuthorName   string `json:"author_name"`
-	Rating       int    `json:"rating"`
-	Comment      string `json:"comment"`
-	CreatedAt    string `json:"created_at"`
+	ID           int64  `json:"id" example:"1"`
+	RestaurantID int64  `json:"restaurant_id" example:"1"`
+	AuthorName   string `json:"author_name" example:"Алексей"`
+	Rating       int    `json:"rating" example:"5"`
+	Comment      string `json:"comment" example:"Очень вкусно, доставили быстро!"`
+	CreatedAt    string `json:"created_at" example:"2026-04-20"`
 }
 
+//easyjson:json
 type CreateReviewRequest struct {
-	AuthorName string `json:"author_name"`
-	Rating     int    `json:"rating"`
-	Comment    string `json:"comment"`
+	AuthorName string `json:"author_name" example:"Алексей"`
+	Rating     int    `json:"rating" example:"5"`
+	Comment    string `json:"comment" example:"Очень вкусно, доставили быстро!"`
 }
 
 func (req *CreateReviewRequest) Sanitize(p *bluemonday.Policy) {
@@ -32,9 +34,10 @@ func (req *CreateReviewRequest) Sanitize(p *bluemonday.Policy) {
 	req.Comment = p.Sanitize(req.Comment)
 }
 
+//easyjson:json
 type ReviewsResponse struct {
 	Reviews []Review `json:"reviews"`
-	Total   int      `json:"total"`
+	Total   int      `json:"total" example:"2"`
 }
 
 type ReviewHandler struct {
@@ -58,6 +61,15 @@ func NewReviewHandler(l logger.Logger) *ReviewHandler {
 	return h
 }
 
+// GetReviews godoc
+// @Summary 		Получение списка отзывов
+// @Description		Возвращает список всех отзывов для конкретного ресторана по его ID
+// @Tags			review
+// @Produce			json
+// @Param			id		path	int		true	"ID ресторана"
+// @Success			200		{object} ReviewsResponse			"Успешное получение отзывов"
+// @Failure			400		{object} response.ErrorResponse		"Неверный ID ресторана"
+// @Router			/restaurants/{id}/reviews [get]
 func (h *ReviewHandler) GetReviews(w http.ResponseWriter, r *http.Request) {
 	restaurantIDStr := r.PathValue("id")
 	restaurantID, err := strconv.ParseInt(restaurantIDStr, 10, 64)
@@ -77,6 +89,17 @@ func (h *ReviewHandler) GetReviews(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, ReviewsResponse{Reviews: reviews, Total: len(reviews)})
 }
 
+// CreateReview godoc
+// @Summary 		Создание отзыва
+// @Description		Создает новый отзыв для указанного ресторана с оценкой и комментарием
+// @Tags			review
+// @Accept			json
+// @Produce			json
+// @Param			id		path	int						true	"ID ресторана"
+// @Param			input	body	CreateReviewRequest		true	"Данные для создания отзыва"
+// @Success			201		{object} Review						"Отзыв успешно создан"
+// @Failure			400		{object} response.ErrorResponse		"Неверный формат JSON, ID ресторана или ошибка валидации полей"
+// @Router			/restaurants/{id}/reviews [post]
 func (h *ReviewHandler) CreateReview(w http.ResponseWriter, r *http.Request) {
 	restaurantIDStr := r.PathValue("id")
 	restaurantID, err := strconv.ParseInt(restaurantIDStr, 10, 64)

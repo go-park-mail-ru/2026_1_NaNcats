@@ -513,8 +513,10 @@ func (h *SupportHandler) GetCategories(w http.ResponseWriter, r *http.Request) {
 // @Description		Возвращает список готовых шаблонов(отбивок) для использования агентами в чате
 // @Tags			agent
 // @Produce			json
-// @Success			200		{array}   TemplateDTO	"Список шаблонов"
-// @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
+// @Success			200		{array}  TemplateDTO				"Список шаблонов"
+// @Failure			401		{object} response.ErrorResponse		"Неавторизован"
+// @Failure			500		{object} response.ErrorResponse		"Внутренняя ошибка сервера"
+// @Security		ApiKeyAuth
 // @Router			/agent/templates [get]
 func (h *SupportHandler) GetTemplates(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

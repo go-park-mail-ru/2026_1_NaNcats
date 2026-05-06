@@ -13,7 +13,6 @@ import (
 	pbRestaurant "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
 )
 
-// Захардкоженный список категорий
 var hardcodedCategories = []CategoryResponse{
 	{ID: "popular", Name: "Популярное", Emoji: "🔥"},
 	{ID: "pizza", Name: "Пицца", Emoji: "🍕"},
@@ -132,6 +131,17 @@ func NewRestaurantHandler(rc restaurantclient.RestaurantClient, l logger.Logger)
 	}
 }
 
+// GetRestaurantBrandsList godoc
+// @Summary 		Получение списка ресторанов
+// @Description		Возвращает список всех брендов ресторанов с поддержкой пагинации
+// @Tags			restaurants
+// @Accept			json
+// @Produce			json
+// @Param			limit	query	int		false	"Количество возвращаемых элементов (по умолчанию 20)"
+// @Param			offset	query	int		false	"Смещение для пагинации (по умолчанию 0)"
+// @Success			200		{object} RestaurantBrandsResponse	"Успешное получение списка ресторанов"
+// @Failure			500		{object} response.ErrorResponse		"Внутренняя ошибка сервера"
+// @Router			/restaurants [get]
 func (h *RestaurantHandler) GetRestaurantBrandsList(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
@@ -173,6 +183,18 @@ func (h *RestaurantHandler) GetRestaurantBrandsList(w http.ResponseWriter, r *ht
 	response.JSON(w, http.StatusOK, RestaurantBrandsResponse{RestaurantBrands: dtoList})
 }
 
+// GetRestaurantBrandByID godoc
+// @Summary 		Получение ресторана по ID
+// @Description		Возвращает детальную информацию о бренде ресторана по его уникальному идентификатору
+// @Tags			restaurants
+// @Accept			json
+// @Produce			json
+// @Param			id		path	string	true	"ID ресторана"
+// @Success			200		{object} RestaurantBrandResponse	"Успешное получение ресторана"
+// @Failure			400		{object} response.ErrorResponse		"Неверный формат ID"
+// @Failure			404		{object} response.ErrorResponse		"Ресторан не найден"
+// @Failure			500		{object} response.ErrorResponse		"Внутренняя ошибка сервера"
+// @Router			/restaurants/{id} [get]
 func (h *RestaurantHandler) GetRestaurantBrandByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
@@ -204,6 +226,21 @@ func (h *RestaurantHandler) GetRestaurantBrandByID(w http.ResponseWriter, r *htt
 	})
 }
 
+// GetDishesByRestaurantBrandID godoc
+// @Summary 		Получение списка блюд ресторана
+// @Description		Возвращает список блюд для конкретного ресторана с возможностью пагинации и поиска по названию
+// @Tags			restaurants
+// @Accept			json
+// @Produce			json
+// @Param			id		path	string	true	"ID ресторана"
+// @Param			limit	query	int		false	"Количество возвращаемых элементов (по умолчанию 20)"
+// @Param			offset	query	int		false	"Смещение для пагинации (по умолчанию 0)"
+// @Param			q		query	string	false	"Поисковый запрос для фильтрации блюд"
+// @Success			200		{object} DishesResponse				"Успешное получение списка блюд"
+// @Failure			400		{object} response.ErrorResponse		"Неверный формат ID ресторана"
+// @Failure			404		{object} response.ErrorResponse		"Блюда или ресторан не найдены"
+// @Failure			500		{object} response.ErrorResponse		"Внутренняя ошибка сервера"
+// @Router			/restaurants/{id}/dishes [get]
 func (h *RestaurantHandler) GetDishesByRestaurantBrandID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
@@ -264,10 +301,31 @@ func (h *RestaurantHandler) GetDishesByRestaurantBrandID(w http.ResponseWriter, 
 	response.JSON(w, http.StatusOK, DishesResponse{Dishes: dtoList})
 }
 
+// GetCategories godoc
+// @Summary 		Получение списка категорий
+// @Description		Возвращает статический список доступных категорий кухни с их идентификаторами и эмодзи
+// @Tags			categories
+// @Accept			json
+// @Produce			json
+// @Success			200		{object} CategoriesResponse			"Успешное получение списка категорий"
+// @Router			/categories [get]
 func (h *RestaurantHandler) GetCategories(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, CategoriesResponse{Categories: hardcodedCategories})
 }
 
+// GetRestaurantBrandsListByCategory godoc
+// @Summary 		Получение ресторанов по категории
+// @Description		Возвращает список брендов ресторанов, отфильтрованный по переданному слагу категории (например: pizza, sushi)
+// @Tags			categories
+// @Accept			json
+// @Produce			json
+// @Param			slug	path	string	true	"Слаг категории"
+// @Param			limit	query	int		false	"Количество возвращаемых элементов (по умолчанию 20)"
+// @Param			offset	query	int		false	"Смещение для пагинации (по умолчанию 0)"
+// @Success			200		{object} RestaurantBrandsResponse	"Успешное получение ресторанов по категории"
+// @Failure			400		{object} response.ErrorResponse		"Отсутствует слаг категории"
+// @Failure			500		{object} response.ErrorResponse		"Внутренняя ошибка сервера"
+// @Router			/categories/{slug}/restaurants [get]
 func (h *RestaurantHandler) GetRestaurantBrandsListByCategory(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
@@ -328,6 +386,18 @@ func (h *RestaurantHandler) GetRestaurantBrandsListByCategory(w http.ResponseWri
 	response.JSON(w, http.StatusOK, RestaurantBrandsResponse{RestaurantBrands: dtoList})
 }
 
+// SearchRestaurants godoc
+// @Summary 		Глобальный поиск
+// @Description		Осуществляет поиск по ресторанам и блюдам на основе переданного ключевого слова
+// @Tags			search
+// @Accept			json
+// @Produce			json
+// @Param			q		query	string	true	"Поисковый запрос"
+// @Param			limit	query	int		false	"Количество возвращаемых элементов (по умолчанию 20)"
+// @Param			offset	query	int		false	"Смещение для пагинации (по умолчанию 0)"
+// @Success			200		{object} SearchAllResponse			"Успешный поиск (возвращает списки ресторанов и блюд)"
+// @Failure			400		{object} response.ErrorResponse		"Отсутствует поисковый запрос"
+// @Router			/search [get]
 func (h *RestaurantHandler) SearchRestaurants(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)

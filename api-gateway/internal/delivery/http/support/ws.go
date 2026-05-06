@@ -34,6 +34,14 @@ func (m *WsMessage) Sanitize(p *bluemonday.Policy) {
 	m.Text = p.Sanitize(m.Text)
 }
 
+// ConnectChat godoc
+// @Summary 		Подключение к чату поддержки (WebSocket)
+// @Description		Устанавливает WebSocket соединение для общения в чате поддержки по конкретному тикету. Ожидает HTTP GET для апгрейда протокола.
+// @Tags			support
+// @Param			id		path	string	true					"Public ID тикета"
+// @Success			101		"Протокол успешно изменен на WebSocket"
+// @Failure			400		"Неверный ID тикета или ошибка апгрейда соединения"
+// @Router			/support/tickets/{id}/chat [get]
 func (h *SupportHandler) ConnectChat(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)

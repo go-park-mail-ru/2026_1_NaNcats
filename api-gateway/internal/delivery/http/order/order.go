@@ -20,7 +20,7 @@ import (
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		return true // TODO: В проде настроить строже
+		return true
 	},
 }
 
@@ -102,8 +102,20 @@ type CheckPaymentResponse struct {
 	PaymentStatus string `json:"payment_status"`
 }
 
-// CancelOrder — пользователь отменяет свой заказ. Доступно только пока заказ
-// не in_progress / not finished.
+// CancelOrder godoc
+// @Summary 		Отмена заказа
+// @Description		Пользователь отменяет свой заказ. Доступно только пока заказ не in_progress / not finished.
+// @Tags			order
+// @Accept			json
+// @Produce			json
+// @Param			id		path	string	true	"ID заказа"
+// @Success			200		{object}  map[string]string			"Успешная отмена заказа"
+// @Failure			400		{object}  response.ErrorResponse	"Отсутствует ID заказа или ошибка при отмене"
+// @Failure			401		{object}  response.ErrorResponse	"Неавторизован"
+// @Failure			403		{object}  response.ErrorResponse	"Доступ запрещен"
+// @Failure			404		{object}  response.ErrorResponse	"Заказ не найден"
+// @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
+// @Router			/order/{id}/cancel [post]
 func (h *OrderHandler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
@@ -129,11 +141,21 @@ func (h *OrderHandler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, map[string]string{"status": "cancelled"})
 }
 
-// CheckPayment — для dev-окружения: фронт зовёт эту ручку (например, после
-// возврата с YooKassa или периодически из открытого OrderStatusModal), мы
-// вытягиваем актуальный статус платежа из YooKassa REST и применяем как webhook.
-// Без этого статус заказа не обновится — YooKassa не достучится webhook'ом до
-// localhost.
+// CheckPayment godoc
+// @Summary 		Проверка статуса платежа
+// @Description		Для dev-окружения: актуализирует статус платежа через YooKassa REST, эмулируя webhook.
+// @Tags			order
+// @Accept			json
+// @Produce			json
+// @Param			id		path	string	true	"ID заказа"
+// @Success			200		{object}  CheckPaymentResponse		"Успешное обновление статуса"
+// @Success			202		{object}  CheckPaymentResponse		"Платеж еще не готов (pending)"
+// @Failure			400		{object}  response.ErrorResponse	"Отсутствует ID заказа"
+// @Failure			401		{object}  response.ErrorResponse	"Неавторизован"
+// @Failure			403		{object}  response.ErrorResponse	"Доступ запрещен"
+// @Failure			404		{object}  response.ErrorResponse	"Заказ или платеж не найден"
+// @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
+// @Router			/order/{id}/check-payment [get]
 func (h *OrderHandler) CheckPayment(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
@@ -152,8 +174,6 @@ func (h *OrderHandler) CheckPayment(w http.ResponseWriter, r *http.Request) {
 
 	paymentID, err := h.orderClient.GetOrderPaymentID(ctx, orderID, userID)
 	if err != nil {
-		// "payment not ready" — нормальный case (saga ещё не дошла до payment).
-		// Возвращаем 202 чтобы фронт продолжил polling.
 		response.JSON(w, http.StatusAccepted, CheckPaymentResponse{
 			OrderID:       orderID,
 			PaymentStatus: "pending",
@@ -243,8 +263,6 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		}
 
 		l.Error("order creation failed via grpc", err)
-		// Пробрасываем настоящее сообщение из ошибки — иначе фронт получает
-		// бессмысленное «Something went wrong» и невозможно понять что чинить.
 		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -283,9 +301,6 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Сначала собираем уникальные dish_id со всех заказов, затем одним запросом
-	// в restaurant_service вытаскиваем имена/картинки. Без этого фронт получает
-	// заказ из одних dish_id и отображает пустые карточки.
 	dishIDSet := make(map[int64]struct{})
 	for _, o := range orders {
 		for _, item := range o.Items {
@@ -306,8 +321,6 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 
 		dishes, derr := h.restaurantClient.GetDishesByIDs(ctx, dishIDs)
 		if derr != nil {
-			// Логируем, но не валим запрос: лучше отдать заказы без имён,
-			// чем отдать 500 и оставить пользователя совсем без истории.
 			l.Error("failed to enrich order items with dish info", derr)
 		} else {
 			for _, d := range dishes {
