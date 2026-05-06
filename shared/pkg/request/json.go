@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/sanitizer"
 	"github.com/mailru/easyjson"
 )
 
@@ -38,6 +39,10 @@ func JSON(r *http.Request, v any) error {
 				return ErrBodyTooLarge
 			}
 			return fmt.Errorf("%w: %v", ErrInvalidJSON, err)
+		}
+
+		if s, ok := v.(sanitizer.Sanitizable); ok {
+			s.Sanitize(sanitizer.Policy)
 		}
 
 		return nil
@@ -88,6 +93,10 @@ func JSON(r *http.Request, v any) error {
 	err := decoder.Decode(&struct{}{})
 	if err != io.EOF {
 		return ErrNotOnlyJSONVal
+	}
+
+	if s, ok := v.(sanitizer.Sanitizable); ok {
+		s.Sanitize(sanitizer.Policy)
 	}
 	return nil
 }

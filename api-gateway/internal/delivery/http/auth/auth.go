@@ -15,6 +15,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/validatorutil"
 	"github.com/go-playground/validator/v10"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 //easyjson:json
@@ -22,6 +23,10 @@ type RegisterRequest struct {
 	Name     string `json:"name" example:"Иван"`
 	Email    string `json:"email" example:"user@mail.ru"`
 	Password string `json:"password" example:"qwerty12345" validate:"min=8,max=128"`
+}
+
+func (r *RegisterRequest) Sanitize(p *bluemonday.Policy) {
+	r.Name = p.Sanitize(r.Name)
 }
 
 //easyjson:json

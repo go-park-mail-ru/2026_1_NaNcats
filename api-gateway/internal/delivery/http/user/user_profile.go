@@ -12,12 +12,20 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 //easyjson:json
 type UserProfileUpdateRequest struct {
 	Name  *string `json:"name" example:"Андрей"`
 	Email *string `json:"email" example:"new_mail@gmail.com"`
+}
+
+func (r *UserProfileUpdateRequest) Sanitize(p *bluemonday.Policy) {
+	if r.Name != nil {
+		sanitizedName := p.Sanitize(*r.Name)
+		r.Name = &sanitizedName
+	}
 }
 
 //easyjson:json
@@ -243,6 +251,10 @@ func (h *UserProfileHandler) DeleteAvatar(w http.ResponseWriter, r *http.Request
 type UpdateRoleRequest struct {
 	UserID  int64  `json:"user_id"`
 	NewRole string `json:"new_role"`
+}
+
+func (r *UpdateRoleRequest) Sanitize(p *bluemonday.Policy) {
+	r.NewRole = p.Sanitize(r.NewRole)
 }
 
 // AdminUpdateRole godoc

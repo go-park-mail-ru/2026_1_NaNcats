@@ -15,9 +15,6 @@ import (
 )
 
 //easyjson:json
-// PaymentMethodResponse.ID — на самом деле YooKassa external_id (см. paymentclient).
-// Фронт отправляет его в payment_method_id при оформлении заказа — YooKassa
-// тогда сразу списывает с сохранённой карты вместо показа формы ввода.
 type PaymentMethodResponse struct {
 	ID         string `json:"id" example:"pay-method-uuid"`
 	CardType   string `json:"card_type" example:"Mir"`

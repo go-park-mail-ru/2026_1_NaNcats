@@ -9,15 +9,16 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/supportclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/sanitizer"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/mailru/easyjson"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	// TODO: Пока все разрешаем, потом нужно будет проверять
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
@@ -27,6 +28,10 @@ var upgrader = websocket.Upgrader{
 type WsMessage struct {
 	Text           string `json:"text"`
 	IdempotencyKey string `json:"idempotency_key"`
+}
+
+func (m *WsMessage) Sanitize(p *bluemonday.Policy) {
+	m.Text = p.Sanitize(m.Text)
 }
 
 func (h *SupportHandler) ConnectChat(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +60,6 @@ func (h *SupportHandler) ConnectChat(w http.ResponseWriter, r *http.Request) {
 	uID, isAuth := middleware.GetUserID(ctx)
 	if isAuth {
 		authorID = &uID
-		// TODO: добавить проверку на принадлежность сотруднику саппорта
 	}
 
 	l.Info("client connected to chat", logger.String("ticket_public_id", ticketPublicID))
@@ -75,7 +79,9 @@ func (h *SupportHandler) ConnectChat(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		if wsMsg.IdempotencyKey == "" { // Затычка, но это говно, если честно
+		wsMsg.Sanitize(sanitizer.Policy)
+
+		if wsMsg.IdempotencyKey == "" {
 			wsMsg.IdempotencyKey = uuid.New().String()
 		}
 

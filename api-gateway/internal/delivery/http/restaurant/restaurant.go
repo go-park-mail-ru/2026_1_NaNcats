@@ -231,7 +231,6 @@ func (h *RestaurantHandler) GetDishesByRestaurantBrandID(w http.ResponseWriter, 
 		}
 	}
 
-	// Если задан ?q=... - это поиск блюд внутри ресторана.
 	searchQuery := query.Get("q")
 	var (
 		dishes []*pbRestaurant.Dish

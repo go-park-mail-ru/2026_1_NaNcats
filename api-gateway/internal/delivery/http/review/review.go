@@ -1,14 +1,15 @@
 package review
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 type Review struct {
@@ -24,6 +25,11 @@ type CreateReviewRequest struct {
 	AuthorName string `json:"author_name"`
 	Rating     int    `json:"rating"`
 	Comment    string `json:"comment"`
+}
+
+func (req *CreateReviewRequest) Sanitize(p *bluemonday.Policy) {
+	req.AuthorName = p.Sanitize(req.AuthorName)
+	req.Comment = p.Sanitize(req.Comment)
 }
 
 type ReviewsResponse struct {
@@ -44,7 +50,6 @@ func NewReviewHandler(l logger.Logger) *ReviewHandler {
 		nextID:  1,
 		logger:  l,
 	}
-	// Seed some demo reviews
 	h.reviews[1] = []Review{
 		{ID: 1, RestaurantID: 1, AuthorName: "Алексей", Rating: 5, Comment: "Очень вкусно, доставили быстро!", CreatedAt: "2026-04-20"},
 		{ID: 2, RestaurantID: 1, AuthorName: "Мария", Rating: 4, Comment: "Хороший ресторан, рекомендую.", CreatedAt: "2026-04-18"},
@@ -81,8 +86,8 @@ func (h *ReviewHandler) CreateReview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req CreateReviewRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.Error(w, http.StatusBadRequest, "Invalid request body")
+	if err := request.JSON(r, &req); err != nil {
+		response.Error(w, http.StatusBadRequest, "Invalid request body: "+err.Error())
 		return
 	}
 

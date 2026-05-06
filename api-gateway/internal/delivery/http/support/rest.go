@@ -14,6 +14,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
 	"github.com/google/uuid"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 //easyjson:json
@@ -22,6 +23,10 @@ type CreateTicketRequest struct {
 	CategoryID   int64  `json:"category_id"`
 	FirstMessage string `json:"first_message"`
 	ClientMeta   string `json:"client_meta"`
+}
+
+func (r *CreateTicketRequest) Sanitize(p *bluemonday.Policy) {
+	r.FirstMessage = p.Sanitize(r.FirstMessage)
 }
 
 //easyjson:json
@@ -34,6 +39,10 @@ type ChangeStatusRequest struct {
 	Status string `json:"status"`
 }
 
+func (r *ChangeStatusRequest) Sanitize(p *bluemonday.Policy) {
+	r.Status = p.Sanitize(r.Status)
+}
+
 //easyjson:json
 type ReassignTicketRequest struct {
 	AgentID int64 `json:"agent_id"`
@@ -43,6 +52,10 @@ type ReassignTicketRequest struct {
 //easyjson:json
 type SetAgentStatusRequest struct {
 	Status string `json:"status"`
+}
+
+func (r *SetAgentStatusRequest) Sanitize(p *bluemonday.Policy) {
+	r.Status = p.Sanitize(r.Status)
 }
 
 //easyjson:json
