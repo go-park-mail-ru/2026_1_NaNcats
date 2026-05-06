@@ -14,7 +14,7 @@ var (
 	ErrInternal              = errors.New("internal server error")
 )
 
-//go:generate mockgen -destination=../../../../shared/proto/payment/mocks/payment_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/payment PaymentServiceClient
+//go:generate mockgen -destination=mocks/payment_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/paymentclient PaymentClient
 type PaymentMethod struct {
 	ID         string
 	CardType   string

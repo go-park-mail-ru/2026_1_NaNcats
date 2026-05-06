@@ -14,6 +14,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+//go:generate mockgen -destination=../../../../shared/proto/auth/mocks/auth_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/auth AuthServiceClient
 func TestAuthClient_IssueSession(t *testing.T) {
 	type mockBehavior func(m *mocks.MockAuthServiceClient)
 

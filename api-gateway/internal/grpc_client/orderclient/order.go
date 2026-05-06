@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-//go:generate mockgen -destination=../../../../shared/proto/order/mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/order OrderServiceClient
+//go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/orderclient OrderClient
 var (
 	ErrCartIsEmpty     = errors.New("cart is empty")
 	ErrAddressNotFound = errors.New("address not found")

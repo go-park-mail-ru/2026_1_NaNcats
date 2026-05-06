@@ -16,6 +16,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+//go:generate mockgen -destination=../../../../shared/proto/order/mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/order OrderServiceClient
 func ptr[T any](v T) *T {
 	return &v
 }

@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-//go:generate mockgen -destination=../../../../shared/proto/cart/mocks/cart_client_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/cart CartServiceClient
+//go:generate mockgen -destination=mocks/cart_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/cartclient CartClient
 var (
 	ErrInvalidCart         = errors.New("invalid cart data (wrong quantity or multiple restaurants)")
 	ErrMultipleRestaurants = errors.New("dish belongs to a different restaurant")

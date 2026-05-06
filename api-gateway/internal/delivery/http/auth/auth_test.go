@@ -16,7 +16,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	pbAuth "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/auth"
-	pbUser "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/user" // Предполагаемый путь к proto юзера
+	pbUser "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/user"
 	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

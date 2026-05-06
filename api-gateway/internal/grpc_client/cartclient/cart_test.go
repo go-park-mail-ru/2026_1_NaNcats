@@ -14,6 +14,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+//go:generate mockgen -destination=../../../../shared/proto/cart/mocks/cart_client_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/cart CartServiceClient
 func ptr[T any](v T) *T {
 	return &v
 }

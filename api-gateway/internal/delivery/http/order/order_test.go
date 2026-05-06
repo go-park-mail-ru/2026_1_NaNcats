@@ -1,6 +1,5 @@
 package order
 
-/*
 import (
 	"bytes"
 	"context"
@@ -11,92 +10,162 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/delivery/middleware"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain"
-	domainMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/domain/mocks"
-	ucMocks "github.com/go-park-mail-ru/2026_1_NaNcats/internal/usecase/mocks"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/orderclient"
+	orderMocks "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/orderclient/mocks"
+	paymentMocks "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/paymentclient/mocks"
+	restaurantMocks "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/restaurantclient/mocks"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
+	pbRestaurant "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
-func TestOrderHandler_CreateOrder(t *testing.T) {
-	type mockInit func(uc *ucMocks.MockOrderUseCase)
+// Вспомогательная функция для инжекта UserID в контекст
+func withUserIDContext(req *http.Request, userID int64) *http.Request {
+	ctx := context.WithValue(req.Context(), middleware.UserIDKey, userID)
+	return req.WithContext(ctx)
+}
+
+func setupTestHandler(ctrl *gomock.Controller) (*OrderHandler, *orderMocks.MockOrderClient, *paymentMocks.MockPaymentClient, *restaurantMocks.MockRestaurantClient) {
+	mockOrder := orderMocks.NewMockOrderClient(ctrl)
+	mockPayment := paymentMocks.NewMockPaymentClient(ctrl)
+	mockRestaurant := restaurantMocks.NewMockRestaurantClient(ctrl)
+	log := logger.NewNopLogger()
+
+	// wsManager передаем nil, так как полноценно протестировать WS
+	// через httptest без поднятия реального сервера сложно и выходит за рамки unit-тестов
+	handler := NewOrderHandler(mockOrder, mockPayment, mockRestaurant, nil, log)
+	return handler, mockOrder, mockPayment, mockRestaurant
+}
+
+func TestOrderHandler_CancelOrder(t *testing.T) {
+	type mockBehavior func(order *orderMocks.MockOrderClient)
 
 	tests := []struct {
 		name           string
-		userID         any
-		body           any
-		mockInit       mockInit
+		userID         int64
+		orderID        string
+		withAuth       bool
+		mockBehavior   mockBehavior
 		expectedStatus int
 	}{
 		{
-			name:   "Успешное создание заказа",
-			userID: 1,
-			body: CreateOrderRequest{
-				AddressID:          "addr-uuid",
-				RestaurantBranchID: 10,
-				PaymentMethodID:    "pm-uuid",
-			},
-			mockInit: func(uc *ucMocks.MockOrderUseCase) {
-				uc.EXPECT().
-					CreateOrder(gomock.Any(), 1, gomock.Any()).
-					Return("order-uuid", "http://yookassa.url", nil)
+			name:     "Успешная отмена заказа",
+			userID:   1,
+			orderID:  "ord-123",
+			withAuth: true,
+			mockBehavior: func(order *orderMocks.MockOrderClient) {
+				order.EXPECT().CancelOrder(gomock.Any(), "ord-123", int64(1)).Return(nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:   "Ошибка авторизации",
-			userID: nil,
-			body:   CreateOrderRequest{AddressID: "id", RestaurantBranchID: 1},
-			mockInit: func(uc *ucMocks.MockOrderUseCase) {
-			},
-			expectedStatus: http.StatusInternalServerError,
+			name:           "Ошибка: неавторизован",
+			orderID:        "ord-123",
+			withAuth:       false,
+			mockBehavior:   func(order *orderMocks.MockOrderClient) {},
+			expectedStatus: http.StatusUnauthorized,
 		},
 		{
-			name:           "Некорректный JSON",
+			name:           "Ошибка: пустой order id",
 			userID:         1,
-			body:           "{invalid json",
-			mockInit:       func(uc *ucMocks.MockOrderUseCase) {},
-			expectedStatus: http.StatusInternalServerError,
-		},
-		{
-			name:   "Пустые обязательные поля",
-			userID: 1,
-			body:   CreateOrderRequest{AddressID: "", RestaurantBranchID: 0},
-			mockInit: func(uc *ucMocks.MockOrderUseCase) {
-			},
+			orderID:        "",
+			withAuth:       true,
+			mockBehavior:   func(order *orderMocks.MockOrderClient) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:   "Пустая корзина",
-			userID: 1,
-			body:   CreateOrderRequest{AddressID: "id", RestaurantBranchID: 1},
-			mockInit: func(uc *ucMocks.MockOrderUseCase) {
-				uc.EXPECT().
-					CreateOrder(gomock.Any(), 1, gomock.Any()).
-					Return("", "", domain.ErrCartIsEmpty)
+			name:     "Ошибка: отказ со стороны grpc клиента",
+			userID:   1,
+			orderID:  "ord-123",
+			withAuth: true,
+			mockBehavior: func(order *orderMocks.MockOrderClient) {
+				order.EXPECT().CancelOrder(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(errors.New("cannot cancel"))
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			handler, mockOrder, _, _ := setupTestHandler(ctrl)
+			tt.mockBehavior(mockOrder)
+
+			req := httptest.NewRequest(http.MethodPost, "/orders/"+tt.orderID+"/cancel", nil)
+			if tt.withAuth {
+				req = withUserIDContext(req, tt.userID)
+			}
+			req.SetPathValue("id", tt.orderID)
+
+			w := httptest.NewRecorder()
+			handler.CancelOrder(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+		})
+	}
+}
+
+func TestOrderHandler_CheckPayment(t *testing.T) {
+	type mockBehavior func(order *orderMocks.MockOrderClient, payment *paymentMocks.MockPaymentClient)
+
+	tests := []struct {
+		name           string
+		userID         int64
+		orderID        string
+		withAuth       bool
+		mockBehavior   mockBehavior
+		expectedStatus int
+		expectedResp   CheckPaymentResponse
+	}{
 		{
-			name:   "Адрес не найден",
-			userID: 1,
-			body:   CreateOrderRequest{AddressID: "id", RestaurantBranchID: 1},
-			mockInit: func(uc *ucMocks.MockOrderUseCase) {
-				uc.EXPECT().
-					CreateOrder(gomock.Any(), 1, gomock.Any()).
-					Return("", "", domain.ErrAddressNotFound)
+			name:     "Успех: платеж проверен",
+			userID:   1,
+			orderID:  "ord-123",
+			withAuth: true,
+			mockBehavior: func(order *orderMocks.MockOrderClient, payment *paymentMocks.MockPaymentClient) {
+				order.EXPECT().GetOrderPaymentID(gomock.Any(), "ord-123", int64(1)).
+					Return("pay-123", nil)
+				payment.EXPECT().RefreshPaymentStatus(gomock.Any(), "pay-123").
+					Return("succeeded", nil)
 			},
-			expectedStatus: http.StatusNotFound,
+			expectedStatus: http.StatusOK,
+			expectedResp: CheckPaymentResponse{
+				OrderID:       "ord-123",
+				PaymentID:     "pay-123",
+				PaymentStatus: "succeeded",
+			},
 		},
 		{
-			name:   "Внутренняя ошибка сервера",
-			userID: 1,
-			body:   CreateOrderRequest{AddressID: "id", RestaurantBranchID: 1},
-			mockInit: func(uc *ucMocks.MockOrderUseCase) {
-				uc.EXPECT().
-					CreateOrder(gomock.Any(), 1, gomock.Any()).
-					Return("", "", errors.New("db fail"))
+			name:     "Платеж еще не готов (202 Accepted)",
+			userID:   1,
+			orderID:  "ord-123",
+			withAuth: true,
+			mockBehavior: func(order *orderMocks.MockOrderClient, payment *paymentMocks.MockPaymentClient) {
+				order.EXPECT().GetOrderPaymentID(gomock.Any(), "ord-123", int64(1)).
+					Return("", errors.New("payment not ready"))
+			},
+			expectedStatus: http.StatusAccepted,
+			expectedResp: CheckPaymentResponse{
+				OrderID:       "ord-123",
+				PaymentStatus: "pending",
+			},
+		},
+		{
+			name:     "Ошибка при рефреше",
+			userID:   1,
+			orderID:  "ord-123",
+			withAuth: true,
+			mockBehavior: func(order *orderMocks.MockOrderClient, payment *paymentMocks.MockPaymentClient) {
+				order.EXPECT().GetOrderPaymentID(gomock.Any(), "ord-123", int64(1)).
+					Return("pay-123", nil)
+				payment.EXPECT().RefreshPaymentStatus(gomock.Any(), "pay-123").
+					Return("", errors.New("network error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 		},
@@ -107,27 +176,108 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			uc := ucMocks.NewMockOrderUseCase(ctrl)
-			l := domainMocks.NewNopLogger()
-			h := NewOrderHandler(uc, l)
+			handler, mockOrder, mockPayment, _ := setupTestHandler(ctrl)
+			tt.mockBehavior(mockOrder, mockPayment)
 
-			var jsonBody []byte
-			if s, ok := tt.body.(string); ok {
-				jsonBody = []byte(s)
-			} else {
-				jsonBody, _ = json.Marshal(tt.body)
+			req := httptest.NewRequest(http.MethodGet, "/orders/"+tt.orderID+"/payment", nil)
+			if tt.withAuth {
+				req = withUserIDContext(req, tt.userID)
 			}
+			req.SetPathValue("id", tt.orderID)
 
-			req := httptest.NewRequest(http.MethodPost, "/api/orders", bytes.NewBuffer(jsonBody))
-			if tt.userID != nil {
-				ctx := context.WithValue(req.Context(), middleware.UserIDKey, tt.userID)
-				req = req.WithContext(ctx)
+			w := httptest.NewRecorder()
+			handler.CheckPayment(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			if tt.expectedStatus == http.StatusOK || tt.expectedStatus == http.StatusAccepted {
+				var resp CheckPaymentResponse
+				err := json.Unmarshal(w.Body.Bytes(), &resp)
+				require.NoError(t, err)
+				assert.Equal(t, tt.expectedResp, resp)
+			}
+		})
+	}
+}
+
+func TestOrderHandler_CreateOrder(t *testing.T) {
+	type mockBehavior func(order *orderMocks.MockOrderClient)
+
+	validReq := CreateOrderRequest{
+		AddressID:          "addr-1",
+		RestaurantBranchID: 10,
+		RestaurantBrandID:  20,
+	}
+
+	tests := []struct {
+		name           string
+		reqBody        interface{}
+		headers        map[string]string
+		withAuth       bool
+		mockBehavior   mockBehavior
+		expectedStatus int
+	}{
+		{
+			name:     "Успешное создание заказа",
+			reqBody:  validReq,
+			headers:  map[string]string{"Idempotency-Key": "idem-123"},
+			withAuth: true,
+			mockBehavior: func(order *orderMocks.MockOrderClient) {
+				order.EXPECT().CreateOrder(gomock.Any(), int64(1), gomock.Any(), "idem-123").
+					Return("order-uuid-123", nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:     "Ошибка: пустая корзина",
+			reqBody:  validReq,
+			headers:  map[string]string{"Idempotency-Key": "idem-123"},
+			withAuth: true,
+			mockBehavior: func(order *orderMocks.MockOrderClient) {
+				order.EXPECT().CreateOrder(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return("", orderclient.ErrCartIsEmpty)
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:     "Ошибка: адрес не найден",
+			reqBody:  validReq,
+			headers:  map[string]string{"Idempotency-Key": "idem-123"},
+			withAuth: true,
+			mockBehavior: func(order *orderMocks.MockOrderClient) {
+				order.EXPECT().CreateOrder(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return("", orderclient.ErrAddressNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:           "Ошибка: нет Idempotency-Key",
+			reqBody:        validReq,
+			headers:        map[string]string{},
+			withAuth:       true,
+			mockBehavior:   func(order *orderMocks.MockOrderClient) {},
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			handler, mockOrder, _, _ := setupTestHandler(ctrl)
+			tt.mockBehavior(mockOrder)
+
+			body, _ := json.Marshal(tt.reqBody)
+			req := httptest.NewRequest(http.MethodPost, "/orders", bytes.NewBuffer(body))
+			if tt.withAuth {
+				req = withUserIDContext(req, 1)
+			}
+			for k, v := range tt.headers {
+				req.Header.Set(k, v)
 			}
 
 			w := httptest.NewRecorder()
-			tt.mockInit(uc)
-
-			h.CreateOrder(w, req)
+			handler.CreateOrder(w, req)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
 		})
@@ -135,42 +285,61 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 }
 
 func TestOrderHandler_GetMyOrders(t *testing.T) {
-	type mockInit func(uc *ucMocks.MockOrderUseCase)
+	type mockBehavior func(order *orderMocks.MockOrderClient, rest *restaurantMocks.MockRestaurantClient)
+
+	now := time.Now()
 
 	tests := []struct {
 		name           string
-		userID         any
-		mockInit       mockInit
+		userID         int64
+		withAuth       bool
+		mockBehavior   mockBehavior
 		expectedStatus int
 	}{
 		{
-			name:   "Успешное получение истории заказов",
-			userID: 1,
-			mockInit: func(uc *ucMocks.MockOrderUseCase) {
-				orders := []domain.Order{
+			name:     "Успешное получение истории заказов (с блюдами)",
+			userID:   1,
+			withAuth: true,
+			mockBehavior: func(order *orderMocks.MockOrderClient, rest *restaurantMocks.MockRestaurantClient) {
+				order.EXPECT().GetOrders(gomock.Any(), int64(1)).Return([]orderclient.Order{
 					{
-						PublicID:        "pub-1",
-						PaymentMethodID: "RestoName",
-						TotalCost:       1000,
-						Status:          "paid",
-						CreatedAt:       time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+						PublicID:  "ord-1",
+						Status:    "paid",
+						CreatedAt: now,
+						Items: []orderclient.OrderDish{
+							{DishID: 100, Quantity: 2},
+						},
 					},
-				}
-				uc.EXPECT().GetOrders(gomock.Any(), 1).Return(orders, nil)
+				}, nil)
+
+				// Проверка обогащения через restaurantClient
+				rest.EXPECT().GetDishesByIDs(gomock.Any(), []int64{100}).Return([]*pbRestaurant.Dish{
+					{Id: 100, Name: "Burger", ImageUrl: "img.png"},
+				}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "Пользователь не авторизован",
-			userID:         nil,
-			mockInit:       func(uc *ucMocks.MockOrderUseCase) {},
-			expectedStatus: http.StatusUnauthorized,
+			name:     "Успех, даже если restaurant_service упал (fallback без имен)",
+			userID:   1,
+			withAuth: true,
+			mockBehavior: func(order *orderMocks.MockOrderClient, rest *restaurantMocks.MockRestaurantClient) {
+				order.EXPECT().GetOrders(gomock.Any(), int64(1)).Return([]orderclient.Order{
+					{PublicID: "ord-1", Items: []orderclient.OrderDish{{DishID: 100}}},
+				}, nil)
+
+				rest.EXPECT().GetDishesByIDs(gomock.Any(), []int64{100}).
+					Return(nil, errors.New("restaurant service down"))
+			},
+			expectedStatus: http.StatusOK,
 		},
 		{
-			name:   "Ошибка получения заказов",
-			userID: 1,
-			mockInit: func(uc *ucMocks.MockOrderUseCase) {
-				uc.EXPECT().GetOrders(gomock.Any(), 1).Return(nil, errors.New("fail"))
+			name:     "Ошибка: заказ недоступен",
+			userID:   1,
+			withAuth: true,
+			mockBehavior: func(order *orderMocks.MockOrderClient, rest *restaurantMocks.MockRestaurantClient) {
+				order.EXPECT().GetOrders(gomock.Any(), int64(1)).
+					Return(nil, errors.New("grpc error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 		},
@@ -181,23 +350,81 @@ func TestOrderHandler_GetMyOrders(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			uc := ucMocks.NewMockOrderUseCase(ctrl)
-			l := domainMocks.NewNopLogger()
-			h := NewOrderHandler(uc, l)
+			handler, mockOrder, _, mockRest := setupTestHandler(ctrl)
+			tt.mockBehavior(mockOrder, mockRest)
 
-			req := httptest.NewRequest(http.MethodGet, "/api/orders", nil)
-			if tt.userID != nil {
-				ctx := context.WithValue(req.Context(), middleware.UserIDKey, tt.userID)
-				req = req.WithContext(ctx)
+			req := httptest.NewRequest(http.MethodGet, "/orders", nil)
+			if tt.withAuth {
+				req = withUserIDContext(req, tt.userID)
 			}
 
 			w := httptest.NewRecorder()
-			tt.mockInit(uc)
-
-			h.GetMyOrders(w, req)
+			handler.GetMyOrders(w, req)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
 		})
 	}
 }
-*/
+
+func TestOrderHandler_PayForFriend(t *testing.T) {
+	type mockBehavior func(order *orderMocks.MockOrderClient)
+
+	reqBody := PayForFriendRequest{PaymentMethodID: "pm-1"}
+
+	tests := []struct {
+		name           string
+		splitID        string
+		reqBody        interface{}
+		headers        map[string]string
+		withAuth       bool
+		mockBehavior   mockBehavior
+		expectedStatus int
+	}{
+		{
+			name:     "Успешный вызов оплаты за друга",
+			splitID:  "split-1",
+			reqBody:  reqBody,
+			headers:  map[string]string{"Idempotency-Key": "idem"},
+			withAuth: true,
+			mockBehavior: func(order *orderMocks.MockOrderClient) {
+				order.EXPECT().PayForFriend(gomock.Any(), "split-1", int64(1), "pm-1", "idem").
+					Return(nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "Ошибка: пустой split id",
+			splitID:        "",
+			reqBody:        reqBody,
+			headers:        map[string]string{"Idempotency-Key": "idem"},
+			withAuth:       true,
+			mockBehavior:   func(order *orderMocks.MockOrderClient) {},
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			handler, mockOrder, _, _ := setupTestHandler(ctrl)
+			tt.mockBehavior(mockOrder)
+
+			body, _ := json.Marshal(tt.reqBody)
+			req := httptest.NewRequest(http.MethodPost, "/splits/"+tt.splitID+"/pay", bytes.NewBuffer(body))
+			if tt.withAuth {
+				req = withUserIDContext(req, 1)
+			}
+			for k, v := range tt.headers {
+				req.Header.Set(k, v)
+			}
+			req.SetPathValue("id", tt.splitID)
+
+			w := httptest.NewRecorder()
+			handler.PayForFriend(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+		})
+	}
+}

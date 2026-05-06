@@ -15,7 +15,7 @@ var (
 	ErrInternal           = errors.New("internal server error")
 )
 
-//go:generate mockgen -destination=../../../../shared/proto/auth/mocks/auth_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/auth AuthServiceClient
+//go:generate mockgen -destination=mocks/auth_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/authclient AuthClient
 type AuthClient interface {
 	IssueSession(ctx context.Context, userID int64, role, userAgent string) (*pbAuth.Session, error)
 	Login(ctx context.Context, email, password, userAgent string) (*pbAuth.Session, error)
