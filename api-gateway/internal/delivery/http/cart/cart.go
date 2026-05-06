@@ -246,13 +246,10 @@ func (h *CartHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if errors.Is(err, cartclient.ErrMultipleRestaurants) {
-			// 409 Conflict — фронт отдельно обрабатывает (показывает "очистить корзину?")
 			response.Error(w, http.StatusConflict, "MULTIPLE_RESTAURANTS")
 			return
 		}
 		if errors.Is(err, cartclient.ErrCartLocked) {
-			// 409 Conflict — корзина застряла в locked (например, после неудачной оплаты).
-			// Фронт ловит код, чистит корзину (clear работает на locked) и повторяет добавление.
 			response.Error(w, http.StatusConflict, "CART_LOCKED")
 			return
 		}

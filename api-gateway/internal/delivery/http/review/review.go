@@ -1,5 +1,7 @@
 package review
 
+//go:generate easyjson $GOFILE
+
 import (
 	"net/http"
 	"strconv"
