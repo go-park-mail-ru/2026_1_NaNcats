@@ -87,7 +87,6 @@ func TestMultiTracer_TraceQueryEnd(t *testing.T) {
 
 			multiTracer := NewMultiTracer(tracer1, tracer2)
 
-			// Act
 			multiTracer.TraceQueryEnd(context.Background(), nil, tt.data)
 		})
 	}

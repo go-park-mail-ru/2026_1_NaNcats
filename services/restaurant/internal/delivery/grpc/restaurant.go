@@ -93,7 +93,6 @@ func (h *RestaurantHandler) GetRestaurantBrandsList(ctx context.Context, req *pb
 			return &pb.GetRestaurantBrandsListResponse{RestaurantBrands: pbBrands}, nil
 		}
 
-		// Фильтрация по числовому ID категории (legacy)
 		if vals := md.Get("x-category-id"); len(vals) > 0 && vals[0] != "" {
 			if catID, parseErr := strconv.ParseInt(vals[0], 10, 64); parseErr == nil && catID > 0 {
 				brands, err = h.extRepo.GetRestaurantBrandsByCategory(ctx, catID, int(req.Limit), int(req.Offset))

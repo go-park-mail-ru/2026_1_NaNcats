@@ -43,7 +43,7 @@ func TestDishUseCase_GetDishesByRestaurantBrandID(t *testing.T) {
 					GetDishesByRestaurantBrandID(gomock.Any(), brandID, 10, 0).
 					Return([]domain.Dish{
 						{ID: 1, Name: "Dish 1", ImageURL: "http://s3.ru/1.png"},
-						{ID: 2, Name: "Dish 2", ImageURL: ""}, // Проверим подстановку дефолтной картинки
+						{ID: 2, Name: "Dish 2", ImageURL: ""}, // Проверка подстановки дефолтной картинки
 					}, nil)
 			},
 			expectedLen: 2,
@@ -328,7 +328,6 @@ func TestDishUseCase_UpdateDish(t *testing.T) {
 			mockInit: func(dr *mocks.MockDishRepository, fs *s3Mocks.MockFileStorage) {
 				dr.EXPECT().GetDishByID(gomock.Any(), dishID).Return(existingDish, nil)
 				fs.EXPECT().UploadFile(gomock.Any(), gomock.Any(), gomock.Any(), "image/webp").Return(newURL, nil)
-				// Удаление старого аватара асинхронно
 				fs.EXPECT().DeleteFile(gomock.Any(), oldURL).Return(nil)
 
 				expected := existingDish
@@ -365,7 +364,6 @@ func TestDishUseCase_UpdateDish(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			// Даем время на DeleteFile в горутине
 			time.Sleep(10 * time.Millisecond)
 		})
 	}

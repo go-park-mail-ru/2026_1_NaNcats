@@ -37,12 +37,10 @@ func TestUserRepo_CreateUser(t *testing.T) {
 			name: "Успешное создание пользователя и профиля",
 			mockInit: func(m pgxmock.PgxPoolIface) {
 				m.ExpectBegin()
-				// Считаем аргументы: name, email, password_hash, user_role, idempotency_key
 				m.ExpectQuery(`INSERT INTO "user"`).
 					WithArgs(user.Name, cleanEmail, user.PasswordHash, "client", idemKey).
 					WillReturnRows(pgxmock.NewRows([]string{"id"}).AddRow(expectedID))
 
-				// Считаем аргументы: account_id, idempotency_key
 				m.ExpectExec(`INSERT INTO "client_profile"`).
 					WithArgs(expectedID, idemKey).
 					WillReturnResult(pgxmock.NewResult("INSERT", 1))

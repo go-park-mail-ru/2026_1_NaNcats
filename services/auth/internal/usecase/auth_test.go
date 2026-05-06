@@ -89,7 +89,6 @@ func TestAuthUseCase_Login(t *testing.T) {
 	type mockInit func(userMock *mocks.MockUserClient, sessMock *mocks.MockSessionUseCase)
 
 	// Генерируем реальный валидный argon2id хэш для пароля "secret"
-	// с помощью твоего пакета, чтобы тест всегда был совместим с текущей реализацией
 	validHash, err := passUtil.HashPassword("secret", nil)
 	require.NoError(t, err, "Не удалось сгенерировать хэш для теста")
 

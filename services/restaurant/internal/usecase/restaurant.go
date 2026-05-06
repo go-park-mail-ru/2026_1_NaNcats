@@ -122,7 +122,6 @@ func (uc *restaurantBrandUseCase) CreateRestaurantBrand(ctx context.Context, b d
 		b.LogoURL = uc.defaultRestaurantLogoURL
 	}
 
-	// Сохранение в БД
 	return uc.restaurantBrandRepo.Create(ctx, b, idemKey)
 }
 
@@ -132,7 +131,6 @@ func (uc *restaurantBrandUseCase) UpdateRestaurantBrand(ctx context.Context, b d
 		return domain.RestaurantBrand{}, err
 	}
 
-	// Если пришло новое изображение - меняем его в S3
 	if len(newImage) > 0 {
 		webpData, err := imageutil.ConvertToWebp(bytes.NewReader(newImage))
 		if err == nil {

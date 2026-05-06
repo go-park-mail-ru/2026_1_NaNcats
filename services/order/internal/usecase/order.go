@@ -167,9 +167,9 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderIn
 				Amount: amount,
 				Status: SplitStatusPending,
 			}
-			// Если для основного плательщика выбрана сохранённая карта —
+			// Если для основного плательщика выбрана сохранённая карта -
 			// сохраняем yookassa-external-id, чтобы saga при CreatePayment
-			// сразу списал с этой карты (а не открывал форму ввода).
+			// сразу списал с этой карты (а не открывал форму ввода)
 			if uid == req.UserID && req.PaymentMethodID != "" {
 				pm := req.PaymentMethodID
 				split.PaymentMethodID = &pm
@@ -214,8 +214,7 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderIn
 	return orderPublicID, nil
 }
 
-// GetOrderPaymentID — возвращает yookassa_payment_id для конкретного заказа.
-// Доступен только владельцу заказа (admin_account_id == userID).
+// GetOrderPaymentID - возвращает yookassa_payment_id для конкретного заказа
 func (o *orderUseCase) GetOrderPaymentID(ctx context.Context, orderPublicID string, userID int64) (string, error) {
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(
@@ -239,8 +238,7 @@ func (o *orderUseCase) GetOrderPaymentID(ctx context.Context, orderPublicID stri
 	return "", errutil.New("PAYMENT_NOT_READY", "payment id not yet assigned to this order", codes.FailedPrecondition)
 }
 
-// CancelOrder помечает заказ как cancelled. Доступно владельцу и только пока
-// заказ ещё не in_progress / delivering / finished (терминал).
+// Помечает заказ как cancelled
 func (o *orderUseCase) CancelOrder(ctx context.Context, orderPublicID string, userID int64) error {
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(
@@ -347,7 +345,6 @@ func (o *orderUseCase) UpdateOrderStatusByPaymentID(ctx context.Context, payment
 			return err
 		}
 
-		// TODO: можно отправить событие в RestaurantService для начала готовки
 		span.AddEvent("order_transition_to_paid")
 		o.logger.Info("All splits paid!", logger.String("order_id", orderPublicID))
 
@@ -381,7 +378,7 @@ func (o *orderUseCase) PayForFriend(ctx context.Context, splitID string, adminID
 
 	// Генерируем команду для платежки
 	payCmd := events.SagaCommand{
-		OrderID:         fmt.Sprintf("%d", split.OrderID), // Временный костыль, лучше вытащить PublicID
+		OrderID:         fmt.Sprintf("%d", split.OrderID),
 		SplitID:         split.ID,
 		UserID:          adminID,
 		Action:          events.CommandCreatePayment,
@@ -430,9 +427,9 @@ func (o *orderUseCase) ProcessSagaReply(ctx context.Context, reply events.SagaRe
 		span.SetAttributes(attribute.Int("order.splits_count", len(order.Splits)))
 
 		for _, split := range order.Splits {
-			// Если split привязан к конкретной сохранённой карте — передаём
+			// Если split привязан к конкретной сохранённой карте - передаём
 			// её external_id (YooKassa payment_method.id), чтобы YooKassa
-			// сразу списала с этой карты, а не показывала форму ввода новой.
+			// сразу списала с этой карты, а не показывала форму ввода новой
 			pmID := ""
 			if split.PaymentMethodID != nil {
 				pmID = *split.PaymentMethodID

@@ -47,12 +47,10 @@ func (uc *dishUseCase) GetDishesByRestaurantBrandID(ctx context.Context, restaur
 		attribute.Int("pagination.offset", offset),
 	)
 
-	// Валидация входа
 	if restaurantBrandID <= 0 {
 		return nil, domain.ErrInvalidRestaurantBrandID
 	}
 
-	// Пагинация
 	if limit <= 0 {
 		limit = 20
 	}

@@ -81,9 +81,7 @@ func (c *Client) CreatePayment(ctx context.Context, req CreatePaymentRequest, id
 	return &yookassaResponse, nil
 }
 
-// GetPayment получает текущий статус платежа из YooKassa.
-// Используется для poll-механизма, когда YooKassa-вебхук не доходит
-// (например, в dev-окружении на localhost).
+// Получает текущий статус платежа из YooKassa
 func (c *Client) GetPayment(ctx context.Context, paymentID string) (*PaymentResponse, error) {
 	url := c.baseURL + "/payments/" + paymentID
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)

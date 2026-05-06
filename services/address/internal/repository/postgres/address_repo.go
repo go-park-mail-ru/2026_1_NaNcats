@@ -206,7 +206,6 @@ func (r *addressRepo) UpdateAddress(ctx context.Context, userID int64, addr doma
 	}
 
 	if result.RowsAffected() == 0 {
-		// TODO: сделать что-то с этой ошибкой
 		return domain.ErrAddressNotFound
 	}
 

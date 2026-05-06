@@ -20,7 +20,7 @@ var (
 	ErrInternal            = errors.New("internal server error")
 )
 
-// --- Внутренние модели BFF ---
+// Внутренние модели BFF
 
 type Item struct {
 	DishID      int64
@@ -52,7 +52,7 @@ type InviteResponse struct {
 	ExpiresAt string
 }
 
-// --- Интерфейс ---
+// Интерфейс
 
 type CartClient interface {
 	GetCart(ctx context.Context, userID int64) (*Cart, error)

@@ -141,7 +141,6 @@ func TestOrderUseCase_CreateOrder(t *testing.T) {
 
 			uc := NewOrderUseCase(deps.repo, deps.addr, deps.cart, deps.rest, deps.pub, "http://default-logo", logger.NewNopLogger())
 
-			// Act
 			// Для тестов прокидываем разные ключи идемпотентности в зависимости от кейса
 			idemKey := "idem-1"
 			if tt.name == "Успешное создание со сплитом" {
@@ -150,7 +149,6 @@ func TestOrderUseCase_CreateOrder(t *testing.T) {
 
 			id, err := uc.CreateOrder(context.Background(), tt.req, idemKey)
 
-			// Assert
 			if tt.expectedErr {
 				assert.Error(t, err)
 				domainErr, ok := err.(statusCoder)

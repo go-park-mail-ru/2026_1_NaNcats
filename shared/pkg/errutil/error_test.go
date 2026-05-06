@@ -59,10 +59,8 @@ func TestDomainError_Constructors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Act
 			err := tt.errCreator()
 
-			// Assert
 			require.NotNil(t, err)
 			assert.Equal(t, tt.expectedMsg, err.Error())
 			assert.Equal(t, tt.expectedSlug, err.Slug())

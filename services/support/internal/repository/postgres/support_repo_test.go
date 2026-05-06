@@ -175,7 +175,7 @@ func TestSupportRepo_UpdateTicketStatus(t *testing.T) {
 					WithArgs(newStatus, ticketID).
 					WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
-				// saveEventTx лоигка
+				// saveEventTx логика
 				m.ExpectExec(`INSERT INTO "support_event"`).
 					WithArgs(ticketID, pgxmock.AnyArg(), "system", "status_changed", pgxmock.AnyArg(), "").
 					WillReturnResult(pgxmock.NewResult("INSERT", 1))
@@ -238,8 +238,6 @@ func TestSupportRepo_AssignTicket(t *testing.T) {
 				m.ExpectQuery(`SELECT assignee_id, support_line FROM "support_ticket" WHERE id = \$1`).
 					WithArgs(ticketID).
 					WillReturnRows(pgxmock.NewRows([]string{"assignee_id", "support_line"}).AddRow(nil, 1))
-
-				// saveEventTx calls
 				m.ExpectExec(`INSERT INTO "support_event"`).
 					WithArgs(ticketID, pgxmock.AnyArg(), "support", "reassigned", pgxmock.AnyArg(), "").
 					WillReturnResult(pgxmock.NewResult("INSERT", 1))
@@ -616,7 +614,6 @@ func TestSupportRepo_GetAgentProfile(t *testing.T) {
 		{
 			name: "Профиль не найден",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				// Пустые строки для срабатывания CollectOneRow -> ErrNoRows
 				m.ExpectQuery(`SELECT (.+) FROM "support_agent_profile" WHERE account_id = \$1`).
 					WithArgs(agentID).
 					WillReturnRows(pgxmock.NewRows(columns))
@@ -925,18 +922,15 @@ func TestSupportRepo_GetStats(t *testing.T) {
 		{
 			name: "Успешное получение статистики",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				// Первый запрос: общие цифры
 				m.ExpectQuery(`SELECT count\(\*\), (.+) FROM "support_ticket"`).
 					WillReturnRows(pgxmock.NewRows([]string{"count", "avg_rating", "avg_time"}).
 						AddRow(int64(10), 4.5, int64(3600)))
 
-				// Второй запрос: группировка по статусам
 				m.ExpectQuery(`SELECT current_status, count\(\*\) FROM "support_ticket"`).
 					WillReturnRows(pgxmock.NewRows([]string{"status", "count"}).
 						AddRow("open", int64(3)).
 						AddRow("closed", int64(7)))
 
-				// Третий запрос: группировка по категориям
 				m.ExpectQuery(`SELECT c.name, count\(t.id\) FROM "support_category"`).
 					WillReturnRows(pgxmock.NewRows([]string{"name", "count"}).
 						AddRow("Техническая", int64(6)).

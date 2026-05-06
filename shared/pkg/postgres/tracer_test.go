@@ -36,7 +36,6 @@ func TestDBTracer_TraceQueryStart(t *testing.T) {
 			ctx := context.Background()
 			newCtx := tracer.TraceQueryStart(ctx, nil, tt.data)
 
-			// Assert
 			require.NotNil(t, newCtx)
 
 			sqlVal := newCtx.Value(sqlQueryKey)

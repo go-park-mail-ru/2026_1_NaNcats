@@ -62,10 +62,8 @@ func TestPaymentUseCase_CreatePayment(t *testing.T) {
 	yc := yookassa.NewClient("shop-id", "secret")
 	uc := NewPaymentUseCase(nil, nil, nil, yc, "https://my-app.com/return", logger.NewNopLogger())
 
-	// Act
 	payID, confirmURL, err := uc.CreatePayment(context.Background(), 1500500, "pm-1", "idem-123")
 
-	// Assert
 	assert.NoError(t, err)
 	assert.Equal(t, "pay-123", payID)
 	assert.Equal(t, "https://yookassa.ru/confirm/123", confirmURL)

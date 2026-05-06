@@ -119,7 +119,7 @@ func TestSessionRepo_GetByID(t *testing.T) {
 				conn.Command("GET", mkey).Expect([]byte("invalid json"))
 			},
 			expectedSess:  domain.Session{},
-			expectedErrIs: nil, // Тут будет ошибка Unmarshal, не domainErr
+			expectedErrIs: nil,
 		},
 	}
 

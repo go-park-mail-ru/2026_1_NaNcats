@@ -27,7 +27,6 @@ func NewAddressUseCase(r repository.AddressRepository) AddressUseCase {
 }
 
 func (u *addressUseCase) AddAddress(ctx context.Context, userID int64, addr domain.Address, idempotencyKey string) (string, error) {
-	// TODO Тут можно добавить валидацию (например, координаты в пределах города)
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(
 		attribute.Int64("user.id", userID),

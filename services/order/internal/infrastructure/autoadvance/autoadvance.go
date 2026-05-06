@@ -1,8 +1,3 @@
-// Package autoadvance - фоновый симулятор кухни/курьера
-// Каждый тик берёт неотложные заказы из БД и продвигает их вперёд по
-// фиксированной цепочке: paid -> in_progress -> delivering -> finished.
-// После UPDATE публикует GatewayEvent в RabbitMQ - фронт получает live-апдейт
-// через WebSocket
 package autoadvance
 
 import (

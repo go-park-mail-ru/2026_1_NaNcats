@@ -12,7 +12,6 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// Verify interface compliance at compile time.
 var _ repository.ExtendedRestaurantRepository = (*restaurantBrandRepo)(nil)
 
 type restaurantBrandDB struct {

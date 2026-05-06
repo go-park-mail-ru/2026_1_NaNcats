@@ -21,7 +21,7 @@ service OrderService {
   // чтобы вручную опросить YooKassa без полагания на её webhook).
   rpc GetOrderPaymentID (GetOrderPaymentIDRequest) returns (GetOrderPaymentIDResponse);
   // Помечает заказ как cancelled. Доступно только владельцу и только пока
-  // заказ ещё не payed/in_progress.
+  // заказ ещё не payed/in_progress
   rpc CancelOrder (CancelOrderRequest) returns (google.protobuf.Empty);
 }
 

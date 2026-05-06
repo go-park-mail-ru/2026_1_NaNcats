@@ -42,12 +42,9 @@ func TestAddressRepo_CreateAddress(t *testing.T) {
 			name: "Успешное создание адреса",
 			mockInit: func(m pgxmock.PgxPoolIface) {
 				m.ExpectBegin()
-				// 1. Вставка локации (4 аргумента: text, lon, lat, idem)
 				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "location"`)).
 					WithArgs(addr.Location.AddressText, addr.Location.Longitude, addr.Location.Latitude, idemKey).
 					WillReturnRows(pgxmock.NewRows([]string{"id"}).AddRow(100))
-
-				// 2. Вставка адреса клиента (9 аргументов: loc_id, user_id, apt, ent, floor, code, comment, label, idem)
 				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "client_address"`)).
 					WithArgs(100, userID, addr.Apartment, addr.Entrance, addr.Floor, addr.DoorCode, addr.CourierComment, addr.Label, idemKey).
 					WillReturnRows(pgxmock.NewRows([]string{"public_id"}).AddRow("uuid-addr-777"))

@@ -24,7 +24,7 @@ service PaymentService {
   rpc ProcessPaymentWebhook (ProcessPaymentWebhookRequest) returns (google.protobuf.Empty);
   // Принудительно тянет статус платежа из YooKassa и применяет его (как обычный
   // webhook). Нужно для dev-окружения / случаев когда YooKassa не может
-  // достучаться webhook'ом до localhost.
+  // достучаться webhook'ом до localhost
   rpc RefreshPaymentStatus (RefreshPaymentStatusRequest) returns (RefreshPaymentStatusResponse);
 }
 

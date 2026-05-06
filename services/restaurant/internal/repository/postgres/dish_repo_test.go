@@ -216,7 +216,6 @@ func TestDishRepo_GetDishByID(t *testing.T) {
 		{
 			name: "Блюдо не найдено",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				// Возвращаем пустые строки для CollectOneRow -> ErrNoRows
 				m.ExpectQuery(regexp.QuoteMeta(`WHERE id = $1`)).
 					WithArgs(dishID).
 					WillReturnRows(pgxmock.NewRows(columns))
@@ -337,7 +336,6 @@ func TestDishRepo_Create(t *testing.T) {
 		{
 			name: "Успешное создание блюда",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				// В методе 6 аргументов: brand_id, name, desc, price, image, idem_key
 				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "dish" (restaurant_brand_id, name, description, price, image_url, idempotency_key) VALUES ($1, $2, $3, $4, $5, $6)`)).
 					WithArgs(dish.RestaurantBrandID, dish.Name, dish.Description, dish.Price, dish.ImageURL, idemKey).
 					WillReturnRows(pgxmock.NewRows(columns).
@@ -401,7 +399,6 @@ func TestDishRepo_Update(t *testing.T) {
 		{
 			name: "Успешное обновление",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				// В методе 5 аргументов: name, desc, price, image, id
 				m.ExpectQuery(regexp.QuoteMeta(`UPDATE "dish" SET name = $1, description = $2, price = $3, image_url = $4, updated_at = NOW() WHERE id = $5`)).
 					WithArgs(dish.Name, dish.Description, dish.Price, dish.ImageURL, dish.ID).
 					WillReturnRows(pgxmock.NewRows(columns).

@@ -50,13 +50,10 @@ func TestGetUserID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Arrange
 			ctx := tt.setupCtx()
 
-			// Act
 			id, ok := GetUserID(ctx)
 
-			// Assert
 			assert.Equal(t, tt.expectedOk, ok)
 			assert.Equal(t, tt.expectedID, id)
 		})

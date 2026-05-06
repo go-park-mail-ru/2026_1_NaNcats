@@ -40,7 +40,6 @@ func (rw *responseWriterWrapper) Write(b []byte) (int, error) {
 	return size, err
 }
 
-// ВОТ ОН! Магический метод, который позволяет "угнать" соединение для WebSockets
 func (rw *responseWriterWrapper) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	hijacker, ok := rw.ResponseWriter.(http.Hijacker)
 	if !ok {

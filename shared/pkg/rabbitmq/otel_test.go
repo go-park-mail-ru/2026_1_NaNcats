@@ -77,9 +77,6 @@ func TestInjectAndExtractContext(t *testing.T) {
 		ctx := context.Background()
 		headers := make(map[string]interface{})
 
-		// Act - в данном тесте мы просто проверяем, что вызовы не паникуют
-		// и отрабатывают со стандартным глобальным TextMapPropagator.
-		// Чтобы проверить реальные traceID, требуется настройка otel.SetTextMapPropagator
 		InjectContext(ctx, headers)
 		extractedCtx := ExtractContext(ctx, headers)
 

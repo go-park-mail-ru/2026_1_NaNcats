@@ -1,4 +1,3 @@
--- Добавляем дополнительные категории (часть уже есть из 000002)
 INSERT INTO "category" (name) VALUES
 ('Популярное'),
 ('Десерты'),
@@ -33,7 +32,6 @@ INSERT INTO "category" (name) VALUES
 ('Салаты')
 ON CONFLICT (name) DO NOTHING;
 
--- Привязываем рестораны к категориям
 -- Фастфуд
 INSERT INTO "restaurant_brand_category" (restaurant_brand_id, category_id)
 SELECT rb.id, c.id
@@ -154,9 +152,6 @@ WHERE rb.promotion_tier >= 2
   AND c.name = 'Популярное'
 ON CONFLICT DO NOTHING;
 
--- emoji-колонка теперь часть init_schema (000001). Для совместимости с
--- БД, где init_schema уже была применена без emoji, добавляем колонку
--- идемпотентно — на свежих БД это no-op.
 ALTER TABLE "category" ADD COLUMN IF NOT EXISTS emoji TEXT NOT NULL DEFAULT '';
 
 UPDATE "category" SET emoji = '🔥' WHERE name = 'Популярное';

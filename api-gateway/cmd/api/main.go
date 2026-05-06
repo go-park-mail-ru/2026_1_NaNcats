@@ -109,7 +109,6 @@ func main() {
 		MaxActive:   100,
 		IdleTimeout: 240 * time.Second,
 		Dial: func() (redis.Conn, error) {
-			// TODO: вынести адрес в конфиг, пока так сойдет
 			redisAddr := os.Getenv("REDIS_ADDR")
 			if redisAddr == "" {
 				redisAddr = "localhost:6379"

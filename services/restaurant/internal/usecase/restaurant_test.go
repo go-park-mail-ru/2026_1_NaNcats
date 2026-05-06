@@ -330,7 +330,6 @@ func TestRestaurantBrandUseCase_UpdateRestaurantBrand(t *testing.T) {
 			newImage: nil,
 			mockInit: func(r *mocks.MockRestaurantBrandRepository, fs *s3Mocks.MockFileStorage) {
 				r.EXPECT().GetByID(gomock.Any(), brandID).Return(existingBrand, nil)
-				// Все пустые поля должны заполниться из existingBrand
 				expected := existingBrand
 				expected.Name = "New Name"
 				r.EXPECT().Update(gomock.Any(), expected).Return(expected, nil)
@@ -345,7 +344,6 @@ func TestRestaurantBrandUseCase_UpdateRestaurantBrand(t *testing.T) {
 			mockInit: func(r *mocks.MockRestaurantBrandRepository, fs *s3Mocks.MockFileStorage) {
 				r.EXPECT().GetByID(gomock.Any(), brandID).Return(existingBrand, nil)
 				fs.EXPECT().UploadFile(gomock.Any(), gomock.Any(), gomock.Any(), "image/webp").Return(newLogoURL, nil)
-				// Удаление старого файла из S3
 				fs.EXPECT().DeleteFile(gomock.Any(), oldLogoURL).Return(nil)
 
 				expected := existingBrand
@@ -381,7 +379,6 @@ func TestRestaurantBrandUseCase_UpdateRestaurantBrand(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			// Ждем асинхронное удаление
 			time.Sleep(10 * time.Millisecond)
 		})
 	}

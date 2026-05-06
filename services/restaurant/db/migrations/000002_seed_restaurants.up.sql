@@ -1,9 +1,7 @@
--- 1. Категории
 INSERT INTO "category" (name) VALUES
 ('Бургеры'), ('Пицца'), ('Суши'), ('Завтраки'), ('Кофе'), ('Русская'), ('Китайская'), ('Фастфуд')
 ON CONFLICT (name) DO NOTHING;
 
--- 3. Бренды
 INSERT INTO "restaurant_brand" (owner_profile_id, name, description, promotion_tier, logo_url)
 VALUES 
 (1, 'Вкусно - и точка', 'Тот самый вкус', 3, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/e5f0825c-c82d-4f8d-b9e0-d0149a38322f.webp'),
@@ -39,14 +37,11 @@ VALUES
 (1, 'Villa Pasta', 'Опять макаронники со своей пиццей', 1, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/9de17c18-38c5-40c4-9731-4d9911470757.webp')
 ON CONFLICT (name) DO NOTHING;
 
--- 3. Создаем филиалы (location_id захардкожен как 1)
 INSERT INTO "restaurant_branch" (restaurant_brand_id, location_id, open_time, close_time)
 SELECT b.id, 1, '00:00:00', '23:59:59'
 FROM restaurant_brand b
 WHERE b.id NOT IN (SELECT restaurant_brand_id FROM restaurant_branch)
 ON CONFLICT DO NOTHING;
-
--- 4. Блюда (используем WITH rb, так как restaurant_brand находится в этой же базе)
 
 -- Вкусно и точка
 WITH rb AS (SELECT id FROM "restaurant_brand" WHERE name = 'Вкусно - и точка' LIMIT 1)

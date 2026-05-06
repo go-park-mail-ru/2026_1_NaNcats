@@ -98,8 +98,6 @@ func (c *orderClient) CreateOrder(ctx context.Context, userID int64, input Creat
 			case codes.InvalidArgument:
 				return "", ErrCartIsEmpty
 			}
-			// Сохраняем оригинальный текст ошибки чтобы выше можно было показать
-			// его пользователю, а не маскировать generic «Something went wrong».
 			return "", fmt.Errorf("order service error: %s", st.Message())
 		}
 		return "", ErrInternal
@@ -183,7 +181,6 @@ func (c *orderClient) GetOrderPaymentID(ctx context.Context, orderPublicID strin
 			case codes.PermissionDenied:
 				return "", ErrInternal
 			case codes.FailedPrecondition:
-				// payment ещё не создан — для фронта не катастрофа, retry позже
 				return "", fmt.Errorf("payment not ready: %s", st.Message())
 			}
 		}

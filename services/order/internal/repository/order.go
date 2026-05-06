@@ -21,6 +21,6 @@ type OrderRepository interface {
 	UpdateSplitPayer(ctx context.Context, splitID string, newPayerID int64) error
 	GetSplitByID(ctx context.Context, splitID string) (domain.OrderSplit, error)
 
-	// Возвращает заказы, статусы которых нужно продвигать в фоне.
+	// Возвращает заказы, статусы которых нужно продвигать в фоне
 	GetOrdersByStatuses(ctx context.Context, statuses []string) ([]domain.Order, error)
 }

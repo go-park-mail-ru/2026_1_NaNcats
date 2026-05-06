@@ -65,10 +65,8 @@ func TestOrderClient_UpdateOrderStatus(t *testing.T) {
 
 			client := NewOrderClient(mockPBClient)
 
-			// Act
 			err := client.UpdateOrderStatus(context.Background(), tt.paymentID, tt.status)
 
-			// Assert
 			if tt.expectedErr != nil {
 				assert.Error(t, err)
 				assert.Equal(t, tt.expectedErr.Error(), err.Error())

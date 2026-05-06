@@ -344,7 +344,7 @@ func (c *supportClient) SetAgentStatus(ctx context.Context, agentID int64, agent
 	return nil
 }
 
-// === Справочники ===
+// Справочники
 
 func (c *supportClient) GetCategories(ctx context.Context) ([]Category, error) {
 	resp, err := c.client.GetCategories(ctx, &emptypb.Empty{})
