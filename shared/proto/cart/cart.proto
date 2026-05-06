@@ -1,0 +1,154 @@
+syntax = "proto3";
+
+package cart;
+
+import "google/protobuf/empty.proto";
+
+option go_package = "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/cart";
+
+// Микросервис корзины
+service CartService {
+  // Метод получения корзины
+  rpc GetCart (GetCartRequest) returns (GetCartResponse);
+  // Блокируем изменение корзины
+  rpc LockCart (LockCartRequest) returns (google.protobuf.Empty);
+  // Разрешаем изменять корзину
+  rpc UnlockCart (CartOperationRequest) returns (google.protobuf.Empty);
+  // Чистим корзину
+  rpc ClearCart (CartOperationRequest) returns (google.protobuf.Empty);
+
+  // Генерируем ссылку в совместную корзину
+  rpc GenerateInvite (GenerateInviteRequest) returns (GenerateInviteResponse);
+  // Присоединение к совместной корзине
+  rpc JoinCart (JoinCartRequest) returns (JoinCartResponse);
+  // Выкидываем члена совместной корзины
+  rpc KickMember (CartMemberOperationRequest) returns (google.protobuf.Empty);
+  // Закрываем совместную корзину, возвращаемся в соло режим
+  rpc CloseSharedCart (CartOperationRequest) returns (google.protobuf.Empty);
+
+  // Добавляем позицию
+  rpc AddItem (AddItemRequest) returns (google.protobuf.Empty);
+  // Удаляем позицию
+  rpc RemoveItem (RemoveItemRequest) returns (google.protobuf.Empty);
+  // Обновляем количество
+  rpc UpdateItemQuantity (UpdateQuantityRequest) returns (google.protobuf.Empty);
+  // Изменение покупателя позиции
+  rpc ReassignItemOwner (ReassignOwnerRequest) returns (google.protobuf.Empty);
+}
+
+enum CartMode {
+  CART_MODE_SOLO = 0;
+  CART_MODE_SHARED = 1;
+}
+
+enum CartStatus {
+  CART_STATUS_ACTIVE = 0;
+  CART_STATUS_LOCKED = 1;
+}
+
+message CartItem {
+  int64 dish_id = 1;
+  int32 quantity = 2;
+  string name = 3;
+  int64 price = 4;
+  string image_url = 5;
+  optional int64 owner_user_id = 6; 
+}
+
+message CartMember {
+  int64 user_id = 1;
+  string joined_at = 2; // RFC3339
+}
+
+message Cart {
+  string cart_id = 1; // Теперь это UUID (string в gRPC)
+  int64 admin_id = 2; // Создатель корзины (имеет права на kick и reassign)
+  int64 restaurant_brand_id = 3;
+  
+  CartMode mode = 4;
+  CartStatus status = 5;
+  
+  repeated CartItem items = 6;
+  repeated CartMember members = 7;
+}
+
+// Общий реквест для операций с корзиной целиком (Unlock, Clear, CloseSharedCart)
+message CartOperationRequest {
+  string cart_id = 1;
+  int64 user_id = 2; // ID инициатора
+  string idempotency_key = 3;
+}
+
+message LockCartRequest {
+  string cart_id = 1;
+  int64 user_id = 2; // Инициатор (админ)
+  string idempotency_key = 3;
+  bool pay_for_all = 4; // Админ платит за всех
+  map<int64, int64> payer_mapping = 5; // Маппинг участник -> плательщик
+}
+
+message GetCartRequest {
+  int64 user_id = 1; // Ищем активную корзину по юзеру
+}
+
+message GetCartResponse {
+  Cart cart = 1;
+  int64 total_cost = 2; // Общая стоимость всей корзины
+}
+
+message GenerateInviteRequest {
+  string cart_id = 1;
+  int64 user_id = 2; // Должен быть admin_id
+}
+
+message GenerateInviteResponse {
+  string token = 1; // хэш для инвайта
+  string expires_at = 2; // время протухания ссылки
+}
+
+message JoinCartRequest {
+  int64 user_id = 1;
+  string token = 2; // Хэш из пригласительной ссылки
+}
+
+message JoinCartResponse {
+  string cart_id = 1; // Возвращаем UUID
+}
+
+message CartMemberOperationRequest {
+  string cart_id = 1;
+  int64 admin_user_id = 2; // Кто кикает
+  int64 target_user_id = 3; // Кого кикают
+  string idempotency_key = 4;
+}
+
+message AddItemRequest {
+  string cart_id = 1;
+  int64 user_id = 2; // Тот, кто добавляет
+  int64 dish_id = 3;
+  int32 quantity = 4;
+  string idempotency_key = 5;
+}
+
+message RemoveItemRequest {
+  string cart_id = 1;
+  int64 user_id = 2; // Тот, кто удаляет
+  int64 dish_id = 3;
+  string idempotency_key = 4;
+}
+
+message UpdateQuantityRequest {
+  string cart_id = 1;
+  int64 user_id = 2;
+  int64 dish_id = 3;
+  int32 new_quantity = 4;
+  string idempotency_key = 5;
+}
+
+message ReassignOwnerRequest {
+  string cart_id = 1;
+  int64 admin_user_id = 2; // Только админ может переназначать
+  int64 dish_id = 3;
+  optional int64 new_owner_user_id = 4; // если null, то ничейная позиция
+  string idempotency_key = 5;
+}

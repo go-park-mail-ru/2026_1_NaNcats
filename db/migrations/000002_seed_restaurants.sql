@@ -1,4 +1,4 @@
--- 1. Категории
+-- Категории
 INSERT INTO "category" (name) VALUES
 ('Бургеры'), ('Пицца'), ('Суши'), ('Завтраки'), ('Кофе'), ('Русская'), ('Китайская'), ('Фастфуд')
 ON CONFLICT (name) DO NOTHING;
@@ -12,14 +12,14 @@ INSERT INTO "owner_profile" (account_id)
 SELECT id FROM "user" WHERE email = 'owner@foodcourt.fun'
 ON CONFLICT DO NOTHING;
 
--- 2. Локации
+-- Локации
 INSERT INTO "location" (address_text, coordinate) VALUES
 ('Москва, ул. Арбат, 1', ST_SetSRID(ST_MakePoint(37.599, 55.752), 4326)),
 ('Москва, Цветной бульвар, 15', ST_SetSRID(ST_MakePoint(37.622, 55.771), 4326)),
 ('Москва, ул. Тверская, 7', ST_SetSRID(ST_MakePoint(37.611, 55.758), 4326))
 ON CONFLICT DO NOTHING;
 
--- 3. Бренды
+-- Бренды
 WITH owner AS (SELECT account_id FROM owner_profile LIMIT 1)
 INSERT INTO "restaurant_brand" (owner_profile_id, name, description, promotion_tier, logo_url)
 VALUES 
@@ -56,7 +56,7 @@ VALUES
 ((SELECT account_id FROM owner), 'Villa Pasta', 'Опять макаронники со своей пиццей', 1, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/9de17c18-38c5-40c4-9731-4d9911470757.webp')
 ON CONFLICT (name) DO NOTHING;
 
--- 4. Создаем филиалы (физические точки), чтобы рестораны появились в списке
+-- Создаем филиалы (физические точки), чтобы рестораны появились в списке
 INSERT INTO "restaurant_branch" (restaurant_brand_id, location_id, open_time, close_time)
 SELECT b.id, (SELECT id FROM location LIMIT 1), '00:00:00', '23:59:59'
 FROM restaurant_brand b

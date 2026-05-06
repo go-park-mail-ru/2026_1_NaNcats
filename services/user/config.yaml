@@ -1,0 +1,19 @@
+logger:
+  level: "debug"
+
+postgres:
+  url: "postgres://user:password@localhost:5432/user_db?sslmode=disable"
+
+grpc:
+  port: "50052"
+  timeout: "5s"
+
+s3:
+  bucket_name: "nancats-bucket"
+  region: "ru-central1"
+
+otel:
+  service_name: "user-service"
+  collector_addr: "otel-collector:4317"
+
+default_avatar_url: "https://nancats-bucket.storage.yandexcloud.net/avatars/default-avatar.webp"

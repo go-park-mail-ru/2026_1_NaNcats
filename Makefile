@@ -5,31 +5,171 @@ ifneq (,$(wildcard ./.env))
 endif
 
 APP_NAME = foodcourt
-MAIN_PKG = ./cmd/api/main.go
+GATEWAY_PKG = ./api-gateway/cmd/api/main.go
 COVERAGE_FILE = coverage.out
 COVERAGE_HTML = coverage.html
 
-.PHONY: all run build clean test gen cover migrate-create migrate-up migrate-down swagger
+DB_USER ?= user
+DB_PASSWORD ?= password
+DB_HOST ?= localhost
+DB_PORT ?= 5432
+
+# Дефолты для брокеров / кэша. Чтобы локальный шелл с DATABASE_URL=...nancats или
+# другими env-переменными не «перебивал» yaml-конфиги микросервисов.
+# Можно переопределить через .env или через `make VAR=... run`.
+RABBITMQ_URL ?= amqp://guest:guest@localhost:5672/
+REDIS_URL ?= redis://localhost:6379/0
+
+MICROSERVICES = auth user restaurant cart address payment order support
+ALL_SERVICES = $(MICROSERVICES) api-gateway
+
+$(shell mkdir -p .tmp_pids)
+
+.PHONY: all run-all run stop-all stop status build clean test gen cover migrate-create migrate-up migrate-down migrate-up-all migrate-down-all swagger proto logs losg-api logs-db logs-redis logs-clear
 
 # Команда по умолчанию
-all: run
+all: run-all
 
-# Запуск проекта
+# Запуск проекта целиком
+run-all:
+	@echo "Запуск всех микросервисов и API Gateway..."
+	@for service in $(ALL_SERVICES); do \
+		$(MAKE) run s=$$service; \
+	done
+	@echo "Все сервисы запущены в фоне, логи и PID процессов в директории .tmp_pids/"
+
+# Запуск конкретного сервиса.
+#
+# Каждому сервису явно прокидываем DATABASE_URL/RABBITMQ_URL/REDIS_URL, чтобы
+# случайные env-переменные из шелла (например, `DATABASE_URL=postgres://...nancats`,
+# оставшаяся от другого окружения) не «перебивали» yaml-конфиги. Префикс `VAR=...`
+# у nohup переопределяет наследуемое значение для дочернего процесса.
 run:
-	go run $(MAIN_PKG)
+	@if [ -z "$(s)" ]; then echo "Укажите сервис"; exit 1; fi
+	@if [ -f .tmp_pids/$(s).pid ]; then echo "Сервис уже запущен"; exit 1; fi
+	@echo "Запускаем..."
+	@if [ "$(s)" = "api-gateway" ]; then \
+		CONFIG_PATH=api-gateway/config.yaml \
+		RABBITMQ_URL='$(RABBITMQ_URL)' \
+		REDIS_URL='$(REDIS_URL)' \
+		nohup go run $(GATEWAY_PKG) > .tmp_pids/$(s).log 2>&1 & echo $$! > .tmp_pids/$(s).pid; \
+	else \
+		CONFIG_PATH=services/$(s)/config.yaml \
+		DATABASE_URL='$(call get_db_url,$(s))' \
+		RABBITMQ_URL='$(RABBITMQ_URL)' \
+		REDIS_URL='$(REDIS_URL)' \
+		nohup go run ./services/$(s)/cmd/main.go > .tmp_pids/$(s).log 2>&1 & echo $$! > .tmp_pids/$(s).pid; \
+	fi
+	@echo "Запуск $(s) завершен"
+
+# Команда для принудительной очистки портов занятых микросервисами
+kill-ports:
+	@for port in 8080 50051 50052 50053 50054 50055 50056 50057 50058; do \
+		PID=$$(lsof -t -i:$$port); \
+		if [ -n "$$PID" ]; then \
+			kill -9 $$PID; \
+		fi; \
+	done
+	rm -f .tmp_pids/*.pid
+
+# Остановка всего
+stop-all:
+	@echo "Останавливаем все сервисы..."
+	@for service in $(ALL_SERVICES); do \
+		$(MAKE) stop s=$$service; \
+	done
+	@echo "Все сервисы остановлены"
+
+# Маппинг service -> port (нужен, чтобы при stop добить и дочерний бинарь,
+# который go run спавнит в процесс-обёртку. Без этого `make stop && make run`
+# оставляет старый бинарь висеть на порту, и новая версия кода не подхватывается).
+PORT_api-gateway = 8080
+PORT_address     = 50051
+PORT_user        = 50052
+PORT_restaurant  = 50053
+PORT_auth        = 50054
+PORT_cart        = 50055
+PORT_payment     = 50056
+PORT_order       = 50057
+PORT_support     = 50058
+
+# Остановка конкретного сервиса.
+# Убиваем И обёртку `go run` (по pid-файлу), И дочерний бинарь (по порту),
+# иначе при `make stop && make run` старый бинарь остаётся висеть.
+stop:
+	@if [ -z "$(s)" ]; then echo "Укажите сервис"; exit 1; fi
+	@if [ -f .tmp_pids/$(s).pid ]; then \
+		kill -15 `cat .tmp_pids/$(s).pid` 2>/dev/null || true; \
+		rm -f .tmp_pids/$(s).pid; \
+	fi
+	@PORT=$(PORT_$(s)); \
+	if [ -n "$$PORT" ]; then \
+		CHILD_PID=$$(lsof -ti :$$PORT 2>/dev/null | head -1); \
+		if [ -n "$$CHILD_PID" ]; then \
+			kill -15 $$CHILD_PID 2>/dev/null || true; \
+			sleep 1; \
+			if kill -0 $$CHILD_PID 2>/dev/null; then kill -9 $$CHILD_PID 2>/dev/null || true; fi; \
+		fi; \
+	fi
+	@echo "Сервис $(s) остановлен"
+
+DC = docker compose
+
+# Запуск всех контейнеров в фоне с пересборкой
+d-up:
+	$(DC) up -d --build
+
+# Остановка и удаление контейнеров
+d-down:
+	$(DC) down
+
+# Перезапуск всех сервисов
+d-restart:
+	$(DC) restart
+
+# Полная пересборка без кэша
+d-rebuild:
+	$(DC) build --no-cache $(s)
+	$(DC) up -d $(s)
+
+# Посмотреть статус контейнеров
+d-ps:
+	$(DC) ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+# Просмотр работающих сервисов
+status:
+	@echo "Работающие сервисы:"
+	@ls .tmp_pids/*.pid 2>/dev/null | sed 's/.tmp_pids\///' | sed 's/.pid//' || echo "Нет запущенных сервисов"
+
 
 # Сборка бинарника
 build:
-	go build -o $(APP_NAME) $(MAIN_PKG)
+	go build -o $(APP_NAME) $(GATEWAY_PKG)
 
 # Удаление бинарника и временных файлов
-clean:
+clean: stop-all
 	rm -f $(APP_NAME)
 	rm -f $(COVERAGE_FILE)
+	rm -rf .tmp_pids
+	find shared/proto -name "*.pb.go" -type f -delete
 
 # Генерация моков
 gen:
-	go generate ./...
+	-go generate ./...
+
+# Генерация proto файлов
+PROTO_DIR = shared/proto
+# Находим все .proto файлы в директории рекурсивно
+PROTO_FILES = $(shell find $(PROTO_DIR) -name "*.proto")
+
+proto:
+	protoc -I $(PROTO_DIR) \
+		--go_out=$(PROTO_DIR) --go_opt=paths=source_relative \
+		--go-grpc_out=$(PROTO_DIR) --go-grpc_opt=paths=source_relative \
+		$(PROTO_FILES)
+	go generate ./shared/proto/...
+
+EXCLUDE_PATTERNS = "mock|\.pb\.go|_easyjson\.go|_tracing_mw\.go|main\.go|config\.go|docs\.go|tracer\.go|migrator\.go|debug_gen\.go"
 
 # Тестирование с правильным подсчетом покрытия
 test:
@@ -39,7 +179,7 @@ test:
 
 	@echo "\nОчистка покрытия от моков...\n"
 # Удаляем все строчки, где есть слово "mock", из файла покрытия
-	grep -Ev "mock|main.go|tracer.go|migrator.go|_easyjson" $(COVERAGE_FILE) > coverage_clean.out
+	grep -Ev $(EXCLUDE_PATTERNS) $(COVERAGE_FILE) > coverage_clean.out
 	mv coverage_clean.out $(COVERAGE_FILE)
 
 	@echo "\nИтоговое покрытие кода:\n"
@@ -56,20 +196,43 @@ cover: test
 
 # --- РАБОТА С БД ---
 
-# Создать новую миграцию (например: make migrate-create name=add_users_table)
-migrate-create:
-	migrate create -ext sql -dir db/migrations -seq $(name)
+define get_db_url
+postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(1)_db?sslmode=disable
+endef
 
-# Накатить миграции
+# Создать новую миграцию (например: make migrate-create s=user name=add_users)
+migrate-create:
+	@if [ -z "$(s)" ]; then echo "Укажите сервис"; exit 1; fi
+	migrate create -ext sql -dir services/$(s)/db/migrations -seq $(name)
+
+# Накатить миграции для всех сервисов
+migrate-up-all:
+	@echo "Накатываем миграции для всех сервисов..."
+	@for service in $(MICROSERVICES); do \
+		$(MAKE) migrate-up s=$$service; \
+	done
+
+# Накатить миграции конкретного сервиса (make migrate-up s=user)
 migrate-up:
-	docker compose exec backend ./migrate -path db/migrations -database "$(DATABASE_URL)" up
+	@if [ -z "$(s)" ]; then echo "Укажите сервис"; exit 1; fi
+	@echo "Migrating UP: $(s)..."
+	migrate -path ./services/$(s)/db/migrations -database "$(call get_db_url,$(s))" up
+
+# Откатить миграции для всех сервисов
+migrate-down-all:
+	@echo "Откатываем миграции для всех сервисов..."
+	@for service in $(MICROSERVICES); do \
+		$(MAKE) migrate-down s=$$service; \
+	done
 
 # Откатить последнюю миграцию
 migrate-down:
-	docker compose exec backend ./migrate -path db/migrations -database "$(DATABASE_URL)" down
+	@if [ -z "$(s)" ]; then echo "Укажите сервис"; exit 1; fi
+	@echo "Migrating DOWN: $(s)..."
+	migrate -path ./services/$(s)/db/migrations -database "$(call get_db_url,$(s))" down
 
 swagger:
-	swag init -g $(MAIN_PKG) --parseInternal --parseDependency
+	swag init -g $(GATEWAY_PKG) --parseInternal --parseDependency
 
 # --- ЛОГИ ---
 
@@ -78,7 +241,12 @@ logs:
 
 # Логи только бэкенда (Go приложение)
 logs-api:
-	docker logs -f go_backend
+	tail -f .tmp_pids/api_gateway.log
+
+# Логи конкретного микросервиса (пример: make logs-s s=user)
+logs-s:
+	@if [ -z "$(s)" ]; then echo "Укажите сервис"; exit 1; fi
+	tail -f .tmp_pids/$(s).log
 
 # Логи базы данных (PostgreSQL + PostGIS)
 logs-db:
@@ -96,3 +264,4 @@ logs-tail:
 # это требует прав sudo или доступа к папке docker
 logs-clear:
 	sudo sh -c "truncate -s 0 /var/lib/docker/containers/*/*-json.log"
+	rm -f .tmp_pids/*.log

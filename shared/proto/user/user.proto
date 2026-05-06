@@ -1,0 +1,130 @@
+syntax = "proto3";
+
+package user;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/user";
+
+// Микросервис пользователей
+service UserService {
+  // Метод создания базового пользователя
+  rpc CreateUser (CreateUserRequest) returns (CreateUserResponse);
+  // Создание профиля клиента
+  rpc CreateClientProfile (CreateClientProfileRequest) returns (google.protobuf.Empty);
+  // Метод обновления данных профиля пользователя
+  rpc UpdateProfile (UpdateProfileRequest) returns (google.protobuf.Empty);
+  // Метод загрузки аватарки
+  rpc UpdateAvatar (UpdateAvatarRequest) returns (UpdateAvatarResponse);
+  // Метод удаления аватарки (Сброс на дефолтную)
+  rpc DeleteAvatar (DeleteAvatarRequest) returns (DeleteAvatarResponse);
+  // Метод получения пользователя по его ID
+  rpc GetByID (GetUserByIDRequest) returns (GetUserResponse);
+  // Метод получения пользователя по его почте
+  rpc GetByEmail (GetUserByEmailRequest) returns (GetUserResponse);
+  // Метод проверка пользователя на существование
+  rpc CheckUserExists (CheckUserExistsRequest) returns (CheckUserExistsResponse);
+  // Метод получения данных для профиля юзера
+  rpc GetUserProfile (GetUserProfileRequest) returns (GetUserProfileResponse);
+  // Метод смены роли пользователя
+  rpc UpdateUserRole (UpdateUserRoleRequest) returns (google.protobuf.Empty);
+}
+
+
+message User {
+  int64 id = 1;
+  string name = 2;
+  string email = 3;
+  string role = 4;
+  string avatar_url = 5;
+  string password_hash = 6;
+}
+
+message ClientProfile {
+  int64 account_id = 1;
+  int64 bonus_balance = 2;
+  optional int64 bonus_category_id = 3;
+  google.protobuf.Timestamp bonus_category_expires_at = 4;
+  google.protobuf.Timestamp bonus_expires_at = 5;
+  int32 streak_count = 6;
+  google.protobuf.Timestamp last_order_date = 7;
+  google.protobuf.Timestamp premium_expires_at = 8;
+}
+
+message CreateUserRequest {
+  string name = 1;
+  string email = 2;
+  string password = 3;
+  string idempotency_key = 4;
+}
+
+message CreateUserResponse {
+  int64 user_id = 1;
+}
+
+message CreateClientProfileRequest {
+  int64 user_id = 1;
+  string idempotency_key = 2;
+}
+
+message UpdateProfileRequest {
+  int64 user_id = 1;
+  optional string name = 2;
+  optional string email = 3;
+  string idempotency_key = 4;
+}
+
+message UpdateAvatarRequest {
+  int64 user_id = 1;
+  bytes image_data = 2;
+  string idempotency_key = 3;
+}
+
+message UpdateAvatarResponse {
+  string avatar_url = 1;
+}
+
+message DeleteAvatarRequest {
+  int64 user_id = 1;
+  string idempotency_key = 2;
+}
+
+message DeleteAvatarResponse {
+  string default_avatar_url = 1;
+}
+
+message GetUserByIDRequest {
+  int64 user_id = 1;
+}
+
+message GetUserByEmailRequest {
+  string email = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+}
+
+message CheckUserExistsRequest {
+  int64 user_id = 1;
+}
+
+message CheckUserExistsResponse {
+  bool exists = 1;
+}
+
+message GetUserProfileRequest {
+  int64 user_id = 1;
+}
+
+message GetUserProfileResponse {
+  User user = 1;
+  ClientProfile profile = 2;
+}
+
+message UpdateUserRoleRequest {
+  int64 user_id = 1;
+  string new_role = 2;
+  string idempotency_key = 3;
+}

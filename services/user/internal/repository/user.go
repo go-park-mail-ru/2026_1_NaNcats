@@ -1,0 +1,27 @@
+package repository
+
+import (
+	"context"
+
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/domain"
+)
+
+// контракт репозитория пользователей
+//
+//go:generate mockgen -destination=mocks/user_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/repository UserRepository
+type UserRepository interface {
+	// метод создания юзера в репозитории, возвращает userID
+	CreateUser(ctx context.Context, user domain.User, idempotencyKey string) (int64, error)
+	// метод нахождения пользователя по email'у, возвращает юзера
+	GetUserByEmail(ctx context.Context, email string) (domain.User, error)
+	// метод нахождения пользователей по id, возвращает юзера
+	GetUserByID(ctx context.Context, id int64) (domain.User, error)
+	// метод для проверки существования юзера по ID
+	CheckUserByID(ctx context.Context, userID int64) (bool, error)
+	// метод для обновления полей юзера
+	UpdateProfile(ctx context.Context, userID int64, name, email *string) error
+	// метод для обновления URL аватара
+	UpdateAvatarURL(ctx context.Context, userID int64, newAvatarURL string) error
+	// метод для изменения роли юзера
+	UpdateUserRole(ctx context.Context, userID int64, newRole string, idempotencyKey string) (string, bool, error)
+}
