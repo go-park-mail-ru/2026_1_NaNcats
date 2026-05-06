@@ -46,7 +46,7 @@ type OrderServiceClient interface {
 	// чтобы вручную опросить YooKassa без полагания на её webhook).
 	GetOrderPaymentID(ctx context.Context, in *GetOrderPaymentIDRequest, opts ...grpc.CallOption) (*GetOrderPaymentIDResponse, error)
 	// Помечает заказ как cancelled. Доступно только владельцу и только пока
-	// заказ ещё не payed/in_progress.
+	// заказ ещё не payed/in_progress
 	CancelOrder(ctx context.Context, in *CancelOrderRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -136,7 +136,7 @@ type OrderServiceServer interface {
 	// чтобы вручную опросить YooKassa без полагания на её webhook).
 	GetOrderPaymentID(context.Context, *GetOrderPaymentIDRequest) (*GetOrderPaymentIDResponse, error)
 	// Помечает заказ как cancelled. Доступно только владельцу и только пока
-	// заказ ещё не payed/in_progress.
+	// заказ ещё не payed/in_progress
 	CancelOrder(context.Context, *CancelOrderRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedOrderServiceServer()
 }
