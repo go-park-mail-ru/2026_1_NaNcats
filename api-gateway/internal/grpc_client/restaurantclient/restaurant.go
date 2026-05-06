@@ -232,18 +232,20 @@ func (c *restaurantClient) GetRestaurantBrandsByCategoryName(ctx context.Context
 	return brands, nil
 }
 
-func (c *restaurantClient) CreateRestaurantBrand(ctx context.Context, ownerID int64, name, desc string, logo []byte, idemKey string) (*pbRestaurant.RestaurantBrand, error) {
-	resp, err := c.client.CreateRestaurantBrand(ctx, &pbRestaurant.CreateBrandRequest{
+func (c *restaurantClient) CreateRestaurantBrand(ctx context.Context, ownerID int64, name, desc string, logo []byte, idemKey string) (RestaurantBrand, error) {
+	pbResp, err := c.client.CreateRestaurantBrand(ctx, &pbRestaurant.CreateBrandRequest{
 		OwnerId:        ownerID,
 		Name:           name,
 		Description:    desc,
 		LogoData:       logo,
 		IdempotencyKey: idemKey,
 	})
+
+	resp := mapPBRestaurant(pbResp)
 	return resp, err
 }
 
-func (c *restaurantClient) UpdateRestaurantBrand(ctx context.Context, id int64, name, desc *string, logo []byte, tier *int32, idemKey string) (*pbRestaurant.RestaurantBrand, error) {
+func (c *restaurantClient) UpdateRestaurantBrand(ctx context.Context, id int64, name, desc *string, logo []byte, tier *int32, idemKey string) (RestaurantBrand, error) {
 	req := &pbRestaurant.UpdateBrandRequest{
 		Id:             id,
 		LogoData:       logo,
@@ -259,7 +261,9 @@ func (c *restaurantClient) UpdateRestaurantBrand(ctx context.Context, id int64, 
 		req.PromotionTier = tier
 	}
 
-	return c.client.UpdateRestaurantBrand(ctx, req)
+	pbResp, err := c.client.UpdateRestaurantBrand(ctx, req)
+	resp := mapPBRestaurant(pbResp)
+	return resp, err
 }
 
 func (c *restaurantClient) DeleteRestaurantBrand(ctx context.Context, id int64) error {
@@ -267,8 +271,8 @@ func (c *restaurantClient) DeleteRestaurantBrand(ctx context.Context, id int64) 
 	return err
 }
 
-func (c *restaurantClient) CreateDish(ctx context.Context, brandID int64, name, desc string, price int64, image []byte, idemKey string) (*pbRestaurant.Dish, error) {
-	resp, err := c.client.CreateDish(ctx, &pbRestaurant.CreateDishRequest{
+func (c *restaurantClient) CreateDish(ctx context.Context, brandID int64, name, desc string, price int64, image []byte, idemKey string) (Dish, error) {
+	pbResp, err := c.client.CreateDish(ctx, &pbRestaurant.CreateDishRequest{
 		RestaurantBrandId: brandID,
 		Name:              name,
 		Description:       desc,
@@ -276,10 +280,12 @@ func (c *restaurantClient) CreateDish(ctx context.Context, brandID int64, name, 
 		ImageData:         image,
 		IdempotencyKey:    idemKey,
 	})
+
+	resp := mapPBDish(pbResp)
 	return resp, err
 }
 
-func (c *restaurantClient) UpdateDish(ctx context.Context, id int64, name, desc *string, price *int64, image []byte, idemKey string) (*pbRestaurant.Dish, error) {
+func (c *restaurantClient) UpdateDish(ctx context.Context, id int64, name, desc *string, price *int64, image []byte, idemKey string) (Dish, error) {
 	req := &pbRestaurant.UpdateDishRequest{
 		Id:             id,
 		ImageData:      image,
@@ -295,7 +301,9 @@ func (c *restaurantClient) UpdateDish(ctx context.Context, id int64, name, desc 
 		req.Price = price
 	}
 
-	return c.client.UpdateDish(ctx, req)
+	pbResp, err := c.client.UpdateDish(ctx, req)
+	resp := mapPBDish(pbResp)
+	return resp, err
 }
 
 func (c *restaurantClient) DeleteDish(ctx context.Context, id int64) error {

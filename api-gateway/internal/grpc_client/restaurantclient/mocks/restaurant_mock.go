@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	restaurant "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
+	restaurantclient "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/restaurantclient"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -42,10 +42,10 @@ func (m *MockRestaurantClient) EXPECT() *MockRestaurantClientMockRecorder {
 }
 
 // CreateDish mocks base method.
-func (m *MockRestaurantClient) CreateDish(ctx context.Context, brandID int64, name, desc string, price int64, image []byte, idemKey string) (*restaurant.Dish, error) {
+func (m *MockRestaurantClient) CreateDish(ctx context.Context, brandID int64, name, desc string, price int64, image []byte, idemKey string) (restaurantclient.Dish, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateDish", ctx, brandID, name, desc, price, image, idemKey)
-	ret0, _ := ret[0].(*restaurant.Dish)
+	ret0, _ := ret[0].(restaurantclient.Dish)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -57,10 +57,10 @@ func (mr *MockRestaurantClientMockRecorder) CreateDish(ctx, brandID, name, desc,
 }
 
 // CreateRestaurantBrand mocks base method.
-func (m *MockRestaurantClient) CreateRestaurantBrand(ctx context.Context, ownerID int64, name, desc string, logo []byte, idemKey string) (*restaurant.RestaurantBrand, error) {
+func (m *MockRestaurantClient) CreateRestaurantBrand(ctx context.Context, ownerID int64, name, desc string, logo []byte, idemKey string) (restaurantclient.RestaurantBrand, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateRestaurantBrand", ctx, ownerID, name, desc, logo, idemKey)
-	ret0, _ := ret[0].(*restaurant.RestaurantBrand)
+	ret0, _ := ret[0].(restaurantclient.RestaurantBrand)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -99,11 +99,26 @@ func (mr *MockRestaurantClientMockRecorder) DeleteRestaurantBrand(ctx, id any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRestaurantBrand", reflect.TypeOf((*MockRestaurantClient)(nil).DeleteRestaurantBrand), ctx, id)
 }
 
+// GetCategories mocks base method.
+func (m *MockRestaurantClient) GetCategories(ctx context.Context) ([]restaurantclient.Category, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCategories", ctx)
+	ret0, _ := ret[0].([]restaurantclient.Category)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCategories indicates an expected call of GetCategories.
+func (mr *MockRestaurantClientMockRecorder) GetCategories(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCategories", reflect.TypeOf((*MockRestaurantClient)(nil).GetCategories), ctx)
+}
+
 // GetDishByID mocks base method.
-func (m *MockRestaurantClient) GetDishByID(ctx context.Context, dishID int64) (*restaurant.Dish, error) {
+func (m *MockRestaurantClient) GetDishByID(ctx context.Context, dishID int64) (restaurantclient.Dish, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDishByID", ctx, dishID)
-	ret0, _ := ret[0].(*restaurant.Dish)
+	ret0, _ := ret[0].(restaurantclient.Dish)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -115,10 +130,10 @@ func (mr *MockRestaurantClientMockRecorder) GetDishByID(ctx, dishID any) *gomock
 }
 
 // GetDishesByIDs mocks base method.
-func (m *MockRestaurantClient) GetDishesByIDs(ctx context.Context, dishIDs []int64) ([]*restaurant.Dish, error) {
+func (m *MockRestaurantClient) GetDishesByIDs(ctx context.Context, dishIDs []int64) ([]restaurantclient.Dish, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDishesByIDs", ctx, dishIDs)
-	ret0, _ := ret[0].([]*restaurant.Dish)
+	ret0, _ := ret[0].([]restaurantclient.Dish)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -130,10 +145,10 @@ func (mr *MockRestaurantClientMockRecorder) GetDishesByIDs(ctx, dishIDs any) *go
 }
 
 // GetDishesByRestaurantBrandID mocks base method.
-func (m *MockRestaurantClient) GetDishesByRestaurantBrandID(ctx context.Context, brandID int64, limit, offset int32) ([]*restaurant.Dish, error) {
+func (m *MockRestaurantClient) GetDishesByRestaurantBrandID(ctx context.Context, brandID int64, limit, offset int32) ([]restaurantclient.Dish, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDishesByRestaurantBrandID", ctx, brandID, limit, offset)
-	ret0, _ := ret[0].([]*restaurant.Dish)
+	ret0, _ := ret[0].([]restaurantclient.Dish)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -145,10 +160,10 @@ func (mr *MockRestaurantClientMockRecorder) GetDishesByRestaurantBrandID(ctx, br
 }
 
 // GetRestaurantBrandByID mocks base method.
-func (m *MockRestaurantClient) GetRestaurantBrandByID(ctx context.Context, id int64) (*restaurant.RestaurantBrand, error) {
+func (m *MockRestaurantClient) GetRestaurantBrandByID(ctx context.Context, id int64) (restaurantclient.RestaurantBrand, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRestaurantBrandByID", ctx, id)
-	ret0, _ := ret[0].(*restaurant.RestaurantBrand)
+	ret0, _ := ret[0].(restaurantclient.RestaurantBrand)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -159,11 +174,26 @@ func (mr *MockRestaurantClientMockRecorder) GetRestaurantBrandByID(ctx, id any) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestaurantBrandByID", reflect.TypeOf((*MockRestaurantClient)(nil).GetRestaurantBrandByID), ctx, id)
 }
 
+// GetRestaurantBrandsByCategoryName mocks base method.
+func (m *MockRestaurantClient) GetRestaurantBrandsByCategoryName(ctx context.Context, categoryName string, limit, offset int32) ([]restaurantclient.RestaurantBrand, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRestaurantBrandsByCategoryName", ctx, categoryName, limit, offset)
+	ret0, _ := ret[0].([]restaurantclient.RestaurantBrand)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRestaurantBrandsByCategoryName indicates an expected call of GetRestaurantBrandsByCategoryName.
+func (mr *MockRestaurantClientMockRecorder) GetRestaurantBrandsByCategoryName(ctx, categoryName, limit, offset any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestaurantBrandsByCategoryName", reflect.TypeOf((*MockRestaurantClient)(nil).GetRestaurantBrandsByCategoryName), ctx, categoryName, limit, offset)
+}
+
 // GetRestaurantBrandsList mocks base method.
-func (m *MockRestaurantClient) GetRestaurantBrandsList(ctx context.Context, limit, offset int32) ([]*restaurant.RestaurantBrand, error) {
+func (m *MockRestaurantClient) GetRestaurantBrandsList(ctx context.Context, limit, offset int32) ([]restaurantclient.RestaurantBrand, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRestaurantBrandsList", ctx, limit, offset)
-	ret0, _ := ret[0].([]*restaurant.RestaurantBrand)
+	ret0, _ := ret[0].([]restaurantclient.RestaurantBrand)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -172,36 +202,6 @@ func (m *MockRestaurantClient) GetRestaurantBrandsList(ctx context.Context, limi
 func (mr *MockRestaurantClientMockRecorder) GetRestaurantBrandsList(ctx, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestaurantBrandsList", reflect.TypeOf((*MockRestaurantClient)(nil).GetRestaurantBrandsList), ctx, limit, offset)
-}
-
-// GetRestaurantBrandsListByCategory mocks base method.
-func (m *MockRestaurantClient) GetRestaurantBrandsListByCategory(ctx context.Context, categoryID int64, limit, offset int32) ([]*restaurant.RestaurantBrand, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRestaurantBrandsListByCategory", ctx, categoryID, limit, offset)
-	ret0, _ := ret[0].([]*restaurant.RestaurantBrand)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetRestaurantBrandsListByCategory indicates an expected call of GetRestaurantBrandsListByCategory.
-func (mr *MockRestaurantClientMockRecorder) GetRestaurantBrandsListByCategory(ctx, categoryID, limit, offset any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestaurantBrandsListByCategory", reflect.TypeOf((*MockRestaurantClient)(nil).GetRestaurantBrandsListByCategory), ctx, categoryID, limit, offset)
-}
-
-// GetRestaurantBrandsListByCategoryName mocks base method.
-func (m *MockRestaurantClient) GetRestaurantBrandsListByCategoryName(ctx context.Context, categoryName string, limit, offset int32) ([]*restaurant.RestaurantBrand, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRestaurantBrandsListByCategoryName", ctx, categoryName, limit, offset)
-	ret0, _ := ret[0].([]*restaurant.RestaurantBrand)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetRestaurantBrandsListByCategoryName indicates an expected call of GetRestaurantBrandsListByCategoryName.
-func (mr *MockRestaurantClientMockRecorder) GetRestaurantBrandsListByCategoryName(ctx, categoryName, limit, offset any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestaurantBrandsListByCategoryName", reflect.TypeOf((*MockRestaurantClient)(nil).GetRestaurantBrandsListByCategoryName), ctx, categoryName, limit, offset)
 }
 
 // GetRestaurantLogos mocks base method.
@@ -220,10 +220,10 @@ func (mr *MockRestaurantClientMockRecorder) GetRestaurantLogos(ctx, brandIDs any
 }
 
 // SearchDishes mocks base method.
-func (m *MockRestaurantClient) SearchDishes(ctx context.Context, query string, limit int32) ([]*restaurant.Dish, error) {
+func (m *MockRestaurantClient) SearchDishes(ctx context.Context, query string, limit int32) ([]restaurantclient.Dish, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SearchDishes", ctx, query, limit)
-	ret0, _ := ret[0].([]*restaurant.Dish)
+	ret0, _ := ret[0].([]restaurantclient.Dish)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -235,10 +235,10 @@ func (mr *MockRestaurantClientMockRecorder) SearchDishes(ctx, query, limit any) 
 }
 
 // SearchDishesByBrand mocks base method.
-func (m *MockRestaurantClient) SearchDishesByBrand(ctx context.Context, brandID int64, query string, limit int32) ([]*restaurant.Dish, error) {
+func (m *MockRestaurantClient) SearchDishesByBrand(ctx context.Context, brandID int64, query string, limit int32) ([]restaurantclient.Dish, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SearchDishesByBrand", ctx, brandID, query, limit)
-	ret0, _ := ret[0].([]*restaurant.Dish)
+	ret0, _ := ret[0].([]restaurantclient.Dish)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -250,10 +250,10 @@ func (mr *MockRestaurantClientMockRecorder) SearchDishesByBrand(ctx, brandID, qu
 }
 
 // SearchRestaurantBrands mocks base method.
-func (m *MockRestaurantClient) SearchRestaurantBrands(ctx context.Context, query string, limit, offset int32) ([]*restaurant.RestaurantBrand, error) {
+func (m *MockRestaurantClient) SearchRestaurantBrands(ctx context.Context, query string, limit, offset int32) ([]restaurantclient.RestaurantBrand, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SearchRestaurantBrands", ctx, query, limit, offset)
-	ret0, _ := ret[0].([]*restaurant.RestaurantBrand)
+	ret0, _ := ret[0].([]restaurantclient.RestaurantBrand)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -265,10 +265,10 @@ func (mr *MockRestaurantClientMockRecorder) SearchRestaurantBrands(ctx, query, l
 }
 
 // UpdateDish mocks base method.
-func (m *MockRestaurantClient) UpdateDish(ctx context.Context, id int64, name, desc *string, price *int64, image []byte, idemKey string) (*restaurant.Dish, error) {
+func (m *MockRestaurantClient) UpdateDish(ctx context.Context, id int64, name, desc *string, price *int64, image []byte, idemKey string) (restaurantclient.Dish, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateDish", ctx, id, name, desc, price, image, idemKey)
-	ret0, _ := ret[0].(*restaurant.Dish)
+	ret0, _ := ret[0].(restaurantclient.Dish)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -280,10 +280,10 @@ func (mr *MockRestaurantClientMockRecorder) UpdateDish(ctx, id, name, desc, pric
 }
 
 // UpdateRestaurantBrand mocks base method.
-func (m *MockRestaurantClient) UpdateRestaurantBrand(ctx context.Context, id int64, name, desc *string, logo []byte, tier *int32, idemKey string) (*restaurant.RestaurantBrand, error) {
+func (m *MockRestaurantClient) UpdateRestaurantBrand(ctx context.Context, id int64, name, desc *string, logo []byte, tier *int32, idemKey string) (restaurantclient.RestaurantBrand, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateRestaurantBrand", ctx, id, name, desc, logo, tier, idemKey)
-	ret0, _ := ret[0].(*restaurant.RestaurantBrand)
+	ret0, _ := ret[0].(restaurantclient.RestaurantBrand)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
