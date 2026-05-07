@@ -35,25 +35,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Статистика успешно получена",
                         "schema": {
-                            "$ref": "#/definitions/supportclient.SupportStats"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_grpc_client_supportclient.SupportStats"
                         }
                     },
                     "401": {
                         "description": "Пользователь не авторизован",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Недостаточно прав (требуется роль admin или support)",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -85,7 +85,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.UpdateRoleRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_user.UpdateRoleRequest"
                         }
                     }
                 ],
@@ -112,7 +112,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.SetAgentStatusRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_support.SetAgentStatusRequest"
                         }
                     }
                 ],
@@ -120,25 +120,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Статус успешно обновлен",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.SuccessResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_support.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Ошибка запроса",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Неавторизован",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -165,20 +165,20 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/support.TemplateDTO"
+                                "$ref": "#/definitions/api-gateway_internal_delivery_http_support.TemplateDTO"
                             }
                         }
                     },
                     "401": {
                         "description": "Неавторизован",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -200,20 +200,20 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/support.TicketDTO"
+                                "$ref": "#/definitions/api-gateway_internal_delivery_http_support.TicketDTO"
                             }
                         }
                     },
                     "401": {
                         "description": "Неавторизован",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -253,7 +253,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.ReassignTicketRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_support.ReassignTicketRequest"
                         }
                     }
                 ],
@@ -261,25 +261,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Тикет успешно переназначен",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.SuccessResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_support.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Ошибка запроса",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Неавторизован",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -319,7 +319,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/support.ChangeStatusRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_support.ChangeStatusRequest"
                         }
                     }
                 ],
@@ -327,25 +327,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Статус успешно изменен",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.SuccessResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_support.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Ошибка запроса",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Неавторизован",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -370,7 +370,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/cart.CartResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_cart.CartResponse"
                         }
                     },
                     "401": {
@@ -424,7 +424,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/cart.BasicCartOperationRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_cart.BasicCartOperationRequest"
                         }
                     }
                 ],
@@ -509,7 +509,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/cart.BasicCartOperationRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_cart.BasicCartOperationRequest"
                         }
                     }
                 ],
@@ -590,7 +590,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/cart.InviteResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_cart.InviteResponse"
                         }
                     },
                     "401": {
@@ -655,7 +655,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_cart.UpdateQuantityRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_cart.UpdateQuantityRequest"
                         }
                     }
                 ],
@@ -738,7 +738,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_cart.AddItemRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_cart.AddItemRequest"
                         }
                     }
                 ],
@@ -821,7 +821,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_cart.RemoveItemRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_cart.RemoveItemRequest"
                         }
                     }
                 ],
@@ -906,7 +906,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_cart.ReassignOwnerRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_cart.ReassignOwnerRequest"
                         }
                     }
                 ],
@@ -984,7 +984,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_cart.JoinCartRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_cart.JoinCartRequest"
                         }
                     }
                 ],
@@ -1069,7 +1069,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/cart.KickMemberRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_cart.KickMemberRequest"
                         }
                     }
                 ],
@@ -1154,7 +1154,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_order.CreateOrderRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_order.CreateOrderRequest"
                         }
                     }
                 ],
@@ -1162,7 +1162,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Заказ успешно создан (ссылки на оплату придут по WS)",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_order.CreateOrderResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_order.CreateOrderResponse"
                         }
                     },
                     "400": {
@@ -1243,7 +1243,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_order.PayForFriendRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_order.PayForFriendRequest"
                         }
                     }
                 ],
@@ -1308,7 +1308,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/order.OrderHistoryResponse"
+                                "$ref": "#/definitions/api-gateway_internal_delivery_http_order.OrderHistoryResponse"
                             }
                         }
                     },
@@ -1445,7 +1445,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_auth.LoginRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_auth.LoginRequest"
                         }
                     }
                 ],
@@ -1453,25 +1453,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешный вход",
                         "schema": {
-                            "$ref": "#/definitions/auth.LoginResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_auth.LoginResponse"
                         }
                     },
                     "400": {
                         "description": "Неверный формат JSON",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Неверный логин или пароль",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -1514,19 +1514,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешный вход и создание сессии",
                         "schema": {
-                            "$ref": "#/definitions/auth.LoginResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_auth.LoginResponse"
                         }
                     },
                     "401": {
                         "description": "Неавторизован",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -1552,7 +1552,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/auth.RegisterRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_auth.RegisterRequest"
                         }
                     }
                 ],
@@ -1560,25 +1560,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Успешная регистрация",
                         "schema": {
-                            "$ref": "#/definitions/auth.RegisterResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_auth.RegisterResponse"
                         }
                     },
                     "400": {
                         "description": "Ошибка валидации (email/пароль)",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Пользователь с такой почтой уже существует",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -1586,10 +1586,7 @@ const docTemplate = `{
         },
         "/categories": {
             "get": {
-                "description": "Возвращает статический список доступных категорий кухни с их идентификаторами и эмодзи",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Возвращает актуальный список доступных категорий кухни с их идентификаторами и эмодзи из БД",
                 "produces": [
                     "application/json"
                 ],
@@ -1601,7 +1598,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное получение списка категорий",
                         "schema": {
-                            "$ref": "#/definitions/restaurant.CategoriesResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_restaurant.CategoriesResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -1609,10 +1612,7 @@ const docTemplate = `{
         },
         "/categories/{slug}/restaurants": {
             "get": {
-                "description": "Возвращает список брендов ресторанов, отфильтрованный по переданному слагу категории (например: pizza, sushi)",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Возвращает список брендов ресторанов, отфильтрованный по переданному названию категории",
                 "produces": [
                     "application/json"
                 ],
@@ -1623,7 +1623,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Слаг категории",
+                        "description": "Название (или слаг) категории",
                         "name": "slug",
                         "in": "path",
                         "required": true
@@ -1645,19 +1645,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное получение ресторанов по категории",
                         "schema": {
-                            "$ref": "#/definitions/restaurant.RestaurantBrandsResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_restaurant.RestaurantBrandsResponse"
                         }
                     },
                     "400": {
-                        "description": "Отсутствует слаг категории",
+                        "description": "Отсутствует идентификатор категории",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -1677,13 +1677,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное получение токена или сообщение об отсутствии сессии",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_auth.CSRFResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_auth.CSRFResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -1724,99 +1724,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Отсутствует ID заказа или ошибка при отмене",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Неавторизован",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Доступ запрещен",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Заказ не найден",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/order/{id}/check-payment": {
-            "get": {
-                "description": "Для dev-окружения: актуализирует статус платежа через YooKassa REST, эмулируя webhook.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "order"
-                ],
-                "summary": "Проверка статуса платежа",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "ID заказа",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Успешное обновление статуса",
-                        "schema": {
-                            "$ref": "#/definitions/order.CheckPaymentResponse"
-                        }
-                    },
-                    "202": {
-                        "description": "Платеж еще не готов (pending)",
-                        "schema": {
-                            "$ref": "#/definitions/order.CheckPaymentResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Отсутствует ID заказа",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Неавторизован",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Доступ запрещен",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Заказ или платеж не найден",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Внутренняя ошибка сервера",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -1839,19 +1771,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное получение данных профиля",
                         "schema": {
-                            "$ref": "#/definitions/user.UserProfileResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_user.UserProfileResponse"
                         }
                     },
                     "404": {
                         "description": "Пользователь не найден",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -1875,7 +1807,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.UserProfileUpdateRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_user.UserProfileUpdateRequest"
                         }
                     }
                 ],
@@ -1892,19 +1824,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Ошибка валидации JSON или нет данных для обновления",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Указанный email уже используется другим пользователем",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -1924,19 +1856,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Список адресов пользователя",
                         "schema": {
-                            "$ref": "#/definitions/address.AddressListResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_address.AddressListResponse"
                         }
                     },
                     "401": {
                         "description": "Неавторизован",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -1960,7 +1892,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/address.AddressRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_address.AddressRequest"
                         }
                     }
                 ],
@@ -1968,25 +1900,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Успешное создание (возвращает public_id)",
                         "schema": {
-                            "$ref": "#/definitions/address.CreateAddressResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_address.CreateAddressResponse"
                         }
                     },
                     "400": {
                         "description": "Ошибка в формате запроса",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Неавторизован",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -2012,19 +1944,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Адрес успешно удален",
                         "schema": {
-                            "$ref": "#/definitions/address.MessageResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_address.MessageResponse"
                         }
                     },
                     "401": {
                         "description": "Неавторизован",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -2055,7 +1987,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/address.AddressRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_address.AddressRequest"
                         }
                     }
                 ],
@@ -2063,25 +1995,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Адрес успешно обновлен",
                         "schema": {
-                            "$ref": "#/definitions/address.MessageResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_address.MessageResponse"
                         }
                     },
                     "400": {
                         "description": "Ошибка в формате запроса",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Неавторизован",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -2113,19 +2045,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Аватар успешно обновлен",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_user.UpdateAvatarResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_user.UpdateAvatarResponse"
                         }
                     },
                     "400": {
                         "description": "Ошибка запроса (файл слишком большой, неверный формат или отсутствует)",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -2143,13 +2075,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Аватар успешно удален",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_user.UpdateAvatarResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_user.UpdateAvatarResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -2172,7 +2104,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/payment.PaymentMethodResponse"
+                                "$ref": "#/definitions/api-gateway_internal_delivery_http_payment.PaymentMethodResponse"
                             }
                         }
                     },
@@ -2212,7 +2144,7 @@ const docTemplate = `{
                     "200": {
                         "description": "URL для подтверждения привязки",
                         "schema": {
-                            "$ref": "#/definitions/payment.BindingResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_payment.BindingResponse"
                         }
                     },
                     "401": {
@@ -2293,9 +2225,6 @@ const docTemplate = `{
         "/restaurants": {
             "get": {
                 "description": "Возвращает список всех брендов ресторанов с поддержкой пагинации",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2321,13 +2250,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное получение списка ресторанов",
                         "schema": {
-                            "$ref": "#/definitions/restaurant.RestaurantBrandsResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_restaurant.RestaurantBrandsResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -2336,9 +2265,6 @@ const docTemplate = `{
         "/restaurants/{id}": {
             "get": {
                 "description": "Возвращает детальную информацию о бренде ресторана по его уникальному идентификатору",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2348,7 +2274,7 @@ const docTemplate = `{
                 "summary": "Получение ресторана по ID",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "ID ресторана",
                         "name": "id",
                         "in": "path",
@@ -2359,25 +2285,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное получение ресторана",
                         "schema": {
-                            "$ref": "#/definitions/restaurant.RestaurantBrandResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_restaurant.RestaurantBrandResponse"
                         }
                     },
                     "400": {
                         "description": "Неверный формат ID",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Ресторан не найден",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -2386,9 +2312,6 @@ const docTemplate = `{
         "/restaurants/{id}/dishes": {
             "get": {
                 "description": "Возвращает список блюд для конкретного ресторана с возможностью пагинации и поиска по названию",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2398,7 +2321,7 @@ const docTemplate = `{
                 "summary": "Получение списка блюд ресторана",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "ID ресторана",
                         "name": "id",
                         "in": "path",
@@ -2427,25 +2350,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное получение списка блюд",
                         "schema": {
-                            "$ref": "#/definitions/restaurant.DishesResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_restaurant.DishesResponse"
                         }
                     },
                     "400": {
                         "description": "Неверный формат ID ресторана",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Блюда или ресторан не найдены",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -2474,13 +2397,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное получение отзывов",
                         "schema": {
-                            "$ref": "#/definitions/review.ReviewsResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_review.ReviewsResponse"
                         }
                     },
                     "400": {
                         "description": "Неверный ID ресторана",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -2511,7 +2434,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/review.CreateReviewRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_review.CreateReviewRequest"
                         }
                     }
                 ],
@@ -2519,13 +2442,13 @@ const docTemplate = `{
                     "201": {
                         "description": "Отзыв успешно создан",
                         "schema": {
-                            "$ref": "#/definitions/review.Review"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_review.Review"
                         }
                     },
                     "400": {
                         "description": "Неверный формат JSON, ID ресторана или ошибка валидации полей",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -2534,9 +2457,6 @@ const docTemplate = `{
         "/search": {
             "get": {
                 "description": "Осуществляет поиск по ресторанам и блюдам на основе переданного ключевого слова",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2560,7 +2480,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "Смещение для пагинации (по умолчанию 0)",
+                        "description": "Смещение для пагинации (по умолчанию 0, применяется к ресторанам)",
                         "name": "offset",
                         "in": "query"
                     }
@@ -2569,13 +2489,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешный поиск (возвращает списки ресторанов и блюд)",
                         "schema": {
-                            "$ref": "#/definitions/restaurant.SearchAllResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_restaurant.SearchAllResponse"
                         }
                     },
                     "400": {
                         "description": "Отсутствует поисковый запрос",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -2597,14 +2517,14 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/support.CategoryDTO"
+                                "$ref": "#/definitions/api-gateway_internal_delivery_http_support.CategoryDTO"
                             }
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -2626,14 +2546,14 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/support.TicketDTO"
+                                "$ref": "#/definitions/api-gateway_internal_delivery_http_support.TicketDTO"
                             }
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -2664,7 +2584,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.CreateTicketRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_support.CreateTicketRequest"
                         }
                     }
                 ],
@@ -2672,19 +2592,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное создание (возвращает ticket_id)",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.CreateTicketResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_support.CreateTicketResponse"
                         }
                     },
                     "400": {
                         "description": "Ошибка в формате запроса или отсутствие заголовка",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -2741,26 +2661,26 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/support.EventDTO"
+                                "$ref": "#/definitions/api-gateway_internal_delivery_http_support.EventDTO"
                             }
                         }
                     },
                     "403": {
                         "description": "Доступ запрещен",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Тикет не найден",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -2800,7 +2720,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.RateTicketRequest"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_support.RateTicketRequest"
                         }
                     }
                 ],
@@ -2808,19 +2728,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешная оценка",
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.SuccessResponse"
+                            "$ref": "#/definitions/api-gateway_internal_delivery_http_support.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Ошибка в формате запроса",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
                         }
                     }
                 }
@@ -2847,7 +2767,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/yookassa.WebhookNotification"
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_api_clients_yookassa.WebhookNotification"
                         }
                     }
                 ],
@@ -2869,18 +2789,18 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "address.AddressListResponse": {
+        "api-gateway_internal_delivery_http_address.AddressListResponse": {
             "type": "object",
             "properties": {
                 "addresses": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/address.AddressResponse"
+                        "$ref": "#/definitions/api-gateway_internal_delivery_http_address.AddressResponse"
                     }
                 }
             }
         },
-        "address.AddressRequest": {
+        "api-gateway_internal_delivery_http_address.AddressRequest": {
             "type": "object",
             "properties": {
                 "address_text": {
@@ -2912,7 +2832,7 @@ const docTemplate = `{
                 }
             }
         },
-        "address.AddressResponse": {
+        "api-gateway_internal_delivery_http_address.AddressResponse": {
             "type": "object",
             "properties": {
                 "apartment": {
@@ -2937,11 +2857,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "location": {
-                    "$ref": "#/definitions/address.LocationResponse"
+                    "$ref": "#/definitions/api-gateway_internal_delivery_http_address.LocationResponse"
                 }
             }
         },
-        "address.CreateAddressResponse": {
+        "api-gateway_internal_delivery_http_address.CreateAddressResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -2949,7 +2869,7 @@ const docTemplate = `{
                 }
             }
         },
-        "address.LocationResponse": {
+        "api-gateway_internal_delivery_http_address.LocationResponse": {
             "type": "object",
             "properties": {
                 "address_text": {
@@ -2963,7 +2883,7 @@ const docTemplate = `{
                 }
             }
         },
-        "address.MessageResponse": {
+        "api-gateway_internal_delivery_http_address.MessageResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -2971,7 +2891,33 @@ const docTemplate = `{
                 }
             }
         },
-        "auth.LoginResponse": {
+        "api-gateway_internal_delivery_http_auth.CSRFResponse": {
+            "type": "object",
+            "properties": {
+                "csrf_token": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "api-gateway_internal_delivery_http_auth.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "login": {
+                    "type": "string",
+                    "example": "user@mail.ru"
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 8,
+                    "example": "qwerty12345"
+                }
+            }
+        },
+        "api-gateway_internal_delivery_http_auth.LoginResponse": {
             "type": "object",
             "properties": {
                 "avatar_url": {
@@ -2991,7 +2937,7 @@ const docTemplate = `{
                 }
             }
         },
-        "auth.RegisterRequest": {
+        "api-gateway_internal_delivery_http_auth.RegisterRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -3010,7 +2956,7 @@ const docTemplate = `{
                 }
             }
         },
-        "auth.RegisterResponse": {
+        "api-gateway_internal_delivery_http_auth.RegisterResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -3030,7 +2976,21 @@ const docTemplate = `{
                 }
             }
         },
-        "cart.BasicCartOperationRequest": {
+        "api-gateway_internal_delivery_http_cart.AddItemRequest": {
+            "type": "object",
+            "properties": {
+                "cart_id": {
+                    "type": "string"
+                },
+                "dish_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api-gateway_internal_delivery_http_cart.BasicCartOperationRequest": {
             "type": "object",
             "properties": {
                 "cart_id": {
@@ -3038,7 +2998,7 @@ const docTemplate = `{
                 }
             }
         },
-        "cart.CartItemDTO": {
+        "api-gateway_internal_delivery_http_cart.CartItemDTO": {
             "type": "object",
             "properties": {
                 "dish_id": {
@@ -3061,7 +3021,7 @@ const docTemplate = `{
                 }
             }
         },
-        "cart.CartMemberDTO": {
+        "api-gateway_internal_delivery_http_cart.CartMemberDTO": {
             "type": "object",
             "properties": {
                 "joined_at": {
@@ -3072,7 +3032,7 @@ const docTemplate = `{
                 }
             }
         },
-        "cart.CartResponse": {
+        "api-gateway_internal_delivery_http_cart.CartResponse": {
             "type": "object",
             "properties": {
                 "admin_id": {
@@ -3084,14 +3044,14 @@ const docTemplate = `{
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/cart.CartItemDTO"
+                        "$ref": "#/definitions/api-gateway_internal_delivery_http_cart.CartItemDTO"
                     }
                 },
                 "members": {
                     "description": "Только для shared",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/cart.CartMemberDTO"
+                        "$ref": "#/definitions/api-gateway_internal_delivery_http_cart.CartMemberDTO"
                     }
                 },
                 "mode": {
@@ -3108,7 +3068,7 @@ const docTemplate = `{
                 }
             }
         },
-        "cart.InviteResponse": {
+        "api-gateway_internal_delivery_http_cart.InviteResponse": {
             "type": "object",
             "properties": {
                 "expires_at": {
@@ -3119,7 +3079,15 @@ const docTemplate = `{
                 }
             }
         },
-        "cart.KickMemberRequest": {
+        "api-gateway_internal_delivery_http_cart.JoinCartRequest": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "api-gateway_internal_delivery_http_cart.KickMemberRequest": {
             "type": "object",
             "properties": {
                 "cart_id": {
@@ -3130,55 +3098,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_auth.CSRFResponse": {
-            "type": "object",
-            "properties": {
-                "csrf_token": {
-                    "type": "string"
-                },
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_auth.LoginRequest": {
-            "type": "object",
-            "properties": {
-                "login": {
-                    "type": "string",
-                    "example": "user@mail.ru"
-                },
-                "password": {
-                    "type": "string",
-                    "maxLength": 128,
-                    "minLength": 8,
-                    "example": "qwerty12345"
-                }
-            }
-        },
-        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_cart.AddItemRequest": {
-            "type": "object",
-            "properties": {
-                "cart_id": {
-                    "type": "string"
-                },
-                "dish_id": {
-                    "type": "integer"
-                },
-                "quantity": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_cart.JoinCartRequest": {
-            "type": "object",
-            "properties": {
-                "token": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_cart.ReassignOwnerRequest": {
+        "api-gateway_internal_delivery_http_cart.ReassignOwnerRequest": {
             "type": "object",
             "properties": {
                 "cart_id": {
@@ -3192,7 +3112,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_cart.RemoveItemRequest": {
+        "api-gateway_internal_delivery_http_cart.RemoveItemRequest": {
             "type": "object",
             "properties": {
                 "cart_id": {
@@ -3203,7 +3123,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_cart.UpdateQuantityRequest": {
+        "api-gateway_internal_delivery_http_cart.UpdateQuantityRequest": {
             "type": "object",
             "properties": {
                 "cart_id": {
@@ -3217,7 +3137,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_order.CreateOrderRequest": {
+        "api-gateway_internal_delivery_http_order.CreateOrderRequest": {
             "type": "object",
             "properties": {
                 "address_id": {
@@ -3250,7 +3170,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_order.CreateOrderResponse": {
+        "api-gateway_internal_delivery_http_order.CreateOrderResponse": {
             "type": "object",
             "properties": {
                 "order_id": {
@@ -3258,100 +3178,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_order.PayForFriendRequest": {
-            "type": "object",
-            "properties": {
-                "payment_method_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.CreateTicketRequest": {
-            "type": "object",
-            "properties": {
-                "category_id": {
-                    "type": "integer"
-                },
-                "client_meta": {
-                    "type": "string"
-                },
-                "contact_email": {
-                    "type": "string"
-                },
-                "first_message": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.CreateTicketResponse": {
-            "type": "object",
-            "properties": {
-                "ticket_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.RateTicketRequest": {
-            "type": "object",
-            "properties": {
-                "rating": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.ReassignTicketRequest": {
-            "type": "object",
-            "properties": {
-                "agent_id": {
-                    "type": "integer"
-                },
-                "line": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.SetAgentStatusRequest": {
-            "type": "object",
-            "properties": {
-                "status": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_support.SuccessResponse": {
-            "type": "object",
-            "properties": {
-                "success": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_delivery_http_user.UpdateAvatarResponse": {
-            "type": "object",
-            "properties": {
-                "avatar_url": {
-                    "type": "string"
-                },
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "order.CheckPaymentResponse": {
-            "type": "object",
-            "properties": {
-                "order_id": {
-                    "type": "string"
-                },
-                "payment_id": {
-                    "type": "string"
-                },
-                "payment_status": {
-                    "type": "string"
-                }
-            }
-        },
-        "order.OrderDishDTO": {
+        "api-gateway_internal_delivery_http_order.OrderDishDTO": {
             "type": "object",
             "properties": {
                 "dish_id": {
@@ -3374,7 +3201,7 @@ const docTemplate = `{
                 }
             }
         },
-        "order.OrderHistoryResponse": {
+        "api-gateway_internal_delivery_http_order.OrderHistoryResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -3383,7 +3210,7 @@ const docTemplate = `{
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/order.OrderDishDTO"
+                        "$ref": "#/definitions/api-gateway_internal_delivery_http_order.OrderDishDTO"
                     }
                 },
                 "order_id": {
@@ -3398,7 +3225,7 @@ const docTemplate = `{
                 "splits": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/order.OrderSplitDTO"
+                        "$ref": "#/definitions/api-gateway_internal_delivery_http_order.OrderSplitDTO"
                     }
                 },
                 "status": {
@@ -3409,7 +3236,7 @@ const docTemplate = `{
                 }
             }
         },
-        "order.OrderSplitDTO": {
+        "api-gateway_internal_delivery_http_order.OrderSplitDTO": {
             "type": "object",
             "properties": {
                 "amount": {
@@ -3426,7 +3253,15 @@ const docTemplate = `{
                 }
             }
         },
-        "payment.BindingResponse": {
+        "api-gateway_internal_delivery_http_order.PayForFriendRequest": {
+            "type": "object",
+            "properties": {
+                "payment_method_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "api-gateway_internal_delivery_http_payment.BindingResponse": {
             "type": "object",
             "properties": {
                 "confirmation_url": {
@@ -3434,7 +3269,7 @@ const docTemplate = `{
                 }
             }
         },
-        "payment.PaymentMethodResponse": {
+        "api-gateway_internal_delivery_http_payment.PaymentMethodResponse": {
             "type": "object",
             "properties": {
                 "card_type": {
@@ -3458,31 +3293,18 @@ const docTemplate = `{
                 }
             }
         },
-        "response.ErrorResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 400
-                },
-                "message": {
-                    "type": "string",
-                    "example": "Неверный формат запроса"
-                }
-            }
-        },
-        "restaurant.CategoriesResponse": {
+        "api-gateway_internal_delivery_http_restaurant.CategoriesResponse": {
             "type": "object",
             "properties": {
                 "categories": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/restaurant.CategoryResponse"
+                        "$ref": "#/definitions/api-gateway_internal_delivery_http_restaurant.CategoryResponse"
                     }
                 }
             }
         },
-        "restaurant.CategoryResponse": {
+        "api-gateway_internal_delivery_http_restaurant.CategoryResponse": {
             "type": "object",
             "properties": {
                 "emoji": {
@@ -3496,7 +3318,7 @@ const docTemplate = `{
                 }
             }
         },
-        "restaurant.DishResponse": {
+        "api-gateway_internal_delivery_http_restaurant.DishResponse": {
             "type": "object",
             "properties": {
                 "description": {
@@ -3520,7 +3342,7 @@ const docTemplate = `{
                 }
             }
         },
-        "restaurant.DishWithBrand": {
+        "api-gateway_internal_delivery_http_restaurant.DishWithBrand": {
             "type": "object",
             "properties": {
                 "description": {
@@ -3543,18 +3365,18 @@ const docTemplate = `{
                 }
             }
         },
-        "restaurant.DishesResponse": {
+        "api-gateway_internal_delivery_http_restaurant.DishesResponse": {
             "type": "object",
             "properties": {
                 "dishes": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/restaurant.DishResponse"
+                        "$ref": "#/definitions/api-gateway_internal_delivery_http_restaurant.DishResponse"
                     }
                 }
             }
         },
-        "restaurant.RestaurantBrandResponse": {
+        "api-gateway_internal_delivery_http_restaurant.RestaurantBrandResponse": {
             "type": "object",
             "properties": {
                 "description": {
@@ -3578,35 +3400,35 @@ const docTemplate = `{
                 }
             }
         },
-        "restaurant.RestaurantBrandsResponse": {
+        "api-gateway_internal_delivery_http_restaurant.RestaurantBrandsResponse": {
             "type": "object",
             "properties": {
                 "restaurants": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/restaurant.RestaurantBrandResponse"
+                        "$ref": "#/definitions/api-gateway_internal_delivery_http_restaurant.RestaurantBrandResponse"
                     }
                 }
             }
         },
-        "restaurant.SearchAllResponse": {
+        "api-gateway_internal_delivery_http_restaurant.SearchAllResponse": {
             "type": "object",
             "properties": {
                 "dishes": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/restaurant.DishWithBrand"
+                        "$ref": "#/definitions/api-gateway_internal_delivery_http_restaurant.DishWithBrand"
                     }
                 },
                 "restaurants": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/restaurant.RestaurantBrandResponse"
+                        "$ref": "#/definitions/api-gateway_internal_delivery_http_restaurant.RestaurantBrandResponse"
                     }
                 }
             }
         },
-        "review.CreateReviewRequest": {
+        "api-gateway_internal_delivery_http_review.CreateReviewRequest": {
             "type": "object",
             "properties": {
                 "author_name": {
@@ -3623,7 +3445,7 @@ const docTemplate = `{
                 }
             }
         },
-        "review.Review": {
+        "api-gateway_internal_delivery_http_review.Review": {
             "type": "object",
             "properties": {
                 "author_name": {
@@ -3652,13 +3474,13 @@ const docTemplate = `{
                 }
             }
         },
-        "review.ReviewsResponse": {
+        "api-gateway_internal_delivery_http_review.ReviewsResponse": {
             "type": "object",
             "properties": {
                 "reviews": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/review.Review"
+                        "$ref": "#/definitions/api-gateway_internal_delivery_http_review.Review"
                     }
                 },
                 "total": {
@@ -3667,7 +3489,7 @@ const docTemplate = `{
                 }
             }
         },
-        "support.CategoryDTO": {
+        "api-gateway_internal_delivery_http_support.CategoryDTO": {
             "type": "object",
             "properties": {
                 "default_line": {
@@ -3684,7 +3506,7 @@ const docTemplate = `{
                 }
             }
         },
-        "support.ChangeStatusRequest": {
+        "api-gateway_internal_delivery_http_support.ChangeStatusRequest": {
             "type": "object",
             "properties": {
                 "status": {
@@ -3692,7 +3514,32 @@ const docTemplate = `{
                 }
             }
         },
-        "support.EventDTO": {
+        "api-gateway_internal_delivery_http_support.CreateTicketRequest": {
+            "type": "object",
+            "properties": {
+                "category_id": {
+                    "type": "integer"
+                },
+                "client_meta": {
+                    "type": "string"
+                },
+                "contact_email": {
+                    "type": "string"
+                },
+                "first_message": {
+                    "type": "string"
+                }
+            }
+        },
+        "api-gateway_internal_delivery_http_support.CreateTicketResponse": {
+            "type": "object",
+            "properties": {
+                "ticket_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "api-gateway_internal_delivery_http_support.EventDTO": {
             "type": "object",
             "properties": {
                 "author_id": {
@@ -3721,7 +3568,42 @@ const docTemplate = `{
                 }
             }
         },
-        "support.TemplateDTO": {
+        "api-gateway_internal_delivery_http_support.RateTicketRequest": {
+            "type": "object",
+            "properties": {
+                "rating": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api-gateway_internal_delivery_http_support.ReassignTicketRequest": {
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "type": "integer"
+                },
+                "line": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api-gateway_internal_delivery_http_support.SetAgentStatusRequest": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "api-gateway_internal_delivery_http_support.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "api-gateway_internal_delivery_http_support.TemplateDTO": {
             "type": "object",
             "properties": {
                 "content": {
@@ -3735,7 +3617,7 @@ const docTemplate = `{
                 }
             }
         },
-        "support.TicketDTO": {
+        "api-gateway_internal_delivery_http_support.TicketDTO": {
             "type": "object",
             "properties": {
                 "assignee_id": {
@@ -3764,7 +3646,59 @@ const docTemplate = `{
                 }
             }
         },
-        "supportclient.SupportStats": {
+        "api-gateway_internal_delivery_http_user.UpdateAvatarResponse": {
+            "type": "object",
+            "properties": {
+                "avatar_url": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "api-gateway_internal_delivery_http_user.UpdateRoleRequest": {
+            "type": "object",
+            "properties": {
+                "new_role": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api-gateway_internal_delivery_http_user.UserProfileResponse": {
+            "type": "object",
+            "properties": {
+                "avatar_url": {
+                    "type": "string",
+                    "example": "users/avatars/fjaun99f.png"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "terminator2007@gmail.com"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Илья"
+                }
+            }
+        },
+        "api-gateway_internal_delivery_http_user.UserProfileUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "new_mail@gmail.com"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Андрей"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_api-gateway_internal_grpc_client_supportclient.SupportStats": {
             "type": "object",
             "properties": {
                 "averageRating": {
@@ -3795,48 +3729,7 @@ const docTemplate = `{
                 }
             }
         },
-        "user.UpdateRoleRequest": {
-            "type": "object",
-            "properties": {
-                "new_role": {
-                    "type": "string"
-                },
-                "user_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "user.UserProfileResponse": {
-            "type": "object",
-            "properties": {
-                "avatar_url": {
-                    "type": "string",
-                    "example": "users/avatars/fjaun99f.png"
-                },
-                "email": {
-                    "type": "string",
-                    "example": "terminator2007@gmail.com"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "Илья"
-                }
-            }
-        },
-        "user.UserProfileUpdateRequest": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string",
-                    "example": "new_mail@gmail.com"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "Андрей"
-                }
-            }
-        },
-        "yookassa.WebhookNotification": {
+        "github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_api_clients_yookassa.WebhookNotification": {
             "type": "object",
             "properties": {
                 "event": {
@@ -3850,6 +3743,19 @@ const docTemplate = `{
                 },
                 "type": {
                     "type": "string"
+                }
+            }
+        },
+        "github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 400
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Неверный формат запроса"
                 }
             }
         }

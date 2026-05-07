@@ -64,23 +64,6 @@ func (m OrderUseCaseTracingMiddleware) CreateOrder(ctx context.Context, req doma
 	return
 }
 
-// GetOrderPaymentID трассирует выполнение метода GetOrderPaymentID
-func (m OrderUseCaseTracingMiddleware) GetOrderPaymentID(ctx context.Context, orderPublicID string, userID int64) (s1 string, err error) {
-
-	ctx, span := m.tracer.Start(ctx, "OrderUseCase.GetOrderPaymentID")
-
-	defer span.End()
-
-	s1, err = m.next.GetOrderPaymentID(ctx, orderPublicID, userID)
-
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(otelcodes.Error, err.Error())
-	}
-
-	return
-}
-
 // GetOrders трассирует выполнение метода GetOrders
 func (m OrderUseCaseTracingMiddleware) GetOrders(ctx context.Context, userID int64) (oa1 []domain.Order, err error) {
 

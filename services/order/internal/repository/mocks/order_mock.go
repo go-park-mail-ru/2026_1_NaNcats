@@ -146,17 +146,22 @@ func (mr *MockOrderRepositoryMockRecorder) SetSplitYookassaID(ctx, splitID, yook
 }
 
 // UpdateOrderStatus mocks base method.
-func (m *MockOrderRepository) UpdateOrderStatus(ctx context.Context, publicID, newStatus string) error {
+func (m *MockOrderRepository) UpdateOrderStatus(ctx context.Context, publicID, newStatus string, expectedStatuses ...string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateOrderStatus", ctx, publicID, newStatus)
+	varargs := []any{ctx, publicID, newStatus}
+	for _, a := range expectedStatuses {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateOrderStatus", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateOrderStatus indicates an expected call of UpdateOrderStatus.
-func (mr *MockOrderRepositoryMockRecorder) UpdateOrderStatus(ctx, publicID, newStatus any) *gomock.Call {
+func (mr *MockOrderRepositoryMockRecorder) UpdateOrderStatus(ctx, publicID, newStatus any, expectedStatuses ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrderStatus", reflect.TypeOf((*MockOrderRepository)(nil).UpdateOrderStatus), ctx, publicID, newStatus)
+	varargs := append([]any{ctx, publicID, newStatus}, expectedStatuses...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrderStatus", reflect.TypeOf((*MockOrderRepository)(nil).UpdateOrderStatus), varargs...)
 }
 
 // UpdateSplitPayer mocks base method.
