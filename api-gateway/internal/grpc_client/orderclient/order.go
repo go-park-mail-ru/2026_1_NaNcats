@@ -60,7 +60,6 @@ type OrderClient interface {
 	CreateOrder(ctx context.Context, userID int64, input CreateOrderInput, idempotencyKey string) (string, error)
 	GetOrders(ctx context.Context, userID int64) ([]Order, error)
 	PayForFriend(ctx context.Context, splitID string, payerID int64, paymentMethodID, idempotencyKey string) error
-	GetOrderPaymentID(ctx context.Context, orderPublicID string, userID int64) (string, error)
 	CancelOrder(ctx context.Context, orderPublicID string, userID int64) error
 }
 
@@ -165,28 +164,6 @@ func (c *orderClient) PayForFriend(ctx context.Context, splitID string, payerID 
 	}
 
 	return nil
-}
-
-func (c *orderClient) GetOrderPaymentID(ctx context.Context, orderPublicID string, userID int64) (string, error) {
-	resp, err := c.client.GetOrderPaymentID(ctx, &pbOrder.GetOrderPaymentIDRequest{
-		OrderPublicId: orderPublicID,
-		UserId:        userID,
-	})
-	if err != nil {
-		st, ok := status.FromError(err)
-		if ok {
-			switch st.Code() {
-			case codes.NotFound:
-				return "", ErrAddressNotFound
-			case codes.PermissionDenied:
-				return "", ErrInternal
-			case codes.FailedPrecondition:
-				return "", fmt.Errorf("payment not ready: %s", st.Message())
-			}
-		}
-		return "", fmt.Errorf("get order payment id: %w", err)
-	}
-	return resp.YookassaPaymentId, nil
 }
 
 func (c *orderClient) CancelOrder(ctx context.Context, orderPublicID string, userID int64) error {
