@@ -108,21 +108,13 @@ func (h *OrderHandler) UpdateOrderStatusByPaymentID(ctx context.Context, req *pb
 	return &emptypb.Empty{}, grpcutil.ToGRPCError(err)
 }
 
-func (h *OrderHandler) PayForFriend(ctx context.Context, req *pb.PayForFriendRequest) (*pb.PayForFriendResponse, error) {
+func (h *OrderHandler) PayForFriend(ctx context.Context, req *pb.PayForFriendRequest) (*emptypb.Empty, error) {
 	err := h.usecase.PayForFriend(ctx, req.SplitId, req.PayerUserId, req.PaymentMethodId, req.IdempotencyKey)
 	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
 	}
 
-	return &pb.PayForFriendResponse{}, nil
-}
-
-func (h *OrderHandler) GetOrderPaymentID(ctx context.Context, req *pb.GetOrderPaymentIDRequest) (*pb.GetOrderPaymentIDResponse, error) {
-	paymentID, err := h.usecase.GetOrderPaymentID(ctx, req.OrderPublicId, req.UserId)
-	if err != nil {
-		return nil, grpcutil.ToGRPCError(err)
-	}
-	return &pb.GetOrderPaymentIDResponse{YookassaPaymentId: paymentID}, nil
+	return &emptypb.Empty{}, nil
 }
 
 func (h *OrderHandler) CancelOrder(ctx context.Context, req *pb.CancelOrderRequest) (*emptypb.Empty, error) {
