@@ -136,14 +136,25 @@ func (r *orderRepo) AreAllSplitsPaid(ctx context.Context, orderPublicID string) 
 	return unpaidCount == 0, nil
 }
 
-func (r *orderRepo) UpdateOrderStatus(ctx context.Context, publicID string, newStatus string) error {
-	query := `UPDATE "order" SET status = $1, updated_at = NOW() WHERE public_id = $2`
-	tag, err := r.pool.Exec(ctx, query, newStatus, publicID)
+func (r *orderRepo) UpdateOrderStatus(ctx context.Context, publicID string, newStatus string, expectedStatuses ...string) error {
+	var query string
+	var tag pgconn.CommandTag
+	var err error
+
+	if len(expectedStatuses) > 0 {
+		query = `UPDATE "order" SET status = $1, updated_at = NOW() WHERE public_id = $2 AND status = ANY($3)`
+		tag, err = r.pool.Exec(ctx, query, newStatus, publicID, expectedStatuses)
+	} else {
+		query = `UPDATE "order" SET status = $1, updated_at = NOW() WHERE public_id = $2`
+		tag, err = r.pool.Exec(ctx, query, newStatus, publicID)
+	}
+
 	if err != nil {
 		return fmt.Errorf("update status by public id: %w", err)
 	}
+
 	if tag.RowsAffected() == 0 {
-		return errors.New("order not found")
+		return repository.ErrStateChanged
 	}
 	return nil
 }
@@ -268,38 +279,60 @@ func (r *orderRepo) GetOrdersByUserID(ctx context.Context, userID int64) ([]doma
 	defer rows.Close()
 
 	var orders []domain.Order
+	var orderIDs []int64
+
 	for rows.Next() {
 		var o domain.Order
 		if err := rows.Scan(&o.ID, &o.PublicID, &o.AdminID, &o.RestaurantBranchID, &o.RestaurantBrandID, &o.RestaurantName, &o.TotalCost, &o.Status, &o.CreatedAt); err == nil {
 			orders = append(orders, o)
+			orderIDs = append(orderIDs, o.ID)
+		}
+	}
+
+	if len(orderIDs) == 0 {
+		return orders, nil
+	}
+
+	splitQuery := `SELECT order_id, id, user_id, amount, status FROM "order_split" WHERE order_id = ANY($1)`
+	splitRows, err := r.pool.Query(ctx, splitQuery, orderIDs)
+	if err != nil {
+		return nil, fmt.Errorf("batch fetch splits: %w", err)
+	}
+	defer splitRows.Close()
+
+	splitsMap := make(map[int64][]domain.OrderSplit)
+	for splitRows.Next() {
+		var s domain.OrderSplit
+		var orderID int64
+		if err := splitRows.Scan(&orderID, &s.ID, &s.UserID, &s.Amount, &s.Status); err == nil {
+			splitsMap[orderID] = append(splitsMap[orderID], s)
+		}
+	}
+
+	dishQuery := `SELECT order_id, dish_id, quantity, price, owner_user_id FROM "order_dish" WHERE order_id = ANY($1)`
+	dishRows, err := r.pool.Query(ctx, dishQuery, orderIDs)
+	if err != nil {
+		return nil, fmt.Errorf("batch fetch dishes: %w", err)
+	}
+	defer dishRows.Close()
+
+	dishesMap := make(map[int64][]domain.OrderDish)
+	for dishRows.Next() {
+		var d domain.OrderDish
+		var orderID int64
+		if err := dishRows.Scan(&orderID, &d.DishID, &d.Quantity, &d.Price, &d.OwnerUserID); err == nil {
+			dishesMap[orderID] = append(dishesMap[orderID], d)
 		}
 	}
 
 	for i := range orders {
-		splitRows, _ := r.pool.Query(ctx, `SELECT id, user_id, amount, status FROM "order_split" WHERE order_id = $1`, orders[i].ID)
-		for splitRows.Next() {
-			var s domain.OrderSplit
-			if err := splitRows.Scan(&s.ID, &s.UserID, &s.Amount, &s.Status); err == nil {
-				orders[i].Splits = append(orders[i].Splits, s)
-			}
-		}
-		splitRows.Close()
-
-		dishRows, _ := r.pool.Query(ctx, `SELECT dish_id, quantity, price, owner_user_id FROM "order_dish" WHERE order_id = $1`, orders[i].ID)
-		for dishRows.Next() {
-			var d domain.OrderDish
-			if err := dishRows.Scan(&d.DishID, &d.Quantity, &d.Price, &d.OwnerUserID); err == nil {
-				orders[i].Items = append(orders[i].Items, d)
-			}
-		}
-		dishRows.Close()
+		orders[i].Splits = splitsMap[orders[i].ID]
+		orders[i].Items = dishesMap[orders[i].ID]
 	}
 
 	return orders, nil
 }
 
-// GetOrdersByStatuses - нужен фоновому продвижению (auto-advancer).
-// Возвращает все заказы, чей status входит в переданный список.
 func (r *orderRepo) GetOrdersByStatuses(ctx context.Context, statuses []string) ([]domain.Order, error) {
 	if len(statuses) == 0 {
 		return nil, nil
