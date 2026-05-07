@@ -16,27 +16,14 @@ service OrderService {
   // Метод смены статус заказа
   rpc UpdateOrderStatusByPaymentID (UpdateStatusRequest) returns (google.protobuf.Empty);
   // Метод для оплаты счета за друга
-  rpc PayForFriend (PayForFriendRequest) returns (PayForFriendResponse);
-  // Возвращает yookassa payment_id для конкретного заказа (нужен фронту/гейтвею
-  // чтобы вручную опросить YooKassa без полагания на её webhook).
-  rpc GetOrderPaymentID (GetOrderPaymentIDRequest) returns (GetOrderPaymentIDResponse);
-  // Помечает заказ как cancelled. Доступно только владельцу и только пока
-  // заказ ещё не payed/in_progress
+  rpc PayForFriend (PayForFriendRequest) returns (google.protobuf.Empty);
+  // Метод для отмены заказа
   rpc CancelOrder (CancelOrderRequest) returns (google.protobuf.Empty);
 }
 
 message CancelOrderRequest {
   string order_public_id = 1;
   int64  user_id = 2;
-}
-
-message GetOrderPaymentIDRequest {
-  string order_public_id = 1;
-  int64  user_id = 2;
-}
-
-message GetOrderPaymentIDResponse {
-  string yookassa_payment_id = 1;
 }
 
 message OrderDish {
@@ -81,7 +68,6 @@ message CreateOrderRequest {
 
 message CreateOrderResponse {
   string order_public_id = 1;
-  string confirmation_url = 2; 
 }
 
 message GetOrdersRequest {
@@ -103,8 +89,4 @@ message PayForFriendRequest {
   int64 payer_user_id = 2;
   string payment_method_id = 3;
   string idempotency_key = 4;
-}
-
-message PayForFriendResponse {
-  string confirmation_url = 1;
 }
