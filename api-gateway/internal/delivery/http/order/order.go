@@ -95,13 +95,6 @@ func NewOrderHandler(oc orderclient.OrderClient, pc paymentclient.PaymentClient,
 	}
 }
 
-//easyjson:json
-type CheckPaymentResponse struct {
-	OrderID       string `json:"order_id"`
-	PaymentID     string `json:"payment_id"`
-	PaymentStatus string `json:"payment_status"`
-}
-
 // CancelOrder godoc
 // @Summary 		Отмена заказа
 // @Description		Пользователь отменяет свой заказ. Доступно только пока заказ не in_progress / not finished.
@@ -139,60 +132,6 @@ func (h *OrderHandler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.JSON(w, http.StatusOK, map[string]string{"status": "cancelled"})
-}
-
-// CheckPayment godoc
-// @Summary 		Проверка статуса платежа
-// @Description		Для dev-окружения: актуализирует статус платежа через YooKassa REST, эмулируя webhook.
-// @Tags			order
-// @Accept			json
-// @Produce			json
-// @Param			id		path	string	true	"ID заказа"
-// @Success			200		{object}  CheckPaymentResponse		"Успешное обновление статуса"
-// @Success			202		{object}  CheckPaymentResponse		"Платеж еще не готов (pending)"
-// @Failure			400		{object}  response.ErrorResponse	"Отсутствует ID заказа"
-// @Failure			401		{object}  response.ErrorResponse	"Неавторизован"
-// @Failure			403		{object}  response.ErrorResponse	"Доступ запрещен"
-// @Failure			404		{object}  response.ErrorResponse	"Заказ или платеж не найден"
-// @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
-// @Router			/order/{id}/check-payment [get]
-func (h *OrderHandler) CheckPayment(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	l := h.logger.WithContext(ctx)
-
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok {
-		response.Error(w, http.StatusUnauthorized, "Unauthorized")
-		return
-	}
-
-	orderID := r.PathValue("id")
-	if orderID == "" {
-		response.Error(w, http.StatusBadRequest, "order id is required")
-		return
-	}
-
-	paymentID, err := h.orderClient.GetOrderPaymentID(ctx, orderID, userID)
-	if err != nil {
-		response.JSON(w, http.StatusAccepted, CheckPaymentResponse{
-			OrderID:       orderID,
-			PaymentStatus: "pending",
-		})
-		return
-	}
-
-	statusStr, err := h.paymentClient.RefreshPaymentStatus(ctx, paymentID)
-	if err != nil {
-		l.Error("refresh payment status failed", err)
-		response.Error(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	response.JSON(w, http.StatusOK, CheckPaymentResponse{
-		OrderID:       orderID,
-		PaymentID:     paymentID,
-		PaymentStatus: statusStr,
-	})
 }
 
 // CreateOrder godoc
@@ -324,10 +263,10 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 			l.Error("failed to enrich order items with dish info", derr)
 		} else {
 			for _, d := range dishes {
-				dishMeta[d.Id] = struct {
+				dishMeta[d.ID] = struct {
 					Name     string
 					ImageURL string
-				}{Name: d.Name, ImageURL: d.ImageUrl}
+				}{Name: d.Name, ImageURL: d.ImageURL}
 			}
 		}
 	}
