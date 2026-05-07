@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/domain"
@@ -59,7 +60,6 @@ type OrderUseCase interface {
 	UpdateOrderStatusByPaymentID(ctx context.Context, paymentID string, status string, idempotencyKey string) error
 	ProcessSagaReply(ctx context.Context, reply events.SagaReply) error
 	PayForFriend(ctx context.Context, splitID string, adminID int64, paymentMethodID, idempotencyKey string) error
-	GetOrderPaymentID(ctx context.Context, orderPublicID string, userID int64) (string, error)
 	CancelOrder(ctx context.Context, orderPublicID string, userID int64) error
 }
 
@@ -214,31 +214,6 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderIn
 	return orderPublicID, nil
 }
 
-// GetOrderPaymentID - возвращает yookassa_payment_id для конкретного заказа
-func (o *orderUseCase) GetOrderPaymentID(ctx context.Context, orderPublicID string, userID int64) (string, error) {
-	span := trace.SpanFromContext(ctx)
-	span.SetAttributes(
-		attribute.String("order.public_id", orderPublicID),
-		attribute.Int64("user.id", userID),
-	)
-
-	order, err := o.orderRepo.GetOrderByPublicID(ctx, orderPublicID)
-	if err != nil {
-		return "", errutil.Wrap("ORDER_NOT_FOUND", "order not found", err, codes.NotFound)
-	}
-	if order.AdminID != userID {
-		return "", errutil.New("FORBIDDEN", "user is not the owner of this order", codes.PermissionDenied)
-	}
-
-	for _, sp := range order.Splits {
-		if sp.YookassaPaymentID != nil && *sp.YookassaPaymentID != "" {
-			return *sp.YookassaPaymentID, nil
-		}
-	}
-	return "", errutil.New("PAYMENT_NOT_READY", "payment id not yet assigned to this order", codes.FailedPrecondition)
-}
-
-// Помечает заказ как cancelled
 func (o *orderUseCase) CancelOrder(ctx context.Context, orderPublicID string, userID int64) error {
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(
@@ -254,16 +229,14 @@ func (o *orderUseCase) CancelOrder(ctx context.Context, orderPublicID string, us
 		return errutil.New("FORBIDDEN", "user is not the owner of this order", codes.PermissionDenied)
 	}
 
-	switch order.Status {
-	case StatusFinished, StatusCancelled:
-		return errutil.New("ORDER_TERMINAL", "order already in terminal state", codes.FailedPrecondition)
-	case StatusInProgress, StatusWaiting, StatusDelivering:
-		return errutil.New("ORDER_IN_PROGRESS", "order is being prepared, cannot cancel", codes.FailedPrecondition)
-	}
-
-	if err := o.orderRepo.UpdateOrderStatus(ctx, orderPublicID, StatusCancelled); err != nil {
+	err = o.orderRepo.UpdateOrderStatus(ctx, orderPublicID, StatusCancelled, StatusCreated, StatusCartLocked, StatusPaymentReady, StatusPaid)
+	if err != nil {
+		if errors.Is(err, repository.ErrStateChanged) {
+			return errutil.New("ORDER_IN_PROGRESS_OR_TERMINAL", "order is being prepared or already finished, cannot cancel", codes.FailedPrecondition)
+		}
 		return errutil.Internal("failed to cancel order", err)
 	}
+
 	return nil
 }
 
@@ -340,8 +313,12 @@ func (o *orderUseCase) UpdateOrderStatusByPaymentID(ctx context.Context, payment
 	span.SetAttributes(attribute.Bool("order.all_splits_paid", allPaid))
 
 	if allPaid {
-		err = o.orderRepo.UpdateOrderStatus(ctx, orderPublicID, StatusPaid)
+		err = o.orderRepo.UpdateOrderStatus(ctx, orderPublicID, StatusPaid, StatusCreated, StatusCartLocked, StatusPaymentReady)
 		if err != nil {
+			if errors.Is(err, repository.ErrStateChanged) {
+				span.AddEvent("order_already_advanced_ignoring_paid")
+				return nil
+			}
 			return err
 		}
 
@@ -366,17 +343,20 @@ func (o *orderUseCase) PayForFriend(ctx context.Context, splitID string, adminID
 		attribute.String("payment_method.id", paymentMethodID),
 	)
 
+	split, err := o.orderRepo.GetSplitByID(ctx, splitID)
+	if err != nil {
+		return errutil.Wrap("SPLIT_NOT_FOUND", "split not found", err, codes.NotFound)
+	}
+
+	if split.Status != SplitStatusPending {
+		return errutil.New("SPLIT_NOT_PENDING", "split is already paid, failed, or cancelled", codes.FailedPrecondition)
+	}
+
 	err = o.orderRepo.UpdateSplitPayer(ctx, splitID, adminID)
 	if err != nil {
 		return errutil.Wrap("CANNOT_REASSIGN", "failed to reassign split", err, codes.InvalidArgument)
 	}
 
-	split, err := o.orderRepo.GetSplitByID(ctx, splitID)
-	if err != nil {
-		return err
-	}
-
-	// Генерируем команду для платежки
 	payCmd := events.SagaCommand{
 		OrderID:         fmt.Sprintf("%d", split.OrderID),
 		SplitID:         split.ID,
@@ -402,11 +382,11 @@ func (o *orderUseCase) ProcessSagaReply(ctx context.Context, reply events.SagaRe
 	if reply.Status == events.StatusError {
 		span.SetAttributes(attribute.String("saga.error_details", reply.ErrorMessage))
 
-		_ = o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusFailed)
+		_ = o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusFailed, StatusCreated, StatusCartLocked, StatusPaymentReady)
+
 		if reply.SplitID != "" {
 			_ = o.orderRepo.UpdateSplitStatus(ctx, reply.SplitID, SplitStatusFailed)
 		}
-		// Откат корзины
 		if reply.Step == "PAYMENT" {
 			span.AddEvent("compensating_cart_unlock")
 			_ = o.rabbitPublisher.PublishJSON(ctx, events.QueueCartCommands, events.SagaCommand{
@@ -423,13 +403,15 @@ func (o *orderUseCase) ProcessSagaReply(ctx context.Context, reply events.SagaRe
 			return err
 		}
 
-		_ = o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusCartLocked)
+		err = o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusCartLocked, StatusCreated)
+		if err != nil && errors.Is(err, repository.ErrStateChanged) {
+			o.logger.Warn("saga: order already moved from created, ignoring cart lock", logger.String("order", reply.OrderID))
+			return nil
+		}
+
 		span.SetAttributes(attribute.Int("order.splits_count", len(order.Splits)))
 
 		for _, split := range order.Splits {
-			// Если split привязан к конкретной сохранённой карте - передаём
-			// её external_id (YooKassa payment_method.id), чтобы YooKassa
-			// сразу списала с этой карты, а не показывала форму ввода новой
 			pmID := ""
 			if split.PaymentMethodID != nil {
 				pmID = *split.PaymentMethodID
