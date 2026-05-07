@@ -262,7 +262,6 @@ func main() {
 	mux.Handle("GET /api/profile/orders", authMW.RequireAuth(http.HandlerFunc(orderHandler.GetMyOrders)))
 	mux.Handle("GET /api/ws/orders/{id}", authMW.RequireAuth(http.HandlerFunc(orderHandler.TrackOrderWS)))
 	mux.Handle("POST /api/orders/splits/{id}/pay", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.PayForFriend))))
-	mux.Handle("POST /api/orders/{id}/check-payment", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.CheckPayment))))
 	mux.Handle("POST /api/orders/{id}/cancel", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.CancelOrder))))
 
 	// === SUPPORT ===

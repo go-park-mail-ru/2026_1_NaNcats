@@ -13,12 +13,11 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/orderclient"
 	orderMocks "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/orderclient/mocks"
 	paymentMocks "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/paymentclient/mocks"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/restaurantclient"
 	restaurantMocks "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/restaurantclient/mocks"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
-	pbRestaurant "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
@@ -107,94 +106,6 @@ func TestOrderHandler_CancelOrder(t *testing.T) {
 			handler.CancelOrder(w, req)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
-		})
-	}
-}
-
-func TestOrderHandler_CheckPayment(t *testing.T) {
-	type mockBehavior func(order *orderMocks.MockOrderClient, payment *paymentMocks.MockPaymentClient)
-
-	tests := []struct {
-		name           string
-		userID         int64
-		orderID        string
-		withAuth       bool
-		mockBehavior   mockBehavior
-		expectedStatus int
-		expectedResp   CheckPaymentResponse
-	}{
-		{
-			name:     "Успех: платеж проверен",
-			userID:   1,
-			orderID:  "ord-123",
-			withAuth: true,
-			mockBehavior: func(order *orderMocks.MockOrderClient, payment *paymentMocks.MockPaymentClient) {
-				order.EXPECT().GetOrderPaymentID(gomock.Any(), "ord-123", int64(1)).
-					Return("pay-123", nil)
-				payment.EXPECT().RefreshPaymentStatus(gomock.Any(), "pay-123").
-					Return("succeeded", nil)
-			},
-			expectedStatus: http.StatusOK,
-			expectedResp: CheckPaymentResponse{
-				OrderID:       "ord-123",
-				PaymentID:     "pay-123",
-				PaymentStatus: "succeeded",
-			},
-		},
-		{
-			name:     "Платеж еще не готов (202 Accepted)",
-			userID:   1,
-			orderID:  "ord-123",
-			withAuth: true,
-			mockBehavior: func(order *orderMocks.MockOrderClient, payment *paymentMocks.MockPaymentClient) {
-				order.EXPECT().GetOrderPaymentID(gomock.Any(), "ord-123", int64(1)).
-					Return("", errors.New("payment not ready"))
-			},
-			expectedStatus: http.StatusAccepted,
-			expectedResp: CheckPaymentResponse{
-				OrderID:       "ord-123",
-				PaymentStatus: "pending",
-			},
-		},
-		{
-			name:     "Ошибка при рефреше",
-			userID:   1,
-			orderID:  "ord-123",
-			withAuth: true,
-			mockBehavior: func(order *orderMocks.MockOrderClient, payment *paymentMocks.MockPaymentClient) {
-				order.EXPECT().GetOrderPaymentID(gomock.Any(), "ord-123", int64(1)).
-					Return("pay-123", nil)
-				payment.EXPECT().RefreshPaymentStatus(gomock.Any(), "pay-123").
-					Return("", errors.New("network error"))
-			},
-			expectedStatus: http.StatusInternalServerError,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			handler, mockOrder, mockPayment, _ := setupTestHandler(ctrl)
-			tt.mockBehavior(mockOrder, mockPayment)
-
-			req := httptest.NewRequest(http.MethodGet, "/orders/"+tt.orderID+"/payment", nil)
-			if tt.withAuth {
-				req = withUserIDContext(req, tt.userID)
-			}
-			req.SetPathValue("id", tt.orderID)
-
-			w := httptest.NewRecorder()
-			handler.CheckPayment(w, req)
-
-			assert.Equal(t, tt.expectedStatus, w.Code)
-			if tt.expectedStatus == http.StatusOK || tt.expectedStatus == http.StatusAccepted {
-				var resp CheckPaymentResponse
-				err := json.Unmarshal(w.Body.Bytes(), &resp)
-				require.NoError(t, err)
-				assert.Equal(t, tt.expectedResp, resp)
-			}
 		})
 	}
 }
@@ -312,9 +223,9 @@ func TestOrderHandler_GetMyOrders(t *testing.T) {
 					},
 				}, nil)
 
-				// Проверка обогащения через restaurantClient
-				rest.EXPECT().GetDishesByIDs(gomock.Any(), []int64{100}).Return([]*pbRestaurant.Dish{
-					{Id: 100, Name: "Burger", ImageUrl: "img.png"},
+				// Проверка обогащения через restaurantClient (теперь используем доменную модель Dish)
+				rest.EXPECT().GetDishesByIDs(gomock.Any(), []int64{100}).Return([]restaurantclient.Dish{
+					{ID: 100, Name: "Burger", ImageURL: "img.png"},
 				}, nil)
 			},
 			expectedStatus: http.StatusOK,

@@ -63,7 +63,7 @@ func TestRestaurantBrandUseCase_GetRestaurantBrandsByIDs(t *testing.T) {
 			repo := mocks.NewMockRestaurantBrandRepository(ctrl)
 			tt.mockInit(repo)
 
-			uc := NewRestaurantBrandUseCase(repo, defaultLogo, nil)
+			uc := NewRestaurantBrandUseCase(repo, defaultLogo, nil, nil)
 			res, err := uc.GetRestaurantBrandsByIDs(context.Background(), tt.ids)
 
 			if tt.expectedError != nil {
@@ -122,8 +122,126 @@ func TestRestaurantBrandUseCase_GetRestaurantBrandsList(t *testing.T) {
 			repo := mocks.NewMockRestaurantBrandRepository(ctrl)
 			tt.mockInit(repo)
 
-			uc := NewRestaurantBrandUseCase(repo, defaultLogo, nil)
+			uc := NewRestaurantBrandUseCase(repo, defaultLogo, nil, nil)
 			res, err := uc.GetRestaurantBrandsList(context.Background(), limit, offset)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Len(t, res, tt.expectedLen)
+				if tt.expectedLen > 0 {
+					assert.Equal(t, defaultLogo, res[0].LogoURL)
+				}
+			}
+		})
+	}
+}
+
+func TestRestaurantBrandUseCase_GetRestaurantBrandsByCategoryName(t *testing.T) {
+	type mockInit func(m *mocks.MockRestaurantBrandRepository)
+
+	defaultLogo := "http://s3.ru/default-brand.png"
+	category := "Fastfood"
+	limit, offset := 10, 0
+
+	tests := []struct {
+		name          string
+		mockInit      mockInit
+		expectedLen   int
+		expectedError error
+	}{
+		{
+			name: "Успешное получение по категории",
+			mockInit: func(m *mocks.MockRestaurantBrandRepository) {
+				m.EXPECT().
+					GetRestaurantBrandsByCategoryName(gomock.Any(), category, limit, offset).
+					Return([]domain.RestaurantBrand{
+						{ID: 1, Name: "Teremok", LogoURL: ""},
+					}, nil)
+			},
+			expectedLen: 1,
+		},
+		{
+			name: "Ошибка базы данных",
+			mockInit: func(m *mocks.MockRestaurantBrandRepository) {
+				m.EXPECT().
+					GetRestaurantBrandsByCategoryName(gomock.Any(), category, limit, offset).
+					Return(nil, errors.New("db error"))
+			},
+			expectedError: errors.New("db error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			repo := mocks.NewMockRestaurantBrandRepository(ctrl)
+			tt.mockInit(repo)
+
+			uc := NewRestaurantBrandUseCase(repo, defaultLogo, nil, nil)
+			res, err := uc.GetRestaurantBrandsByCategoryName(context.Background(), category, limit, offset)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Len(t, res, tt.expectedLen)
+				if tt.expectedLen > 0 {
+					assert.Equal(t, defaultLogo, res[0].LogoURL)
+				}
+			}
+		})
+	}
+}
+
+func TestRestaurantBrandUseCase_SearchRestaurantBrands(t *testing.T) {
+	type mockInit func(m *mocks.MockRestaurantBrandRepository)
+
+	defaultLogo := "http://s3.ru/default-brand.png"
+	query := "Pizza"
+	limit, offset := 10, 0
+
+	tests := []struct {
+		name          string
+		mockInit      mockInit
+		expectedLen   int
+		expectedError error
+	}{
+		{
+			name: "Успешный поиск",
+			mockInit: func(m *mocks.MockRestaurantBrandRepository) {
+				m.EXPECT().
+					SearchRestaurantBrands(gomock.Any(), query, limit, offset).
+					Return([]domain.RestaurantBrand{
+						{ID: 1, Name: "Dodo Pizza", LogoURL: ""},
+					}, nil)
+			},
+			expectedLen: 1,
+		},
+		{
+			name: "Ошибка базы данных",
+			mockInit: func(m *mocks.MockRestaurantBrandRepository) {
+				m.EXPECT().
+					SearchRestaurantBrands(gomock.Any(), query, limit, offset).
+					Return(nil, errors.New("db error"))
+			},
+			expectedError: errors.New("db error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			repo := mocks.NewMockRestaurantBrandRepository(ctrl)
+			tt.mockInit(repo)
+
+			uc := NewRestaurantBrandUseCase(repo, defaultLogo, nil, nil)
+			res, err := uc.SearchRestaurantBrands(context.Background(), query, limit, offset)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)
@@ -149,7 +267,7 @@ func TestRestaurantBrandUseCase_GetRestaurantBrandByID(t *testing.T) {
 		id            int64
 		mockInit      mockInit
 		expectedName  string
-		expectedError string // Подстрока ошибки
+		expectedError string
 	}{
 		{
 			name: "Успешное получение по ID",
@@ -193,7 +311,7 @@ func TestRestaurantBrandUseCase_GetRestaurantBrandByID(t *testing.T) {
 			repo := mocks.NewMockRestaurantBrandRepository(ctrl)
 			tt.mockInit(repo)
 
-			uc := NewRestaurantBrandUseCase(repo, defaultLogo, nil)
+			uc := NewRestaurantBrandUseCase(repo, defaultLogo, nil, nil)
 			res, err := uc.GetRestaurantBrandByID(context.Background(), tt.id)
 
 			if tt.expectedError != "" {
@@ -257,11 +375,9 @@ func TestRestaurantBrandUseCase_CreateRestaurantBrand(t *testing.T) {
 			},
 		},
 		{
-			name:  "Ошибка: невалидный формат изображения",
-			image: []byte("definitely-not-an-image"),
-			mockInit: func(r *mocks.MockRestaurantBrandRepository, fs *s3Mocks.MockFileStorage) {
-				// Упадет на imageutil.ConvertToWebp
-			},
+			name:          "Ошибка: невалидный формат изображения",
+			image:         []byte("definitely-not-an-image"),
+			mockInit:      func(r *mocks.MockRestaurantBrandRepository, fs *s3Mocks.MockFileStorage) {},
 			expectedError: domain.ErrInvalidImageExt.Error(),
 		},
 		{
@@ -283,7 +399,7 @@ func TestRestaurantBrandUseCase_CreateRestaurantBrand(t *testing.T) {
 			fs := s3Mocks.NewMockFileStorage(ctrl)
 			tt.mockInit(repo, fs)
 
-			uc := NewRestaurantBrandUseCase(repo, defaultLogo, fs)
+			uc := NewRestaurantBrandUseCase(repo, defaultLogo, fs, nil)
 			_, err := uc.CreateRestaurantBrand(ctx, brandInput, tt.image, idemKey)
 
 			if tt.expectedError != "" {
@@ -370,7 +486,7 @@ func TestRestaurantBrandUseCase_UpdateRestaurantBrand(t *testing.T) {
 			fs := s3Mocks.NewMockFileStorage(ctrl)
 			tt.mockInit(repo, fs)
 
-			uc := NewRestaurantBrandUseCase(repo, defaultLogo, fs)
+			uc := NewRestaurantBrandUseCase(repo, defaultLogo, fs, nil)
 			_, err := uc.UpdateRestaurantBrand(ctx, tt.input, tt.newImage, "idem")
 
 			if tt.expectedError != "" {
@@ -418,7 +534,7 @@ func TestRestaurantBrandUseCase_DeleteRestaurantBrand(t *testing.T) {
 			repo := mocks.NewMockRestaurantBrandRepository(ctrl)
 			tt.mockInit(repo)
 
-			uc := NewRestaurantBrandUseCase(repo, "", nil)
+			uc := NewRestaurantBrandUseCase(repo, "", nil, nil)
 			err := uc.DeleteRestaurantBrand(ctx, brandID)
 
 			assert.Equal(t, tt.wantErr, err != nil)

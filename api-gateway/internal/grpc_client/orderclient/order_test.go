@@ -240,7 +240,7 @@ func TestOrderClient_PayForFriend(t *testing.T) {
 					PayerUserId:     1,
 					PaymentMethodId: "pm-1",
 					IdempotencyKey:  "idem-1",
-				}).Return(&pbOrder.PayForFriendResponse{ConfirmationUrl: "url"}, nil)
+				}).Return(&emptypb.Empty{}, nil)
 			},
 			expectedErr: nil,
 		},
@@ -266,77 +266,6 @@ func TestOrderClient_PayForFriend(t *testing.T) {
 			err := client.PayForFriend(context.Background(), "split-1", 1, "pm-1", "idem-1")
 
 			assert.ErrorIs(t, err, tt.expectedErr)
-		})
-	}
-}
-
-func TestOrderClient_GetOrderPaymentID(t *testing.T) {
-	type mockBehavior func(m *mocks.MockOrderServiceClient)
-
-	tests := []struct {
-		name         string
-		mockBehavior mockBehavior
-		expectedRes  string
-		expectedErr  error
-		errContains  string
-	}{
-		{
-			name: "Успешное получение Payment ID",
-			mockBehavior: func(m *mocks.MockOrderServiceClient) {
-				m.EXPECT().GetOrderPaymentID(gomock.Any(), &pbOrder.GetOrderPaymentIDRequest{
-					OrderPublicId: "pub-1",
-					UserId:        1,
-				}).Return(&pbOrder.GetOrderPaymentIDResponse{YookassaPaymentId: "pay-123"}, nil)
-			},
-			expectedRes: "pay-123",
-			expectedErr: nil,
-		},
-		{
-			name: "Заказ не найден",
-			mockBehavior: func(m *mocks.MockOrderServiceClient) {
-				m.EXPECT().GetOrderPaymentID(gomock.Any(), gomock.Any()).
-					Return(nil, status.Error(codes.NotFound, "not found"))
-			},
-			expectedErr: ErrAddressNotFound,
-		},
-		{
-			name: "Отказ в доступе (PermissionDenied)",
-			mockBehavior: func(m *mocks.MockOrderServiceClient) {
-				m.EXPECT().GetOrderPaymentID(gomock.Any(), gomock.Any()).
-					Return(nil, status.Error(codes.PermissionDenied, "forbidden"))
-			},
-			expectedErr: ErrInternal,
-		},
-		{
-			name: "Платеж еще не готов (FailedPrecondition)",
-			mockBehavior: func(m *mocks.MockOrderServiceClient) {
-				m.EXPECT().GetOrderPaymentID(gomock.Any(), gomock.Any()).
-					Return(nil, status.Error(codes.FailedPrecondition, "pending"))
-			},
-			errContains: "payment not ready: pending",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			mockGRPC := mocks.NewMockOrderServiceClient(ctrl)
-			tt.mockBehavior(mockGRPC)
-
-			client := NewOrderClient(mockGRPC)
-			res, err := client.GetOrderPaymentID(context.Background(), "pub-1", 1)
-
-			if tt.expectedErr != nil {
-				assert.ErrorIs(t, err, tt.expectedErr)
-			} else if tt.errContains != "" {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errContains)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedRes, res)
-			}
 		})
 	}
 }

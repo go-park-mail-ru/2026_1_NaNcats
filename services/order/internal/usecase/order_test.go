@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/domain"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository"
 	repoMocks "github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository/mocks"
 	ucMocks "github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase/mocks"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
@@ -182,7 +183,7 @@ func TestOrderUseCase_CancelOrder(t *testing.T) {
 				d.repo.EXPECT().GetOrderByPublicID(gomock.Any(), "pub-123").Return(domain.Order{
 					AdminID: 1, Status: StatusCreated,
 				}, nil)
-				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusCancelled).Return(nil)
+				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusCancelled, StatusCreated, StatusCartLocked, StatusPaymentReady, StatusPaid).Return(nil)
 			},
 			expectedErr: false,
 		},
@@ -206,6 +207,9 @@ func TestOrderUseCase_CancelOrder(t *testing.T) {
 				d.repo.EXPECT().GetOrderByPublicID(gomock.Any(), "pub-123").Return(domain.Order{
 					AdminID: 1, Status: StatusFinished,
 				}, nil)
+				// В новой реализации проверка терминального статуса ушла в слой БД
+				// (optimistic locking через UpdateOrderStatus)
+				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusCancelled, StatusCreated, StatusCartLocked, StatusPaymentReady, StatusPaid).Return(repository.ErrStateChanged)
 			},
 			expectedErr: true,
 			errCode:     codes.FailedPrecondition,
@@ -271,7 +275,7 @@ func TestOrderUseCase_UpdateOrderStatusByPaymentID(t *testing.T) {
 			mockInit: func(d useCaseDeps) {
 				d.repo.EXPECT().UpdateSplitStatusByPaymentID(gomock.Any(), "pay-3", SplitStatusPaid).Return("pub-order", nil)
 				d.repo.EXPECT().AreAllSplitsPaid(gomock.Any(), "pub-order").Return(true, nil)
-				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-order", StatusPaid).Return(nil)
+				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-order", StatusPaid, StatusCreated, StatusCartLocked, StatusPaymentReady).Return(nil)
 
 				// Должен уйти ивент в RabbitMQ
 				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueGatewayEvents, gomock.Any()).Return(nil)
@@ -316,7 +320,7 @@ func TestOrderUseCase_ProcessSagaReply(t *testing.T) {
 				OrderID: "pub-123", Step: "PAYMENT", Status: events.StatusError, SplitID: "split-1",
 			},
 			mockInit: func(d useCaseDeps) {
-				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusFailed).Return(nil)
+				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusFailed, StatusCreated, StatusCartLocked, StatusPaymentReady).Return(nil)
 				d.repo.EXPECT().UpdateSplitStatus(gomock.Any(), "split-1", SplitStatusFailed).Return(nil)
 				// Компенсирующий запрос на разблокировку
 				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueCartCommands, gomock.Any()).Return(nil)
@@ -333,7 +337,7 @@ func TestOrderUseCase_ProcessSagaReply(t *testing.T) {
 					PublicID: "pub-123",
 					Splits:   []domain.OrderSplit{{ID: "split-1", UserID: 1, Amount: 1000}},
 				}, nil)
-				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusCartLocked).Return(nil)
+				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusCartLocked, StatusCreated).Return(nil)
 				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueuePaymentCommands, gomock.Any()).Return(nil)
 			},
 			expectedErr: false,
