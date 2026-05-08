@@ -33,6 +33,7 @@ type CreateOrderInput struct {
 
 type OrderDish struct {
 	DishID      int64
+	DishName    string
 	Quantity    int32
 	Price       int64
 	OwnerUserID *int64
@@ -48,7 +49,7 @@ type OrderSplit struct {
 type Order struct {
 	PublicID          string
 	RestaurantName    string
-	RestaurantLogoURL string
+	RestaurantBrandID int64
 	TotalCost         int64
 	Status            string
 	CreatedAt         time.Time
@@ -58,7 +59,7 @@ type Order struct {
 
 type OrderClient interface {
 	CreateOrder(ctx context.Context, userID int64, input CreateOrderInput, idempotencyKey string) (string, error)
-	GetOrders(ctx context.Context, userID int64) ([]Order, error)
+	GetOrders(ctx context.Context, userID int64, limit, offset int32) ([]Order, error)
 	PayForFriend(ctx context.Context, splitID string, payerID int64, paymentMethodID, idempotencyKey string) error
 	CancelOrder(ctx context.Context, orderPublicID string, userID int64) error
 }
@@ -105,9 +106,11 @@ func (c *orderClient) CreateOrder(ctx context.Context, userID int64, input Creat
 	return resp.OrderPublicId, nil
 }
 
-func (c *orderClient) GetOrders(ctx context.Context, userID int64) ([]Order, error) {
+func (c *orderClient) GetOrders(ctx context.Context, userID int64, limit, offset int32) ([]Order, error) {
 	resp, err := c.client.GetOrders(ctx, &pbOrder.GetOrdersRequest{
 		UserId: userID,
+		Limit:  limit,
+		Offset: offset,
 	})
 	if err != nil {
 		return nil, ErrInternal
@@ -119,6 +122,7 @@ func (c *orderClient) GetOrders(ctx context.Context, userID int64) ([]Order, err
 		for _, pbItem := range pbO.Items {
 			items = append(items, OrderDish{
 				DishID:      pbItem.DishId,
+				DishName:    pbItem.DishName,
 				Quantity:    pbItem.Quantity,
 				Price:       pbItem.Price,
 				OwnerUserID: pbItem.OwnerUserId,
@@ -136,14 +140,13 @@ func (c *orderClient) GetOrders(ctx context.Context, userID int64) ([]Order, err
 		}
 
 		orders = append(orders, Order{
-			PublicID:          pbO.PublicId,
-			RestaurantName:    pbO.RestaurantName,
-			RestaurantLogoURL: pbO.RestaurantLogoUrl,
-			TotalCost:         pbO.TotalCost,
-			Status:            pbO.Status,
-			CreatedAt:         pbO.CreatedAt.AsTime(),
-			Items:             items,
-			Splits:            splits,
+			PublicID:       pbO.PublicId,
+			RestaurantName: pbO.RestaurantName,
+			TotalCost:      pbO.TotalCost,
+			Status:         pbO.Status,
+			CreatedAt:      pbO.CreatedAt.AsTime(),
+			Items:          items,
+			Splits:         splits,
 		})
 	}
 
