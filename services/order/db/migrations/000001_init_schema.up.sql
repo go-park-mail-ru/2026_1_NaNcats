@@ -58,6 +58,8 @@ CREATE TABLE "order_dish" (
 	order_id BIGINT,
 	dish_id BIGINT,
 	PRIMARY KEY (order_id, dish_id),
+
+	dish_name TEXT NOT NULL,
 	
 	quantity INT NOT NULL CHECK (quantity > 0),
 	price BIGINT NOT NULL CHECK (price >= 1000000),
