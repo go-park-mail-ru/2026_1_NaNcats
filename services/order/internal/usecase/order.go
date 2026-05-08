@@ -56,7 +56,7 @@ type MessagePublisher interface {
 
 type OrderUseCase interface {
 	CreateOrder(ctx context.Context, req domain.CreateOrderInput, idempotencyKey string) (string, error)
-	GetOrders(ctx context.Context, userID int64) ([]domain.Order, error)
+	GetOrders(ctx context.Context, userID int64, limit, offset int32) ([]domain.Order, error)
 	UpdateOrderStatusByPaymentID(ctx context.Context, paymentID string, status string, idempotencyKey string) error
 	ProcessSagaReply(ctx context.Context, reply events.SagaReply) error
 	PayForFriend(ctx context.Context, splitID string, adminID int64, paymentMethodID, idempotencyKey string) error
@@ -152,6 +152,7 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderIn
 	for _, item := range cart.Items {
 		items = append(items, domain.OrderDish{
 			DishID:      item.DishID,
+			Name:        item.Name,
 			Quantity:    item.Quantity,
 			Price:       item.Price,
 			OwnerUserID: item.OwnerUserID,
@@ -167,9 +168,6 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderIn
 				Amount: amount,
 				Status: SplitStatusPending,
 			}
-			// Если для основного плательщика выбрана сохранённая карта -
-			// сохраняем yookassa-external-id, чтобы saga при CreatePayment
-			// сразу списал с этой карты (а не открывал форму ввода)
 			if uid == req.UserID && req.PaymentMethodID != "" {
 				pm := req.PaymentMethodID
 				split.PaymentMethodID = &pm
@@ -240,49 +238,20 @@ func (o *orderUseCase) CancelOrder(ctx context.Context, orderPublicID string, us
 	return nil
 }
 
-func (o *orderUseCase) GetOrders(ctx context.Context, userID int64) ([]domain.Order, error) {
+func (o *orderUseCase) GetOrders(ctx context.Context, userID int64, limit, offset int32) ([]domain.Order, error) {
 	span := trace.SpanFromContext(ctx)
-	span.SetAttributes(attribute.Int64("user.id", userID))
+	span.SetAttributes(
+		attribute.Int64("user.id", userID),
+		attribute.Int("query.limit", int(limit)),
+		attribute.Int("query.offset", int(offset)),
+	)
 
-	orders, err := o.orderRepo.GetOrdersByUserID(ctx, userID)
+	orders, err := o.orderRepo.GetOrdersByUserID(ctx, userID, limit, offset)
 	if err != nil {
 		return []domain.Order{}, errutil.Internal("failed to get orders from repository", err)
 	}
 
-	if len(orders) == 0 {
-		span.SetAttributes(attribute.Int("orders.count", 0))
-		return orders, nil
-	}
-
-	// Собираем уникальные ID ресторанов
-	brandIDs := make([]int64, 0)
-	seen := make(map[int64]bool)
-	for _, ord := range orders {
-		if !seen[ord.RestaurantBrandID] {
-			brandIDs = append(brandIDs, ord.RestaurantBrandID)
-			seen[ord.RestaurantBrandID] = true
-		}
-	}
-
-	span.SetAttributes(
-		attribute.Int("orders.count", len(orders)),
-		attribute.Int("brands.unique_count", len(brandIDs)),
-	)
-
-	logos, err := o.restaurantClient.GetLogosByBrandIDs(ctx, brandIDs)
-	if err != nil {
-		span.AddEvent("restaurant_logos_fetch_failed")
-		o.logger.Error("failed to get logos of restaurants", err)
-	}
-
-	for i := range orders {
-		logo, ok := logos[orders[i].RestaurantBrandID]
-		if ok && logo != "" {
-			orders[i].RestaurantLogoURL = logo
-		} else {
-			orders[i].RestaurantLogoURL = o.defaultRestaurantLogoURL
-		}
-	}
+	span.SetAttributes(attribute.Int("orders.count", len(orders)))
 
 	return orders, nil
 }
