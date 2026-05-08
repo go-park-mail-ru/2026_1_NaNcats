@@ -65,11 +65,11 @@ func (r *orderRepo) CreateOrder(ctx context.Context, order domain.Order, idempot
 
 	if len(order.Items) > 0 {
 		dishQuery := `
-			INSERT INTO "order_dish" (order_id, dish_id, quantity, price, owner_user_id)
-			VALUES ($1, $2, $3, $4, $5)
+			INSERT INTO "order_dish" (order_id, dish_id, dish_name, quantity, price, owner_user_id)
+			VALUES ($1, $2, $3, $4, $5, $6)
 		`
 		for _, item := range order.Items {
-			batch.Queue(dishQuery, orderID, item.DishID, item.Quantity, item.Price, item.OwnerUserID)
+			batch.Queue(dishQuery, orderID, item.DishID, item.Name, item.Quantity, item.Price, item.OwnerUserID)
 		}
 	}
 
@@ -236,12 +236,12 @@ func (r *orderRepo) GetOrderByPublicID(ctx context.Context, publicID string) (do
 		o.PromocodeID = *promoID
 	}
 
-	dishQuery := `SELECT dish_id, quantity, price, owner_user_id FROM "order_dish" WHERE order_id = $1`
+	dishQuery := `SELECT dish_id, dish_name, quantity, price, owner_user_id FROM "order_dish" WHERE order_id = $1`
 	dishRows, _ := r.pool.Query(ctx, dishQuery, o.ID)
 	defer dishRows.Close()
 	for dishRows.Next() {
 		var d domain.OrderDish
-		if err := dishRows.Scan(&d.DishID, &d.Quantity, &d.Price, &d.OwnerUserID); err == nil {
+		if err := dishRows.Scan(&d.DishID, &d.Name, &d.Quantity, &d.Price, &d.OwnerUserID); err == nil {
 			o.Items = append(o.Items, d)
 		}
 	}
@@ -263,7 +263,7 @@ func (r *orderRepo) GetOrderByPublicID(ctx context.Context, publicID string) (do
 	return o, nil
 }
 
-func (r *orderRepo) GetOrdersByUserID(ctx context.Context, userID int64) ([]domain.Order, error) {
+func (r *orderRepo) GetOrdersByUserID(ctx context.Context, userID int64, limit, offset int32) ([]domain.Order, error) {
 	query := `
 		SELECT DISTINCT o.id, o.public_id, o.admin_account_id, o.restaurant_branch_id, 
 		o.restaurant_brand_id, o.restaurant_name, o.total_cost, o.status, o.created_at
@@ -271,8 +271,9 @@ func (r *orderRepo) GetOrdersByUserID(ctx context.Context, userID int64) ([]doma
 		LEFT JOIN "order_split" os ON o.id = os.order_id
 		WHERE o.admin_account_id = $1 OR os.user_id = $1
 		ORDER BY o.created_at DESC
+		LIMIT $2 OFFSET $3
 	`
-	rows, err := r.pool.Query(ctx, query, userID)
+	rows, err := r.pool.Query(ctx, query, userID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +310,7 @@ func (r *orderRepo) GetOrdersByUserID(ctx context.Context, userID int64) ([]doma
 		}
 	}
 
-	dishQuery := `SELECT order_id, dish_id, quantity, price, owner_user_id FROM "order_dish" WHERE order_id = ANY($1)`
+	dishQuery := `SELECT order_id, dish_id, dish_name, quantity, price, owner_user_id FROM "order_dish" WHERE order_id = ANY($1)`
 	dishRows, err := r.pool.Query(ctx, dishQuery, orderIDs)
 	if err != nil {
 		return nil, fmt.Errorf("batch fetch dishes: %w", err)
@@ -320,7 +321,7 @@ func (r *orderRepo) GetOrdersByUserID(ctx context.Context, userID int64) ([]doma
 	for dishRows.Next() {
 		var d domain.OrderDish
 		var orderID int64
-		if err := dishRows.Scan(&orderID, &d.DishID, &d.Quantity, &d.Price, &d.OwnerUserID); err == nil {
+		if err := dishRows.Scan(&orderID, &d.DishID, &d.Name, &d.Quantity, &d.Price, &d.OwnerUserID); err == nil {
 			dishesMap[orderID] = append(dishesMap[orderID], d)
 		}
 	}
