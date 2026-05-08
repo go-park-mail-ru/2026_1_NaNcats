@@ -65,13 +65,13 @@ func (m OrderUseCaseTracingMiddleware) CreateOrder(ctx context.Context, req doma
 }
 
 // GetOrders трассирует выполнение метода GetOrders
-func (m OrderUseCaseTracingMiddleware) GetOrders(ctx context.Context, userID int64) (oa1 []domain.Order, err error) {
+func (m OrderUseCaseTracingMiddleware) GetOrders(ctx context.Context, userID int64, limit int32, offset int32) (oa1 []domain.Order, err error) {
 
 	ctx, span := m.tracer.Start(ctx, "OrderUseCase.GetOrders")
 
 	defer span.End()
 
-	oa1, err = m.next.GetOrders(ctx, userID)
+	oa1, err = m.next.GetOrders(ctx, userID, limit, offset)
 
 	if err != nil {
 		span.RecordError(err)

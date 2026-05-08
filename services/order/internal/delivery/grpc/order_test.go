@@ -37,6 +37,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 				ServiceFee:         29,
 				PaymentMethodId:    "pm-123",
 				PayForAll:          true,
+				PayerMapping:       map[int64]int64{2: 500, 3: 1000},
 				IdempotencyKey:     "idem-key",
 			},
 			mockInit: func(m *mocks.MockOrderUseCase) {
@@ -49,6 +50,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 					ServiceFee:         29,
 					PaymentMethodID:    "pm-123",
 					PayForAll:          true,
+					PayerMapping:       map[int64]int64{2: 500, 3: 1000},
 				}
 				m.EXPECT().CreateOrder(gomock.Any(), expectedInput, "idem-key").
 					Return("pub-order-123", nil)
@@ -109,9 +111,13 @@ func TestOrderHandler_GetOrders(t *testing.T) {
 	}{
 		{
 			name: "Успешное получение списка заказов",
-			req:  &pb.GetOrdersRequest{UserId: 1},
+			req: &pb.GetOrdersRequest{
+				UserId: 1,
+				Limit:  10,
+				Offset: 0,
+			},
 			mockInit: func(m *mocks.MockOrderUseCase) {
-				m.EXPECT().GetOrders(gomock.Any(), int64(1)).Return([]domain.Order{
+				m.EXPECT().GetOrders(gomock.Any(), int64(1), int32(10), int32(0)).Return([]domain.Order{
 					{
 						PublicID:       "pub-1",
 						RestaurantName: "KFC",
@@ -132,9 +138,13 @@ func TestOrderHandler_GetOrders(t *testing.T) {
 		},
 		{
 			name: "Ошибка в UseCase",
-			req:  &pb.GetOrdersRequest{UserId: 1},
+			req: &pb.GetOrdersRequest{
+				UserId: 1,
+				Limit:  10,
+				Offset: 20,
+			},
 			mockInit: func(m *mocks.MockOrderUseCase) {
-				m.EXPECT().GetOrders(gomock.Any(), int64(1)).Return(nil, errors.New("db error"))
+				m.EXPECT().GetOrders(gomock.Any(), int64(1), int32(10), int32(20)).Return(nil, errors.New("db error"))
 			},
 			expectedCode: codes.Internal,
 		},

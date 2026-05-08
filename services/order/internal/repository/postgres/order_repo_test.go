@@ -8,9 +8,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository"
-	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/pashagolub/pgxmock/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,7 +29,7 @@ func TestOrderRepo_CreateOrder(t *testing.T) {
 		TotalCost:          1500,
 		Status:             "created",
 		Items: []domain.OrderDish{
-			{DishID: 100, Quantity: 2, Price: 500, OwnerUserID: &ownerID},
+			{DishID: 100, Name: "Burger", Quantity: 2, Price: 500, OwnerUserID: &ownerID},
 		},
 		Splits: []domain.OrderSplit{
 			{ID: "split-1", UserID: 1, Amount: 1500, PaymentMethodID: &pmID},
@@ -47,17 +45,23 @@ func TestOrderRepo_CreateOrder(t *testing.T) {
 		expectedErrStr string
 	}{
 		{
-			name:    "Успешное создание заказа (Транзакция + Батч)",
+			name:    "Успешное создание заказа (Новый ключ, Транзакция + Батч)",
 			order:   order,
 			idemKey: "idem-key-1",
 			mockBehavior: func(mock pgxmock.PgxPoolIface, order domain.Order, idemKey string) {
 				mock.ExpectBegin()
 
+				// 1. Попытка вставить ключ идемпотентности (новый)
+				mock.ExpectQuery(`INSERT INTO "idempotency_records"`).
+					WithArgs(order.AdminID, idemKey).
+					WillReturnRows(pgxmock.NewRows([]string{"response_payload"}).AddRow([]byte(nil)))
+
+				// 2. Вставка основного заказа
 				mock.ExpectQuery(`INSERT INTO "order"`).
 					WithArgs(
 						order.AdminID, order.RestaurantBranchID, order.RestaurantBrandID,
 						order.RestaurantName, order.ClientAddressID, order.TotalCost,
-						order.Status, idemKey,
+						order.Status,
 					).
 					WillReturnRows(pgxmock.NewRows([]string{"id", "public_id"}).AddRow(int64(42), "pub-uuid-123"))
 
@@ -66,13 +70,20 @@ func TestOrderRepo_CreateOrder(t *testing.T) {
 				ownerID := int64(1)
 				pmID := "pm-123"
 
+				// 3. Вставка блюд (добавилось поле dish_name)
 				b.ExpectExec(`INSERT INTO "order_dish"`).
-					WithArgs(int64(42), int64(100), 2, int64(500), &ownerID).
+					WithArgs(int64(42), int64(100), "Burger", 2, int64(500), &ownerID).
 					WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
+				// 4. Вставка сплитов
 				b.ExpectExec(`INSERT INTO "order_split"`).
 					WithArgs("split-1", int64(42), int64(1), int64(1500), &pmID).
 					WillReturnResult(pgxmock.NewResult("INSERT", 1))
+
+				// 5. Обновление записи идемпотентности с результатом
+				mock.ExpectExec(`UPDATE "idempotency_records"`).
+					WithArgs(pgxmock.AnyArg(), order.AdminID, idemKey).
+					WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 				mock.ExpectCommit()
 			},
@@ -80,25 +91,72 @@ func TestOrderRepo_CreateOrder(t *testing.T) {
 			expectedErrStr: "",
 		},
 		{
-			name:    "Ошибка: дубликат по ключу идемпотентности",
+			name:    "Идемпотентность: запрос уже в процессе (конфликт + пустое тело)",
 			order:   order,
-			idemKey: "idem-key-dup",
+			idemKey: "idem-key-progress",
 			mockBehavior: func(mock pgxmock.PgxPoolIface, order domain.Order, idemKey string) {
 				mock.ExpectBegin()
 
-				pgErr := &pgconn.PgError{Code: pgerrcode.UniqueViolation}
-				mock.ExpectQuery(`INSERT INTO "order"`).
-					WithArgs(
-						order.AdminID, order.RestaurantBranchID, order.RestaurantBrandID,
-						order.RestaurantName, order.ClientAddressID, order.TotalCost,
-						order.Status, idemKey,
-					).
-					WillReturnError(pgErr)
+				// Имитация срабатывания ON CONFLICT DO NOTHING -> возвращает ErrNoRows
+				mock.ExpectQuery(`INSERT INTO "idempotency_records"`).
+					WithArgs(order.AdminID, idemKey).
+					WillReturnError(pgx.ErrNoRows)
+
+				// Фолбэк на SELECT для получения существующей записи, которая еще не завершена (nil)
+				mock.ExpectQuery(`SELECT response_payload FROM "idempotency_records"`).
+					WithArgs(order.AdminID, idemKey).
+					WillReturnRows(pgxmock.NewRows([]string{"response_payload"}).AddRow([]byte(nil)))
 
 				mock.ExpectRollback()
 			},
 			expectedPubID:  "",
-			expectedErrStr: "order with this idempotency key already exists",
+			expectedErrStr: "request is already in progress",
+		},
+		{
+			name:    "Идемпотентность: успешный возврат сохраненного результата",
+			order:   order,
+			idemKey: "idem-key-done",
+			mockBehavior: func(mock pgxmock.PgxPoolIface, order domain.Order, idemKey string) {
+				mock.ExpectBegin()
+
+				// ON CONFLICT DO NOTHING
+				mock.ExpectQuery(`INSERT INTO "idempotency_records"`).
+					WithArgs(order.AdminID, idemKey).
+					WillReturnError(pgx.ErrNoRows)
+
+				// Фолбэк на SELECT возвращает уже сохраненный JSON
+				mock.ExpectQuery(`SELECT response_payload FROM "idempotency_records"`).
+					WithArgs(order.AdminID, idemKey).
+					WillReturnRows(pgxmock.NewRows([]string{"response_payload"}).AddRow([]byte(`{"public_id":"pub-uuid-saved"}`)))
+
+				mock.ExpectRollback()
+			},
+			expectedPubID:  "pub-uuid-saved",
+			expectedErrStr: "",
+		},
+		{
+			name:    "Ошибка: падение при вставке заказа",
+			order:   order,
+			idemKey: "idem-key-err",
+			mockBehavior: func(mock pgxmock.PgxPoolIface, order domain.Order, idemKey string) {
+				mock.ExpectBegin()
+
+				mock.ExpectQuery(`INSERT INTO "idempotency_records"`).
+					WithArgs(order.AdminID, idemKey).
+					WillReturnRows(pgxmock.NewRows([]string{"response_payload"}).AddRow([]byte(nil)))
+
+				mock.ExpectQuery(`INSERT INTO "order"`).
+					WithArgs(
+						order.AdminID, order.RestaurantBranchID, order.RestaurantBrandID,
+						order.RestaurantName, order.ClientAddressID, order.TotalCost,
+						order.Status,
+					).
+					WillReturnError(errors.New("db error"))
+
+				mock.ExpectRollback()
+			},
+			expectedPubID:  "",
+			expectedErrStr: "insert master order",
 		},
 	}
 
@@ -271,7 +329,7 @@ func TestOrderRepo_GetOrderByPublicID(t *testing.T) {
 	type mockBehavior func(mock pgxmock.PgxPoolIface, publicID string)
 
 	colsMaster := []string{"id", "public_id", "admin_account_id", "courier_account_id", "restaurant_branch_id", "restaurant_brand_id", "client_address_id", "total_cost", "promocode_id", "restaurant_name", "status", "created_at", "updated_at"}
-	colsDishes := []string{"dish_id", "quantity", "price", "owner_user_id"}
+	colsDishes := []string{"dish_id", "dish_name", "quantity", "price", "owner_user_id"}
 	colsSplits := []string{"id", "user_id", "amount", "status", "payment_method_id", "yookassa_payment_id"}
 
 	tests := []struct {
@@ -292,10 +350,11 @@ func TestOrderRepo_GetOrderByPublicID(t *testing.T) {
 						AddRow(int64(10), "pub-123", int64(1), courierID, int64(2), int64(3), "addr-1", int64(1500), promoID, "KFC", "paid", time.Now(), time.Now()))
 
 				var ownerID int64 = 1
-				mock.ExpectQuery(`SELECT dish_id, quantity, price`).
+				// В запрос было добавлено dish_name
+				mock.ExpectQuery(`SELECT dish_id, dish_name, quantity, price`).
 					WithArgs(int64(10)).
 					WillReturnRows(pgxmock.NewRows(colsDishes).
-						AddRow(int64(100), 2, int64(500), &ownerID))
+						AddRow(int64(100), "Burger", 2, int64(500), &ownerID))
 
 				pmID := "pm-1"
 				mock.ExpectQuery(`SELECT id, user_id, amount`).
@@ -336,6 +395,7 @@ func TestOrderRepo_GetOrderByPublicID(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, int64(10), order.ID)
 				assert.Len(t, order.Items, 1)
+				assert.Equal(t, "Burger", order.Items[0].Name)
 				assert.Len(t, order.Splits, 1)
 			}
 
@@ -345,20 +405,25 @@ func TestOrderRepo_GetOrderByPublicID(t *testing.T) {
 }
 
 func TestOrderRepo_GetOrdersByUserID(t *testing.T) {
-	type mockBehavior func(mock pgxmock.PgxPoolIface, userID int64)
+	type mockBehavior func(mock pgxmock.PgxPoolIface, userID int64, limit, offset int32)
 
 	tests := []struct {
 		name         string
 		userID       int64
+		limit        int32
+		offset       int32
 		mockBehavior mockBehavior
 		expectedErr  error
 	}{
 		{
-			name:   "Успешное получение списка заказов (проверка пакетной выборки ANY)",
+			name:   "Успешное получение списка заказов (с пагинацией)",
 			userID: 1,
-			mockBehavior: func(mock pgxmock.PgxPoolIface, userID int64) {
+			limit:  10,
+			offset: 0,
+			mockBehavior: func(mock pgxmock.PgxPoolIface, userID int64, limit, offset int32) {
+				// Добавлены параметры пагинации в WithArgs
 				mock.ExpectQuery(`SELECT DISTINCT o.id, o.public_id`).
-					WithArgs(userID).
+					WithArgs(userID, limit, offset).
 					WillReturnRows(pgxmock.NewRows([]string{"id", "public_id", "admin_account_id", "restaurant_branch_id", "restaurant_brand_id", "restaurant_name", "total_cost", "status", "created_at"}).
 						AddRow(int64(10), "pub-1", int64(1), int64(2), int64(3), "Rest", int64(1500), "paid", time.Now()))
 
@@ -368,10 +433,11 @@ func TestOrderRepo_GetOrdersByUserID(t *testing.T) {
 						AddRow(int64(10), "split-1", int64(1), int64(1500), "paid"))
 
 				var ownerID int64 = 1
-				mock.ExpectQuery(`SELECT order_id, dish_id, quantity, price, owner_user_id FROM "order_dish" WHERE order_id = ANY\(\$1\)`).
+				// В запрос было добавлено dish_name
+				mock.ExpectQuery(`SELECT order_id, dish_id, dish_name, quantity, price, owner_user_id FROM "order_dish" WHERE order_id = ANY\(\$1\)`).
 					WithArgs([]int64{10}).
-					WillReturnRows(pgxmock.NewRows([]string{"order_id", "dish_id", "quantity", "price", "owner_user_id"}).
-						AddRow(int64(10), int64(100), 2, int64(500), &ownerID))
+					WillReturnRows(pgxmock.NewRows([]string{"order_id", "dish_id", "dish_name", "quantity", "price", "owner_user_id"}).
+						AddRow(int64(10), int64(100), "Burger", 2, int64(500), &ownerID))
 			},
 			expectedErr: nil,
 		},
@@ -383,10 +449,10 @@ func TestOrderRepo_GetOrdersByUserID(t *testing.T) {
 			require.NoError(t, err)
 			defer mock.Close()
 
-			tt.mockBehavior(mock, tt.userID)
+			tt.mockBehavior(mock, tt.userID, tt.limit, tt.offset)
 
 			repo := NewOrderRepo(mock)
-			res, err := repo.GetOrdersByUserID(context.Background(), tt.userID)
+			res, err := repo.GetOrdersByUserID(context.Background(), tt.userID, tt.limit, tt.offset)
 
 			if tt.expectedErr != nil {
 				assert.Error(t, err)
@@ -396,6 +462,7 @@ func TestOrderRepo_GetOrdersByUserID(t *testing.T) {
 				assert.Len(t, res, 1)
 				assert.Len(t, res[0].Splits, 1)
 				assert.Len(t, res[0].Items, 1)
+				assert.Equal(t, "Burger", res[0].Items[0].Name)
 			}
 
 			assert.NoError(t, mock.ExpectationsWereMet())

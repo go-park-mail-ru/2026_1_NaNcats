@@ -102,18 +102,18 @@ func (mr *MockOrderRepositoryMockRecorder) GetOrdersByStatuses(ctx, statuses any
 }
 
 // GetOrdersByUserID mocks base method.
-func (m *MockOrderRepository) GetOrdersByUserID(ctx context.Context, userID int64) ([]domain.Order, error) {
+func (m *MockOrderRepository) GetOrdersByUserID(ctx context.Context, userID int64, limit, offset int32) ([]domain.Order, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOrdersByUserID", ctx, userID)
+	ret := m.ctrl.Call(m, "GetOrdersByUserID", ctx, userID, limit, offset)
 	ret0, _ := ret[0].([]domain.Order)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetOrdersByUserID indicates an expected call of GetOrdersByUserID.
-func (mr *MockOrderRepositoryMockRecorder) GetOrdersByUserID(ctx, userID any) *gomock.Call {
+func (mr *MockOrderRepositoryMockRecorder) GetOrdersByUserID(ctx, userID, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrdersByUserID", reflect.TypeOf((*MockOrderRepository)(nil).GetOrdersByUserID), ctx, userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrdersByUserID", reflect.TypeOf((*MockOrderRepository)(nil).GetOrdersByUserID), ctx, userID, limit, offset)
 }
 
 // GetSplitByID mocks base method.

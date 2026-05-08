@@ -186,22 +186,47 @@ func TestAddressHandler_DeleteAddress(t *testing.T) {
 			expectedCode: codes.OK,
 		},
 		{
+			name: "Ошибка: пустой IdempotencyKey",
+			req: &pb.DeleteAddressRequest{
+				UserId:          1,
+				AddressPublicId: "uuid-123",
+				IdempotencyKey:  "",
+			},
+			mockInit:     func(m *mocks.MockAddressUseCase) {},
+			expectedCode: codes.InvalidArgument,
+		},
+		{
+			name: "Ошибка: пустой AddressPublicId",
+			req: &pb.DeleteAddressRequest{
+				UserId:          1,
+				AddressPublicId: "",
+				IdempotencyKey:  "idem-del",
+			},
+			mockInit:     func(m *mocks.MockAddressUseCase) {},
+			expectedCode: codes.InvalidArgument,
+		},
+		{
 			name: "Ошибка: адрес не найден",
 			req: &pb.DeleteAddressRequest{
 				UserId:          1,
 				AddressPublicId: "uuid-404",
+				IdempotencyKey:  "idem-del",
 			},
 			mockInit: func(m *mocks.MockAddressUseCase) {
-				m.EXPECT().DeleteAddress(gomock.Any(), int64(1), "uuid-404", "").
+				m.EXPECT().DeleteAddress(gomock.Any(), int64(1), "uuid-404", "idem-del").
 					Return(domain.ErrAddressNotFound)
 			},
 			expectedCode: codes.NotFound,
 		},
 		{
 			name: "Системная ошибка в UseCase",
-			req:  &pb.DeleteAddressRequest{UserId: 1, AddressPublicId: "uuid-err"},
+			req: &pb.DeleteAddressRequest{
+				UserId:          1,
+				AddressPublicId: "uuid-err",
+				IdempotencyKey:  "idem-del",
+			},
 			mockInit: func(m *mocks.MockAddressUseCase) {
-				m.EXPECT().DeleteAddress(gomock.Any(), int64(1), "uuid-err", "").
+				m.EXPECT().DeleteAddress(gomock.Any(), int64(1), "uuid-err", "idem-del").
 					Return(errors.New("db crash"))
 			},
 			expectedCode: codes.Internal,
@@ -219,11 +244,14 @@ func TestAddressHandler_DeleteAddress(t *testing.T) {
 			handler := NewAddressHandler(mockUC)
 			resp, err := handler.DeleteAddress(context.Background(), tt.req)
 
+			grpcErr := grpcutil.ToGRPCError(err)
+
 			if tt.expectedCode == codes.OK {
-				assert.NoError(t, err)
+				assert.NoError(t, grpcErr)
 				assert.NotNil(t, resp)
 			} else {
-				st, _ := status.FromError(err)
+				st, ok := status.FromError(grpcErr)
+				assert.True(t, ok)
 				assert.Equal(t, tt.expectedCode, st.Code())
 			}
 		})
@@ -258,8 +286,22 @@ func TestAddressHandler_UpdateAddress(t *testing.T) {
 		{
 			name: "Ошибка: передана пустая структура адреса",
 			req: &pb.UpdateAddressRequest{
-				UserId:  1,
-				Address: nil,
+				UserId:         1,
+				Address:        nil,
+				IdempotencyKey: "idem-upd",
+			},
+			mockInit:     func(m *mocks.MockAddressUseCase) {},
+			expectedCode: codes.InvalidArgument,
+		},
+		{
+			name: "Ошибка: пустой IdempotencyKey",
+			req: &pb.UpdateAddressRequest{
+				UserId: 1,
+				Address: &pb.Address{
+					PublicId: "uuid-123",
+					Location: &pb.Location{AddressText: "Новый адрес"},
+				},
+				IdempotencyKey: "",
 			},
 			mockInit:     func(m *mocks.MockAddressUseCase) {},
 			expectedCode: codes.InvalidArgument,
@@ -272,9 +314,10 @@ func TestAddressHandler_UpdateAddress(t *testing.T) {
 					PublicId: "uuid-missing",
 					Location: &pb.Location{},
 				},
+				IdempotencyKey: "idem-upd",
 			},
 			mockInit: func(m *mocks.MockAddressUseCase) {
-				m.EXPECT().UpdateAddress(gomock.Any(), int64(1), gomock.Any(), "").
+				m.EXPECT().UpdateAddress(gomock.Any(), int64(1), gomock.Any(), "idem-upd").
 					Return(domain.ErrAddressNotFound)
 			},
 			expectedCode: codes.NotFound,
@@ -307,20 +350,82 @@ func TestAddressHandler_UpdateAddress(t *testing.T) {
 }
 
 func TestAddressHandler_CheckAddressExists(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	type mockInit func(m *mocks.MockAddressUseCase)
 
-	mockUC := mocks.NewMockAddressUseCase(ctrl)
-	handler := NewAddressHandler(mockUC)
+	tests := []struct {
+		name         string
+		req          *pb.CheckAddressExistsRequest
+		mockInit     mockInit
+		expectedCode codes.Code
+	}{
+		{
+			name: "Успешная проверка: адрес существует",
+			req: &pb.CheckAddressExistsRequest{
+				UserId:          1,
+				AddressPublicId: "uuid-123",
+			},
+			mockInit: func(m *mocks.MockAddressUseCase) {
+				m.EXPECT().CheckAddressExists(gomock.Any(), int64(1), "uuid-123").
+					Return(nil)
+			},
+			expectedCode: codes.OK,
+		},
+		{
+			name: "Ошибка: пустой AddressPublicId",
+			req: &pb.CheckAddressExistsRequest{
+				UserId:          1,
+				AddressPublicId: "",
+			},
+			mockInit:     func(m *mocks.MockAddressUseCase) {},
+			expectedCode: codes.InvalidArgument,
+		},
+		{
+			name: "Ошибка: адрес не найден",
+			req: &pb.CheckAddressExistsRequest{
+				UserId:          1,
+				AddressPublicId: "uuid-404",
+			},
+			mockInit: func(m *mocks.MockAddressUseCase) {
+				m.EXPECT().CheckAddressExists(gomock.Any(), int64(1), "uuid-404").
+					Return(domain.ErrAddressNotFound)
+			},
+			expectedCode: codes.NotFound,
+		},
+		{
+			name: "Системная ошибка в UseCase",
+			req: &pb.CheckAddressExistsRequest{
+				UserId:          1,
+				AddressPublicId: "uuid-err",
+			},
+			mockInit: func(m *mocks.MockAddressUseCase) {
+				m.EXPECT().CheckAddressExists(gomock.Any(), int64(1), "uuid-err").
+					Return(errors.New("db fail"))
+			},
+			expectedCode: codes.Internal,
+		},
+	}
 
-	t.Run("Успешный вызов заглушки", func(t *testing.T) {
-		req := &pb.CheckAddressExistsRequest{
-			UserId:          1,
-			AddressPublicId: "uuid-123",
-		}
-		resp, err := handler.CheckAddressExists(context.Background(), req)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-		assert.NoError(t, err)
-		assert.NotNil(t, resp)
-	})
+			mockUC := mocks.NewMockAddressUseCase(ctrl)
+			tt.mockInit(mockUC)
+
+			handler := NewAddressHandler(mockUC)
+			resp, err := handler.CheckAddressExists(context.Background(), tt.req)
+
+			grpcErr := grpcutil.ToGRPCError(err)
+
+			if tt.expectedCode == codes.OK {
+				assert.NoError(t, grpcErr)
+				assert.NotNil(t, resp)
+			} else {
+				st, ok := status.FromError(grpcErr)
+				assert.True(t, ok)
+				assert.Equal(t, tt.expectedCode, st.Code())
+			}
+		})
+	}
 }

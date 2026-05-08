@@ -117,6 +117,8 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 		AddressID:          "addr-1",
 		RestaurantBranchID: 10,
 		RestaurantBrandID:  20,
+		PayForAll:          true,
+		PayerMapping:       map[int64]int64{1: 500, 2: 500},
 	}
 
 	tests := []struct {
@@ -146,6 +148,17 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 			mockBehavior: func(order *orderMocks.MockOrderClient) {
 				order.EXPECT().CreateOrder(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return("", orderclient.ErrCartIsEmpty)
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:     "Ошибка: нераспределенные блюда",
+			reqBody:  validReq,
+			headers:  map[string]string{"Idempotency-Key": "idem-123"},
+			withAuth: true,
+			mockBehavior: func(order *orderMocks.MockOrderClient) {
+				order.EXPECT().CreateOrder(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return("", orderclient.ErrUnassignedItems)
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -203,43 +216,59 @@ func TestOrderHandler_GetMyOrders(t *testing.T) {
 	tests := []struct {
 		name           string
 		userID         int64
+		query          string
 		withAuth       bool
 		mockBehavior   mockBehavior
 		expectedStatus int
 	}{
 		{
-			name:     "Успешное получение истории заказов (с блюдами)",
+			name:     "Успешное получение истории заказов (с блюдами и логотипами, кастомная пагинация)",
 			userID:   1,
+			query:    "?limit=5&offset=2",
 			withAuth: true,
 			mockBehavior: func(order *orderMocks.MockOrderClient, rest *restaurantMocks.MockRestaurantClient) {
-				order.EXPECT().GetOrders(gomock.Any(), int64(1)).Return([]orderclient.Order{
+				order.EXPECT().GetOrders(gomock.Any(), int64(1), int32(5), int32(2)).Return([]orderclient.Order{
 					{
-						PublicID:  "ord-1",
-						Status:    "paid",
-						CreatedAt: now,
+						PublicID:          "ord-1",
+						Status:            "paid",
+						RestaurantBrandID: 20,
+						CreatedAt:         now,
 						Items: []orderclient.OrderDish{
 							{DishID: 100, Quantity: 2},
 						},
 					},
 				}, nil)
 
-				// Проверка обогащения через restaurantClient (теперь используем доменную модель Dish)
 				rest.EXPECT().GetDishesByIDs(gomock.Any(), []int64{100}).Return([]restaurantclient.Dish{
 					{ID: 100, Name: "Burger", ImageURL: "img.png"},
+				}, nil)
+
+				rest.EXPECT().GetRestaurantLogos(gomock.Any(), []int64{20}).Return(map[int64]string{
+					20: "logo.png",
 				}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:     "Успех, даже если restaurant_service упал (fallback без имен)",
+			name:     "Успех, даже если restaurant_service упал (fallback без имен и логотипов, дефолтная пагинация)",
 			userID:   1,
+			query:    "",
 			withAuth: true,
 			mockBehavior: func(order *orderMocks.MockOrderClient, rest *restaurantMocks.MockRestaurantClient) {
-				order.EXPECT().GetOrders(gomock.Any(), int64(1)).Return([]orderclient.Order{
-					{PublicID: "ord-1", Items: []orderclient.OrderDish{{DishID: 100}}},
+				order.EXPECT().GetOrders(gomock.Any(), int64(1), int32(10), int32(0)).Return([]orderclient.Order{
+					{
+						PublicID:          "ord-1",
+						RestaurantBrandID: 20,
+						Items: []orderclient.OrderDish{
+							{DishID: 100},
+						},
+					},
 				}, nil)
 
 				rest.EXPECT().GetDishesByIDs(gomock.Any(), []int64{100}).
+					Return(nil, errors.New("restaurant service down"))
+
+				rest.EXPECT().GetRestaurantLogos(gomock.Any(), []int64{20}).
 					Return(nil, errors.New("restaurant service down"))
 			},
 			expectedStatus: http.StatusOK,
@@ -247,9 +276,10 @@ func TestOrderHandler_GetMyOrders(t *testing.T) {
 		{
 			name:     "Ошибка: заказ недоступен",
 			userID:   1,
+			query:    "",
 			withAuth: true,
 			mockBehavior: func(order *orderMocks.MockOrderClient, rest *restaurantMocks.MockRestaurantClient) {
-				order.EXPECT().GetOrders(gomock.Any(), int64(1)).
+				order.EXPECT().GetOrders(gomock.Any(), int64(1), int32(10), int32(0)).
 					Return(nil, errors.New("grpc error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -264,7 +294,7 @@ func TestOrderHandler_GetMyOrders(t *testing.T) {
 			handler, mockOrder, _, mockRest := setupTestHandler(ctrl)
 			tt.mockBehavior(mockOrder, mockRest)
 
-			req := httptest.NewRequest(http.MethodGet, "/orders", nil)
+			req := httptest.NewRequest(http.MethodGet, "/orders"+tt.query, nil)
 			if tt.withAuth {
 				req = withUserIDContext(req, tt.userID)
 			}

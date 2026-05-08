@@ -39,27 +39,57 @@ func TestAddressRepo_CreateAddress(t *testing.T) {
 		expectedError string
 	}{
 		{
-			name: "Успешное создание адреса",
+			name: "Успешное создание адреса (первичное)",
 			mockInit: func(m pgxmock.PgxPoolIface) {
 				m.ExpectBegin()
+				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "idempotency_records"`)).
+					WithArgs(userID, idemKey).
+					WillReturnRows(pgxmock.NewRows([]string{"response_payload"}).AddRow(nil))
+
 				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "location"`)).
-					WithArgs(addr.Location.AddressText, addr.Location.Longitude, addr.Location.Latitude, idemKey).
+					WithArgs(addr.Location.AddressText, addr.Location.Longitude, addr.Location.Latitude).
 					WillReturnRows(pgxmock.NewRows([]string{"id"}).AddRow(100))
+
 				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "client_address"`)).
-					WithArgs(100, userID, addr.Apartment, addr.Entrance, addr.Floor, addr.DoorCode, addr.CourierComment, addr.Label, idemKey).
+					WithArgs(100, userID, addr.Apartment, addr.Entrance, addr.Floor, addr.DoorCode, addr.CourierComment, addr.Label).
 					WillReturnRows(pgxmock.NewRows([]string{"public_id"}).AddRow("uuid-addr-777"))
+
+				m.ExpectExec(regexp.QuoteMeta(`UPDATE "idempotency_records"`)).
+					WithArgs(pgxmock.AnyArg(), userID, idemKey).
+					WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 				m.ExpectCommit()
 			},
 			expectedID: "uuid-addr-777",
 		},
 		{
+			name: "Возврат результата по ключу идемпотентности",
+			mockInit: func(m pgxmock.PgxPoolIface) {
+				m.ExpectBegin()
+				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "idempotency_records"`)).
+					WithArgs(userID, idemKey).
+					WillReturnError(pgx.ErrNoRows)
+
+				m.ExpectQuery(regexp.QuoteMeta(`SELECT response_payload FROM "idempotency_records"`)).
+					WithArgs(userID, idemKey).
+					WillReturnRows(pgxmock.NewRows([]string{"response_payload"}).AddRow([]byte(`{"public_id":"uuid-cached-888"}`)))
+
+				m.ExpectRollback()
+			},
+			expectedID: "uuid-cached-888",
+		},
+		{
 			name: "Ошибка при вставке локации (откат)",
 			mockInit: func(m pgxmock.PgxPoolIface) {
 				m.ExpectBegin()
+				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "idempotency_records"`)).
+					WithArgs(userID, idemKey).
+					WillReturnRows(pgxmock.NewRows([]string{"response_payload"}).AddRow(nil))
+
 				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "location"`)).
-					WithArgs(addr.Location.AddressText, addr.Location.Longitude, addr.Location.Latitude, idemKey).
+					WithArgs(addr.Location.AddressText, addr.Location.Longitude, addr.Location.Latitude).
 					WillReturnError(errors.New("db error"))
+
 				m.ExpectRollback()
 			},
 			expectedError: "insert location failed",
@@ -161,6 +191,7 @@ func TestAddressRepo_DeleteAddress(t *testing.T) {
 	ctx := context.Background()
 	var userID int64 = 1
 	publicID := "uuid-to-delete"
+	idemKey := "idem-del-123"
 
 	type mockInit func(m pgxmock.PgxPoolIface)
 	tests := []struct {
@@ -171,31 +202,64 @@ func TestAddressRepo_DeleteAddress(t *testing.T) {
 		{
 			name: "Успешное удаление",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectExec(regexp.QuoteMeta(`UPDATE "client_address" SET is_active = false`)).
+				m.ExpectBegin()
+				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "idempotency_records"`)).
+					WithArgs(userID, idemKey).
+					WillReturnRows(pgxmock.NewRows([]string{"response_payload"}).AddRow(nil))
+
+				m.ExpectExec(regexp.QuoteMeta(`UPDATE "client_address"`)).
 					WithArgs(publicID, userID).
 					WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+
+				m.ExpectExec(regexp.QuoteMeta(`UPDATE "idempotency_records"`)).
+					WithArgs(userID, idemKey).
+					WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+
+				m.ExpectCommit()
 			},
 		},
 		{
-			name: "Ошибка исполнения запроса",
+			name: "Ретрай идемпотентного запроса",
 			mockInit: func(m pgxmock.PgxPoolIface) {
+				m.ExpectBegin()
+				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "idempotency_records"`)).
+					WithArgs(userID, idemKey).
+					WillReturnError(pgx.ErrNoRows)
+				m.ExpectRollback()
+			},
+		},
+		{
+			name: "Адрес не найден",
+			mockInit: func(m pgxmock.PgxPoolIface) {
+				m.ExpectBegin()
+				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "idempotency_records"`)).
+					WithArgs(userID, idemKey).
+					WillReturnRows(pgxmock.NewRows([]string{"response_payload"}).AddRow(nil))
+
 				m.ExpectExec(regexp.QuoteMeta(`UPDATE "client_address"`)).
 					WithArgs(publicID, userID).
-					WillReturnError(errors.New("query err"))
+					WillReturnResult(pgxmock.NewResult("UPDATE", 0))
+
+				m.ExpectExec(regexp.QuoteMeta(`DELETE FROM "idempotency_records"`)).
+					WithArgs(userID, idemKey).
+					WillReturnResult(pgxmock.NewResult("DELETE", 1))
+
+				m.ExpectRollback()
 			},
-			expectedError: errors.New("query err"),
+			expectedError: domain.ErrAddressNotFound,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mock, _ := pgxmock.NewPool()
+			mock, err := pgxmock.NewPool()
+			require.NoError(t, err)
 			defer mock.Close()
 
 			repo := NewAddressRepo(mock)
 			tt.mockInit(mock)
 
-			err := repo.DeleteAddress(ctx, userID, publicID)
+			err = repo.DeleteAddress(ctx, userID, publicID, idemKey)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)
@@ -211,6 +275,7 @@ func TestAddressRepo_DeleteAddress(t *testing.T) {
 func TestAddressRepo_UpdateAddress(t *testing.T) {
 	ctx := context.Background()
 	userID := int64(1)
+	idemKey := "idem-upd-123"
 	addr := domain.Address{
 		PublicID: "addr-uuid-123",
 		Location: domain.Location{
@@ -236,28 +301,54 @@ func TestAddressRepo_UpdateAddress(t *testing.T) {
 			name: "Успешное обновление",
 			mockInit: func(m pgxmock.PgxPoolIface) {
 				m.ExpectBegin()
+				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "idempotency_records"`)).
+					WithArgs(userID, idemKey).
+					WillReturnRows(pgxmock.NewRows([]string{"response_payload"}).AddRow(nil))
+
+				m.ExpectQuery(regexp.QuoteMeta(`SELECT location_id FROM "client_address"`)).
+					WithArgs(addr.PublicID, userID).
+					WillReturnRows(pgxmock.NewRows([]string{"location_id"}).AddRow(100))
+
 				m.ExpectExec(regexp.QuoteMeta(`UPDATE "location"`)).
-					WithArgs(addr.Location.AddressText, addr.Location.Longitude, addr.Location.Latitude, addr.PublicID, userID).
+					WithArgs(addr.Location.AddressText, addr.Location.Longitude, addr.Location.Latitude, 100).
 					WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 				m.ExpectExec(regexp.QuoteMeta(`UPDATE "client_address"`)).
 					WithArgs(addr.Apartment, addr.Entrance, addr.Floor, addr.DoorCode, addr.CourierComment, addr.Label, addr.PublicID, userID).
+					WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+
+				m.ExpectExec(regexp.QuoteMeta(`UPDATE "idempotency_records"`)).
+					WithArgs(userID, idemKey).
 					WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 				m.ExpectCommit()
 			},
 		},
 		{
-			name: "Адрес не найден (второй UPDATE затронул 0 строк)",
+			name: "Ретрай идемпотентного запроса",
 			mockInit: func(m pgxmock.PgxPoolIface) {
 				m.ExpectBegin()
-				m.ExpectExec(regexp.QuoteMeta(`UPDATE "location"`)).
-					WithArgs(addr.Location.AddressText, addr.Location.Longitude, addr.Location.Latitude, addr.PublicID, userID).
-					WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "idempotency_records"`)).
+					WithArgs(userID, idemKey).
+					WillReturnError(pgx.ErrNoRows)
+				m.ExpectRollback()
+			},
+		},
+		{
+			name: "Адрес не найден",
+			mockInit: func(m pgxmock.PgxPoolIface) {
+				m.ExpectBegin()
+				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "idempotency_records"`)).
+					WithArgs(userID, idemKey).
+					WillReturnRows(pgxmock.NewRows([]string{"response_payload"}).AddRow(nil))
 
-				m.ExpectExec(regexp.QuoteMeta(`UPDATE "client_address"`)).
-					WithArgs(addr.Apartment, addr.Entrance, addr.Floor, addr.DoorCode, addr.CourierComment, addr.Label, addr.PublicID, userID).
-					WillReturnResult(pgxmock.NewResult("UPDATE", 0))
+				m.ExpectQuery(regexp.QuoteMeta(`SELECT location_id FROM "client_address"`)).
+					WithArgs(addr.PublicID, userID).
+					WillReturnError(pgx.ErrNoRows)
+
+				m.ExpectExec(regexp.QuoteMeta(`DELETE FROM "idempotency_records"`)).
+					WithArgs(userID, idemKey).
+					WillReturnResult(pgxmock.NewResult("DELETE", 1))
 
 				m.ExpectRollback()
 			},
@@ -267,9 +358,18 @@ func TestAddressRepo_UpdateAddress(t *testing.T) {
 			name: "Ошибка при обновлении локации",
 			mockInit: func(m pgxmock.PgxPoolIface) {
 				m.ExpectBegin()
+				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "idempotency_records"`)).
+					WithArgs(userID, idemKey).
+					WillReturnRows(pgxmock.NewRows([]string{"response_payload"}).AddRow(nil))
+
+				m.ExpectQuery(regexp.QuoteMeta(`SELECT location_id FROM "client_address"`)).
+					WithArgs(addr.PublicID, userID).
+					WillReturnRows(pgxmock.NewRows([]string{"location_id"}).AddRow(100))
+
 				m.ExpectExec(regexp.QuoteMeta(`UPDATE "location"`)).
-					WithArgs(addr.Location.AddressText, addr.Location.Longitude, addr.Location.Latitude, addr.PublicID, userID).
+					WithArgs(addr.Location.AddressText, addr.Location.Longitude, addr.Location.Latitude, 100).
 					WillReturnError(errors.New("db crash"))
+
 				m.ExpectRollback()
 			},
 			expectedError: "update location failed",
@@ -285,7 +385,7 @@ func TestAddressRepo_UpdateAddress(t *testing.T) {
 			repo := NewAddressRepo(mock)
 			tt.mockInit(mock)
 
-			err = repo.UpdateAddress(ctx, userID, addr)
+			err = repo.UpdateAddress(ctx, userID, addr, idemKey)
 
 			if tt.expectedError != "" {
 				assert.Error(t, err)
@@ -326,7 +426,7 @@ func TestAddressRepo_GetInternalIDByPublicID(t *testing.T) {
 					WithArgs(publicID, userID).
 					WillReturnError(pgx.ErrNoRows)
 			},
-			expectedError: pgx.ErrNoRows,
+			expectedError: domain.ErrAddressNotFound,
 		},
 	}
 
@@ -345,6 +445,58 @@ func TestAddressRepo_GetInternalIDByPublicID(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedID, res)
+			}
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestAddressRepo_CheckAddressExists(t *testing.T) {
+	ctx := context.Background()
+	userID := int64(1)
+	publicID := "uuid-123"
+
+	type mockInit func(m pgxmock.PgxPoolIface)
+	tests := []struct {
+		name          string
+		mockInit      mockInit
+		expectedError error
+	}{
+		{
+			name: "Адрес существует",
+			mockInit: func(m pgxmock.PgxPoolIface) {
+				m.ExpectQuery(regexp.QuoteMeta(`SELECT 1 FROM "client_address"`)).
+					WithArgs(userID, publicID).
+					WillReturnRows(pgxmock.NewRows([]string{"?column?"}).AddRow(1))
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Адрес не найден",
+			mockInit: func(m pgxmock.PgxPoolIface) {
+				m.ExpectQuery(regexp.QuoteMeta(`SELECT 1 FROM "client_address"`)).
+					WithArgs(userID, publicID).
+					WillReturnError(pgx.ErrNoRows)
+			},
+			expectedError: domain.ErrAddressNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock, err := pgxmock.NewPool()
+			require.NoError(t, err)
+			defer mock.Close()
+
+			repo := NewAddressRepo(mock)
+			tt.mockInit(mock)
+
+			err = repo.CheckAddressExists(ctx, userID, publicID)
+
+			if tt.expectedError != nil {
+				assert.ErrorIs(t, err, tt.expectedError)
+			} else {
+				assert.NoError(t, err)
 			}
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})

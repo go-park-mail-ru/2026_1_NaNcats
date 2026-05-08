@@ -144,6 +144,8 @@ func TestOrderClient_GetOrders(t *testing.T) {
 	tests := []struct {
 		name         string
 		userID       int64
+		limit        int32
+		offset       int32
 		mockBehavior mockBehavior
 		expectedRes  []Order
 		expectedErr  error
@@ -151,18 +153,21 @@ func TestOrderClient_GetOrders(t *testing.T) {
 		{
 			name:   "Успешное получение заказов",
 			userID: 1,
+			limit:  10,
+			offset: 0,
 			mockBehavior: func(m *mocks.MockOrderServiceClient) {
 				m.EXPECT().GetOrders(gomock.Any(), &pbOrder.GetOrdersRequest{
 					UserId: 1,
+					Limit:  10,
+					Offset: 0,
 				}).Return(&pbOrder.GetOrdersResponse{
 					Orders: []*pbOrder.Order{
 						{
-							PublicId:          "pub-1",
-							RestaurantName:    "KFC",
-							RestaurantLogoUrl: "url",
-							TotalCost:         1000,
-							Status:            "paid",
-							CreatedAt:         pbNow,
+							PublicId:       "pub-1",
+							RestaurantName: "KFC",
+							TotalCost:      1000,
+							Status:         "paid",
+							CreatedAt:      pbNow,
 							Items: []*pbOrder.OrderDish{
 								{DishId: 10, Quantity: 2, Price: 500, OwnerUserId: ptr(int64(1))},
 							},
@@ -175,12 +180,11 @@ func TestOrderClient_GetOrders(t *testing.T) {
 			},
 			expectedRes: []Order{
 				{
-					PublicID:          "pub-1",
-					RestaurantName:    "KFC",
-					RestaurantLogoURL: "url",
-					TotalCost:         1000,
-					Status:            "paid",
-					CreatedAt:         pbNow.AsTime(),
+					PublicID:       "pub-1",
+					RestaurantName: "KFC",
+					TotalCost:      1000,
+					Status:         "paid",
+					CreatedAt:      pbNow.AsTime(),
 					Items: []OrderDish{
 						{DishID: 10, Quantity: 2, Price: 500, OwnerUserID: ptr(int64(1))},
 					},
@@ -194,6 +198,8 @@ func TestOrderClient_GetOrders(t *testing.T) {
 		{
 			name:   "Ошибка получения",
 			userID: 1,
+			limit:  10,
+			offset: 0,
 			mockBehavior: func(m *mocks.MockOrderServiceClient) {
 				m.EXPECT().GetOrders(gomock.Any(), gomock.Any()).
 					Return(nil, status.Error(codes.Internal, "db error"))
@@ -212,7 +218,7 @@ func TestOrderClient_GetOrders(t *testing.T) {
 			tt.mockBehavior(mockGRPC)
 
 			client := NewOrderClient(mockGRPC)
-			res, err := client.GetOrders(context.Background(), tt.userID)
+			res, err := client.GetOrders(context.Background(), tt.userID, tt.limit, tt.offset)
 
 			if tt.expectedErr != nil {
 				assert.ErrorIs(t, err, tt.expectedErr)

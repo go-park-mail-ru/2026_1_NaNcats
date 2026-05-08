@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/domain"
@@ -377,36 +378,173 @@ func TestOrderUseCase_ProcessSagaReply(t *testing.T) {
 }
 
 func TestOrderUseCase_GetOrders(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	type mockInit func(d useCaseDeps)
 
-	deps := setupDeps(ctrl)
-	uc := NewOrderUseCase(deps.repo, deps.addr, deps.cart, deps.rest, deps.pub, "http://default-logo", logger.NewNopLogger())
+	tests := []struct {
+		name        string
+		userID      int64
+		limit       int32
+		offset      int32
+		mockInit    mockInit
+		expectedRes []domain.Order
+		expectedErr bool
+	}{
+		{
+			name:   "Успешное получение заказов с пагинацией",
+			userID: 1,
+			limit:  10,
+			offset: 0,
+			mockInit: func(d useCaseDeps) {
+				d.repo.EXPECT().GetOrdersByUserID(gomock.Any(), int64(1), int32(10), int32(0)).Return([]domain.Order{
+					{ID: 1, RestaurantBrandID: 10},
+					{ID: 2, RestaurantBrandID: 20},
+				}, nil)
+			},
+			expectedRes: []domain.Order{
+				{ID: 1, RestaurantBrandID: 10},
+				{ID: 2, RestaurantBrandID: 20},
+			},
+			expectedErr: false,
+		},
+		{
+			name:   "Пустой список заказов",
+			userID: 1,
+			limit:  10,
+			offset: 10,
+			mockInit: func(d useCaseDeps) {
+				d.repo.EXPECT().GetOrdersByUserID(gomock.Any(), int64(1), int32(10), int32(10)).Return([]domain.Order{}, nil)
+			},
+			expectedRes: []domain.Order{},
+			expectedErr: false,
+		},
+		{
+			name:   "Ошибка репозитория",
+			userID: 1,
+			limit:  5,
+			offset: 0,
+			mockInit: func(d useCaseDeps) {
+				d.repo.EXPECT().GetOrdersByUserID(gomock.Any(), int64(1), int32(5), int32(0)).Return(nil, errors.New("db error"))
+			},
+			expectedRes: []domain.Order{},
+			expectedErr: true,
+		},
+	}
 
-	t.Run("Успешное получение с обогащением логотипами", func(t *testing.T) {
-		deps.repo.EXPECT().GetOrdersByUserID(gomock.Any(), int64(1)).Return([]domain.Order{
-			{ID: 1, RestaurantBrandID: 10},
-			{ID: 2, RestaurantBrandID: 20},
-		}, nil)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-		deps.rest.EXPECT().GetLogosByBrandIDs(gomock.Any(), gomock.Any()).Return(map[int64]string{
-			10: "http://logo-10",
-		}, nil)
+			deps := setupDeps(ctrl)
+			tt.mockInit(deps)
 
-		orders, err := uc.GetOrders(context.Background(), 1)
+			uc := NewOrderUseCase(deps.repo, deps.addr, deps.cart, deps.rest, deps.pub, "http://default-logo", logger.NewNopLogger())
 
-		assert.NoError(t, err)
-		assert.Len(t, orders, 2)
-		assert.Equal(t, "http://logo-10", orders[0].RestaurantLogoURL)
-		assert.Equal(t, "http://default-logo", orders[1].RestaurantLogoURL) // Фолбэк на дефолт
-	})
+			orders, err := uc.GetOrders(context.Background(), tt.userID, tt.limit, tt.offset)
 
-	t.Run("Пустой список заказов", func(t *testing.T) {
-		deps.repo.EXPECT().GetOrdersByUserID(gomock.Any(), int64(1)).Return([]domain.Order{}, nil)
+			if tt.expectedErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedRes, orders)
+			}
+		})
+	}
+}
 
-		orders, err := uc.GetOrders(context.Background(), 1)
+func TestOrderUseCase_PayForFriend(t *testing.T) {
+	type mockInit func(d useCaseDeps)
 
-		assert.NoError(t, err)
-		assert.Len(t, orders, 0)
-	})
+	tests := []struct {
+		name            string
+		splitID         string
+		adminID         int64
+		paymentMethodID string
+		idemKey         string
+		mockInit        mockInit
+		expectedErr     bool
+		errCode         codes.Code
+	}{
+		{
+			name:            "Успешная оплата за друга",
+			splitID:         "split-1",
+			adminID:         1,
+			paymentMethodID: "pm-1",
+			idemKey:         "idem-1",
+			mockInit: func(d useCaseDeps) {
+				d.repo.EXPECT().GetSplitByID(gomock.Any(), "split-1").Return(domain.OrderSplit{
+					ID: "split-1", OrderID: 100, Status: SplitStatusPending, Amount: 500,
+				}, nil)
+				d.repo.EXPECT().UpdateSplitPayer(gomock.Any(), "split-1", int64(1)).Return(nil)
+
+				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueuePaymentCommands, gomock.Any()).Return(nil)
+			},
+			expectedErr: false,
+		},
+		{
+			name:            "Ошибка: сплит не найден",
+			splitID:         "split-unknown",
+			adminID:         1,
+			paymentMethodID: "pm-1",
+			idemKey:         "idem-1",
+			mockInit: func(d useCaseDeps) {
+				d.repo.EXPECT().GetSplitByID(gomock.Any(), "split-unknown").Return(domain.OrderSplit{}, errors.New("not found"))
+			},
+			expectedErr: true,
+			errCode:     codes.NotFound,
+		},
+		{
+			name:            "Ошибка: сплит не в статусе pending",
+			splitID:         "split-2",
+			adminID:         1,
+			paymentMethodID: "pm-1",
+			idemKey:         "idem-1",
+			mockInit: func(d useCaseDeps) {
+				d.repo.EXPECT().GetSplitByID(gomock.Any(), "split-2").Return(domain.OrderSplit{
+					ID: "split-2", OrderID: 100, Status: SplitStatusPaid, Amount: 500,
+				}, nil)
+			},
+			expectedErr: true,
+			errCode:     codes.FailedPrecondition,
+		},
+		{
+			name:            "Ошибка: не удалось обновить плательщика",
+			splitID:         "split-3",
+			adminID:         2,
+			paymentMethodID: "pm-1",
+			idemKey:         "idem-1",
+			mockInit: func(d useCaseDeps) {
+				d.repo.EXPECT().GetSplitByID(gomock.Any(), "split-3").Return(domain.OrderSplit{
+					ID: "split-3", OrderID: 100, Status: SplitStatusPending, Amount: 500,
+				}, nil)
+				d.repo.EXPECT().UpdateSplitPayer(gomock.Any(), "split-3", int64(2)).Return(errors.New("db error"))
+			},
+			expectedErr: true,
+			errCode:     codes.InvalidArgument,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			deps := setupDeps(ctrl)
+			tt.mockInit(deps)
+
+			uc := NewOrderUseCase(deps.repo, deps.addr, deps.cart, deps.rest, deps.pub, "http://default-logo", logger.NewNopLogger())
+
+			err := uc.PayForFriend(context.Background(), tt.splitID, tt.adminID, tt.paymentMethodID, tt.idemKey)
+
+			if tt.expectedErr {
+				require.Error(t, err)
+				domainErr, ok := err.(statusCoder)
+				if ok {
+					assert.Equal(t, tt.errCode, domainErr.GRPCStatus())
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
