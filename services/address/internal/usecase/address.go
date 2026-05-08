@@ -16,6 +16,7 @@ type AddressUseCase interface {
 	GetMyAddresses(ctx context.Context, userID int64) ([]domain.Address, error)
 	DeleteAddress(ctx context.Context, userID int64, addressPublicID string, idempotencyKey string) error
 	UpdateAddress(ctx context.Context, userID int64, addr domain.Address, idempotencyKey string) error
+	CheckAddressExists(ctx context.Context, userID int64, addressPublicID string) error
 }
 
 type addressUseCase struct {
@@ -31,6 +32,7 @@ func (u *addressUseCase) AddAddress(ctx context.Context, userID int64, addr doma
 	span.SetAttributes(
 		attribute.Int64("user.id", userID),
 		attribute.String("address.label", addr.Label),
+		attribute.String("idempotency.key", idempotencyKey),
 	)
 
 	return u.repo.CreateAddress(ctx, userID, addr, idempotencyKey)
@@ -54,9 +56,10 @@ func (u *addressUseCase) DeleteAddress(ctx context.Context, userID int64, addres
 	span.SetAttributes(
 		attribute.Int64("user.id", userID),
 		attribute.String("address.public_id", addressPublicID),
+		attribute.String("idempotency.key", idempotencyKey),
 	)
 
-	return u.repo.DeleteAddress(ctx, userID, addressPublicID)
+	return u.repo.DeleteAddress(ctx, userID, addressPublicID, idempotencyKey)
 }
 
 func (u *addressUseCase) UpdateAddress(ctx context.Context, userID int64, addr domain.Address, idempotencyKey string) error {
@@ -64,7 +67,18 @@ func (u *addressUseCase) UpdateAddress(ctx context.Context, userID int64, addr d
 	span.SetAttributes(
 		attribute.Int64("user.id", userID),
 		attribute.String("address.public_id", addr.PublicID),
+		attribute.String("idempotency.key", idempotencyKey),
 	)
 
-	return u.repo.UpdateAddress(ctx, userID, addr)
+	return u.repo.UpdateAddress(ctx, userID, addr, idempotencyKey)
+}
+
+func (u *addressUseCase) CheckAddressExists(ctx context.Context, userID int64, addressPublicID string) error {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.Int64("user.id", userID),
+		attribute.String("address.public_id", addressPublicID),
+	)
+
+	return u.repo.CheckAddressExists(ctx, userID, addressPublicID)
 }
