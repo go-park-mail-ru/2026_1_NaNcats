@@ -23,14 +23,15 @@ service OrderService {
 
 message CancelOrderRequest {
   string order_public_id = 1;
-  int64  user_id = 2;
+  int64 user_id = 2;
 }
 
 message OrderDish {
   int64 dish_id = 1;
-  int32 quantity = 2;
-  int64 price = 3;
-  optional int64 owner_user_id = 4;
+  string dish_name = 2;
+  int32 quantity = 3;
+  int64 price = 4;
+  optional int64 owner_user_id = 5;
 }
 
 message OrderSplit {
@@ -43,12 +44,11 @@ message OrderSplit {
 message Order {
   string public_id = 1;
   string restaurant_name = 2;
-  string restaurant_logo_url = 3;
-  int64 total_cost = 4;
-  string status = 5;
-  google.protobuf.Timestamp created_at = 6;
-  repeated OrderDish items = 7;
-  repeated OrderSplit splits = 8;
+  int64 total_cost = 3;
+  string status = 4;
+  google.protobuf.Timestamp created_at = 5;
+  repeated OrderDish items = 6;
+  repeated OrderSplit splits = 7;
 }
 
 message CreateOrderRequest {
@@ -72,6 +72,8 @@ message CreateOrderResponse {
 
 message GetOrdersRequest {
   int64 user_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
 }
 
 message GetOrdersResponse {
@@ -81,7 +83,7 @@ message GetOrdersResponse {
 message UpdateStatusRequest {
   string yookassa_payment_id = 1;
   string status = 2;
-  string idempotency_key = 7;
+  string idempotency_key = 3;
 }
 
 message PayForFriendRequest {

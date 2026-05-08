@@ -78,9 +78,10 @@ func (x *CancelOrderRequest) GetUserId() int64 {
 type OrderDish struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	DishId        int64                  `protobuf:"varint,1,opt,name=dish_id,json=dishId,proto3" json:"dish_id,omitempty"`
-	Quantity      int32                  `protobuf:"varint,2,opt,name=quantity,proto3" json:"quantity,omitempty"`
-	Price         int64                  `protobuf:"varint,3,opt,name=price,proto3" json:"price,omitempty"`
-	OwnerUserId   *int64                 `protobuf:"varint,4,opt,name=owner_user_id,json=ownerUserId,proto3,oneof" json:"owner_user_id,omitempty"`
+	DishName      string                 `protobuf:"bytes,2,opt,name=dish_name,json=dishName,proto3" json:"dish_name,omitempty"`
+	Quantity      int32                  `protobuf:"varint,3,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	Price         int64                  `protobuf:"varint,4,opt,name=price,proto3" json:"price,omitempty"`
+	OwnerUserId   *int64                 `protobuf:"varint,5,opt,name=owner_user_id,json=ownerUserId,proto3,oneof" json:"owner_user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -120,6 +121,13 @@ func (x *OrderDish) GetDishId() int64 {
 		return x.DishId
 	}
 	return 0
+}
+
+func (x *OrderDish) GetDishName() string {
+	if x != nil {
+		return x.DishName
+	}
+	return ""
 }
 
 func (x *OrderDish) GetQuantity() int32 {
@@ -212,17 +220,16 @@ func (x *OrderSplit) GetStatus() string {
 }
 
 type Order struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	PublicId          string                 `protobuf:"bytes,1,opt,name=public_id,json=publicId,proto3" json:"public_id,omitempty"`
-	RestaurantName    string                 `protobuf:"bytes,2,opt,name=restaurant_name,json=restaurantName,proto3" json:"restaurant_name,omitempty"`
-	RestaurantLogoUrl string                 `protobuf:"bytes,3,opt,name=restaurant_logo_url,json=restaurantLogoUrl,proto3" json:"restaurant_logo_url,omitempty"`
-	TotalCost         int64                  `protobuf:"varint,4,opt,name=total_cost,json=totalCost,proto3" json:"total_cost,omitempty"`
-	Status            string                 `protobuf:"bytes,5,opt,name=status,proto3" json:"status,omitempty"`
-	CreatedAt         *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	Items             []*OrderDish           `protobuf:"bytes,7,rep,name=items,proto3" json:"items,omitempty"`
-	Splits            []*OrderSplit          `protobuf:"bytes,8,rep,name=splits,proto3" json:"splits,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	PublicId       string                 `protobuf:"bytes,1,opt,name=public_id,json=publicId,proto3" json:"public_id,omitempty"`
+	RestaurantName string                 `protobuf:"bytes,2,opt,name=restaurant_name,json=restaurantName,proto3" json:"restaurant_name,omitempty"`
+	TotalCost      int64                  `protobuf:"varint,3,opt,name=total_cost,json=totalCost,proto3" json:"total_cost,omitempty"`
+	Status         string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
+	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	Items          []*OrderDish           `protobuf:"bytes,6,rep,name=items,proto3" json:"items,omitempty"`
+	Splits         []*OrderSplit          `protobuf:"bytes,7,rep,name=splits,proto3" json:"splits,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Order) Reset() {
@@ -265,13 +272,6 @@ func (x *Order) GetPublicId() string {
 func (x *Order) GetRestaurantName() string {
 	if x != nil {
 		return x.RestaurantName
-	}
-	return ""
-}
-
-func (x *Order) GetRestaurantLogoUrl() string {
-	if x != nil {
-		return x.RestaurantLogoUrl
 	}
 	return ""
 }
@@ -474,6 +474,8 @@ func (x *CreateOrderResponse) GetOrderPublicId() string {
 type GetOrdersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	Offset        int32                  `protobuf:"varint,3,opt,name=offset,proto3" json:"offset,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -511,6 +513,20 @@ func (*GetOrdersRequest) Descriptor() ([]byte, []int) {
 func (x *GetOrdersRequest) GetUserId() int64 {
 	if x != nil {
 		return x.UserId
+	}
+	return 0
+}
+
+func (x *GetOrdersRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *GetOrdersRequest) GetOffset() int32 {
+	if x != nil {
+		return x.Offset
 	}
 	return 0
 }
@@ -563,7 +579,7 @@ type UpdateStatusRequest struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	YookassaPaymentId string                 `protobuf:"bytes,1,opt,name=yookassa_payment_id,json=yookassaPaymentId,proto3" json:"yookassa_payment_id,omitempty"`
 	Status            string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
-	IdempotencyKey    string                 `protobuf:"bytes,7,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	IdempotencyKey    string                 `protobuf:"bytes,3,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -694,30 +710,30 @@ const file_order_order_proto_rawDesc = "" +
 	"\x11order/order.proto\x12\x05order\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"U\n" +
 	"\x12CancelOrderRequest\x12&\n" +
 	"\x0forder_public_id\x18\x01 \x01(\tR\rorderPublicId\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\x03R\x06userId\"\x91\x01\n" +
+	"\auser_id\x18\x02 \x01(\x03R\x06userId\"\xae\x01\n" +
 	"\tOrderDish\x12\x17\n" +
-	"\adish_id\x18\x01 \x01(\x03R\x06dishId\x12\x1a\n" +
-	"\bquantity\x18\x02 \x01(\x05R\bquantity\x12\x14\n" +
-	"\x05price\x18\x03 \x01(\x03R\x05price\x12'\n" +
-	"\rowner_user_id\x18\x04 \x01(\x03H\x00R\vownerUserId\x88\x01\x01B\x10\n" +
+	"\adish_id\x18\x01 \x01(\x03R\x06dishId\x12\x1b\n" +
+	"\tdish_name\x18\x02 \x01(\tR\bdishName\x12\x1a\n" +
+	"\bquantity\x18\x03 \x01(\x05R\bquantity\x12\x14\n" +
+	"\x05price\x18\x04 \x01(\x03R\x05price\x12'\n" +
+	"\rowner_user_id\x18\x05 \x01(\x03H\x00R\vownerUserId\x88\x01\x01B\x10\n" +
 	"\x0e_owner_user_id\"p\n" +
 	"\n" +
 	"OrderSplit\x12\x19\n" +
 	"\bsplit_id\x18\x01 \x01(\tR\asplitId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x16\n" +
 	"\x06amount\x18\x03 \x01(\x03R\x06amount\x12\x16\n" +
-	"\x06status\x18\x04 \x01(\tR\x06status\"\xc2\x02\n" +
+	"\x06status\x18\x04 \x01(\tR\x06status\"\x92\x02\n" +
 	"\x05Order\x12\x1b\n" +
 	"\tpublic_id\x18\x01 \x01(\tR\bpublicId\x12'\n" +
-	"\x0frestaurant_name\x18\x02 \x01(\tR\x0erestaurantName\x12.\n" +
-	"\x13restaurant_logo_url\x18\x03 \x01(\tR\x11restaurantLogoUrl\x12\x1d\n" +
+	"\x0frestaurant_name\x18\x02 \x01(\tR\x0erestaurantName\x12\x1d\n" +
 	"\n" +
-	"total_cost\x18\x04 \x01(\x03R\ttotalCost\x12\x16\n" +
-	"\x06status\x18\x05 \x01(\tR\x06status\x129\n" +
+	"total_cost\x18\x03 \x01(\x03R\ttotalCost\x12\x16\n" +
+	"\x06status\x18\x04 \x01(\tR\x06status\x129\n" +
 	"\n" +
-	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12&\n" +
-	"\x05items\x18\a \x03(\v2\x10.order.OrderDishR\x05items\x12)\n" +
-	"\x06splits\x18\b \x03(\v2\x11.order.OrderSplitR\x06splits\"\x89\x04\n" +
+	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12&\n" +
+	"\x05items\x18\x06 \x03(\v2\x10.order.OrderDishR\x05items\x12)\n" +
+	"\x06splits\x18\a \x03(\v2\x11.order.OrderSplitR\x06splits\"\x89\x04\n" +
 	"\x12CreateOrderRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12*\n" +
 	"\x11address_public_id\x18\x02 \x01(\tR\x0faddressPublicId\x120\n" +
@@ -735,15 +751,17 @@ const file_order_order_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\x03R\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\x03R\x05value:\x028\x01\"=\n" +
 	"\x13CreateOrderResponse\x12&\n" +
-	"\x0forder_public_id\x18\x01 \x01(\tR\rorderPublicId\"+\n" +
+	"\x0forder_public_id\x18\x01 \x01(\tR\rorderPublicId\"Y\n" +
 	"\x10GetOrdersRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\"9\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x14\n" +
+	"\x05limit\x18\x02 \x01(\x05R\x05limit\x12\x16\n" +
+	"\x06offset\x18\x03 \x01(\x05R\x06offset\"9\n" +
 	"\x11GetOrdersResponse\x12$\n" +
 	"\x06orders\x18\x01 \x03(\v2\f.order.OrderR\x06orders\"\x86\x01\n" +
 	"\x13UpdateStatusRequest\x12.\n" +
 	"\x13yookassa_payment_id\x18\x01 \x01(\tR\x11yookassaPaymentId\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\tR\x06status\x12'\n" +
-	"\x0fidempotency_key\x18\a \x01(\tR\x0eidempotencyKey\"\xa9\x01\n" +
+	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey\"\xa9\x01\n" +
 	"\x13PayForFriendRequest\x12\x19\n" +
 	"\bsplit_id\x18\x01 \x01(\tR\asplitId\x12\"\n" +
 	"\rpayer_user_id\x18\x02 \x01(\x03R\vpayerUserId\x12*\n" +
