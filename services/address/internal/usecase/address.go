@@ -46,7 +46,7 @@ func (u *addressUseCase) GetMyAddresses(ctx context.Context, userID int64) ([]do
 	}
 
 	span.SetAttributes(attribute.Int("addresses.count", len(addresses)))
-	return u.repo.GetAddressesByUserID(ctx, userID)
+	return addresses, nil
 }
 
 func (u *addressUseCase) DeleteAddress(ctx context.Context, userID int64, addressPublicID string, idempotencyKey string) error {
