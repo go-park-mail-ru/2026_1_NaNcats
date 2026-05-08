@@ -5,6 +5,8 @@ package order
 import (
 	"errors"
 	"net/http"
+	"strconv"
+	"sync"
 
 	wsManager "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/websocket"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/orderclient"
@@ -233,42 +235,84 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orders, err := h.orderClient.GetOrders(ctx, userID)
+	limit := int32(10)
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		if parsed, err := strconv.ParseInt(limitStr, 10, 32); err == nil && parsed > 0 {
+			limit = int32(parsed)
+		}
+	}
+
+	offset := int32(0)
+	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
+		if parsed, err := strconv.ParseInt(offsetStr, 10, 32); err == nil && parsed >= 0 {
+			offset = int32(parsed)
+		}
+	}
+
+	orders, err := h.orderClient.GetOrders(ctx, userID, limit, offset)
 	if err != nil {
 		l.Error("failed to fetch user orders via grpc", err)
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
+	if len(orders) == 0 {
+		response.JSON(w, http.StatusOK, []OrderHistoryResponse{})
+		return
+	}
+
+	brandIDSet := make(map[int64]struct{})
 	dishIDSet := make(map[int64]struct{})
+
 	for _, o := range orders {
+		brandIDSet[o.RestaurantBrandID] = struct{}{}
 		for _, item := range o.Items {
 			dishIDSet[item.DishID] = struct{}{}
 		}
 	}
 
-	dishMeta := make(map[int64]struct {
-		Name     string
-		ImageURL string
-	}, len(dishIDSet))
+	brandIDs := make([]int64, 0, len(brandIDSet))
+	for id := range brandIDSet {
+		brandIDs = append(brandIDs, id)
+	}
 
-	if len(dishIDSet) > 0 {
-		dishIDs := make([]int64, 0, len(dishIDSet))
-		for id := range dishIDSet {
-			dishIDs = append(dishIDs, id)
-		}
+	dishIDs := make([]int64, 0, len(dishIDSet))
+	for id := range dishIDSet {
+		dishIDs = append(dishIDs, id)
+	}
 
-		dishes, derr := h.restaurantClient.GetDishesByIDs(ctx, dishIDs)
-		if derr != nil {
-			l.Error("failed to enrich order items with dish info", derr)
-		} else {
-			for _, d := range dishes {
-				dishMeta[d.ID] = struct {
-					Name     string
-					ImageURL string
-				}{Name: d.Name, ImageURL: d.ImageURL}
+	var wg sync.WaitGroup
+	var logos map[int64]string
+	var dishes []restaurantclient.Dish
+	var logoErr, dishErr error
+
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		if len(dishIDs) > 0 {
+			dishes, dishErr = h.restaurantClient.GetDishesByIDs(ctx, dishIDs)
+			if dishErr != nil {
+				l.Warn("failed to fetch dishes images", logger.String("error", dishErr.Error()))
 			}
 		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		if len(brandIDs) > 0 {
+			logos, logoErr = h.restaurantClient.GetRestaurantLogos(ctx, brandIDs)
+			if logoErr != nil {
+				l.Warn("failed to fetch restaurant logos", logger.String("error", logoErr.Error()))
+			}
+		}
+	}()
+
+	wg.Wait()
+
+	dishImages := make(map[int64]string, len(dishes))
+	for _, d := range dishes {
+		dishImages[d.ID] = d.ImageURL
 	}
 
 	resp := make([]OrderHistoryResponse, 0, len(orders))
@@ -276,11 +320,12 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 
 		items := make([]OrderDishDTO, 0, len(o.Items))
 		for _, item := range o.Items {
-			meta := dishMeta[item.DishID]
+			imgURL := dishImages[item.DishID]
+
 			items = append(items, OrderDishDTO{
 				DishID:      item.DishID,
-				Name:        meta.Name,
-				ImageURL:    meta.ImageURL,
+				Name:        item.DishName,
+				ImageURL:    imgURL,
 				Quantity:    item.Quantity,
 				Price:       item.Price,
 				OwnerUserID: item.OwnerUserID,
@@ -297,10 +342,12 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 
+		brandLogo := logos[o.RestaurantBrandID]
+
 		resp = append(resp, OrderHistoryResponse{
 			OrderID:            o.PublicID,
 			RestaurantName:     o.RestaurantName,
-			RestaurantImageURL: o.RestaurantLogoURL,
+			RestaurantImageURL: brandLogo,
 			TotalCost:          o.TotalCost,
 			Status:             o.Status,
 			CreatedAt:          o.CreatedAt.Format("02.01.2006"),
