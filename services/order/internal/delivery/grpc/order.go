@@ -16,6 +16,7 @@ func mapDomainToPBOrder(o domain.Order) *pb.Order {
 	for _, item := range o.Items {
 		pbItem := &pb.OrderDish{
 			DishId:   item.DishID,
+			DishName: item.Name,
 			Quantity: int32(item.Quantity),
 			Price:    item.Price,
 		}
@@ -36,14 +37,13 @@ func mapDomainToPBOrder(o domain.Order) *pb.Order {
 	}
 
 	return &pb.Order{
-		PublicId:          o.PublicID,
-		RestaurantName:    o.RestaurantName,
-		RestaurantLogoUrl: o.RestaurantLogoURL,
-		TotalCost:         o.TotalCost,
-		Status:            o.Status,
-		CreatedAt:         timestamppb.New(o.CreatedAt),
-		Items:             items,
-		Splits:            splits,
+		PublicId:       o.PublicID,
+		RestaurantName: o.RestaurantName,
+		TotalCost:      o.TotalCost,
+		Status:         o.Status,
+		CreatedAt:      timestamppb.New(o.CreatedAt),
+		Items:          items,
+		Splits:         splits,
 	}
 }
 
@@ -87,7 +87,7 @@ func (h *OrderHandler) CreateOrder(ctx context.Context, req *pb.CreateOrderReque
 }
 
 func (h *OrderHandler) GetOrders(ctx context.Context, req *pb.GetOrdersRequest) (*pb.GetOrdersResponse, error) {
-	orders, err := h.usecase.GetOrders(ctx, req.UserId)
+	orders, err := h.usecase.GetOrders(ctx, req.UserId, req.Limit, req.Offset)
 	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
 	}
@@ -100,7 +100,6 @@ func (h *OrderHandler) GetOrders(ctx context.Context, req *pb.GetOrdersRequest) 
 	return &pb.GetOrdersResponse{
 		Orders: pbOrders,
 	}, nil
-
 }
 
 func (h *OrderHandler) UpdateOrderStatusByPaymentID(ctx context.Context, req *pb.UpdateStatusRequest) (*emptypb.Empty, error) {
