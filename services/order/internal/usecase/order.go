@@ -47,7 +47,6 @@ type AddressClient interface {
 
 type RestaurantClient interface {
 	GetRestaurantName(ctx context.Context, branchID int64) (string, error)
-	GetLogosByBrandIDs(ctx context.Context, brandIDs []int64) (map[int64]string, error)
 }
 
 type MessagePublisher interface {
