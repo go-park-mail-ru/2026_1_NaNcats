@@ -1,5 +1,7 @@
 package postgres
 
+//go:generate easyjson $GOFILE
+
 import (
 	"context"
 	"errors"
@@ -8,10 +10,15 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
-	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/mailru/easyjson"
 )
+
+//easyjson:json
+type idempotencyResponse struct {
+	PublicID string `json:"public_id,omitempty"`
+}
 
 type orderRepo struct {
 	pool postgres.PgxPool
@@ -30,12 +37,43 @@ func (r *orderRepo) CreateOrder(ctx context.Context, order domain.Order, idempot
 	}
 	defer tx.Rollback(ctx)
 
+	var payloadBytes []byte
+	err = tx.QueryRow(ctx, `
+		INSERT INTO "idempotency_records" (user_id, idempotency_key, grpc_method)
+		VALUES ($1, $2, 'CreateOrder')
+		ON CONFLICT (user_id, idempotency_key) DO NOTHING
+		RETURNING response_payload;
+	`, order.AdminID, idempotencyKey).Scan(&payloadBytes)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			err = tx.QueryRow(ctx, `
+				SELECT response_payload FROM "idempotency_records" 
+				WHERE user_id = $1 AND idempotency_key = $2
+			`, order.AdminID, idempotencyKey).Scan(&payloadBytes)
+			if err != nil {
+				return "", fmt.Errorf("failed to fetch existing idempotency record: %w", err)
+			}
+
+			if payloadBytes == nil {
+				return "", fmt.Errorf("request is already in progress")
+			}
+
+			var savedResp idempotencyResponse
+			if err := easyjson.Unmarshal(payloadBytes, &savedResp); err != nil {
+				return "", fmt.Errorf("failed to unmarshal idempotency payload: %w", err)
+			}
+			return savedResp.PublicID, nil
+		}
+		return "", fmt.Errorf("failed to insert idempotency record: %w", err)
+	}
+
 	orderQuery := `
 		INSERT INTO "order" (
 			admin_account_id, restaurant_branch_id, restaurant_brand_id,
-			restaurant_name, client_address_id, total_cost, status, idempotency_key
+			restaurant_name, client_address_id, total_cost, status
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''))
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, public_id;
 	`
 
@@ -50,14 +88,9 @@ func (r *orderRepo) CreateOrder(ctx context.Context, order domain.Order, idempot
 		order.ClientAddressID,
 		order.TotalCost,
 		order.Status,
-		idempotencyKey,
 	).Scan(&orderID, &orderPublicID)
 
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-			return "", fmt.Errorf("order with this idempotency key already exists: %w", err)
-		}
 		return "", fmt.Errorf("insert master order: %w", err)
 	}
 
@@ -92,6 +125,16 @@ func (r *orderRepo) CreateOrder(ctx context.Context, order domain.Order, idempot
 		}
 	}
 	br.Close()
+
+	respData, _ := easyjson.Marshal(idempotencyResponse{PublicID: orderPublicID})
+	_, err = tx.Exec(ctx, `
+		UPDATE "idempotency_records" 
+		SET response_payload = $1 
+		WHERE user_id = $2 AND idempotency_key = $3
+	`, respData, order.AdminID, idempotencyKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to update idempotency payload: %w", err)
+	}
 
 	if err = tx.Commit(ctx); err != nil {
 		return "", fmt.Errorf("commit tx: %w", err)

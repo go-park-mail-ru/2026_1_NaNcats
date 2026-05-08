@@ -28,7 +28,6 @@ CREATE TABLE "order" (
 	restaurant_name TEXT NOT NULL,
 
 	status order_status NOT NULL,
-	idempotency_key TEXT UNIQUE,
 		
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
@@ -45,8 +44,6 @@ CREATE TABLE "order_review" (
 		CHECK (char_length(client_comment) <= 255),
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-
-	idempotency_key TEXT UNIQUE,
 	
 	CONSTRAINT fk_order_review_order
 		FOREIGN KEY (order_id)
@@ -67,7 +64,6 @@ CREATE TABLE "order_dish" (
 	owner_user_id BIGINT, 
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-	idempotency_key TEXT UNIQUE,
 	
 	CONSTRAINT fk_order_dish_order
 		FOREIGN KEY (order_id)
@@ -93,4 +89,14 @@ CREATE TABLE "order_split" (
 		FOREIGN KEY (order_id)
 		REFERENCES "order"(id)
 		ON DELETE CASCADE
+);
+
+CREATE TABLE "idempotency_records" (
+    user_id BIGINT NOT NULL,
+    idempotency_key TEXT NOT NULL,
+    grpc_method TEXT NOT NULL,
+    response_payload JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+
+    PRIMARY KEY (user_id, idempotency_key)
 );
