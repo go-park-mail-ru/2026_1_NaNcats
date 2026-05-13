@@ -85,12 +85,15 @@ func main() {
 	brandRepo := restaurantPG.NewRestaurantBrandRepo(pool)
 	dishRepo := restaurantPG.NewDishRepo(pool)
 
-	brandUC := restaurantUseCase.NewRestaurantBrandUseCase(brandRepo, cfg.DefaultRestaurantLogoURL, s3Repo)
+	categoryUC := restaurantUseCase.NewCategoryUseCase(brandRepo)
+
+	brandUC := restaurantUseCase.NewRestaurantBrandUseCase(brandRepo, cfg.DefaultRestaurantLogoURL, s3Repo, appLogger)
 	tracedBrandUC := usecase.NewRestaurantBrandUseCaseTracingMiddleware(brandUC)
-	dishUC := restaurantUseCase.NewDishUseCase(dishRepo, cfg.DefaultFoodLogoURL, s3Repo)
+
+	dishUC := restaurantUseCase.NewDishUseCase(dishRepo, cfg.DefaultFoodLogoURL, s3Repo, appLogger)
 	tracedDishUC := usecase.NewDishUseCaseTracingMiddleware(dishUC)
 
-	restaurantHandler := restaurantDelivery.NewRestaurantHandler(tracedBrandUC, tracedDishUC, brandRepo, dishRepo)
+	restaurantHandler := restaurantDelivery.NewRestaurantHandler(categoryUC, tracedBrandUC, tracedDishUC)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/repository"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/imageutil"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/s3"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -22,6 +24,8 @@ type RestaurantBrandUseCase interface {
 	GetRestaurantBrandsList(ctx context.Context, limit, offset int) ([]domain.RestaurantBrand, error)
 	GetRestaurantBrandByID(ctx context.Context, id int64) (domain.RestaurantBrand, error)
 	GetRestaurantBrandsByIDs(ctx context.Context, brandIDs []int64) ([]domain.RestaurantBrand, error)
+	GetRestaurantBrandsByCategoryName(ctx context.Context, categoryName string, limit, offset int) ([]domain.RestaurantBrand, error)
+	SearchRestaurantBrands(ctx context.Context, query string, limit, offset int) ([]domain.RestaurantBrand, error)
 	CreateRestaurantBrand(ctx context.Context, b domain.RestaurantBrand, image []byte, idemKey string) (domain.RestaurantBrand, error)
 	UpdateRestaurantBrand(ctx context.Context, b domain.RestaurantBrand, newImage []byte, idemKey string) (domain.RestaurantBrand, error)
 	DeleteRestaurantBrand(ctx context.Context, id int64) error
@@ -31,13 +35,15 @@ type restaurantBrandUseCase struct {
 	restaurantBrandRepo      repository.RestaurantBrandRepository
 	defaultRestaurantLogoURL string
 	fileStorage              s3.FileStorage
+	logger                   logger.Logger
 }
 
-func NewRestaurantBrandUseCase(rbr repository.RestaurantBrandRepository, drlurl string, s3 s3.FileStorage) RestaurantBrandUseCase {
+func NewRestaurantBrandUseCase(rbr repository.RestaurantBrandRepository, drlurl string, s3 s3.FileStorage, l logger.Logger) RestaurantBrandUseCase {
 	return &restaurantBrandUseCase{
 		restaurantBrandRepo:      rbr,
 		defaultRestaurantLogoURL: drlurl,
 		fileStorage:              s3,
+		logger:                   l,
 	}
 }
 
@@ -51,13 +57,7 @@ func (rb *restaurantBrandUseCase) GetRestaurantBrandsByIDs(ctx context.Context, 
 	}
 
 	span.SetAttributes(attribute.Int("brands.count", len(brands)))
-
-	for i, brand := range brands {
-		if brand.LogoURL == "" {
-			brands[i].LogoURL = rb.defaultRestaurantLogoURL
-		}
-	}
-
+	rb.applyDefaultLogos(brands)
 	return brands, nil
 }
 
@@ -68,20 +68,50 @@ func (rb *restaurantBrandUseCase) GetRestaurantBrandsList(ctx context.Context, l
 		attribute.Int("pagination.offset", offset),
 	)
 
-	restaurantBrands, err := rb.restaurantBrandRepo.GetRestaurantBrandsList(ctx, limit, offset)
+	brands, err := rb.restaurantBrandRepo.GetRestaurantBrandsList(ctx, limit, offset)
 	if err != nil {
 		return nil, err
 	}
 
-	span.SetAttributes(attribute.Int("brands.count", len(restaurantBrands)))
+	span.SetAttributes(attribute.Int("brands.count", len(brands)))
+	rb.applyDefaultLogos(brands)
+	return brands, nil
+}
 
-	for i, restaurantBrand := range restaurantBrands {
-		if restaurantBrand.LogoURL == "" {
-			restaurantBrands[i].LogoURL = rb.defaultRestaurantLogoURL
-		}
+func (rb *restaurantBrandUseCase) GetRestaurantBrandsByCategoryName(ctx context.Context, categoryName string, limit, offset int) ([]domain.RestaurantBrand, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.String("category.name", categoryName),
+		attribute.Int("pagination.limit", limit),
+		attribute.Int("pagination.offset", offset),
+	)
+
+	brands, err := rb.restaurantBrandRepo.GetRestaurantBrandsByCategoryName(ctx, categoryName, limit, offset)
+	if err != nil {
+		return nil, err
 	}
 
-	return restaurantBrands, nil
+	span.SetAttributes(attribute.Int("brands.count", len(brands)))
+	rb.applyDefaultLogos(brands)
+	return brands, nil
+}
+
+func (rb *restaurantBrandUseCase) SearchRestaurantBrands(ctx context.Context, query string, limit, offset int) ([]domain.RestaurantBrand, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.String("search.query", query),
+		attribute.Int("pagination.limit", limit),
+		attribute.Int("pagination.offset", offset),
+	)
+
+	brands, err := rb.restaurantBrandRepo.SearchRestaurantBrands(ctx, query, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	span.SetAttributes(attribute.Int("brands.count", len(brands)))
+	rb.applyDefaultLogos(brands)
+	return brands, nil
 }
 
 func (rb *restaurantBrandUseCase) GetRestaurantBrandByID(ctx context.Context, id int64) (domain.RestaurantBrand, error) {
@@ -105,7 +135,6 @@ func (rb *restaurantBrandUseCase) GetRestaurantBrandByID(ctx context.Context, id
 }
 
 func (uc *restaurantBrandUseCase) CreateRestaurantBrand(ctx context.Context, b domain.RestaurantBrand, image []byte, idemKey string) (domain.RestaurantBrand, error) {
-	// Загрузка логотипа в S3
 	if len(image) > 0 {
 		webpData, err := imageutil.ConvertToWebp(bytes.NewReader(image))
 		if err != nil {
@@ -137,18 +166,25 @@ func (uc *restaurantBrandUseCase) UpdateRestaurantBrand(ctx context.Context, b d
 			filename := fmt.Sprintf("restaurants/%s.webp", uuid.NewString())
 			newUrl, uploadErr := uc.fileStorage.UploadFile(ctx, webpData, filename, "image/webp")
 			if uploadErr == nil {
-				// Удаляем старое фото, если оно не дефолтное
 				if existing.LogoURL != uc.defaultRestaurantLogoURL && existing.LogoURL != "" {
-					go func() { _ = uc.fileStorage.DeleteFile(context.Background(), existing.LogoURL) }()
+					go func(oldUrl string) {
+						delCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+						defer cancel()
+						if err := uc.fileStorage.DeleteFile(delCtx, oldUrl); err != nil {
+							uc.logger.Error("failed to delete old restaurant logo", err, logger.Any("old_url", oldUrl), logger.Err(err))
+						}
+					}(existing.LogoURL)
 				}
 				b.LogoURL = newUrl
+			} else {
+				uc.logger.Error("failed to upload new restaurant logo", uploadErr, logger.Err(err))
+				b.LogoURL = existing.LogoURL
 			}
 		}
 	} else {
 		b.LogoURL = existing.LogoURL
 	}
 
-	// Заполняем остальные пустые поля из существующей записи
 	if b.Name == "" {
 		b.Name = existing.Name
 	}
@@ -164,4 +200,12 @@ func (uc *restaurantBrandUseCase) UpdateRestaurantBrand(ctx context.Context, b d
 
 func (rb *restaurantBrandUseCase) DeleteRestaurantBrand(ctx context.Context, id int64) error {
 	return rb.restaurantBrandRepo.Delete(ctx, id)
+}
+
+func (rb *restaurantBrandUseCase) applyDefaultLogos(brands []domain.RestaurantBrand) {
+	for i := range brands {
+		if brands[i].LogoURL == "" {
+			brands[i].LogoURL = rb.defaultRestaurantLogoURL
+		}
+	}
 }

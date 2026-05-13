@@ -2,6 +2,7 @@ package domain
 
 type CartItem struct {
 	DishID      int64
+	Name        string
 	Quantity    int
 	Price       int64
 	OwnerUserID *int64

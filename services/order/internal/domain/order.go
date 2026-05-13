@@ -29,11 +29,11 @@ type Order struct {
 	Splits             []OrderSplit
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
-	RestaurantLogoURL  string
 }
 
 type OrderDish struct {
 	DishID      int64
+	Name        string
 	Quantity    int
 	Price       int64
 	OwnerUserID *int64

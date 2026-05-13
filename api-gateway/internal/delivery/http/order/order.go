@@ -5,6 +5,8 @@ package order
 import (
 	"errors"
 	"net/http"
+	"strconv"
+	"sync"
 
 	wsManager "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/websocket"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/orderclient"
@@ -95,13 +97,6 @@ func NewOrderHandler(oc orderclient.OrderClient, pc paymentclient.PaymentClient,
 	}
 }
 
-//easyjson:json
-type CheckPaymentResponse struct {
-	OrderID       string `json:"order_id"`
-	PaymentID     string `json:"payment_id"`
-	PaymentStatus string `json:"payment_status"`
-}
-
 // CancelOrder godoc
 // @Summary 		Отмена заказа
 // @Description		Пользователь отменяет свой заказ. Доступно только пока заказ не in_progress / not finished.
@@ -139,60 +134,6 @@ func (h *OrderHandler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.JSON(w, http.StatusOK, map[string]string{"status": "cancelled"})
-}
-
-// CheckPayment godoc
-// @Summary 		Проверка статуса платежа
-// @Description		Для dev-окружения: актуализирует статус платежа через YooKassa REST, эмулируя webhook.
-// @Tags			order
-// @Accept			json
-// @Produce			json
-// @Param			id		path	string	true	"ID заказа"
-// @Success			200		{object}  CheckPaymentResponse		"Успешное обновление статуса"
-// @Success			202		{object}  CheckPaymentResponse		"Платеж еще не готов (pending)"
-// @Failure			400		{object}  response.ErrorResponse	"Отсутствует ID заказа"
-// @Failure			401		{object}  response.ErrorResponse	"Неавторизован"
-// @Failure			403		{object}  response.ErrorResponse	"Доступ запрещен"
-// @Failure			404		{object}  response.ErrorResponse	"Заказ или платеж не найден"
-// @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
-// @Router			/order/{id}/check-payment [get]
-func (h *OrderHandler) CheckPayment(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	l := h.logger.WithContext(ctx)
-
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok {
-		response.Error(w, http.StatusUnauthorized, "Unauthorized")
-		return
-	}
-
-	orderID := r.PathValue("id")
-	if orderID == "" {
-		response.Error(w, http.StatusBadRequest, "order id is required")
-		return
-	}
-
-	paymentID, err := h.orderClient.GetOrderPaymentID(ctx, orderID, userID)
-	if err != nil {
-		response.JSON(w, http.StatusAccepted, CheckPaymentResponse{
-			OrderID:       orderID,
-			PaymentStatus: "pending",
-		})
-		return
-	}
-
-	statusStr, err := h.paymentClient.RefreshPaymentStatus(ctx, paymentID)
-	if err != nil {
-		l.Error("refresh payment status failed", err)
-		response.Error(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	response.JSON(w, http.StatusOK, CheckPaymentResponse{
-		OrderID:       orderID,
-		PaymentID:     paymentID,
-		PaymentStatus: statusStr,
-	})
 }
 
 // CreateOrder godoc
@@ -294,42 +235,84 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orders, err := h.orderClient.GetOrders(ctx, userID)
+	limit := int32(10)
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		if parsed, err := strconv.ParseInt(limitStr, 10, 32); err == nil && parsed > 0 {
+			limit = int32(parsed)
+		}
+	}
+
+	offset := int32(0)
+	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
+		if parsed, err := strconv.ParseInt(offsetStr, 10, 32); err == nil && parsed >= 0 {
+			offset = int32(parsed)
+		}
+	}
+
+	orders, err := h.orderClient.GetOrders(ctx, userID, limit, offset)
 	if err != nil {
 		l.Error("failed to fetch user orders via grpc", err)
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
+	if len(orders) == 0 {
+		response.JSON(w, http.StatusOK, []OrderHistoryResponse{})
+		return
+	}
+
+	brandIDSet := make(map[int64]struct{})
 	dishIDSet := make(map[int64]struct{})
+
 	for _, o := range orders {
+		brandIDSet[o.RestaurantBrandID] = struct{}{}
 		for _, item := range o.Items {
 			dishIDSet[item.DishID] = struct{}{}
 		}
 	}
 
-	dishMeta := make(map[int64]struct {
-		Name     string
-		ImageURL string
-	}, len(dishIDSet))
+	brandIDs := make([]int64, 0, len(brandIDSet))
+	for id := range brandIDSet {
+		brandIDs = append(brandIDs, id)
+	}
 
-	if len(dishIDSet) > 0 {
-		dishIDs := make([]int64, 0, len(dishIDSet))
-		for id := range dishIDSet {
-			dishIDs = append(dishIDs, id)
-		}
+	dishIDs := make([]int64, 0, len(dishIDSet))
+	for id := range dishIDSet {
+		dishIDs = append(dishIDs, id)
+	}
 
-		dishes, derr := h.restaurantClient.GetDishesByIDs(ctx, dishIDs)
-		if derr != nil {
-			l.Error("failed to enrich order items with dish info", derr)
-		} else {
-			for _, d := range dishes {
-				dishMeta[d.Id] = struct {
-					Name     string
-					ImageURL string
-				}{Name: d.Name, ImageURL: d.ImageUrl}
+	var wg sync.WaitGroup
+	var logos map[int64]string
+	var dishes []restaurantclient.Dish
+	var logoErr, dishErr error
+
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		if len(dishIDs) > 0 {
+			dishes, dishErr = h.restaurantClient.GetDishesByIDs(ctx, dishIDs)
+			if dishErr != nil {
+				l.Warn("failed to fetch dishes images", logger.String("error", dishErr.Error()))
 			}
 		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		if len(brandIDs) > 0 {
+			logos, logoErr = h.restaurantClient.GetRestaurantLogos(ctx, brandIDs)
+			if logoErr != nil {
+				l.Warn("failed to fetch restaurant logos", logger.String("error", logoErr.Error()))
+			}
+		}
+	}()
+
+	wg.Wait()
+
+	dishImages := make(map[int64]string, len(dishes))
+	for _, d := range dishes {
+		dishImages[d.ID] = d.ImageURL
 	}
 
 	resp := make([]OrderHistoryResponse, 0, len(orders))
@@ -337,11 +320,12 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 
 		items := make([]OrderDishDTO, 0, len(o.Items))
 		for _, item := range o.Items {
-			meta := dishMeta[item.DishID]
+			imgURL := dishImages[item.DishID]
+
 			items = append(items, OrderDishDTO{
 				DishID:      item.DishID,
-				Name:        meta.Name,
-				ImageURL:    meta.ImageURL,
+				Name:        item.DishName,
+				ImageURL:    imgURL,
 				Quantity:    item.Quantity,
 				Price:       item.Price,
 				OwnerUserID: item.OwnerUserID,
@@ -358,10 +342,12 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 
+		brandLogo := logos[o.RestaurantBrandID]
+
 		resp = append(resp, OrderHistoryResponse{
 			OrderID:            o.PublicID,
 			RestaurantName:     o.RestaurantName,
-			RestaurantImageURL: o.RestaurantLogoURL,
+			RestaurantImageURL: brandLogo,
 			TotalCost:          o.TotalCost,
 			Status:             o.Status,
 			CreatedAt:          o.CreatedAt.Format("02.01.2006"),

@@ -14,6 +14,10 @@ import (
 
 // Маппер из Protobuf в доменную структуру
 func mapPBToDomainAddress(a *pb.Address) domain.Address {
+	if a == nil {
+		return domain.Address{}
+	}
+
 	return domain.Address{
 		PublicID: a.PublicId,
 		Location: domain.Location{
@@ -63,6 +67,9 @@ func (h *AddressHandler) AddAddress(ctx context.Context, req *pb.AddAddressReque
 	if req.Address == nil {
 		return nil, errutil.New("ADDRESS_REQUIRED", "address is required", codes.InvalidArgument)
 	}
+	if req.IdempotencyKey == "" {
+		return nil, errutil.New("IDEMPOTENCY_KEY_REQUIRED", "idempotency key is required", codes.InvalidArgument)
+	}
 
 	domainAddr := mapPBToDomainAddress(req.Address)
 
@@ -93,6 +100,13 @@ func (h *AddressHandler) GetMyAddresses(ctx context.Context, req *pb.GetMyAddres
 }
 
 func (h *AddressHandler) DeleteAddress(ctx context.Context, req *pb.DeleteAddressRequest) (*emptypb.Empty, error) {
+	if req.IdempotencyKey == "" {
+		return nil, errutil.New("IDEMPOTENCY_KEY_REQUIRED", "idempotency key is required", codes.InvalidArgument)
+	}
+	if req.AddressPublicId == "" {
+		return nil, errutil.New("ADDRESS_ID_REQUIRED", "address public id is required", codes.InvalidArgument)
+	}
+
 	err := h.usecase.DeleteAddress(ctx, req.UserId, req.AddressPublicId, req.IdempotencyKey)
 	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
@@ -104,6 +118,9 @@ func (h *AddressHandler) DeleteAddress(ctx context.Context, req *pb.DeleteAddres
 func (h *AddressHandler) UpdateAddress(ctx context.Context, req *pb.UpdateAddressRequest) (*emptypb.Empty, error) {
 	if req.Address == nil {
 		return nil, errutil.New("ADDRESS_REQUIRED", "address is required", codes.InvalidArgument)
+	}
+	if req.IdempotencyKey == "" {
+		return nil, errutil.New("IDEMPOTENCY_KEY_REQUIRED", "idempotency key is required", codes.InvalidArgument)
 	}
 
 	domainAddress := mapPBToDomainAddress(req.Address)
@@ -117,5 +134,14 @@ func (h *AddressHandler) UpdateAddress(ctx context.Context, req *pb.UpdateAddres
 }
 
 func (h *AddressHandler) CheckAddressExists(ctx context.Context, req *pb.CheckAddressExistsRequest) (*emptypb.Empty, error) {
+	if req.AddressPublicId == "" {
+		return nil, errutil.New("ADDRESS_ID_REQUIRED", "address public id is required", codes.InvalidArgument)
+	}
+
+	err := h.usecase.CheckAddressExists(ctx, req.UserId, req.AddressPublicId)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
 	return &emptypb.Empty{}, nil
 }

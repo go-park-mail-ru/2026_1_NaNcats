@@ -2,24 +2,13 @@ package grpc
 
 import (
 	"context"
-	"net/url"
-	"strconv"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/domain"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/repository"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/grpcutil"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
-
-func decodeMetadataValue(v string) string {
-	if decoded, err := url.QueryUnescape(v); err == nil {
-		return decoded
-	}
-	return v
-}
 
 func mapDomainToPBRestaurant(b domain.RestaurantBrand) *pb.RestaurantBrand {
 	return &pb.RestaurantBrand{
@@ -43,72 +32,31 @@ func mapDomainToPBDish(d domain.Dish) *pb.Dish {
 	}
 }
 
-type RestaurantHandler struct {
-	pb.UnimplementedRestaurantServiceServer
-	brandUC     usecase.RestaurantBrandUseCase
-	dishUC      usecase.DishUseCase
-	extRepo     repository.ExtendedRestaurantRepository
-	extDishRepo repository.ExtendedDishRepository
+func mapDomainToPBCategory(c domain.Category) *pb.Category {
+	return &pb.Category{
+		Id:    c.ID,
+		Name:  c.Name,
+		Emoji: c.Emoji,
+	}
 }
 
-func NewRestaurantHandler(buc usecase.RestaurantBrandUseCase, duc usecase.DishUseCase, extRepo repository.ExtendedRestaurantRepository, extDishRepo repository.ExtendedDishRepository) *RestaurantHandler {
+type RestaurantHandler struct {
+	pb.UnimplementedRestaurantServiceServer
+	categoryUC usecase.CategoryUseCase
+	brandUC    usecase.RestaurantBrandUseCase
+	dishUC     usecase.DishUseCase
+}
+
+func NewRestaurantHandler(cuc usecase.CategoryUseCase, buc usecase.RestaurantBrandUseCase, duc usecase.DishUseCase) *RestaurantHandler {
 	return &RestaurantHandler{
-		brandUC:     buc,
-		dishUC:      duc,
-		extRepo:     extRepo,
-		extDishRepo: extDishRepo,
+		categoryUC: cuc,
+		brandUC:    buc,
+		dishUC:     duc,
 	}
 }
 
 func (h *RestaurantHandler) GetRestaurantBrandsList(ctx context.Context, req *pb.GetRestaurantBrandsListRequest) (*pb.GetRestaurantBrandsListResponse, error) {
-	var brands []domain.RestaurantBrand
-	var err error
-
-	md, hasMD := metadata.FromIncomingContext(ctx)
-
-	if hasMD {
-		if vals := md.Get("x-search-query"); len(vals) > 0 && vals[0] != "" {
-			query := decodeMetadataValue(vals[0])
-			brands, err = h.extRepo.SearchRestaurantBrands(ctx, query, int(req.Limit), int(req.Offset))
-			if err != nil {
-				return nil, grpcutil.ToGRPCError(err)
-			}
-			pbBrands := make([]*pb.RestaurantBrand, 0, len(brands))
-			for _, b := range brands {
-				pbBrands = append(pbBrands, mapDomainToPBRestaurant(b))
-			}
-			return &pb.GetRestaurantBrandsListResponse{RestaurantBrands: pbBrands}, nil
-		}
-
-		if vals := md.Get("x-category-name"); len(vals) > 0 && vals[0] != "" {
-			catName := decodeMetadataValue(vals[0])
-			brands, err = h.extRepo.GetRestaurantBrandsByCategoryName(ctx, catName, int(req.Limit), int(req.Offset))
-			if err != nil {
-				return nil, grpcutil.ToGRPCError(err)
-			}
-			pbBrands := make([]*pb.RestaurantBrand, 0, len(brands))
-			for _, b := range brands {
-				pbBrands = append(pbBrands, mapDomainToPBRestaurant(b))
-			}
-			return &pb.GetRestaurantBrandsListResponse{RestaurantBrands: pbBrands}, nil
-		}
-
-		if vals := md.Get("x-category-id"); len(vals) > 0 && vals[0] != "" {
-			if catID, parseErr := strconv.ParseInt(vals[0], 10, 64); parseErr == nil && catID > 0 {
-				brands, err = h.extRepo.GetRestaurantBrandsByCategory(ctx, catID, int(req.Limit), int(req.Offset))
-				if err != nil {
-					return nil, grpcutil.ToGRPCError(err)
-				}
-				pbBrands := make([]*pb.RestaurantBrand, 0, len(brands))
-				for _, b := range brands {
-					pbBrands = append(pbBrands, mapDomainToPBRestaurant(b))
-				}
-				return &pb.GetRestaurantBrandsListResponse{RestaurantBrands: pbBrands}, nil
-			}
-		}
-	}
-
-	brands, err = h.brandUC.GetRestaurantBrandsList(ctx, int(req.Limit), int(req.Offset))
+	brands, err := h.brandUC.GetRestaurantBrandsList(ctx, int(req.Limit), int(req.Offset))
 	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
 	}
@@ -118,9 +66,35 @@ func (h *RestaurantHandler) GetRestaurantBrandsList(ctx context.Context, req *pb
 		pbBrands = append(pbBrands, mapDomainToPBRestaurant(b))
 	}
 
-	return &pb.GetRestaurantBrandsListResponse{
-		RestaurantBrands: pbBrands,
-	}, nil
+	return &pb.GetRestaurantBrandsListResponse{RestaurantBrands: pbBrands}, nil
+}
+
+func (h *RestaurantHandler) GetRestaurantBrandsByCategory(ctx context.Context, req *pb.GetRestaurantBrandsByCategoryRequest) (*pb.GetRestaurantBrandsListResponse, error) {
+	brands, err := h.brandUC.GetRestaurantBrandsByCategoryName(ctx, req.CategoryName, int(req.Limit), int(req.Offset))
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	pbBrands := make([]*pb.RestaurantBrand, 0, len(brands))
+	for _, b := range brands {
+		pbBrands = append(pbBrands, mapDomainToPBRestaurant(b))
+	}
+
+	return &pb.GetRestaurantBrandsListResponse{RestaurantBrands: pbBrands}, nil
+}
+
+func (h *RestaurantHandler) SearchRestaurantBrands(ctx context.Context, req *pb.SearchRestaurantBrandsRequest) (*pb.GetRestaurantBrandsListResponse, error) {
+	brands, err := h.brandUC.SearchRestaurantBrands(ctx, req.Query, int(req.Limit), int(req.Offset))
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	pbBrands := make([]*pb.RestaurantBrand, 0, len(brands))
+	for _, b := range brands {
+		pbBrands = append(pbBrands, mapDomainToPBRestaurant(b))
+	}
+
+	return &pb.GetRestaurantBrandsListResponse{RestaurantBrands: pbBrands}, nil
 }
 
 func (h *RestaurantHandler) GetRestaurantBrandByID(ctx context.Context, req *pb.GetRestaurantBrandByIDRequest) (*pb.GetRestaurantBrandByIDResponse, error) {
@@ -151,21 +125,6 @@ func (h *RestaurantHandler) GetRestaurantBrandsByIDs(ctx context.Context, req *p
 }
 
 func (h *RestaurantHandler) GetDishesByRestaurantBrandID(ctx context.Context, req *pb.GetDishesByRestaurantBrandIDRequest) (*pb.GetDishesByRestaurantBrandIDResponse, error) {
-	if md, ok := metadata.FromIncomingContext(ctx); ok {
-		if vals := md.Get("x-dish-search"); len(vals) > 0 && vals[0] != "" {
-			query := decodeMetadataValue(vals[0])
-			dishes, err := h.extDishRepo.SearchDishesByBrand(ctx, req.RestaurantBrandId, query, int(req.Limit))
-			if err != nil {
-				return nil, grpcutil.ToGRPCError(err)
-			}
-			pbDishes := make([]*pb.Dish, 0, len(dishes))
-			for _, d := range dishes {
-				pbDishes = append(pbDishes, mapDomainToPBDish(d))
-			}
-			return &pb.GetDishesByRestaurantBrandIDResponse{Dishes: pbDishes}, nil
-		}
-	}
-
 	dishes, err := h.dishUC.GetDishesByRestaurantBrandID(ctx, req.RestaurantBrandId, int(req.Limit), int(req.Offset))
 	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
@@ -176,33 +135,10 @@ func (h *RestaurantHandler) GetDishesByRestaurantBrandID(ctx context.Context, re
 		pbDishes = append(pbDishes, mapDomainToPBDish(d))
 	}
 
-	return &pb.GetDishesByRestaurantBrandIDResponse{
-		Dishes: pbDishes,
-	}, nil
+	return &pb.GetDishesByRestaurantBrandIDResponse{Dishes: pbDishes}, nil
 }
 
 func (h *RestaurantHandler) GetDishesByIDs(ctx context.Context, req *pb.GetDishesByIDsRequest) (*pb.GetDishesByIDsResponse, error) {
-	if md, ok := metadata.FromIncomingContext(ctx); ok {
-		if vals := md.Get("x-dish-search"); len(vals) > 0 && vals[0] != "" {
-			query := decodeMetadataValue(vals[0])
-			limit := 20
-			if vlim := md.Get("x-dish-search-limit"); len(vlim) > 0 && vlim[0] != "" {
-				if n, err := strconv.Atoi(vlim[0]); err == nil && n > 0 {
-					limit = n
-				}
-			}
-			dishes, err := h.extDishRepo.SearchDishes(ctx, query, limit)
-			if err != nil {
-				return nil, grpcutil.ToGRPCError(err)
-			}
-			pbDishes := make([]*pb.Dish, 0, len(dishes))
-			for _, d := range dishes {
-				pbDishes = append(pbDishes, mapDomainToPBDish(d))
-			}
-			return &pb.GetDishesByIDsResponse{Dishes: pbDishes}, nil
-		}
-	}
-
 	dishes, err := h.dishUC.GetDishesByIDs(ctx, req.DishIds)
 	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
@@ -213,9 +149,35 @@ func (h *RestaurantHandler) GetDishesByIDs(ctx context.Context, req *pb.GetDishe
 		pbDishes = append(pbDishes, mapDomainToPBDish(d))
 	}
 
-	return &pb.GetDishesByIDsResponse{
-		Dishes: pbDishes,
-	}, nil
+	return &pb.GetDishesByIDsResponse{Dishes: pbDishes}, nil
+}
+
+func (h *RestaurantHandler) SearchDishes(ctx context.Context, req *pb.SearchDishesRequest) (*pb.GetDishesByIDsResponse, error) {
+	dishes, err := h.dishUC.SearchDishes(ctx, req.Query, int(req.Limit))
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	pbDishes := make([]*pb.Dish, 0, len(dishes))
+	for _, d := range dishes {
+		pbDishes = append(pbDishes, mapDomainToPBDish(d))
+	}
+
+	return &pb.GetDishesByIDsResponse{Dishes: pbDishes}, nil
+}
+
+func (h *RestaurantHandler) SearchDishesByBrand(ctx context.Context, req *pb.SearchDishesByBrandRequest) (*pb.GetDishesByRestaurantBrandIDResponse, error) {
+	dishes, err := h.dishUC.SearchDishesByBrand(ctx, req.RestaurantBrandId, req.Query, int(req.Limit))
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	pbDishes := make([]*pb.Dish, 0, len(dishes))
+	for _, d := range dishes {
+		pbDishes = append(pbDishes, mapDomainToPBDish(d))
+	}
+
+	return &pb.GetDishesByRestaurantBrandIDResponse{Dishes: pbDishes}, nil
 }
 
 func (h *RestaurantHandler) CreateRestaurantBrand(ctx context.Context, req *pb.CreateBrandRequest) (*pb.RestaurantBrand, error) {
@@ -309,4 +271,18 @@ func (h *RestaurantHandler) DeleteDish(ctx context.Context, req *pb.DeleteDishRe
 		return nil, grpcutil.ToGRPCError(err)
 	}
 	return &emptypb.Empty{}, nil
+}
+
+func (h *RestaurantHandler) GetCategories(ctx context.Context, _ *emptypb.Empty) (*pb.GetCategoriesResponse, error) {
+	categories, err := h.categoryUC.GetAllCategories(ctx)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	pbCategories := make([]*pb.Category, 0, len(categories))
+	for _, c := range categories {
+		pbCategories = append(pbCategories, mapDomainToPBCategory(c))
+	}
+
+	return &pb.GetCategoriesResponse{Categories: pbCategories}, nil
 }

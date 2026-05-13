@@ -2,17 +2,20 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/domain"
 )
+
+var ErrStateChanged = errors.New("order state has changed or order not found")
 
 //go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository OrderRepository
 
 type OrderRepository interface {
 	CreateOrder(ctx context.Context, order domain.Order, idempotencyKey string) (string, error)
 	GetOrderByPublicID(ctx context.Context, publicID string) (domain.Order, error)
-	GetOrdersByUserID(ctx context.Context, userID int64) ([]domain.Order, error)
-	UpdateOrderStatus(ctx context.Context, publicID string, newStatus string) error
+	GetOrdersByUserID(ctx context.Context, userID int64, limit, offset int32) ([]domain.Order, error)
+	UpdateOrderStatus(ctx context.Context, publicID string, newStatus string, expectedStatuses ...string) error
 
 	UpdateSplitStatusByPaymentID(ctx context.Context, yookassaPaymentID, newStatus string) (string, error)
 	UpdateSplitStatus(ctx context.Context, splitID string, newStatus string) error

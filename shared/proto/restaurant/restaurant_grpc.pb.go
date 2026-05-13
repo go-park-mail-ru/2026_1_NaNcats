@@ -20,17 +20,22 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	RestaurantService_GetRestaurantBrandsList_FullMethodName      = "/restaurant.RestaurantService/GetRestaurantBrandsList"
-	RestaurantService_GetRestaurantBrandByID_FullMethodName       = "/restaurant.RestaurantService/GetRestaurantBrandByID"
-	RestaurantService_GetRestaurantBrandsByIDs_FullMethodName     = "/restaurant.RestaurantService/GetRestaurantBrandsByIDs"
-	RestaurantService_GetDishesByRestaurantBrandID_FullMethodName = "/restaurant.RestaurantService/GetDishesByRestaurantBrandID"
-	RestaurantService_GetDishesByIDs_FullMethodName               = "/restaurant.RestaurantService/GetDishesByIDs"
-	RestaurantService_CreateRestaurantBrand_FullMethodName        = "/restaurant.RestaurantService/CreateRestaurantBrand"
-	RestaurantService_UpdateRestaurantBrand_FullMethodName        = "/restaurant.RestaurantService/UpdateRestaurantBrand"
-	RestaurantService_DeleteRestaurantBrand_FullMethodName        = "/restaurant.RestaurantService/DeleteRestaurantBrand"
-	RestaurantService_CreateDish_FullMethodName                   = "/restaurant.RestaurantService/CreateDish"
-	RestaurantService_UpdateDish_FullMethodName                   = "/restaurant.RestaurantService/UpdateDish"
-	RestaurantService_DeleteDish_FullMethodName                   = "/restaurant.RestaurantService/DeleteDish"
+	RestaurantService_GetCategories_FullMethodName                 = "/restaurant.RestaurantService/GetCategories"
+	RestaurantService_GetRestaurantBrandsList_FullMethodName       = "/restaurant.RestaurantService/GetRestaurantBrandsList"
+	RestaurantService_GetRestaurantBrandByID_FullMethodName        = "/restaurant.RestaurantService/GetRestaurantBrandByID"
+	RestaurantService_GetRestaurantBrandsByIDs_FullMethodName      = "/restaurant.RestaurantService/GetRestaurantBrandsByIDs"
+	RestaurantService_GetRestaurantBrandsByCategory_FullMethodName = "/restaurant.RestaurantService/GetRestaurantBrandsByCategory"
+	RestaurantService_SearchRestaurantBrands_FullMethodName        = "/restaurant.RestaurantService/SearchRestaurantBrands"
+	RestaurantService_GetDishesByRestaurantBrandID_FullMethodName  = "/restaurant.RestaurantService/GetDishesByRestaurantBrandID"
+	RestaurantService_GetDishesByIDs_FullMethodName                = "/restaurant.RestaurantService/GetDishesByIDs"
+	RestaurantService_SearchDishes_FullMethodName                  = "/restaurant.RestaurantService/SearchDishes"
+	RestaurantService_SearchDishesByBrand_FullMethodName           = "/restaurant.RestaurantService/SearchDishesByBrand"
+	RestaurantService_CreateRestaurantBrand_FullMethodName         = "/restaurant.RestaurantService/CreateRestaurantBrand"
+	RestaurantService_UpdateRestaurantBrand_FullMethodName         = "/restaurant.RestaurantService/UpdateRestaurantBrand"
+	RestaurantService_DeleteRestaurantBrand_FullMethodName         = "/restaurant.RestaurantService/DeleteRestaurantBrand"
+	RestaurantService_CreateDish_FullMethodName                    = "/restaurant.RestaurantService/CreateDish"
+	RestaurantService_UpdateDish_FullMethodName                    = "/restaurant.RestaurantService/UpdateDish"
+	RestaurantService_DeleteDish_FullMethodName                    = "/restaurant.RestaurantService/DeleteDish"
 )
 
 // RestaurantServiceClient is the client API for RestaurantService service.
@@ -39,16 +44,24 @@ const (
 //
 // Микросервис каталога (Рестораны и Блюда)
 type RestaurantServiceClient interface {
+	// Получение категорий
+	GetCategories(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetCategoriesResponse, error)
 	// Метод получения списка ресторанов
 	GetRestaurantBrandsList(ctx context.Context, in *GetRestaurantBrandsListRequest, opts ...grpc.CallOption) (*GetRestaurantBrandsListResponse, error)
 	// Метод получения ресторана по ID
 	GetRestaurantBrandByID(ctx context.Context, in *GetRestaurantBrandByIDRequest, opts ...grpc.CallOption) (*GetRestaurantBrandByIDResponse, error)
 	// Метод пакетного получения данных о ресторанах
 	GetRestaurantBrandsByIDs(ctx context.Context, in *GetRestaurantBrandsByIDsRequest, opts ...grpc.CallOption) (*GetRestaurantBrandsByIDsResponse, error)
+	// Поиск и фильтрация ресторанов
+	GetRestaurantBrandsByCategory(ctx context.Context, in *GetRestaurantBrandsByCategoryRequest, opts ...grpc.CallOption) (*GetRestaurantBrandsListResponse, error)
+	SearchRestaurantBrands(ctx context.Context, in *SearchRestaurantBrandsRequest, opts ...grpc.CallOption) (*GetRestaurantBrandsListResponse, error)
 	// Метод получения блюд из ресторана по его ID
 	GetDishesByRestaurantBrandID(ctx context.Context, in *GetDishesByRestaurantBrandIDRequest, opts ...grpc.CallOption) (*GetDishesByRestaurantBrandIDResponse, error)
 	// Метод получения блюд по их ID
 	GetDishesByIDs(ctx context.Context, in *GetDishesByIDsRequest, opts ...grpc.CallOption) (*GetDishesByIDsResponse, error)
+	// Поиск блюд
+	SearchDishes(ctx context.Context, in *SearchDishesRequest, opts ...grpc.CallOption) (*GetDishesByIDsResponse, error)
+	SearchDishesByBrand(ctx context.Context, in *SearchDishesByBrandRequest, opts ...grpc.CallOption) (*GetDishesByRestaurantBrandIDResponse, error)
 	// Управление ресторанами (Админы)
 	CreateRestaurantBrand(ctx context.Context, in *CreateBrandRequest, opts ...grpc.CallOption) (*RestaurantBrand, error)
 	UpdateRestaurantBrand(ctx context.Context, in *UpdateBrandRequest, opts ...grpc.CallOption) (*RestaurantBrand, error)
@@ -65,6 +78,16 @@ type restaurantServiceClient struct {
 
 func NewRestaurantServiceClient(cc grpc.ClientConnInterface) RestaurantServiceClient {
 	return &restaurantServiceClient{cc}
+}
+
+func (c *restaurantServiceClient) GetCategories(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetCategoriesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetCategoriesResponse)
+	err := c.cc.Invoke(ctx, RestaurantService_GetCategories_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *restaurantServiceClient) GetRestaurantBrandsList(ctx context.Context, in *GetRestaurantBrandsListRequest, opts ...grpc.CallOption) (*GetRestaurantBrandsListResponse, error) {
@@ -97,6 +120,26 @@ func (c *restaurantServiceClient) GetRestaurantBrandsByIDs(ctx context.Context, 
 	return out, nil
 }
 
+func (c *restaurantServiceClient) GetRestaurantBrandsByCategory(ctx context.Context, in *GetRestaurantBrandsByCategoryRequest, opts ...grpc.CallOption) (*GetRestaurantBrandsListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetRestaurantBrandsListResponse)
+	err := c.cc.Invoke(ctx, RestaurantService_GetRestaurantBrandsByCategory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *restaurantServiceClient) SearchRestaurantBrands(ctx context.Context, in *SearchRestaurantBrandsRequest, opts ...grpc.CallOption) (*GetRestaurantBrandsListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetRestaurantBrandsListResponse)
+	err := c.cc.Invoke(ctx, RestaurantService_SearchRestaurantBrands_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *restaurantServiceClient) GetDishesByRestaurantBrandID(ctx context.Context, in *GetDishesByRestaurantBrandIDRequest, opts ...grpc.CallOption) (*GetDishesByRestaurantBrandIDResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetDishesByRestaurantBrandIDResponse)
@@ -111,6 +154,26 @@ func (c *restaurantServiceClient) GetDishesByIDs(ctx context.Context, in *GetDis
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetDishesByIDsResponse)
 	err := c.cc.Invoke(ctx, RestaurantService_GetDishesByIDs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *restaurantServiceClient) SearchDishes(ctx context.Context, in *SearchDishesRequest, opts ...grpc.CallOption) (*GetDishesByIDsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDishesByIDsResponse)
+	err := c.cc.Invoke(ctx, RestaurantService_SearchDishes_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *restaurantServiceClient) SearchDishesByBrand(ctx context.Context, in *SearchDishesByBrandRequest, opts ...grpc.CallOption) (*GetDishesByRestaurantBrandIDResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDishesByRestaurantBrandIDResponse)
+	err := c.cc.Invoke(ctx, RestaurantService_SearchDishesByBrand_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -183,16 +246,24 @@ func (c *restaurantServiceClient) DeleteDish(ctx context.Context, in *DeleteDish
 //
 // Микросервис каталога (Рестораны и Блюда)
 type RestaurantServiceServer interface {
+	// Получение категорий
+	GetCategories(context.Context, *emptypb.Empty) (*GetCategoriesResponse, error)
 	// Метод получения списка ресторанов
 	GetRestaurantBrandsList(context.Context, *GetRestaurantBrandsListRequest) (*GetRestaurantBrandsListResponse, error)
 	// Метод получения ресторана по ID
 	GetRestaurantBrandByID(context.Context, *GetRestaurantBrandByIDRequest) (*GetRestaurantBrandByIDResponse, error)
 	// Метод пакетного получения данных о ресторанах
 	GetRestaurantBrandsByIDs(context.Context, *GetRestaurantBrandsByIDsRequest) (*GetRestaurantBrandsByIDsResponse, error)
+	// Поиск и фильтрация ресторанов
+	GetRestaurantBrandsByCategory(context.Context, *GetRestaurantBrandsByCategoryRequest) (*GetRestaurantBrandsListResponse, error)
+	SearchRestaurantBrands(context.Context, *SearchRestaurantBrandsRequest) (*GetRestaurantBrandsListResponse, error)
 	// Метод получения блюд из ресторана по его ID
 	GetDishesByRestaurantBrandID(context.Context, *GetDishesByRestaurantBrandIDRequest) (*GetDishesByRestaurantBrandIDResponse, error)
 	// Метод получения блюд по их ID
 	GetDishesByIDs(context.Context, *GetDishesByIDsRequest) (*GetDishesByIDsResponse, error)
+	// Поиск блюд
+	SearchDishes(context.Context, *SearchDishesRequest) (*GetDishesByIDsResponse, error)
+	SearchDishesByBrand(context.Context, *SearchDishesByBrandRequest) (*GetDishesByRestaurantBrandIDResponse, error)
 	// Управление ресторанами (Админы)
 	CreateRestaurantBrand(context.Context, *CreateBrandRequest) (*RestaurantBrand, error)
 	UpdateRestaurantBrand(context.Context, *UpdateBrandRequest) (*RestaurantBrand, error)
@@ -211,6 +282,9 @@ type RestaurantServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedRestaurantServiceServer struct{}
 
+func (UnimplementedRestaurantServiceServer) GetCategories(context.Context, *emptypb.Empty) (*GetCategoriesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetCategories not implemented")
+}
 func (UnimplementedRestaurantServiceServer) GetRestaurantBrandsList(context.Context, *GetRestaurantBrandsListRequest) (*GetRestaurantBrandsListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetRestaurantBrandsList not implemented")
 }
@@ -220,11 +294,23 @@ func (UnimplementedRestaurantServiceServer) GetRestaurantBrandByID(context.Conte
 func (UnimplementedRestaurantServiceServer) GetRestaurantBrandsByIDs(context.Context, *GetRestaurantBrandsByIDsRequest) (*GetRestaurantBrandsByIDsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetRestaurantBrandsByIDs not implemented")
 }
+func (UnimplementedRestaurantServiceServer) GetRestaurantBrandsByCategory(context.Context, *GetRestaurantBrandsByCategoryRequest) (*GetRestaurantBrandsListResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetRestaurantBrandsByCategory not implemented")
+}
+func (UnimplementedRestaurantServiceServer) SearchRestaurantBrands(context.Context, *SearchRestaurantBrandsRequest) (*GetRestaurantBrandsListResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SearchRestaurantBrands not implemented")
+}
 func (UnimplementedRestaurantServiceServer) GetDishesByRestaurantBrandID(context.Context, *GetDishesByRestaurantBrandIDRequest) (*GetDishesByRestaurantBrandIDResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetDishesByRestaurantBrandID not implemented")
 }
 func (UnimplementedRestaurantServiceServer) GetDishesByIDs(context.Context, *GetDishesByIDsRequest) (*GetDishesByIDsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetDishesByIDs not implemented")
+}
+func (UnimplementedRestaurantServiceServer) SearchDishes(context.Context, *SearchDishesRequest) (*GetDishesByIDsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SearchDishes not implemented")
+}
+func (UnimplementedRestaurantServiceServer) SearchDishesByBrand(context.Context, *SearchDishesByBrandRequest) (*GetDishesByRestaurantBrandIDResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SearchDishesByBrand not implemented")
 }
 func (UnimplementedRestaurantServiceServer) CreateRestaurantBrand(context.Context, *CreateBrandRequest) (*RestaurantBrand, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateRestaurantBrand not implemented")
@@ -263,6 +349,24 @@ func RegisterRestaurantServiceServer(s grpc.ServiceRegistrar, srv RestaurantServ
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&RestaurantService_ServiceDesc, srv)
+}
+
+func _RestaurantService_GetCategories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RestaurantServiceServer).GetCategories(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RestaurantService_GetCategories_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RestaurantServiceServer).GetCategories(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _RestaurantService_GetRestaurantBrandsList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -319,6 +423,42 @@ func _RestaurantService_GetRestaurantBrandsByIDs_Handler(srv interface{}, ctx co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RestaurantService_GetRestaurantBrandsByCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRestaurantBrandsByCategoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RestaurantServiceServer).GetRestaurantBrandsByCategory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RestaurantService_GetRestaurantBrandsByCategory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RestaurantServiceServer).GetRestaurantBrandsByCategory(ctx, req.(*GetRestaurantBrandsByCategoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RestaurantService_SearchRestaurantBrands_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchRestaurantBrandsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RestaurantServiceServer).SearchRestaurantBrands(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RestaurantService_SearchRestaurantBrands_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RestaurantServiceServer).SearchRestaurantBrands(ctx, req.(*SearchRestaurantBrandsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RestaurantService_GetDishesByRestaurantBrandID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetDishesByRestaurantBrandIDRequest)
 	if err := dec(in); err != nil {
@@ -351,6 +491,42 @@ func _RestaurantService_GetDishesByIDs_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RestaurantServiceServer).GetDishesByIDs(ctx, req.(*GetDishesByIDsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RestaurantService_SearchDishes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchDishesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RestaurantServiceServer).SearchDishes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RestaurantService_SearchDishes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RestaurantServiceServer).SearchDishes(ctx, req.(*SearchDishesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RestaurantService_SearchDishesByBrand_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchDishesByBrandRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RestaurantServiceServer).SearchDishesByBrand(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RestaurantService_SearchDishesByBrand_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RestaurantServiceServer).SearchDishesByBrand(ctx, req.(*SearchDishesByBrandRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -471,6 +647,10 @@ var RestaurantService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*RestaurantServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "GetCategories",
+			Handler:    _RestaurantService_GetCategories_Handler,
+		},
+		{
 			MethodName: "GetRestaurantBrandsList",
 			Handler:    _RestaurantService_GetRestaurantBrandsList_Handler,
 		},
@@ -483,12 +663,28 @@ var RestaurantService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RestaurantService_GetRestaurantBrandsByIDs_Handler,
 		},
 		{
+			MethodName: "GetRestaurantBrandsByCategory",
+			Handler:    _RestaurantService_GetRestaurantBrandsByCategory_Handler,
+		},
+		{
+			MethodName: "SearchRestaurantBrands",
+			Handler:    _RestaurantService_SearchRestaurantBrands_Handler,
+		},
+		{
 			MethodName: "GetDishesByRestaurantBrandID",
 			Handler:    _RestaurantService_GetDishesByRestaurantBrandID_Handler,
 		},
 		{
 			MethodName: "GetDishesByIDs",
 			Handler:    _RestaurantService_GetDishesByIDs_Handler,
+		},
+		{
+			MethodName: "SearchDishes",
+			Handler:    _RestaurantService_SearchDishes_Handler,
+		},
+		{
+			MethodName: "SearchDishesByBrand",
+			Handler:    _RestaurantService_SearchDishesByBrand_Handler,
 		},
 		{
 			MethodName: "CreateRestaurantBrand",

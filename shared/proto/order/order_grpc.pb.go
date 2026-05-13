@@ -24,7 +24,6 @@ const (
 	OrderService_GetOrders_FullMethodName                    = "/order.OrderService/GetOrders"
 	OrderService_UpdateOrderStatusByPaymentID_FullMethodName = "/order.OrderService/UpdateOrderStatusByPaymentID"
 	OrderService_PayForFriend_FullMethodName                 = "/order.OrderService/PayForFriend"
-	OrderService_GetOrderPaymentID_FullMethodName            = "/order.OrderService/GetOrderPaymentID"
 	OrderService_CancelOrder_FullMethodName                  = "/order.OrderService/CancelOrder"
 )
 
@@ -41,12 +40,8 @@ type OrderServiceClient interface {
 	// Метод смены статус заказа
 	UpdateOrderStatusByPaymentID(ctx context.Context, in *UpdateStatusRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Метод для оплаты счета за друга
-	PayForFriend(ctx context.Context, in *PayForFriendRequest, opts ...grpc.CallOption) (*PayForFriendResponse, error)
-	// Возвращает yookassa payment_id для конкретного заказа (нужен фронту/гейтвею
-	// чтобы вручную опросить YooKassa без полагания на её webhook).
-	GetOrderPaymentID(ctx context.Context, in *GetOrderPaymentIDRequest, opts ...grpc.CallOption) (*GetOrderPaymentIDResponse, error)
-	// Помечает заказ как cancelled. Доступно только владельцу и только пока
-	// заказ ещё не payed/in_progress.
+	PayForFriend(ctx context.Context, in *PayForFriendRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Метод для отмены заказа
 	CancelOrder(ctx context.Context, in *CancelOrderRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -88,20 +83,10 @@ func (c *orderServiceClient) UpdateOrderStatusByPaymentID(ctx context.Context, i
 	return out, nil
 }
 
-func (c *orderServiceClient) PayForFriend(ctx context.Context, in *PayForFriendRequest, opts ...grpc.CallOption) (*PayForFriendResponse, error) {
+func (c *orderServiceClient) PayForFriend(ctx context.Context, in *PayForFriendRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PayForFriendResponse)
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, OrderService_PayForFriend_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *orderServiceClient) GetOrderPaymentID(ctx context.Context, in *GetOrderPaymentIDRequest, opts ...grpc.CallOption) (*GetOrderPaymentIDResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetOrderPaymentIDResponse)
-	err := c.cc.Invoke(ctx, OrderService_GetOrderPaymentID_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -131,12 +116,8 @@ type OrderServiceServer interface {
 	// Метод смены статус заказа
 	UpdateOrderStatusByPaymentID(context.Context, *UpdateStatusRequest) (*emptypb.Empty, error)
 	// Метод для оплаты счета за друга
-	PayForFriend(context.Context, *PayForFriendRequest) (*PayForFriendResponse, error)
-	// Возвращает yookassa payment_id для конкретного заказа (нужен фронту/гейтвею
-	// чтобы вручную опросить YooKassa без полагания на её webhook).
-	GetOrderPaymentID(context.Context, *GetOrderPaymentIDRequest) (*GetOrderPaymentIDResponse, error)
-	// Помечает заказ как cancelled. Доступно только владельцу и только пока
-	// заказ ещё не payed/in_progress.
+	PayForFriend(context.Context, *PayForFriendRequest) (*emptypb.Empty, error)
+	// Метод для отмены заказа
 	CancelOrder(context.Context, *CancelOrderRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedOrderServiceServer()
 }
@@ -157,11 +138,8 @@ func (UnimplementedOrderServiceServer) GetOrders(context.Context, *GetOrdersRequ
 func (UnimplementedOrderServiceServer) UpdateOrderStatusByPaymentID(context.Context, *UpdateStatusRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateOrderStatusByPaymentID not implemented")
 }
-func (UnimplementedOrderServiceServer) PayForFriend(context.Context, *PayForFriendRequest) (*PayForFriendResponse, error) {
+func (UnimplementedOrderServiceServer) PayForFriend(context.Context, *PayForFriendRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method PayForFriend not implemented")
-}
-func (UnimplementedOrderServiceServer) GetOrderPaymentID(context.Context, *GetOrderPaymentIDRequest) (*GetOrderPaymentIDResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetOrderPaymentID not implemented")
 }
 func (UnimplementedOrderServiceServer) CancelOrder(context.Context, *CancelOrderRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method CancelOrder not implemented")
@@ -259,24 +237,6 @@ func _OrderService_PayForFriend_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _OrderService_GetOrderPaymentID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetOrderPaymentIDRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(OrderServiceServer).GetOrderPaymentID(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: OrderService_GetOrderPaymentID_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(OrderServiceServer).GetOrderPaymentID(ctx, req.(*GetOrderPaymentIDRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _OrderService_CancelOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CancelOrderRequest)
 	if err := dec(in); err != nil {
@@ -317,10 +277,6 @@ var OrderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PayForFriend",
 			Handler:    _OrderService_PayForFriend_Handler,
-		},
-		{
-			MethodName: "GetOrderPaymentID",
-			Handler:    _OrderService_GetOrderPaymentID_Handler,
 		},
 		{
 			MethodName: "CancelOrder",

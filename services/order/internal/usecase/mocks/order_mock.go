@@ -71,34 +71,19 @@ func (mr *MockOrderUseCaseMockRecorder) CreateOrder(ctx, req, idempotencyKey any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrder", reflect.TypeOf((*MockOrderUseCase)(nil).CreateOrder), ctx, req, idempotencyKey)
 }
 
-// GetOrderPaymentID mocks base method.
-func (m *MockOrderUseCase) GetOrderPaymentID(ctx context.Context, orderPublicID string, userID int64) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOrderPaymentID", ctx, orderPublicID, userID)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOrderPaymentID indicates an expected call of GetOrderPaymentID.
-func (mr *MockOrderUseCaseMockRecorder) GetOrderPaymentID(ctx, orderPublicID, userID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrderPaymentID", reflect.TypeOf((*MockOrderUseCase)(nil).GetOrderPaymentID), ctx, orderPublicID, userID)
-}
-
 // GetOrders mocks base method.
-func (m *MockOrderUseCase) GetOrders(ctx context.Context, userID int64) ([]domain.Order, error) {
+func (m *MockOrderUseCase) GetOrders(ctx context.Context, userID int64, limit, offset int32) ([]domain.Order, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOrders", ctx, userID)
+	ret := m.ctrl.Call(m, "GetOrders", ctx, userID, limit, offset)
 	ret0, _ := ret[0].([]domain.Order)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetOrders indicates an expected call of GetOrders.
-func (mr *MockOrderUseCaseMockRecorder) GetOrders(ctx, userID any) *gomock.Call {
+func (mr *MockOrderUseCaseMockRecorder) GetOrders(ctx, userID, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrders", reflect.TypeOf((*MockOrderUseCase)(nil).GetOrders), ctx, userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrders", reflect.TypeOf((*MockOrderUseCase)(nil).GetOrders), ctx, userID, limit, offset)
 }
 
 // PayForFriend mocks base method.
@@ -243,21 +228,6 @@ func NewMockRestaurantClient(ctrl *gomock.Controller) *MockRestaurantClient {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockRestaurantClient) EXPECT() *MockRestaurantClientMockRecorder {
 	return m.recorder
-}
-
-// GetLogosByBrandIDs mocks base method.
-func (m *MockRestaurantClient) GetLogosByBrandIDs(ctx context.Context, brandIDs []int64) (map[int64]string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLogosByBrandIDs", ctx, brandIDs)
-	ret0, _ := ret[0].(map[int64]string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetLogosByBrandIDs indicates an expected call of GetLogosByBrandIDs.
-func (mr *MockRestaurantClientMockRecorder) GetLogosByBrandIDs(ctx, brandIDs any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLogosByBrandIDs", reflect.TypeOf((*MockRestaurantClient)(nil).GetLogosByBrandIDs), ctx, brandIDs)
 }
 
 // GetRestaurantName mocks base method.

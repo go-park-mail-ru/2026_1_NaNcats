@@ -2,6 +2,7 @@ package autoadvance
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"time"
 
@@ -26,7 +27,7 @@ type Publisher interface {
 
 var transitions = map[string]string{
 	"paid":        "in_progress",
-	"in_progress": "delivering",
+	"in_progress": "waiting",
 	"waiting":     "delivering",
 	"delivering":  "finished",
 }
@@ -78,7 +79,17 @@ func (r *Runner) tick(ctx context.Context) {
 		if !ok {
 			continue
 		}
-		if err := r.repo.UpdateOrderStatus(ctx, o.PublicID, next); err != nil {
+
+		err = r.repo.UpdateOrderStatus(ctx, o.PublicID, next, o.Status)
+		if err != nil {
+			if errors.Is(err, repository.ErrStateChanged) {
+				r.logger.Info("autoadvance: state changed concurrently, skipping",
+					logger.String("order_id", o.PublicID),
+					logger.String("expected_state", o.Status),
+				)
+				continue
+			}
+
 			r.logger.Error("autoadvance: update status failed", err,
 				logger.String("order_id", o.PublicID),
 				logger.String("from", o.Status),

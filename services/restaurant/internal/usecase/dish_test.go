@@ -102,7 +102,7 @@ func TestDishUseCase_GetDishesByRestaurantBrandID(t *testing.T) {
 			repo := mocks.NewMockDishRepository(ctrl)
 			tt.mockInit(repo)
 
-			uc := NewDishUseCase(repo, defaultLogo, nil)
+			uc := NewDishUseCase(repo, defaultLogo, nil, nil)
 			res, err := uc.GetDishesByRestaurantBrandID(context.Background(), tt.brandID, tt.limit, tt.offset)
 
 			if tt.expectedError != nil {
@@ -175,8 +175,129 @@ func TestDishUseCase_GetDishesByIDs(t *testing.T) {
 			repo := mocks.NewMockDishRepository(ctrl)
 			tt.mockInit(repo)
 
-			uc := NewDishUseCase(repo, defaultLogo, nil)
+			uc := NewDishUseCase(repo, defaultLogo, nil, nil)
 			res, err := uc.GetDishesByIDs(context.Background(), tt.ids)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedError.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+				assert.Len(t, res, tt.expectedLen)
+				if tt.expectedLen > 0 {
+					assert.Equal(t, defaultLogo, res[0].ImageURL)
+				}
+			}
+		})
+	}
+}
+
+func TestDishUseCase_SearchDishes(t *testing.T) {
+	type mockInit func(m *mocks.MockDishRepository)
+
+	defaultLogo := "http://s3.ru/default-dish.png"
+	query := "Pizza"
+	limit := 10
+
+	tests := []struct {
+		name          string
+		mockInit      mockInit
+		expectedLen   int
+		expectedError error
+	}{
+		{
+			name: "Успешный поиск",
+			mockInit: func(m *mocks.MockDishRepository) {
+				m.EXPECT().
+					SearchDishes(gomock.Any(), query, limit).
+					Return([]domain.Dish{
+						{ID: 1, Name: "Dodo Pizza", ImageURL: ""},
+					}, nil)
+			},
+			expectedLen: 1,
+		},
+		{
+			name: "Ошибка базы данных",
+			mockInit: func(m *mocks.MockDishRepository) {
+				m.EXPECT().
+					SearchDishes(gomock.Any(), query, limit).
+					Return(nil, errors.New("db error"))
+			},
+			expectedError: errors.New("db error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			repo := mocks.NewMockDishRepository(ctrl)
+			tt.mockInit(repo)
+
+			uc := NewDishUseCase(repo, defaultLogo, nil, nil)
+			res, err := uc.SearchDishes(context.Background(), query, limit)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedError.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+				assert.Len(t, res, tt.expectedLen)
+				if tt.expectedLen > 0 {
+					assert.Equal(t, defaultLogo, res[0].ImageURL)
+				}
+			}
+		})
+	}
+}
+
+func TestDishUseCase_SearchDishesByBrand(t *testing.T) {
+	type mockInit func(m *mocks.MockDishRepository)
+
+	defaultLogo := "http://s3.ru/default-dish.png"
+	brandID := int64(1)
+	query := "Burger"
+	limit := 10
+
+	tests := []struct {
+		name          string
+		mockInit      mockInit
+		expectedLen   int
+		expectedError error
+	}{
+		{
+			name: "Успешный поиск",
+			mockInit: func(m *mocks.MockDishRepository) {
+				m.EXPECT().
+					SearchDishesByBrand(gomock.Any(), brandID, query, limit).
+					Return([]domain.Dish{
+						{ID: 1, Name: "Cheeseburger", ImageURL: ""},
+					}, nil)
+			},
+			expectedLen: 1,
+		},
+		{
+			name: "Ошибка базы данных",
+			mockInit: func(m *mocks.MockDishRepository) {
+				m.EXPECT().
+					SearchDishesByBrand(gomock.Any(), brandID, query, limit).
+					Return(nil, errors.New("db error"))
+			},
+			expectedError: errors.New("db error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			repo := mocks.NewMockDishRepository(ctrl)
+			tt.mockInit(repo)
+
+			uc := NewDishUseCase(repo, defaultLogo, nil, nil)
+			res, err := uc.SearchDishesByBrand(context.Background(), brandID, query, limit)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)
@@ -267,7 +388,7 @@ func TestDishUseCase_CreateDish(t *testing.T) {
 			fs := s3Mocks.NewMockFileStorage(ctrl)
 			tt.mockInit(dr, fs)
 
-			uc := NewDishUseCase(dr, defaultLogo, fs)
+			uc := NewDishUseCase(dr, defaultLogo, fs, nil)
 			_, err := uc.CreateDish(ctx, dishInput, tt.image, idemKey)
 
 			if tt.expectedError != "" {
@@ -355,7 +476,7 @@ func TestDishUseCase_UpdateDish(t *testing.T) {
 			fs := s3Mocks.NewMockFileStorage(ctrl)
 			tt.mockInit(dr, fs)
 
-			uc := NewDishUseCase(dr, defaultLogo, fs)
+			uc := NewDishUseCase(dr, defaultLogo, fs, nil)
 			_, err := uc.UpdateDish(ctx, tt.input, tt.newImage, "idem")
 
 			if tt.expectedError != "" {
@@ -403,7 +524,7 @@ func TestDishUseCase_DeleteDish(t *testing.T) {
 			dr := mocks.NewMockDishRepository(ctrl)
 			tt.mockInit(dr)
 
-			uc := NewDishUseCase(dr, "", nil)
+			uc := NewDishUseCase(dr, "", nil, nil)
 			err := uc.DeleteDish(ctx, dishID)
 
 			assert.Equal(t, tt.wantErr, err != nil)

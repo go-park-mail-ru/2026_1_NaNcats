@@ -16,34 +16,22 @@ service OrderService {
   // Метод смены статус заказа
   rpc UpdateOrderStatusByPaymentID (UpdateStatusRequest) returns (google.protobuf.Empty);
   // Метод для оплаты счета за друга
-  rpc PayForFriend (PayForFriendRequest) returns (PayForFriendResponse);
-  // Возвращает yookassa payment_id для конкретного заказа (нужен фронту/гейтвею
-  // чтобы вручную опросить YooKassa без полагания на её webhook).
-  rpc GetOrderPaymentID (GetOrderPaymentIDRequest) returns (GetOrderPaymentIDResponse);
-  // Помечает заказ как cancelled. Доступно только владельцу и только пока
-  // заказ ещё не payed/in_progress
+  rpc PayForFriend (PayForFriendRequest) returns (google.protobuf.Empty);
+  // Метод для отмены заказа
   rpc CancelOrder (CancelOrderRequest) returns (google.protobuf.Empty);
 }
 
 message CancelOrderRequest {
   string order_public_id = 1;
-  int64  user_id = 2;
-}
-
-message GetOrderPaymentIDRequest {
-  string order_public_id = 1;
-  int64  user_id = 2;
-}
-
-message GetOrderPaymentIDResponse {
-  string yookassa_payment_id = 1;
+  int64 user_id = 2;
 }
 
 message OrderDish {
   int64 dish_id = 1;
-  int32 quantity = 2;
-  int64 price = 3;
-  optional int64 owner_user_id = 4;
+  string dish_name = 2;
+  int32 quantity = 3;
+  int64 price = 4;
+  optional int64 owner_user_id = 5;
 }
 
 message OrderSplit {
@@ -56,12 +44,11 @@ message OrderSplit {
 message Order {
   string public_id = 1;
   string restaurant_name = 2;
-  string restaurant_logo_url = 3;
-  int64 total_cost = 4;
-  string status = 5;
-  google.protobuf.Timestamp created_at = 6;
-  repeated OrderDish items = 7;
-  repeated OrderSplit splits = 8;
+  int64 total_cost = 3;
+  string status = 4;
+  google.protobuf.Timestamp created_at = 5;
+  repeated OrderDish items = 6;
+  repeated OrderSplit splits = 7;
 }
 
 message CreateOrderRequest {
@@ -81,11 +68,12 @@ message CreateOrderRequest {
 
 message CreateOrderResponse {
   string order_public_id = 1;
-  string confirmation_url = 2; 
 }
 
 message GetOrdersRequest {
   int64 user_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
 }
 
 message GetOrdersResponse {
@@ -95,7 +83,7 @@ message GetOrdersResponse {
 message UpdateStatusRequest {
   string yookassa_payment_id = 1;
   string status = 2;
-  string idempotency_key = 7;
+  string idempotency_key = 3;
 }
 
 message PayForFriendRequest {
@@ -103,8 +91,4 @@ message PayForFriendRequest {
   int64 payer_user_id = 2;
   string payment_method_id = 3;
   string idempotency_key = 4;
-}
-
-message PayForFriendResponse {
-  string confirmation_url = 1;
 }

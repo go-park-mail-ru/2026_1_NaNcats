@@ -85,6 +85,21 @@ func (mr *MockRestaurantBrandUseCaseMockRecorder) GetRestaurantBrandByID(ctx, id
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestaurantBrandByID", reflect.TypeOf((*MockRestaurantBrandUseCase)(nil).GetRestaurantBrandByID), ctx, id)
 }
 
+// GetRestaurantBrandsByCategoryName mocks base method.
+func (m *MockRestaurantBrandUseCase) GetRestaurantBrandsByCategoryName(ctx context.Context, categoryName string, limit, offset int) ([]domain.RestaurantBrand, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRestaurantBrandsByCategoryName", ctx, categoryName, limit, offset)
+	ret0, _ := ret[0].([]domain.RestaurantBrand)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRestaurantBrandsByCategoryName indicates an expected call of GetRestaurantBrandsByCategoryName.
+func (mr *MockRestaurantBrandUseCaseMockRecorder) GetRestaurantBrandsByCategoryName(ctx, categoryName, limit, offset any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestaurantBrandsByCategoryName", reflect.TypeOf((*MockRestaurantBrandUseCase)(nil).GetRestaurantBrandsByCategoryName), ctx, categoryName, limit, offset)
+}
+
 // GetRestaurantBrandsByIDs mocks base method.
 func (m *MockRestaurantBrandUseCase) GetRestaurantBrandsByIDs(ctx context.Context, brandIDs []int64) ([]domain.RestaurantBrand, error) {
 	m.ctrl.T.Helper()
@@ -113,6 +128,21 @@ func (m *MockRestaurantBrandUseCase) GetRestaurantBrandsList(ctx context.Context
 func (mr *MockRestaurantBrandUseCaseMockRecorder) GetRestaurantBrandsList(ctx, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestaurantBrandsList", reflect.TypeOf((*MockRestaurantBrandUseCase)(nil).GetRestaurantBrandsList), ctx, limit, offset)
+}
+
+// SearchRestaurantBrands mocks base method.
+func (m *MockRestaurantBrandUseCase) SearchRestaurantBrands(ctx context.Context, query string, limit, offset int) ([]domain.RestaurantBrand, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchRestaurantBrands", ctx, query, limit, offset)
+	ret0, _ := ret[0].([]domain.RestaurantBrand)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchRestaurantBrands indicates an expected call of SearchRestaurantBrands.
+func (mr *MockRestaurantBrandUseCaseMockRecorder) SearchRestaurantBrands(ctx, query, limit, offset any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchRestaurantBrands", reflect.TypeOf((*MockRestaurantBrandUseCase)(nil).SearchRestaurantBrands), ctx, query, limit, offset)
 }
 
 // UpdateRestaurantBrand mocks base method.

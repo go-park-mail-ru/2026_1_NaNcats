@@ -2,13 +2,9 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 
 CREATE TABLE "location" (
 	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	
-	address_text TEXT NOT NULL,
-	
+	address_text TEXT NOT NULL,	
 	coordinate GEOGRAPHY(Point, 4326) NOT NULL,
 
-	idempotency_key TEXT UNIQUE,
-	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
@@ -35,8 +31,6 @@ CREATE TABLE "client_address" (
 
 	is_active BOOLEAN DEFAULT true NOT NULL,
 
-	idempotency_key TEXT UNIQUE,
-		
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	
@@ -44,4 +38,14 @@ CREATE TABLE "client_address" (
 		FOREIGN KEY (location_id)
 		REFERENCES "location"(id)
 		ON DELETE RESTRICT
+);
+
+CREATE TABLE "idempotency_records" (
+    user_id BIGINT NOT NULL,
+    idempotency_key TEXT NOT NULL,
+    grpc_method TEXT NOT NULL,
+    response_payload JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+
+    PRIMARY KEY (user_id, idempotency_key)
 );

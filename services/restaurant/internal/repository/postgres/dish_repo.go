@@ -49,11 +49,9 @@ type dishRepo struct {
 	pool postgres.PgxPool
 }
 
-func NewDishRepo(pool postgres.PgxPool) repository.DishFullRepository {
+func NewDishRepo(pool postgres.PgxPool) repository.DishRepository {
 	return &dishRepo{pool: pool}
 }
-
-var _ repository.ExtendedDishRepository = (*dishRepo)(nil)
 
 func (r *dishRepo) SearchDishes(ctx context.Context, query string, limit int) ([]domain.Dish, error) {
 	q := `
@@ -212,14 +210,17 @@ func (r *dishRepo) Create(ctx context.Context, d domain.Dish, idemKey string) (d
 	query := `
 		INSERT INTO "dish" (restaurant_brand_id, name, description, price, image_url, idempotency_key)
 		VALUES ($1, $2, $3, $4, $5, $6)
-		ON CONFLICT (idempotency_key) DO UPDATE SET idempotency_key = EXCLUDED.idempotency_key
+		ON CONFLICT (idempotency_key) DO UPDATE SET updated_at = NOW()
 		RETURNING id, restaurant_brand_id, name, description, price, image_url, created_at, updated_at;
 	`
 	var res dishDB
 	err := r.pool.QueryRow(ctx, query, d.RestaurantBrandID, d.Name, d.Description, d.Price, d.ImageURL, idemKey).Scan(
 		&res.ID, &res.RestaurantBrandID, &res.Name, &res.Description, &res.Price, &res.ImageURL, &res.CreatedAt, &res.UpdatedAt,
 	)
-	return res.toDomain(), err
+	if err != nil {
+		return domain.Dish{}, fmt.Errorf("create dish: %w", err)
+	}
+	return res.toDomain(), nil
 }
 
 func (r *dishRepo) Update(ctx context.Context, d domain.Dish) (domain.Dish, error) {
