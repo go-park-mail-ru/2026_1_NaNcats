@@ -42,10 +42,10 @@ func TestMustLoad_Success(t *testing.T) {
 			name:    "Успешная загрузка из YAML (ENV пустые)",
 			envVars: map[string]string{},
 			yamlContent: `
-app_name: "yaml_app"
-port: 9090
-timeout: "15s"
-`,
+				app_name: "yaml_app"
+				port: 9090
+				timeout: "15s"
+				`,
 			expectedCfg: TestConfig{
 				AppName: "yaml_app",
 				Port:    9090,
@@ -58,10 +58,10 @@ timeout: "15s"
 				"PORT": "8080",
 			},
 			yamlContent: `
-app_name: "yaml_app"
-port: 9090
-timeout: "15s"
-`,
+				app_name: "yaml_app"
+				port: 9090
+				timeout: "15s"
+				`,
 			expectedCfg: TestConfig{
 				AppName: "yaml_app",
 				Port:    8080,
@@ -71,12 +71,12 @@ timeout: "15s"
 		{
 			name: "Использование дефолтных значений",
 			envVars: map[string]string{
-				"PORT": "3000",
+				"PORT": "2033",
 			},
 			yamlContent: "",
 			expectedCfg: TestConfig{
 				AppName: "my_app",
-				Port:    3000,
+				Port:    2033,
 				Timeout: 5 * time.Second,
 			},
 		},

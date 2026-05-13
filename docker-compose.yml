@@ -108,7 +108,7 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
-      - "127.0.0.1:8000:3000"
+      - "127.0.0.1:8000:2033"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin} # Пароль для входа
       - GF_AUTH_ANONYMOUS_ENABLED=false # Чтобы нельзя было смотреть без логина
@@ -138,6 +138,21 @@ services:
     command: -config.file=/etc/promtail/config.yaml
     restart: always
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.1-alpine
+    container_name: clickhouse_db
+    ports:
+      - "127.0.0.1:8123:8123" # HTTP интерфейс (для Grafana и Play UI)
+      - "127.0.0.1:9000:9000" # для Go сервиса
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./infrastructure/clickhouse/logs:/var/log/clickhouse-server
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
     
   auth_service:
     build:
@@ -334,3 +349,4 @@ volumes:
   prometheus_data:
   redis_data:
   rabbitmq_data:
+  clickhouse_data:
