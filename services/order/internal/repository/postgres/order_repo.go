@@ -32,8 +32,22 @@ func NewOrderRepo(pool postgres.PgxPool) repository.OrderRepository {
 
 type txKey struct{}
 
-func (r *OrderRepo) WithTransaction(ctx context.Context, fn func(txCtx context.Context) error) error {
-	tx, err := r.db.BeginTx(ctx, nil)
+type PgxQuerier interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
+}
+
+func (r *orderRepo) getTxOrDB(ctx context.Context) PgxQuerier {
+	if tx, ok := ctx.Value(txKey{}).(pgx.Tx); ok {
+		return tx
+	}
+	return r.pool
+}
+
+func (r *orderRepo) WithTransaction(ctx context.Context, fn func(txCtx context.Context) error) error {
+	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}
@@ -42,14 +56,14 @@ func (r *OrderRepo) WithTransaction(ctx context.Context, fn func(txCtx context.C
 
 	err = fn(txCtx)
 	if err != nil {
-		if rbErr := tx.Rollback(); rbErr != nil {
-			return rbErr
+		if rbErr := tx.Rollback(ctx); rbErr != nil && !errors.Is(rbErr, pgx.ErrTxClosed) {
+			return fmt.Errorf("rollback error: %v, original error: %w", rbErr, err)
 		}
 		return err
 	}
 
-	if err = tx.Commit(); err != nil {
-		return err
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit tx: %w", err)
 	}
 
 	return nil
