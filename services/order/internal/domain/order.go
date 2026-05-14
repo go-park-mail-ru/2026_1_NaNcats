@@ -6,6 +6,8 @@ type OrderSplit struct {
 	ID                string
 	OrderID           int64
 	UserID            int64
+	BaseAmount        int64
+	DiscountAmount    int64
 	Amount            int64
 	Status            string
 	PaymentMethodID   *string
@@ -22,7 +24,9 @@ type Order struct {
 	RestaurantBrandID  int64
 	ClientAddressID    string
 	TotalCost          int64
-	PromocodeID        int64
+	PromocodeID        *int64
+	PromocodeString    *string
+	DiscountAmount     int64
 	RestaurantName     string
 	Status             string
 	Items              []OrderDish
@@ -50,4 +54,5 @@ type CreateOrderInput struct {
 	PaymentMethodID string
 	PayForAll       bool
 	PayerMapping    map[int64]int64
+	Promocode       *string
 }
