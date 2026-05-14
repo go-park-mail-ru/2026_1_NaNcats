@@ -100,3 +100,55 @@ CREATE TABLE "idempotency_records" (
 
     PRIMARY KEY (user_id, idempotency_key)
 );
+
+CREATE TABLE "promocode" (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    code TEXT NOT NULL UNIQUE
+        CHECK (char_length(code) >= 2 AND char_length(code) <= 50),
+    
+    discount_percent INT
+        CHECK (discount_percent > 0 AND discount_percent <= 100),
+    discount_amount BIGINT
+        CHECK (discount_amount > 0), 
+
+    max_uses INT,
+    current_uses INT DEFAULT 0 NOT NULL,
+    min_order_amount BIGINT
+        CHECK (min_order_amount > 0), 
+    
+    user_id BIGINT,
+    restaurant_brand_id BIGINT,
+    
+    is_global BOOL DEFAULT FALSE NOT NULL,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    
+    CONSTRAINT check_discount_type
+        CHECK (
+            (discount_percent IS NOT NULL AND discount_amount IS NULL)
+            OR
+            (discount_percent IS NULL AND discount_amount IS NOT NULL)
+        )
+);
+
+CREATE TABLE "promocode_usage" (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    promocode_id BIGINT NOT NULL,
+    order_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    
+    UNIQUE (promocode_id, user_id),
+    
+    used_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    
+    CONSTRAINT fk_promocode_usage_promocode
+        FOREIGN KEY (promocode_id)
+        REFERENCES "promocode"(id)
+        ON DELETE CASCADE,
+        
+    CONSTRAINT fk_promocode_usage_order
+        FOREIGN KEY (order_id)
+        REFERENCES "order"(id)
+        ON DELETE CASCADE
+);
