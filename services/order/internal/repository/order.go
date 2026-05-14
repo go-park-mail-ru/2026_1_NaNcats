@@ -12,6 +12,8 @@ var ErrStateChanged = errors.New("order state has changed or order not found")
 //go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository OrderRepository
 
 type OrderRepository interface {
+	WithTransaction(ctx context.Context, fn func(txCtx context.Context) error) error
+
 	CreateOrder(ctx context.Context, order domain.Order, idempotencyKey string) (string, error)
 	GetOrderByPublicID(ctx context.Context, publicID string) (domain.Order, error)
 	GetOrdersByUserID(ctx context.Context, userID int64, limit, offset int32) ([]domain.Order, error)
@@ -26,4 +28,9 @@ type OrderRepository interface {
 
 	// Возвращает заказы, статусы которых нужно продвигать в фоне
 	GetOrdersByStatuses(ctx context.Context, statuses []string) ([]domain.Order, error)
+
+	GetPromocodeByCodeWithLock(ctx context.Context, code string) (domain.Promocode, error)
+	CheckPromocodeUsage(ctx context.Context, promoID, userID int64) (bool, error)
+	IncrementPromocodeUses(ctx context.Context, promoID int64) error
+	CreatePromocodeUsage(ctx context.Context, promoID, orderID, userID int64) error
 }

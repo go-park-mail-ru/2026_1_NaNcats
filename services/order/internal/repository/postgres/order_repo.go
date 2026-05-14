@@ -30,6 +30,31 @@ func NewOrderRepo(pool postgres.PgxPool) repository.OrderRepository {
 	}
 }
 
+type txKey struct{}
+
+func (r *OrderRepo) WithTransaction(ctx context.Context, fn func(txCtx context.Context) error) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+
+	txCtx := context.WithValue(ctx, txKey{}, tx)
+
+	err = fn(txCtx)
+	if err != nil {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			return rbErr
+		}
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *orderRepo) CreateOrder(ctx context.Context, order domain.Order, idempotencyKey string) (string, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
