@@ -220,16 +220,18 @@ func (x *OrderSplit) GetStatus() string {
 }
 
 type Order struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	PublicId       string                 `protobuf:"bytes,1,opt,name=public_id,json=publicId,proto3" json:"public_id,omitempty"`
-	RestaurantName string                 `protobuf:"bytes,2,opt,name=restaurant_name,json=restaurantName,proto3" json:"restaurant_name,omitempty"`
-	TotalCost      int64                  `protobuf:"varint,3,opt,name=total_cost,json=totalCost,proto3" json:"total_cost,omitempty"`
-	Status         string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
-	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	Items          []*OrderDish           `protobuf:"bytes,6,rep,name=items,proto3" json:"items,omitempty"`
-	Splits         []*OrderSplit          `protobuf:"bytes,7,rep,name=splits,proto3" json:"splits,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	PublicId         string                 `protobuf:"bytes,1,opt,name=public_id,json=publicId,proto3" json:"public_id,omitempty"`
+	RestaurantName   string                 `protobuf:"bytes,2,opt,name=restaurant_name,json=restaurantName,proto3" json:"restaurant_name,omitempty"`
+	TotalCost        int64                  `protobuf:"varint,3,opt,name=total_cost,json=totalCost,proto3" json:"total_cost,omitempty"`
+	Status           string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
+	CreatedAt        *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	Items            []*OrderDish           `protobuf:"bytes,6,rep,name=items,proto3" json:"items,omitempty"`
+	Splits           []*OrderSplit          `protobuf:"bytes,7,rep,name=splits,proto3" json:"splits,omitempty"`
+	AppliedPromocode *string                `protobuf:"bytes,8,opt,name=applied_promocode,json=appliedPromocode,proto3,oneof" json:"applied_promocode,omitempty"`
+	DiscountAmount   *int64                 `protobuf:"varint,9,opt,name=discount_amount,json=discountAmount,proto3,oneof" json:"discount_amount,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *Order) Reset() {
@@ -311,6 +313,20 @@ func (x *Order) GetSplits() []*OrderSplit {
 	return nil
 }
 
+func (x *Order) GetAppliedPromocode() string {
+	if x != nil && x.AppliedPromocode != nil {
+		return *x.AppliedPromocode
+	}
+	return ""
+}
+
+func (x *Order) GetDiscountAmount() int64 {
+	if x != nil && x.DiscountAmount != nil {
+		return *x.DiscountAmount
+	}
+	return 0
+}
+
 type CreateOrderRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	UserId             int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -323,6 +339,7 @@ type CreateOrderRequest struct {
 	DeliveryCost       int64                  `protobuf:"varint,8,opt,name=delivery_cost,json=deliveryCost,proto3" json:"delivery_cost,omitempty"`
 	ServiceFee         int64                  `protobuf:"varint,9,opt,name=service_fee,json=serviceFee,proto3" json:"service_fee,omitempty"`
 	IdempotencyKey     string                 `protobuf:"bytes,10,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	Promocode          *string                `protobuf:"bytes,11,opt,name=promocode,proto3,oneof" json:"promocode,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -423,6 +440,13 @@ func (x *CreateOrderRequest) GetServiceFee() int64 {
 func (x *CreateOrderRequest) GetIdempotencyKey() string {
 	if x != nil {
 		return x.IdempotencyKey
+	}
+	return ""
+}
+
+func (x *CreateOrderRequest) GetPromocode() string {
+	if x != nil && x.Promocode != nil {
+		return *x.Promocode
 	}
 	return ""
 }
@@ -723,7 +747,7 @@ const file_order_order_proto_rawDesc = "" +
 	"\bsplit_id\x18\x01 \x01(\tR\asplitId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x16\n" +
 	"\x06amount\x18\x03 \x01(\x03R\x06amount\x12\x16\n" +
-	"\x06status\x18\x04 \x01(\tR\x06status\"\x92\x02\n" +
+	"\x06status\x18\x04 \x01(\tR\x06status\"\x9c\x03\n" +
 	"\x05Order\x12\x1b\n" +
 	"\tpublic_id\x18\x01 \x01(\tR\bpublicId\x12'\n" +
 	"\x0frestaurant_name\x18\x02 \x01(\tR\x0erestaurantName\x12\x1d\n" +
@@ -733,7 +757,11 @@ const file_order_order_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12&\n" +
 	"\x05items\x18\x06 \x03(\v2\x10.order.OrderDishR\x05items\x12)\n" +
-	"\x06splits\x18\a \x03(\v2\x11.order.OrderSplitR\x06splits\"\x89\x04\n" +
+	"\x06splits\x18\a \x03(\v2\x11.order.OrderSplitR\x06splits\x120\n" +
+	"\x11applied_promocode\x18\b \x01(\tH\x00R\x10appliedPromocode\x88\x01\x01\x12,\n" +
+	"\x0fdiscount_amount\x18\t \x01(\x03H\x01R\x0ediscountAmount\x88\x01\x01B\x14\n" +
+	"\x12_applied_promocodeB\x12\n" +
+	"\x10_discount_amount\"\xba\x04\n" +
 	"\x12CreateOrderRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12*\n" +
 	"\x11address_public_id\x18\x02 \x01(\tR\x0faddressPublicId\x120\n" +
@@ -746,10 +774,13 @@ const file_order_order_proto_rawDesc = "" +
 	"\vservice_fee\x18\t \x01(\x03R\n" +
 	"serviceFee\x12'\n" +
 	"\x0fidempotency_key\x18\n" +
-	" \x01(\tR\x0eidempotencyKey\x1a?\n" +
+	" \x01(\tR\x0eidempotencyKey\x12!\n" +
+	"\tpromocode\x18\v \x01(\tH\x00R\tpromocode\x88\x01\x01\x1a?\n" +
 	"\x11PayerMappingEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\x03R\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x03R\x05value:\x028\x01\"=\n" +
+	"\x05value\x18\x02 \x01(\x03R\x05value:\x028\x01B\f\n" +
+	"\n" +
+	"_promocode\"=\n" +
 	"\x13CreateOrderResponse\x12&\n" +
 	"\x0forder_public_id\x18\x01 \x01(\tR\rorderPublicId\"Y\n" +
 	"\x10GetOrdersRequest\x12\x17\n" +
@@ -831,6 +862,8 @@ func file_order_order_proto_init() {
 		return
 	}
 	file_order_order_proto_msgTypes[1].OneofWrappers = []any{}
+	file_order_order_proto_msgTypes[3].OneofWrappers = []any{}
+	file_order_order_proto_msgTypes[4].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

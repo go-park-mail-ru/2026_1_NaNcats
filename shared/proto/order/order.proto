@@ -49,6 +49,8 @@ message Order {
   google.protobuf.Timestamp created_at = 5;
   repeated OrderDish items = 6;
   repeated OrderSplit splits = 7;
+  optional string applied_promocode = 8;
+  optional int64 discount_amount = 9;
 }
 
 message CreateOrderRequest {
@@ -64,6 +66,8 @@ message CreateOrderRequest {
   int64 delivery_cost = 8;
   int64 service_fee = 9;
   string idempotency_key = 10;
+
+  optional string promocode = 11;
 }
 
 message CreateOrderResponse {
