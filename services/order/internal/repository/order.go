@@ -14,7 +14,7 @@ var ErrStateChanged = errors.New("order state has changed or order not found")
 type OrderRepository interface {
 	WithTransaction(ctx context.Context, fn func(txCtx context.Context) error) error
 
-	CreateOrder(ctx context.Context, order domain.Order, idempotencyKey string) (string, error)
+	CreateOrder(ctx context.Context, order domain.Order, idempotencyKey string) (int64, string, error)
 	GetOrderByPublicID(ctx context.Context, publicID string) (domain.Order, error)
 	GetOrdersByUserID(ctx context.Context, userID int64, limit, offset int32) ([]domain.Order, error)
 	UpdateOrderStatus(ctx context.Context, publicID string, newStatus string, expectedStatuses ...string) error
