@@ -69,15 +69,11 @@ func (r *orderRepo) WithTransaction(ctx context.Context, fn func(txCtx context.C
 	return nil
 }
 
-func (r *orderRepo) CreateOrder(ctx context.Context, order domain.Order, idempotencyKey string) (string, error) {
-	tx, err := r.pool.Begin(ctx)
-	if err != nil {
-		return "", fmt.Errorf("begin tx: %w", err)
-	}
-	defer tx.Rollback(ctx)
+func (r *orderRepo) CreateOrder(ctx context.Context, order domain.Order, idempotencyKey string) (int64, string, error) {
+	q := r.getTxOrDB(ctx)
 
 	var payloadBytes []byte
-	err = tx.QueryRow(ctx, `
+	err := q.QueryRow(ctx, `
 		INSERT INTO "idempotency_records" (user_id, idempotency_key, grpc_method)
 		VALUES ($1, $2, 'CreateOrder')
 		ON CONFLICT (user_id, idempotency_key) DO NOTHING
@@ -86,51 +82,52 @@ func (r *orderRepo) CreateOrder(ctx context.Context, order domain.Order, idempot
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			err = tx.QueryRow(ctx, `
+			err = q.QueryRow(ctx, `
 				SELECT response_payload FROM "idempotency_records" 
 				WHERE user_id = $1 AND idempotency_key = $2
 			`, order.AdminID, idempotencyKey).Scan(&payloadBytes)
 			if err != nil {
-				return "", fmt.Errorf("failed to fetch existing idempotency record: %w", err)
+				return 0, "", fmt.Errorf("failed to fetch existing idempotency record: %w", err)
 			}
 
 			if payloadBytes == nil {
-				return "", fmt.Errorf("request is already in progress")
+				return 0, "", fmt.Errorf("request is already in progress")
 			}
 
 			var savedResp idempotencyResponse
 			if err := easyjson.Unmarshal(payloadBytes, &savedResp); err != nil {
-				return "", fmt.Errorf("failed to unmarshal idempotency payload: %w", err)
+				return 0, "", fmt.Errorf("failed to unmarshal idempotency payload: %w", err)
 			}
-			return savedResp.PublicID, nil
+			return 0, savedResp.PublicID, nil
 		}
-		return "", fmt.Errorf("failed to insert idempotency record: %w", err)
+		return 0, "", fmt.Errorf("failed to insert idempotency record: %w", err)
 	}
 
 	orderQuery := `
 		INSERT INTO "order" (
 			admin_account_id, restaurant_branch_id, restaurant_brand_id,
-			restaurant_name, client_address_id, total_cost, status
+			restaurant_name, client_address_id, total_cost, promocode_id, status
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, public_id;
 	`
 
 	var orderID int64
 	var orderPublicID string
 
-	err = tx.QueryRow(ctx, orderQuery,
+	err = q.QueryRow(ctx, orderQuery,
 		order.AdminID,
 		order.RestaurantBranchID,
 		order.RestaurantBrandID,
 		order.RestaurantName,
 		order.ClientAddressID,
 		order.TotalCost,
+		order.PromocodeID,
 		order.Status,
 	).Scan(&orderID, &orderPublicID)
 
 	if err != nil {
-		return "", fmt.Errorf("insert master order: %w", err)
+		return 0, "", fmt.Errorf("insert master order: %w", err)
 	}
 
 	batch := &pgx.Batch{}
@@ -155,31 +152,26 @@ func (r *orderRepo) CreateOrder(ctx context.Context, order domain.Order, idempot
 		}
 	}
 
-	br := tx.SendBatch(ctx, batch)
-
+	br := q.SendBatch(ctx, batch)
 	for i := 0; i < batch.Len(); i++ {
 		if _, execErr := br.Exec(); execErr != nil {
 			br.Close()
-			return "", fmt.Errorf("batch execution failed at step %d: %w", i, execErr)
+			return 0, "", fmt.Errorf("batch execution failed at step %d: %w", i, execErr)
 		}
 	}
 	br.Close()
 
 	respData, _ := easyjson.Marshal(idempotencyResponse{PublicID: orderPublicID})
-	_, err = tx.Exec(ctx, `
+	_, err = q.Exec(ctx, `
 		UPDATE "idempotency_records" 
 		SET response_payload = $1 
 		WHERE user_id = $2 AND idempotency_key = $3
 	`, respData, order.AdminID, idempotencyKey)
 	if err != nil {
-		return "", fmt.Errorf("failed to update idempotency payload: %w", err)
+		return 0, "", fmt.Errorf("failed to update idempotency payload: %w", err)
 	}
 
-	if err = tx.Commit(ctx); err != nil {
-		return "", fmt.Errorf("commit tx: %w", err)
-	}
-
-	return orderPublicID, nil
+	return orderID, orderPublicID, nil
 }
 
 func (r *orderRepo) UpdateSplitStatusByPaymentID(ctx context.Context, yookassaPaymentID, newStatus string) (string, error) {
