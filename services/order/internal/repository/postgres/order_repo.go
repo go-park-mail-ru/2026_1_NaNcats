@@ -432,3 +432,77 @@ func (r *orderRepo) GetOrdersByStatuses(ctx context.Context, statuses []string) 
 	}
 	return out, nil
 }
+
+func (r *orderRepo) GetPromocodeByCodeWithLock(ctx context.Context, code string) (domain.Promocode, error) {
+	query := `
+		SELECT id, code, discount_percent, discount_amount, max_uses, current_uses, 
+		       min_order_amount, user_id, restaurant_brand_id, is_global, created_at, expires_at
+		FROM "promocode"
+		WHERE code = $1
+		FOR UPDATE
+	`
+
+	var p domain.Promocode
+
+	err := r.getTxOrDB(ctx).QueryRow(ctx, query, code).Scan(
+		&p.ID, &p.Code, &p.DiscountPercent, &p.DiscountAmount, &p.MaxUses, &p.CurrentUses,
+		&p.MinOrderAmount, &p.UserID, &p.RestaurantBrandID, &p.IsGlobal, &p.CreatedAt, &p.ExpiresAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return p, errors.New("promocode not found")
+		}
+		return p, fmt.Errorf("failed to lock promocode: %w", err)
+	}
+
+	return p, nil
+}
+
+func (r *orderRepo) CheckPromocodeUsage(ctx context.Context, promoID, userID int64) (bool, error) {
+	query := `
+		SELECT EXISTS
+		(SELECT 1 FROM "promocode_usage"
+		WHERE promocode_id = $1 AND user_id = $2)
+	`
+
+	var exists bool
+
+	err := r.getTxOrDB(ctx).QueryRow(ctx, query, promoID, userID).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check promo usage: %w", err)
+	}
+
+	return exists, nil
+}
+
+func (r *orderRepo) IncrementPromocodeUses(ctx context.Context, promoID int64) error {
+	query := `
+		UPDATE "promocode" SET current_uses = current_uses + 1 WHERE id = $1`
+
+	tag, err := r.getTxOrDB(ctx).Exec(ctx, query, promoID)
+	if err != nil {
+		return fmt.Errorf("failed to increment promo uses: %w", err)
+	}
+
+	if tag.RowsAffected() == 0 {
+		return errors.New("promocode not found during increment")
+	}
+
+	return nil
+}
+
+func (r *orderRepo) CreatePromocodeUsage(ctx context.Context, promoID, orderID, userID int64) error {
+	query := `
+		INSERT INTO "promocode_usage"
+		(promocode_id, order_id, user_id)
+		VALUES ($1, $2, $3)
+	`
+
+	_, err := r.getTxOrDB(ctx).Exec(ctx, query, promoID, orderID, userID)
+	if err != nil {
+		return fmt.Errorf("failed to create promo usage record: %w", err)
+	}
+
+	return nil
+}
