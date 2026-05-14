@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
+	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository"
@@ -121,76 +123,184 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderIn
 		return "", errutil.Internal("failed to fetch restaurant name", err)
 	}
 
-	finalTotalCost := cartTotalCost + req.DeliveryCost + req.ServiceFee
-	span.SetAttributes(attribute.Int64("order.total_cost", finalTotalCost))
+	var orderPublicID string
 
-	userDebts := make(map[int64]int64)
+	err = o.orderRepo.WithTransaction(ctx, func(txCtx context.Context) error {
+		var appliedPromo *domain.Promocode
+		var totalDiscount int64 = 0
 
-	if req.PayForAll {
-		userDebts[req.UserID] = finalTotalCost
-	} else {
+		if req.Promocode != nil && *req.Promocode != "" {
+			promo, promoErr := o.orderRepo.GetPromocodeByCodeWithLock(txCtx, *req.Promocode)
+			if promoErr != nil {
+				return errutil.Wrap("PROMO_NOT_FOUND", "promocode not found or inactive", promoErr, codes.NotFound)
+			}
+
+			if time.Now().After(promo.ExpiresAt) {
+				return errutil.New("PROMO_EXPIRED", "promocode has expired", codes.FailedPrecondition)
+			}
+			if promo.MaxUses != nil && promo.CurrentUses >= *promo.MaxUses {
+				return errutil.New("PROMO_LIMIT_REACHED", "promocode usage limit reached", codes.FailedPrecondition)
+			}
+			if promo.MinOrderAmount != nil && cartTotalCost < *promo.MinOrderAmount {
+				return errutil.New("PROMO_MIN_AMOUNT", "cart total is less than minimum order amount", codes.FailedPrecondition)
+			}
+			if promo.RestaurantBrandID != nil && *promo.RestaurantBrandID != req.RestaurantBrandID {
+				return errutil.New("PROMO_INVALID_RESTAURANT", "promocode is not valid for this restaurant", codes.FailedPrecondition)
+			}
+			if promo.UserID != nil && *promo.UserID != req.UserID {
+				return errutil.New("PROMO_FORBIDDEN", "promocode is tied to another user", codes.PermissionDenied)
+			}
+
+			used, checkErr := o.orderRepo.CheckPromocodeUsage(txCtx, promo.ID, req.UserID)
+			if checkErr != nil {
+				return errutil.Internal("failed to check promo usage", checkErr)
+			}
+			if used {
+				return errutil.New("PROMO_ALREADY_USED", "you have already used this promocode", codes.FailedPrecondition)
+			}
+
+			if promo.DiscountAmount != nil {
+				totalDiscount = *promo.DiscountAmount
+				if totalDiscount > cartTotalCost {
+					totalDiscount = cartTotalCost
+				}
+			} else if promo.DiscountPercent != nil {
+				totalDiscount = (cartTotalCost * int64(*promo.DiscountPercent)) / 100
+			}
+
+			appliedPromo = &promo
+		}
+
+		finalTotalCost := cartTotalCost - totalDiscount + req.DeliveryCost + req.ServiceFee
+		span.SetAttributes(attribute.Int64("order.final_total_cost", finalTotalCost))
+
+		userDebts := make(map[int64]int64)
+		userDiscounts := make(map[int64]int64)
+
+		if req.PayForAll {
+			userDebts[req.UserID] = cartTotalCost
+			userDiscounts[req.UserID] = totalDiscount
+		} else {
+			for _, item := range cart.Items {
+				if item.OwnerUserID == nil {
+					return errutil.New("UNASSIGNED_ITEMS", "cannot checkout: cart has unassigned items", codes.FailedPrecondition)
+				}
+				userDebts[*item.OwnerUserID] += item.Price * int64(item.Quantity)
+			}
+
+			for targetID, payerID := range req.PayerMapping {
+				if debt, exists := userDebts[targetID]; exists {
+					userDebts[payerID] += debt
+					delete(userDebts, targetID)
+				}
+			}
+
+			var assignedDiscount int64 = 0
+			cartTotalBig := big.NewInt(cartTotalCost)
+			totalDiscBig := big.NewInt(totalDiscount)
+
+			for uid, debt := range userDebts {
+				if debt > 0 {
+					debtBig := big.NewInt(debt)
+
+					rawDiscountBig := new(big.Int).Mul(debtBig, totalDiscBig)
+					rawDiscountBig.Div(rawDiscountBig, cartTotalBig)
+
+					rawDiscount := rawDiscountBig.Int64()
+
+					userDiscount := (rawDiscount / 10000) * 10000
+
+					userDiscounts[uid] = userDiscount
+					assignedDiscount += userDiscount
+				}
+			}
+
+			remainder := totalDiscount - assignedDiscount
+			if remainder > 0 {
+				userDiscounts[req.UserID] += remainder
+			}
+		}
+
+		splits := make([]domain.OrderSplit, 0, len(userDebts))
+		for uid, foodDebt := range userDebts {
+			if foodDebt > 0 {
+				userDisc := userDiscounts[uid]
+				finalAmount := foodDebt - userDisc
+				if uid == req.UserID {
+					finalAmount += req.DeliveryCost + req.ServiceFee
+				}
+
+				split := domain.OrderSplit{
+					ID:             uuid.New().String(),
+					UserID:         uid,
+					BaseAmount:     foodDebt,
+					DiscountAmount: userDisc,
+					Amount:         finalAmount,
+					Status:         SplitStatusPending,
+				}
+				if uid == req.UserID && req.PaymentMethodID != "" {
+					pm := req.PaymentMethodID
+					split.PaymentMethodID = &pm
+				}
+				splits = append(splits, split)
+			}
+		}
+
+		items := make([]domain.OrderDish, 0, len(cart.Items))
 		for _, item := range cart.Items {
-			if item.OwnerUserID == nil {
-				span.AddEvent("orphaned_items_found")
-				return "", errutil.New("UNASSIGNED_ITEMS", "cannot checkout: cart has unassigned items", codes.FailedPrecondition)
-			}
-			userDebts[*item.OwnerUserID] += item.Price * int64(item.Quantity)
+			items = append(items, domain.OrderDish{
+				DishID:      item.DishID,
+				Name:        item.Name,
+				Quantity:    item.Quantity,
+				Price:       item.Price,
+				OwnerUserID: item.OwnerUserID,
+			})
 		}
 
-		for targetID, payerID := range req.PayerMapping {
-			if debt, exists := userDebts[targetID]; exists {
-				userDebts[payerID] += debt
-				delete(userDebts, targetID)
+		var promoIDPtr *int64
+		var promoStrPtr *string
+		if appliedPromo != nil {
+			promoIDPtr = &appliedPromo.ID
+			promoStrPtr = &appliedPromo.Code
+		}
+
+		order := domain.Order{
+			AdminID:            req.UserID,
+			RestaurantBranchID: req.RestaurantBranchID,
+			RestaurantBrandID:  req.RestaurantBrandID,
+			RestaurantName:     resName,
+			ClientAddressID:    req.AddressPublicID,
+			TotalCost:          finalTotalCost,
+			Status:             StatusCreated,
+			PromocodeID:        promoIDPtr,
+			PromocodeString:    promoStrPtr,
+			DiscountAmount:     totalDiscount,
+			Items:              items,
+			Splits:             splits,
+		}
+
+		internalID, pubID, repoErr := o.orderRepo.CreateOrder(txCtx, order, idempotencyKey)
+		if repoErr != nil {
+			return errutil.Internal("failed to save order to database", repoErr)
+		}
+
+		orderPublicID = pubID
+
+		if internalID != 0 && appliedPromo != nil {
+			if err := o.orderRepo.IncrementPromocodeUses(txCtx, appliedPromo.ID); err != nil {
+				return errutil.Internal("failed to increment promo uses", err)
+			}
+			if err := o.orderRepo.CreatePromocodeUsage(txCtx, appliedPromo.ID, internalID, req.UserID); err != nil {
+				return errutil.Internal("failed to record promo usage", err)
 			}
 		}
 
-		userDebts[req.UserID] += req.DeliveryCost + req.ServiceFee
-	}
+		return nil
+	})
 
-	items := make([]domain.OrderDish, 0, len(cart.Items))
-	for _, item := range cart.Items {
-		items = append(items, domain.OrderDish{
-			DishID:      item.DishID,
-			Name:        item.Name,
-			Quantity:    item.Quantity,
-			Price:       item.Price,
-			OwnerUserID: item.OwnerUserID,
-		})
-	}
-
-	splits := make([]domain.OrderSplit, 0, len(userDebts))
-	for uid, amount := range userDebts {
-		if amount > 0 {
-			split := domain.OrderSplit{
-				ID:     uuid.New().String(),
-				UserID: uid,
-				Amount: amount,
-				Status: SplitStatusPending,
-			}
-			if uid == req.UserID && req.PaymentMethodID != "" {
-				pm := req.PaymentMethodID
-				split.PaymentMethodID = &pm
-			}
-			splits = append(splits, split)
-		}
-	}
-	span.SetAttributes(attribute.Int("order.splits_count", len(splits)))
-
-	order := domain.Order{
-		AdminID:            req.UserID,
-		RestaurantBranchID: req.RestaurantBranchID,
-		RestaurantBrandID:  req.RestaurantBrandID,
-		RestaurantName:     resName,
-		ClientAddressID:    req.AddressPublicID,
-		TotalCost:          finalTotalCost,
-		Status:             StatusCreated,
-		Items:              items,
-		Splits:             splits,
-	}
-
-	orderPublicID, err := o.orderRepo.CreateOrder(ctx, order, idempotencyKey)
 	if err != nil {
-		return "", errutil.Internal("failed to save order to database", err)
+		span.RecordError(err)
+		return "", err
 	}
 	span.SetAttributes(attribute.String("order.public_id", orderPublicID))
 
