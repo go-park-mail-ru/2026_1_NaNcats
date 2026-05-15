@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TYPE courier_status AS ENUM('offline', 'waiting', 'delivering');
 
 CREATE TABLE "user" (
