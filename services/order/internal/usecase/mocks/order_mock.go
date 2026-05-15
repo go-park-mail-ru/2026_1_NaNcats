@@ -168,6 +168,34 @@ func (mr *MockCartClientMockRecorder) GetCart(ctx, userID any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCart", reflect.TypeOf((*MockCartClient)(nil).GetCart), ctx, userID)
 }
 
+// LockCart mocks base method.
+func (m *MockCartClient) LockCart(ctx context.Context, cartID string, userID int64, idempotencyKey string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LockCart", ctx, cartID, userID, idempotencyKey)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LockCart indicates an expected call of LockCart.
+func (mr *MockCartClientMockRecorder) LockCart(ctx, cartID, userID, idempotencyKey any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LockCart", reflect.TypeOf((*MockCartClient)(nil).LockCart), ctx, cartID, userID, idempotencyKey)
+}
+
+// UnlockCart mocks base method.
+func (m *MockCartClient) UnlockCart(ctx context.Context, cartID string, userID int64, idempotencyKey string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnlockCart", ctx, cartID, userID, idempotencyKey)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UnlockCart indicates an expected call of UnlockCart.
+func (mr *MockCartClientMockRecorder) UnlockCart(ctx, cartID, userID, idempotencyKey any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlockCart", reflect.TypeOf((*MockCartClient)(nil).UnlockCart), ctx, cartID, userID, idempotencyKey)
+}
+
 // MockAddressClient is a mock of AddressClient interface.
 type MockAddressClient struct {
 	ctrl     *gomock.Controller

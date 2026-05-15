@@ -114,6 +114,40 @@ func (m UserUseCaseTracingMiddleware) GetByID(ctx context.Context, userID int64)
 	return
 }
 
+// GetByPublicID трассирует выполнение метода GetByPublicID
+func (m UserUseCaseTracingMiddleware) GetByPublicID(ctx context.Context, publicID string) (u1 domain.User, err error) {
+
+	ctx, span := m.tracer.Start(ctx, "UserUseCase.GetByPublicID")
+
+	defer span.End()
+
+	u1, err = m.next.GetByPublicID(ctx, publicID)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
+// GetUsersByIDs трассирует выполнение метода GetUsersByIDs
+func (m UserUseCaseTracingMiddleware) GetUsersByIDs(ctx context.Context, userIDs []int64) (m1 map[int64]domain.User, err error) {
+
+	ctx, span := m.tracer.Start(ctx, "UserUseCase.GetUsersByIDs")
+
+	defer span.End()
+
+	m1, err = m.next.GetUsersByIDs(ctx, userIDs)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
 // UpdateAvatar трассирует выполнение метода UpdateAvatar
 func (m UserUseCaseTracingMiddleware) UpdateAvatar(ctx context.Context, userID int64, imageData []byte, idempotencyKey string) (s1 string, err error) {
 
