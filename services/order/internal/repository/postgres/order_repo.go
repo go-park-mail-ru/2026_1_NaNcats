@@ -345,7 +345,8 @@ func (r *orderRepo) GetOrderByPublicID(ctx context.Context, publicID string) (do
 func (r *orderRepo) GetOrdersByUserID(ctx context.Context, userID int64, limit, offset int32) ([]domain.Order, error) {
 	query := `
 		SELECT DISTINCT o.id, o.public_id, o.admin_account_id, o.restaurant_branch_id, 
-		o.restaurant_brand_id, o.restaurant_name, o.total_cost, o.status, o.created_at
+		o.restaurant_brand_id, o.restaurant_name, o.total_cost, o.discount_amount, 
+		o.promocode_code, o.status, o.created_at
 		FROM "order" o
 		LEFT JOIN "order_split" os ON o.id = os.order_id
 		WHERE o.admin_account_id = $1 OR os.user_id = $1
@@ -363,7 +364,7 @@ func (r *orderRepo) GetOrdersByUserID(ctx context.Context, userID int64, limit, 
 
 	for rows.Next() {
 		var o domain.Order
-		if err := rows.Scan(&o.ID, &o.PublicID, &o.AdminID, &o.RestaurantBranchID, &o.RestaurantBrandID, &o.RestaurantName, &o.TotalCost, &o.Status, &o.CreatedAt); err == nil {
+		if err := rows.Scan(&o.ID, &o.PublicID, &o.AdminID, &o.RestaurantBranchID, &o.RestaurantBrandID, &o.RestaurantName, &o.TotalCost, &o.DiscountAmount, &o.PromocodeString, &o.Status, &o.CreatedAt); err == nil {
 			orders = append(orders, o)
 			orderIDs = append(orderIDs, o.ID)
 		}
@@ -373,7 +374,7 @@ func (r *orderRepo) GetOrdersByUserID(ctx context.Context, userID int64, limit, 
 		return orders, nil
 	}
 
-	splitQuery := `SELECT order_id, id, user_id, amount, status FROM "order_split" WHERE order_id = ANY($1)`
+	splitQuery := `SELECT order_id, id, user_id, base_amount, discount_amount, amount, status FROM "order_split" WHERE order_id = ANY($1)`
 	splitRows, err := r.pool.Query(ctx, splitQuery, orderIDs)
 	if err != nil {
 		return nil, fmt.Errorf("batch fetch splits: %w", err)
@@ -384,7 +385,7 @@ func (r *orderRepo) GetOrdersByUserID(ctx context.Context, userID int64, limit, 
 	for splitRows.Next() {
 		var s domain.OrderSplit
 		var orderID int64
-		if err := splitRows.Scan(&orderID, &s.ID, &s.UserID, &s.Amount, &s.Status); err == nil {
+		if err := splitRows.Scan(&orderID, &s.ID, &s.UserID, &s.BaseAmount, &s.DiscountAmount, &s.Amount, &s.Status); err == nil {
 			splitsMap[orderID] = append(splitsMap[orderID], s)
 		}
 	}
