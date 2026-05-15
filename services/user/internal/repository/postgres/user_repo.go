@@ -86,16 +86,17 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 	email = strings.ToLower(strings.TrimSpace(email))
 
 	query := `
-		SELECT id, name, email, password_hash, user_role, COALESCE(avatar_url, '')
-		FROM "user"
-		WHERE email = $1
-	`
+        SELECT id, public_id, name, email, password_hash, user_role, COALESCE(avatar_url, '')
+        FROM "user"
+        WHERE email = $1
+    `
 
 	var user domain.User
 	var userRole string
 
 	err := r.pool.QueryRow(ctx, query, email).Scan(
 		&user.ID,
+		&user.PublicID,
 		&user.Name,
 		&user.Email,
 		&user.PasswordHash,
@@ -109,21 +110,23 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (domain.Use
 		return domain.User{}, err
 	}
 
+	user.Role = userRole
 	return user, nil
 }
 
 func (r *userRepo) GetUserByID(ctx context.Context, id int64) (domain.User, error) {
 	query := `
-		SELECT id, name, email, password_hash, user_role, COALESCE(avatar_url, '')
-		FROM "user"
-		WHERE id = $1
-	`
+        SELECT id, public_id, name, email, password_hash, user_role, COALESCE(avatar_url, '')
+        FROM "user"
+        WHERE id = $1
+    `
 
 	var user domain.User
 	var userRole string
 
 	err := r.pool.QueryRow(ctx, query, id).Scan(
 		&user.ID,
+		&user.PublicID,
 		&user.Name,
 		&user.Email,
 		&user.PasswordHash,
@@ -137,6 +140,7 @@ func (r *userRepo) GetUserByID(ctx context.Context, id int64) (domain.User, erro
 		return domain.User{}, err
 	}
 
+	user.Role = userRole
 	return user, nil
 }
 
@@ -290,6 +294,76 @@ func (r *userRepo) UpdateUserRole(ctx context.Context, userID int64, newRole str
 		return "", false, err
 	}
 
-	// Возвращаем старую роль и флаг true (нужно отправить событие)
 	return currentRole, true, nil
+}
+
+func (r *userRepo) GetUsersByIDs(ctx context.Context, userIDs []int64) ([]domain.User, error) {
+	if len(userIDs) == 0 {
+		return nil, nil
+	}
+
+	query := `
+        SELECT id, public_id, name, email, password_hash, user_role, COALESCE(avatar_url, '')
+        FROM "user"
+        WHERE id = ANY($1)
+    `
+
+	rows, err := r.pool.Query(ctx, query, userIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []domain.User
+	for rows.Next() {
+		var user domain.User
+		var userRole string
+
+		err := rows.Scan(
+			&user.ID,
+			&user.PublicID,
+			&user.Name,
+			&user.Email,
+			&user.PasswordHash,
+			&userRole,
+			&user.AvatarURL,
+		)
+		if err != nil {
+			return nil, err
+		}
+		user.Role = userRole
+		users = append(users, user)
+	}
+
+	return users, rows.Err()
+}
+
+func (r *userRepo) GetUserByPublicID(ctx context.Context, publicID string) (domain.User, error) {
+	query := `
+        SELECT id, public_id, name, email, password_hash, user_role, COALESCE(avatar_url, '')
+        FROM "user"
+        WHERE public_id = $1
+    `
+
+	var user domain.User
+	var userRole string
+
+	err := r.pool.QueryRow(ctx, query, publicID).Scan(
+		&user.ID,
+		&user.PublicID,
+		&user.Name,
+		&user.Email,
+		&user.PasswordHash,
+		&userRole,
+		&user.AvatarURL,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.User{}, domain.ErrUserNotFound
+		}
+		return domain.User{}, err
+	}
+
+	user.Role = userRole
+	return user, nil
 }
