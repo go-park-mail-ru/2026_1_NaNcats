@@ -8,10 +8,12 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/websocket"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/cartclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/userclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
+	pbUser "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/user"
 	gorillaWs "github.com/gorilla/websocket"
 )
 
@@ -25,24 +27,28 @@ var upgrader = gorillaWs.Upgrader{
 
 //easyjson:json
 type CartItemDTO struct {
-	DishID      int64  `json:"dish_id"`
-	Name        string `json:"name,omitempty"`
-	Price       int64  `json:"price,omitempty"`
-	Quantity    int32  `json:"quantity"`
-	ImageURL    string `json:"image_url,omitempty"`
-	OwnerUserID *int64 `json:"owner_user_id,omitempty"`
+	DishID        int64   `json:"dish_id"`
+	Name          string  `json:"name,omitempty"`
+	Price         int64   `json:"price,omitempty"`
+	Quantity      int32   `json:"quantity"`
+	ImageURL      string  `json:"image_url,omitempty"`
+	OwnerPublicID *string `json:"owner_public_id,omitempty"`
+	OwnerName     *string `json:"owner_name,omitempty"`
+	OwnerAvatar   *string `json:"owner_avatar,omitempty"`
 }
 
 //easyjson:json
 type CartMemberDTO struct {
-	UserID   int64  `json:"user_id"`
-	JoinedAt string `json:"joined_at"`
+	PublicID  string `json:"public_id"`
+	Name      string `json:"name"`
+	AvatarURL string `json:"avatar_url"`
+	JoinedAt  string `json:"joined_at"`
 }
 
 //easyjson:json
 type CartResponse struct {
 	CartID            string          `json:"cart_id"`
-	AdminID           int64           `json:"admin_id"`
+	AdminID           string          `json:"admin_id"`
 	RestaurantBrandID int64           `json:"restaurant_id"`
 	Mode              string          `json:"mode"`
 	Status            string          `json:"status"`
@@ -79,9 +85,9 @@ type UpdateQuantityRequest struct {
 
 //easyjson:json
 type ReassignOwnerRequest struct {
-	CartID     string `json:"cart_id"`
-	DishID     int64  `json:"dish_id"`
-	NewOwnerID *int64 `json:"new_owner_id"`
+	CartID           string  `json:"cart_id"`
+	DishID           int64   `json:"dish_id"`
+	NewOwnerPublicID *string `json:"new_owner_public_id"`
 }
 
 //easyjson:json
@@ -91,8 +97,8 @@ type JoinCartRequest struct {
 
 //easyjson:json
 type KickMemberRequest struct {
-	CartID       string `json:"cart_id"`
-	TargetUserID int64  `json:"target_user_id"`
+	CartID         string `json:"cart_id"`
+	TargetPublicID string `json:"target_public_id"`
 }
 
 //easyjson:json
@@ -102,13 +108,15 @@ type BasicCartOperationRequest struct {
 
 type CartHandler struct {
 	cartClient cartclient.CartClient
+	userClient userclient.UserClient
 	wsManager  *websocket.WsManager
 	logger     logger.Logger
 }
 
-func NewCartHandler(cc cartclient.CartClient, wm *websocket.WsManager, l logger.Logger) *CartHandler {
+func NewCartHandler(cc cartclient.CartClient, uc userclient.UserClient, wm *websocket.WsManager, l logger.Logger) *CartHandler {
 	return &CartHandler{
 		cartClient: cc,
+		userClient: uc,
 		wsManager:  wm,
 		logger:     l,
 	}
@@ -139,9 +147,36 @@ func (h *CartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userIDsSet := make(map[int64]struct{})
+	userIDsSet[cart.AdminID] = struct{}{}
+	for _, item := range cart.Items {
+		if item.OwnerUserID != nil {
+			userIDsSet[*item.OwnerUserID] = struct{}{}
+		}
+	}
+	for _, m := range cart.Members {
+		userIDsSet[m.UserID] = struct{}{}
+	}
+
+	userIDs := make([]int64, 0, len(userIDsSet))
+	for id := range userIDsSet {
+		userIDs = append(userIDs, id)
+	}
+
+	usersInfo, err := h.userClient.GetUsersByIDs(ctx, userIDs)
+	if err != nil {
+		h.logger.Warn("failed to fetch users info for enrichment, returning partial data", logger.Err(err))
+		usersInfo = make(map[int64]*pbUser.User)
+	}
+
+	adminPublicID := "unknown"
+	if u, ok := usersInfo[cart.AdminID]; ok {
+		adminPublicID = u.PublicId
+	}
+
 	cartResponse := CartResponse{
 		CartID:            cart.ID,
-		AdminID:           cart.AdminID,
+		AdminID:           adminPublicID,
 		RestaurantBrandID: cart.RestaurantBrandID,
 		Mode:              cart.Mode,
 		Status:            cart.Status,
@@ -151,20 +186,43 @@ func (h *CartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, item := range cart.Items {
+		var pubID, name, avatar *string
+		if item.OwnerUserID != nil {
+			if u, exists := usersInfo[*item.OwnerUserID]; exists {
+				pubID = &u.PublicId
+				name = &u.Name
+				avatar = &u.AvatarUrl
+			}
+		}
+
 		cartResponse.Items = append(cartResponse.Items, CartItemDTO{
-			DishID:      item.DishID,
-			Name:        item.Name,
-			Price:       item.Price,
-			Quantity:    item.Quantity,
-			ImageURL:    item.ImageURL,
-			OwnerUserID: item.OwnerUserID,
+			DishID:        item.DishID,
+			Name:          item.Name,
+			Price:         item.Price,
+			Quantity:      item.Quantity,
+			ImageURL:      item.ImageURL,
+			OwnerPublicID: pubID,
+			OwnerName:     name,
+			OwnerAvatar:   avatar,
 		})
 	}
 
 	for _, m := range cart.Members {
+		var pubID, name, avatar string
+		if u, exists := usersInfo[m.UserID]; exists {
+			pubID = u.PublicId
+			name = u.Name
+			avatar = u.AvatarUrl
+		} else {
+			pubID = "unknown"
+			name = "Unknown User"
+		}
+
 		cartResponse.Members = append(cartResponse.Members, CartMemberDTO{
-			UserID:   m.UserID,
-			JoinedAt: m.JoinedAt,
+			PublicID:  pubID,
+			Name:      name,
+			AvatarURL: avatar,
+			JoinedAt:  m.JoinedAt,
 		})
 	}
 
@@ -445,7 +503,22 @@ func (h *CartHandler) ReassignOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.cartClient.ReassignItemOwner(ctx, req.CartID, userID, req.DishID, req.NewOwnerID, idemKey)
+	var newOwnerID *int64
+	if req.NewOwnerPublicID != nil {
+		id, err := h.userClient.ResolvePublicID(ctx, *req.NewOwnerPublicID)
+		if err != nil {
+			if errors.Is(err, userclient.ErrUserNotFound) {
+				response.Error(w, http.StatusBadRequest, "target user not found")
+				return
+			}
+			h.logger.Error("failed to resolve public ID", err)
+			response.Error(w, http.StatusInternalServerError, "internal server error")
+			return
+		}
+		newOwnerID = &id
+	}
+
+	err := h.cartClient.ReassignItemOwner(ctx, req.CartID, userID, req.DishID, newOwnerID, idemKey)
 	if err != nil {
 		if errors.Is(err, cartclient.ErrForbidden) {
 			response.Error(w, http.StatusForbidden, "only admin can reassign items")
@@ -536,7 +609,18 @@ func (h *CartHandler) KickMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.cartClient.KickMember(ctx, req.CartID, userID, req.TargetUserID, idemKey)
+	targetInternalID, err := h.userClient.ResolvePublicID(ctx, req.TargetPublicID)
+	if err != nil {
+		if errors.Is(err, userclient.ErrUserNotFound) {
+			response.Error(w, http.StatusBadRequest, "target user not found")
+			return
+		}
+		h.logger.Error("failed to resolve public ID", err)
+		response.Error(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	err = h.cartClient.KickMember(ctx, req.CartID, userID, targetInternalID, idemKey)
 	if err != nil {
 		if errors.Is(err, cartclient.ErrForbidden) {
 			response.Error(w, http.StatusForbidden, "only admin can kick members")
