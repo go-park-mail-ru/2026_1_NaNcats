@@ -2,6 +2,7 @@ CREATE TYPE courier_status AS ENUM('offline', 'waiting', 'delivering');
 
 CREATE TABLE "user" (
 	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	public_id UUID DEFAULT uuid_generate_v4() UNIQUE NOT NULL,
 	
 	name TEXT NOT NULL
 		CHECK (char_length(name) >= 1 AND char_length(name) <= 39),

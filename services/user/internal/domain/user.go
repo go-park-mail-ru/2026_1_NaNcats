@@ -15,6 +15,7 @@ const (
 // сущность юзера
 type User struct {
 	ID           int64
+	PublicID     string
 	Name         string
 	Email        string
 	PasswordHash string
