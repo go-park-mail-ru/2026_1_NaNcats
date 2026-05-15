@@ -37,12 +37,8 @@ func (c *CartConsumer) Start(ctx context.Context) error {
 
 		var err error
 		switch cmd.Action {
-		case events.CommandLockCart:
-			err = c.usecase.LockCart(ctx, cmd.CartID, cmd.UserID, cmd.IdempotencyKey)
 		case events.CommandUnlockCart:
 			err = c.usecase.UnlockCart(ctx, cmd.CartID, cmd.UserID, cmd.IdempotencyKey)
-		case events.CommandClearCart:
-			err = c.usecase.ClearCart(ctx, cmd.CartID, cmd.UserID, cmd.IdempotencyKey)
 		default:
 			c.logger.Warn("Unknown action in cart saga", logger.String("action", cmd.Action))
 			return nil
@@ -60,7 +56,6 @@ func (c *CartConsumer) Start(ctx context.Context) error {
 			c.logger.Error("cart operation failed", err)
 		}
 
-		// Пуш ответа в очередь оркестратора
 		publishErr := c.client.PublishJSON(ctx, events.QueueOrderReplies, reply)
 		if publishErr != nil {
 			c.logger.Error("failed to publish reply from cart", publishErr)

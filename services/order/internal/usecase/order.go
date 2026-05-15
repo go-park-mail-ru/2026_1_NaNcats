@@ -41,6 +41,8 @@ const (
 
 type CartClient interface {
 	GetCart(ctx context.Context, userID int64) (domain.Cart, int64, error)
+	LockCart(ctx context.Context, cartID string, userID int64, idempotencyKey string) error
+	UnlockCart(ctx context.Context, cartID string, userID int64, idempotencyKey string) error
 }
 
 type AddressClient interface {
@@ -123,9 +125,23 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderIn
 		return "", errutil.Internal("failed to fetch restaurant name", err)
 	}
 
-	var orderPublicID string
+	lockErr := o.cartClient.LockCart(ctx, cart.ID, req.UserID, idempotencyKey+"_lock")
+	if lockErr != nil {
+		return "", errutil.Wrap("CART_LOCKED", "failed to lock cart or unassigned items exist", lockErr, codes.FailedPrecondition)
+	}
 
-	err = o.orderRepo.WithTransaction(ctx, func(txCtx context.Context) error {
+	var orderPublicID string
+	var transactionErr error
+	var createdSplits []domain.OrderSplit
+
+	defer func() {
+		if transactionErr != nil {
+			span.AddEvent("rollback_cart_lock")
+			_ = o.cartClient.UnlockCart(context.Background(), cart.ID, req.UserID, idempotencyKey+"_unlock")
+		}
+	}()
+
+	transactionErr = o.orderRepo.WithTransaction(ctx, func(txCtx context.Context) error {
 		var appliedPromo *domain.Promocode
 		var totalDiscount int64 = 0
 
@@ -182,9 +198,6 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderIn
 			userDiscounts[req.UserID] = totalDiscount
 		} else {
 			for _, item := range cart.Items {
-				if item.OwnerUserID == nil {
-					return errutil.New("UNASSIGNED_ITEMS", "cannot checkout: cart has unassigned items", codes.FailedPrecondition)
-				}
 				userDebts[*item.OwnerUserID] += item.Price * int64(item.Quantity)
 			}
 
@@ -202,12 +215,9 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderIn
 			for uid, debt := range userDebts {
 				if debt > 0 {
 					debtBig := big.NewInt(debt)
-
 					rawDiscountBig := new(big.Int).Mul(debtBig, totalDiscBig)
 					rawDiscountBig.Div(rawDiscountBig, cartTotalBig)
-
 					rawDiscount := rawDiscountBig.Int64()
-
 					userDiscount := (rawDiscount / 10000) * 10000
 
 					userDiscounts[uid] = userDiscount
@@ -271,7 +281,7 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderIn
 			RestaurantName:     resName,
 			ClientAddressID:    req.AddressPublicID,
 			TotalCost:          finalTotalCost,
-			Status:             StatusCreated,
+			Status:             StatusCartLocked,
 			PromocodeID:        promoIDPtr,
 			PromocodeString:    promoStrPtr,
 			DiscountAmount:     totalDiscount,
@@ -285,6 +295,7 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderIn
 		}
 
 		orderPublicID = pubID
+		createdSplits = splits
 
 		if internalID != 0 && appliedPromo != nil {
 			if err := o.orderRepo.IncrementPromocodeUses(txCtx, appliedPromo.ID); err != nil {
@@ -298,26 +309,31 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderIn
 		return nil
 	})
 
-	if err != nil {
-		span.RecordError(err)
-		return "", err
+	if transactionErr != nil {
+		span.RecordError(transactionErr)
+		return "", transactionErr
 	}
+
 	span.SetAttributes(attribute.String("order.public_id", orderPublicID))
 
-	cmd := events.SagaCommand{
-		OrderID:        orderPublicID,
-		UserID:         req.UserID,
-		Action:         events.CommandLockCart,
-		IdempotencyKey: idempotencyKey,
+	for _, split := range createdSplits {
+		pmID := ""
+		if split.PaymentMethodID != nil {
+			pmID = *split.PaymentMethodID
+		}
+		payCmd := events.SagaCommand{
+			OrderID:         orderPublicID,
+			SplitID:         split.ID,
+			UserID:          split.UserID,
+			Action:          events.CommandCreatePayment,
+			Amount:          split.Amount,
+			PaymentMethodID: pmID,
+			IdempotencyKey:  split.ID + "_payment",
+		}
+		_ = o.rabbitPublisher.PublishJSON(ctx, events.QueuePaymentCommands, payCmd)
 	}
 
-	err = o.rabbitPublisher.PublishJSON(ctx, events.QueueCartCommands, cmd)
-	if err != nil {
-		span.AddEvent("saga_start_failed")
-		return "", errutil.Internal("failed to start order saga", err)
-	}
-
-	span.AddEvent("saga_started")
+	span.AddEvent("saga_started_directly_to_payment")
 	return orderPublicID, nil
 }
 
@@ -489,37 +505,6 @@ func (o *orderUseCase) ProcessSagaReply(ctx context.Context, reply events.SagaRe
 	}
 
 	switch reply.Step {
-	case "CART":
-		order, err := o.orderRepo.GetOrderByPublicID(ctx, reply.OrderID)
-		if err != nil {
-			return err
-		}
-
-		err = o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusCartLocked, StatusCreated)
-		if err != nil && errors.Is(err, repository.ErrStateChanged) {
-			o.logger.Warn("saga: order already moved from created, ignoring cart lock", logger.String("order", reply.OrderID))
-			return nil
-		}
-
-		span.SetAttributes(attribute.Int("order.splits_count", len(order.Splits)))
-
-		for _, split := range order.Splits {
-			pmID := ""
-			if split.PaymentMethodID != nil {
-				pmID = *split.PaymentMethodID
-			}
-			payCmd := events.SagaCommand{
-				OrderID:         order.PublicID,
-				SplitID:         split.ID,
-				UserID:          split.UserID,
-				Action:          events.CommandCreatePayment,
-				Amount:          split.Amount,
-				PaymentMethodID: pmID,
-				IdempotencyKey:  split.ID + "_payment",
-			}
-			_ = o.rabbitPublisher.PublishJSON(ctx, events.QueuePaymentCommands, payCmd)
-		}
-
 	case "PAYMENT":
 		span.SetAttributes(
 			attribute.String("split.id", reply.SplitID),

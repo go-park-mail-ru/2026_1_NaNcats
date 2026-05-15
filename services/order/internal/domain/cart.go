@@ -9,6 +9,7 @@ type CartItem struct {
 }
 
 type Cart struct {
+	ID                string
 	RestaurantBrandID int64
 	Items             []CartItem
 	Members           []int64
