@@ -90,6 +90,25 @@ func insertOutboxEvent(ctx context.Context, q PgxQuerier, aggregateID string, ev
 	return err
 }
 
+func (r *cartRepo) CheckAndSaveIdempotency(ctx context.Context, userID int64, key string, method string) error {
+	q := r.getTxOrDB(ctx)
+
+	query := `
+		INSERT INTO "idempotency_records" (user_id, idempotency_key, grpc_method)
+		VALUES ($1, $2, $3)
+	`
+	_, err := q.Exec(ctx, query, userID, key, method)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return domain.ErrIdempotencyConflict
+		}
+		return fmt.Errorf("insert idempotency record: %w", err)
+	}
+
+	return nil
+}
+
 func (r *cartRepo) AddItem(ctx context.Context, cartID string, item domain.CartItem) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {

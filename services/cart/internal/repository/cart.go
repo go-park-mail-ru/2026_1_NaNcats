@@ -9,6 +9,7 @@ import (
 //go:generate mockgen -destination=mocks/cart_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/repository CartRepository
 type CartRepository interface {
 	WithTransaction(ctx context.Context, fn func(txCtx context.Context) error) error
+	CheckAndSaveIdempotency(ctx context.Context, userID int64, key string, method string) error
 	// Базовые операции с корзиной
 	GetCartByUserID(ctx context.Context, userID int64) (domain.Cart, error)
 	GetCartByID(ctx context.Context, cartID string) (domain.Cart, error)

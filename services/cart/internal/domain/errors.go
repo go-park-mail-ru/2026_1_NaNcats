@@ -11,8 +11,9 @@ var (
 	ErrMultipleRestaurants = errutil.New("MULTIPLE_RESTAURANTS", "restaurant is different in cart and dish", codes.InvalidArgument)
 	ErrCartLocked          = errutil.New("CART_LOCKED", "cart is locked (payment in progress or stuck)", codes.FailedPrecondition)
 
-	ErrForbidden       = errutil.New("FORBIDDEN", "user has no rights for this operation", codes.PermissionDenied)
-	ErrUnassignedItems = errutil.New("UNASSIGNED_ITEMS", "cart contains orphaned items", codes.FailedPrecondition)
-	ErrInviteExpired   = errutil.New("INVITE_EXPIRED", "invite token has expired", codes.NotFound)
-	ErrUserNotInCart   = errutil.New("USER_NOT_IN_CART", "user is not a member of this cart", codes.FailedPrecondition)
+	ErrForbidden           = errutil.New("FORBIDDEN", "user has no rights for this operation", codes.PermissionDenied)
+	ErrUnassignedItems     = errutil.New("UNASSIGNED_ITEMS", "cart contains orphaned items", codes.FailedPrecondition)
+	ErrInviteExpired       = errutil.New("INVITE_EXPIRED", "invite token has expired", codes.NotFound)
+	ErrUserNotInCart       = errutil.New("USER_NOT_IN_CART", "user is not a member of this cart", codes.FailedPrecondition)
+	ErrIdempotencyConflict = errutil.New("IDEMPOTENCY_CONFLICT", "request already processed", codes.AlreadyExists)
 )
