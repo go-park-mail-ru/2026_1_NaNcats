@@ -25,6 +25,9 @@ CREATE TABLE "order" (
 	total_cost BIGINT
 		CHECK (total_cost >= 1000000), -- 1 рубль
 	promocode_id BIGINT,
+	discount_amount BIGINT DEFAULT 0 NOT NULL,
+	promocode_code TEXT,
+
 	restaurant_name TEXT NOT NULL,
 
 	status order_status NOT NULL,
@@ -76,6 +79,8 @@ CREATE TABLE "order_split" (
 	order_id BIGINT NOT NULL,
 	user_id BIGINT NOT NULL, -- Плательщик
 	
+	base_amount BIGINT DEFAULT 0 NOT NULL,
+	discount_amount BIGINT DEFAULT 0 NOT NULL,
 	amount BIGINT NOT NULL CHECK (amount > 0),
 	status split_status DEFAULT 'pending' NOT NULL,
 	
