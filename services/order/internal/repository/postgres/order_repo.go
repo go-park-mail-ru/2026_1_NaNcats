@@ -106,9 +106,10 @@ func (r *orderRepo) CreateOrder(ctx context.Context, order domain.Order, idempot
 	orderQuery := `
 		INSERT INTO "order" (
 			admin_account_id, restaurant_branch_id, restaurant_brand_id,
-			restaurant_name, client_address_id, total_cost, promocode_id, status
+			restaurant_name, client_address_id, total_cost, promocode_id, 
+			discount_amount, promocode_code, status
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id, public_id;
 	`
 
@@ -123,6 +124,8 @@ func (r *orderRepo) CreateOrder(ctx context.Context, order domain.Order, idempot
 		order.ClientAddressID,
 		order.TotalCost,
 		order.PromocodeID,
+		order.DiscountAmount,
+		order.PromocodeString,
 		order.Status,
 	).Scan(&orderID, &orderPublicID)
 
@@ -144,11 +147,15 @@ func (r *orderRepo) CreateOrder(ctx context.Context, order domain.Order, idempot
 
 	if len(order.Splits) > 0 {
 		splitQuery := `
-			INSERT INTO "order_split" (id, order_id, user_id, amount, status, payment_method_id)
-			VALUES ($1, $2, $3, $4, 'pending', $5)
+			INSERT INTO "order_split" (id, order_id, user_id, base_amount, discount_amount, amount, status, payment_method_id)
+			VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7)
 		`
 		for _, split := range order.Splits {
-			batch.Queue(splitQuery, split.ID, orderID, split.UserID, split.Amount, split.PaymentMethodID)
+			batch.Queue(splitQuery,
+				split.ID, orderID, split.UserID,
+				split.BaseAmount, split.DiscountAmount,
+				split.Amount, split.PaymentMethodID,
+			)
 		}
 	}
 
