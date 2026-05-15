@@ -211,6 +211,8 @@ migrate-up-all:
 	@for service in $(MICROSERVICES); do \
 		$(MAKE) migrate-up s=$$service; \
 	done
+	@echo "Накатываем миграции для ClickHouse..."
+	@$(MAKE) migrate-ch-up
 
 # Накатить миграции конкретного сервиса (make migrate-up s=user)
 migrate-up:
@@ -230,6 +232,22 @@ migrate-down:
 	@if [ -z "$(s)" ]; then echo "Укажите сервис"; exit 1; fi
 	@echo "Migrating DOWN: $(s)..."
 	migrate -path ./services/$(s)/db/migrations -database "$(call get_db_url,$(s))" down
+
+CLICKHOUSE_URL = "clickhouse://$(CH_USER):$(CH_PASSWORD)@$(CH_HOST):$(CH_PORT)/$(CH_DB)?x-multi-statement=true"
+
+# Создать миграцию для ClickHouse
+migrate-ch-create:
+	migrate create -ext sql -dir services/analytics/db/migrations -seq $(name)
+
+# Накатить миграции ClickHouse
+migrate-ch-up:
+	@echo "Migrating ClickHouse up..."
+	migrate -path ./services/analytics/db/migrations -database $(CLICKHOUSE_URL) up
+
+# Откатить миграции ClickHouse
+migrate-ch-down:
+	@echo "Migrating ClickHouse down..."
+	migrate -path ./services/analytics/db/migrations -database $(CLICKHOUSE_URL) down
 
 swagger:
 	swag init -g $(GATEWAY_PKG) --parseInternal --parseDependency
