@@ -77,9 +77,6 @@ func (u *cartUseCase) GetCart(ctx context.Context, userID int64) (domain.Cart, i
 
 	dishes, err := u.restaurantClient.GetDishesByIDs(ctx, dishIDs)
 	if err != nil {
-		// Не валим всю ручку — возвращаем корзину без обогащённых данных.
-		// Иначе при недоступности restaurant-сервиса (или временной ошибке)
-		// фронт не может ни прочитать корзину, ни добавить новый товар.
 		span.AddEvent("dishes_enrichment_failed", trace.WithAttributes(
 			attribute.String("error", err.Error()),
 		))
@@ -159,22 +156,10 @@ func (u *cartUseCase) LockCart(ctx context.Context, cartID string, userID int64,
 		}
 	}
 
-	// Сначала лочим (саге нужен ивент CartLocked для перехода к payment),
-	// потом сразу очищаем — корзина больше не нужна, все данные заказа
-	// уже в order_db. Это позволяет пользователю оформлять следующий заказ
-	// не дожидаясь завершения оплаты предыдущего и не висеть с залоченной
-	// корзиной если saga умрёт где-то в payment.
 	if err := u.cartRepo.LockCart(ctx, cartID); err != nil {
 		return err
 	}
-	if err := u.cartRepo.ClearCart(ctx, cartID); err != nil {
-		// Не валим всю сагу — ивент CartLocked уже отправлен. Очистка
-		// неудалась — корзина останется пустой+locked, фронт сам разлочит
-		// через CART_LOCKED auto-recover при следующей попытке добавить.
-		span.AddEvent("post_lock_clear_failed", trace.WithAttributes(
-			attribute.String("error", err.Error()),
-		))
-	}
+
 	return nil
 }
 
@@ -237,7 +222,6 @@ func (u *cartUseCase) GenerateInvite(ctx context.Context, cartID string, adminID
 		return domain.CartInvite{}, err
 	}
 
-	// Переводим корзину в режим Shared, если она еще не там
 	if cart.Mode == domain.CartModeSolo {
 		span.AddEvent("switching_to_shared_mode")
 		if err := u.cartRepo.UpdateCartMode(ctx, cartID, domain.CartModeShared); err != nil {
@@ -304,7 +288,6 @@ func (u *cartUseCase) KickMember(ctx context.Context, cartID string, adminID, ta
 		return err
 	}
 
-	// обезличиваем позиции кикнутого
 	return u.cartRepo.OrphanUserItems(ctx, cartID, targetUserID)
 }
 
@@ -364,7 +347,6 @@ func (u *cartUseCase) AddItem(ctx context.Context, cartID string, userID, dishID
 	} else {
 		cart, err = u.cartRepo.GetActiveCartByUserID(ctx, userID)
 		if err != nil {
-			// Если корзины нет создаем новую
 			span.AddEvent("creating_new_cart")
 			newCartID, createErr := u.cartRepo.CreateCart(ctx, userID, dishBrandID)
 			if createErr != nil {
@@ -383,10 +365,6 @@ func (u *cartUseCase) AddItem(ctx context.Context, cartID string, userID, dishID
 	}
 
 	if cart.RestaurantBrandID != dishBrandID {
-		// Пустая корзина может быть привязана к ресторану от прошлой попытки
-		// (после ClearCart cart_dish=∅ но restaurant_brand_id остаётся).
-		// Перепривязываем к ресторану нового блюда — это корректно, так как
-		// корзина буквально пустая и ничего не теряем.
 		if len(cart.Items) == 0 {
 			if err := u.cartRepo.SetCartRestaurantBrand(ctx, cartID, dishBrandID); err != nil {
 				return err
@@ -421,7 +399,7 @@ func (u *cartUseCase) RemoveItem(ctx context.Context, cartID string, userID, dis
 
 	item := cart.GetItem(dishID)
 	if item == nil {
-		span.AddEvent("item_already_absent") // Событие для идемпотентного выхода
+		span.AddEvent("item_already_absent")
 		return nil
 	}
 
@@ -458,7 +436,6 @@ func (u *cartUseCase) UpdateItemQuantity(ctx context.Context, cartID string, use
 		return domain.ErrDishNotFound
 	}
 
-	// Гость не может менять чужое или ничейное
 	if cart.AdminID != userID {
 		if item.OwnerUserID == nil || *item.OwnerUserID != userID {
 			return domain.ErrForbidden

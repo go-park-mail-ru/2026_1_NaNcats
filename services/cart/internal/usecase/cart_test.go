@@ -128,7 +128,6 @@ func TestCartUseCase_LockCart(t *testing.T) {
 				}, nil)
 
 				repo.EXPECT().LockCart(gomock.Any(), "cart-123").Return(nil)
-				repo.EXPECT().ClearCart(gomock.Any(), "cart-123").Return(nil)
 			},
 			expectedErr: nil,
 		},
