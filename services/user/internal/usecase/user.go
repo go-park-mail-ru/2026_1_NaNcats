@@ -29,6 +29,8 @@ type UserUseCase interface {
 	UpdateAvatar(ctx context.Context, userID int64, imageData []byte, idempotencyKey string) (string, error)
 	DeleteAvatar(ctx context.Context, userID int64, idempotencyKey string) (string, error)
 	UpdateRole(ctx context.Context, userID int64, newRole string, idempotencyKey string) error
+	GetUsersByIDs(ctx context.Context, userIDs []int64) (map[int64]domain.User, error)
+	GetByPublicID(ctx context.Context, publicID string) (domain.User, error)
 }
 
 //go:generate mockgen -destination=mocks/message_publisher_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/usecase MessagePublisher
@@ -266,4 +268,41 @@ func (u *userUseCase) UpdateRole(ctx context.Context, userID int64, newRole stri
 	}
 
 	return nil
+}
+
+func (u *userUseCase) GetUsersByIDs(ctx context.Context, userIDs []int64) (map[int64]domain.User, error) {
+	if len(userIDs) == 0 {
+		return make(map[int64]domain.User), nil
+	}
+
+	users, err := u.userRepo.GetUsersByIDs(ctx, userIDs)
+	if err != nil {
+		return nil, errutil.Internal("failed to fetch users batch", err)
+	}
+
+	result := make(map[int64]domain.User, len(users))
+	for _, user := range users {
+		if user.AvatarURL == "" {
+			user.AvatarURL = u.defaultAvatarURL
+		}
+		result[user.ID] = user
+	}
+
+	return result, nil
+}
+
+func (u *userUseCase) GetByPublicID(ctx context.Context, publicID string) (domain.User, error) {
+	user, err := u.userRepo.GetUserByPublicID(ctx, publicID)
+	if err != nil {
+		if errors.Is(err, domain.ErrUserNotFound) {
+			return domain.User{}, err
+		}
+		return domain.User{}, errutil.Internal("failed to get user by public id", err)
+	}
+
+	if user.AvatarURL == "" {
+		user.AvatarURL = u.defaultAvatarURL
+	}
+
+	return user, nil
 }
