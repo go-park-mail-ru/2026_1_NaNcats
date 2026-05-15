@@ -344,6 +344,13 @@ func (o *orderUseCase) CancelOrder(ctx context.Context, orderPublicID string, us
 		return errutil.Internal("failed to cancel order", err)
 	}
 
+	if err := o.orderRepo.RollbackPromocodeUsage(ctx, orderPublicID); err != nil {
+		span.RecordError(err)
+		o.logger.Error("failed to rollback promocode on manual cancel", err, logger.String("order_id", orderPublicID))
+		return errutil.Internal("order cancelled, but failed to rollback promocode", err)
+	}
+
+	span.AddEvent("order_cancelled_and_promocode_rolled_back")
 	return nil
 }
 
@@ -465,6 +472,13 @@ func (o *orderUseCase) ProcessSagaReply(ctx context.Context, reply events.SagaRe
 		if reply.SplitID != "" {
 			_ = o.orderRepo.UpdateSplitStatus(ctx, reply.SplitID, SplitStatusFailed)
 		}
+
+		if err := o.orderRepo.RollbackPromocodeUsage(ctx, reply.OrderID); err != nil {
+			span.RecordError(err)
+			o.logger.Error("failed to rollback promocode in saga", err, logger.String("order_id", reply.OrderID))
+			return err
+		}
+
 		if reply.Step == "PAYMENT" {
 			span.AddEvent("compensating_cart_unlock")
 			_ = o.rabbitPublisher.PublishJSON(ctx, events.QueueCartCommands, events.SagaCommand{
