@@ -174,7 +174,7 @@ func main() {
 	authHandler := authHttp.NewAuthHandler(authClient, userClient, appLogger, validate)
 	userProfileHandler := userHttp.NewUserProfileHandler(userClient, appLogger)
 	restaurantHandler := restaurantHttp.NewRestaurantHandler(restClient, appLogger)
-	cartHandler := cartHttp.NewCartHandler(cartClient, wsManager, appLogger)
+	cartHandler := cartHttp.NewCartHandler(cartClient, userClient, wsManager, appLogger)
 	addressHandler := addressHttp.NewAddressHandler(addrClient, appLogger)
 	paymentHandler := paymentHttp.NewPaymentHandler(payClient, appLogger)
 	orderHandler := orderHttp.NewOrderHandler(orderClient, payClient, restClient, wsManager, appLogger)
