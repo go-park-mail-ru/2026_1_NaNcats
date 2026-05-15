@@ -59,3 +59,12 @@ CREATE TABLE "outbox_events" (
     status TEXT DEFAULT 'PENDING',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
+
+CREATE TABLE "idempotency_records" (
+    user_id BIGINT NOT NULL,
+    idempotency_key TEXT NOT NULL,
+    grpc_method TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+
+    PRIMARY KEY (user_id, idempotency_key)
+);
