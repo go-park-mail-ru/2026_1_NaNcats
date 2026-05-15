@@ -290,11 +290,11 @@ func (r *orderRepo) GetOrderByPublicID(ctx context.Context, publicID string) (do
 		FROM "order" WHERE public_id = $1
 	`
 	var o domain.Order
-	var courierID, promoID *int64
+	var courierID *int64
 
 	err := r.pool.QueryRow(ctx, orderQuery, publicID).Scan(
 		&o.ID, &o.PublicID, &o.AdminID, &courierID, &o.RestaurantBranchID,
-		&o.RestaurantBrandID, &o.ClientAddressID, &o.TotalCost, &promoID,
+		&o.RestaurantBrandID, &o.ClientAddressID, &o.TotalCost, &o.PromocodeID,
 		&o.RestaurantName, &o.Status, &o.CreatedAt, &o.UpdatedAt,
 	)
 	if err != nil {
@@ -305,9 +305,6 @@ func (r *orderRepo) GetOrderByPublicID(ctx context.Context, publicID string) (do
 	}
 	if courierID != nil {
 		o.CourierID = *courierID
-	}
-	if promoID != nil {
-		o.PromocodeID = *promoID
 	}
 
 	dishQuery := `SELECT dish_id, dish_name, quantity, price, owner_user_id FROM "order_dish" WHERE order_id = $1`
@@ -505,4 +502,52 @@ func (r *orderRepo) CreatePromocodeUsage(ctx context.Context, promoID, orderID, 
 	}
 
 	return nil
+}
+
+func (r *orderRepo) RollbackPromocodeUsage(ctx context.Context, orderPublicID string) error {
+	return r.WithTransaction(ctx, func(txCtx context.Context) error {
+		q := r.getTxOrDB(txCtx)
+
+		var orderID int64
+		var promoID *int64
+
+		err := q.QueryRow(txCtx, `
+			SELECT id, promocode_id 
+			FROM "order" 
+			WHERE public_id = $1
+		`, orderPublicID).Scan(&orderID, &promoID)
+
+		if err != nil {
+			return fmt.Errorf("failed to fetch order for rollback: %w", err)
+		}
+
+		if promoID == nil {
+			return nil
+		}
+
+		tag, err := q.Exec(txCtx, `
+			DELETE FROM "promocode_usage" 
+			WHERE order_id = $1 AND promocode_id = $2
+		`, orderID, *promoID)
+
+		if err != nil {
+			return fmt.Errorf("failed to delete promocode usage: %w", err)
+		}
+
+		if tag.RowsAffected() == 0 {
+			return nil
+		}
+
+		_, err = q.Exec(txCtx, `
+			UPDATE "promocode" 
+			SET current_uses = current_uses - 1 
+			WHERE id = $1 AND current_uses > 0
+		`, *promoID)
+
+		if err != nil {
+			return fmt.Errorf("failed to decrement promocode uses: %w", err)
+		}
+
+		return nil
+	})
 }

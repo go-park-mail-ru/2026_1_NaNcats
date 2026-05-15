@@ -33,4 +33,6 @@ type OrderRepository interface {
 	CheckPromocodeUsage(ctx context.Context, promoID, userID int64) (bool, error)
 	IncrementPromocodeUses(ctx context.Context, promoID int64) error
 	CreatePromocodeUsage(ctx context.Context, promoID, orderID, userID int64) error
+
+	RollbackPromocodeUsage(ctx context.Context, orderPublicID string) error
 }
