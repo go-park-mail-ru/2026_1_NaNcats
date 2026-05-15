@@ -238,7 +238,13 @@ func (m *WsManager) deliverToLocalSocket(event events.GatewayEvent) error {
 			room := val.(*Room)
 
 			room.mu.RLock()
+			activeConns := make(map[int64]*websocket.Conn, len(room.clients))
 			for userID, conn := range room.clients {
+				activeConns[userID] = conn
+			}
+			room.mu.RUnlock()
+
+			for userID, conn := range activeConns {
 				err = conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 				if err != nil {
 					m.logger.Warn("Failed to set write deadline for cart socket", logger.Int("user_id", int(userID)))
@@ -250,7 +256,6 @@ func (m *WsManager) deliverToLocalSocket(event events.GatewayEvent) error {
 					m.logger.Warn("Failed to write to cart websocket", logger.Int("user_id", int(userID)), logger.Err(err))
 				}
 			}
-			room.mu.RUnlock()
 
 			if event.EventType == "SharedCartClosed" {
 				m.cartRooms.Delete(event.CartID)
