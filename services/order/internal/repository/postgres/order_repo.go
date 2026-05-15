@@ -292,8 +292,8 @@ func (r *orderRepo) UpdateSplitStatus(ctx context.Context, splitID string, newSt
 func (r *orderRepo) GetOrderByPublicID(ctx context.Context, publicID string) (domain.Order, error) {
 	orderQuery := `
 		SELECT id, public_id, admin_account_id, courier_account_id, restaurant_branch_id, 
-		restaurant_brand_id, client_address_id, total_cost, promocode_id, restaurant_name, 
-		status, created_at, updated_at 
+		restaurant_brand_id, client_address_id, total_cost, promocode_id, discount_amount, 
+		promocode_code, restaurant_name, status, created_at, updated_at 
 		FROM "order" WHERE public_id = $1
 	`
 	var o domain.Order
@@ -302,6 +302,7 @@ func (r *orderRepo) GetOrderByPublicID(ctx context.Context, publicID string) (do
 	err := r.pool.QueryRow(ctx, orderQuery, publicID).Scan(
 		&o.ID, &o.PublicID, &o.AdminID, &courierID, &o.RestaurantBranchID,
 		&o.RestaurantBrandID, &o.ClientAddressID, &o.TotalCost, &o.PromocodeID,
+		&o.DiscountAmount, &o.PromocodeString,
 		&o.RestaurantName, &o.Status, &o.CreatedAt, &o.UpdatedAt,
 	)
 	if err != nil {
@@ -325,7 +326,7 @@ func (r *orderRepo) GetOrderByPublicID(ctx context.Context, publicID string) (do
 	}
 
 	splitQuery := `
-		SELECT id, user_id, amount, status, payment_method_id, yookassa_payment_id 
+		SELECT id, user_id, base_amount, discount_amount, amount, status, payment_method_id, yookassa_payment_id 
 		FROM "order_split" WHERE order_id = $1
 	`
 	splitRows, _ := r.pool.Query(ctx, splitQuery, o.ID)
@@ -333,7 +334,7 @@ func (r *orderRepo) GetOrderByPublicID(ctx context.Context, publicID string) (do
 	for splitRows.Next() {
 		var s domain.OrderSplit
 		s.OrderID = o.ID
-		if err := splitRows.Scan(&s.ID, &s.UserID, &s.Amount, &s.Status, &s.PaymentMethodID, &s.YookassaPaymentID); err == nil {
+		if err := splitRows.Scan(&s.ID, &s.UserID, &s.BaseAmount, &s.DiscountAmount, &s.Amount, &s.Status, &s.PaymentMethodID, &s.YookassaPaymentID); err == nil {
 			o.Splits = append(o.Splits, s)
 		}
 	}
