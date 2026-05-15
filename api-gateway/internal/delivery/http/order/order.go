@@ -37,6 +37,8 @@ type CreateOrderRequest struct {
 
 	PayForAll    bool            `json:"pay_for_all"`
 	PayerMapping map[int64]int64 `json:"payer_mapping,omitempty"`
+
+	Promocode *string `json:"promocode,omitempty"`
 }
 
 //easyjson:json
@@ -56,10 +58,12 @@ type OrderDishDTO struct {
 
 //easyjson:json
 type OrderSplitDTO struct {
-	SplitID string `json:"split_id"`
-	UserID  int64  `json:"user_id"`
-	Amount  int64  `json:"amount"`
-	Status  string `json:"status"`
+	SplitID        string `json:"split_id"`
+	UserID         int64  `json:"user_id"`
+	BaseAmount     int64  `json:"base_amount"`
+	DiscountAmount int64  `json:"discount_amount"`
+	Amount         int64  `json:"amount"`
+	Status         string `json:"status"`
 }
 
 //easyjson:json
@@ -68,6 +72,8 @@ type OrderHistoryResponse struct {
 	RestaurantName     string          `json:"restaurant_name"`
 	RestaurantImageURL string          `json:"restaurant_image_url"`
 	TotalCost          int64           `json:"total_cost"`
+	AppliedPromocode   *string         `json:"applied_promocode,omitempty"`
+	DiscountAmount     int64           `json:"discount_amount"`
 	Status             string          `json:"status"`
 	CreatedAt          string          `json:"created_at"`
 	Items              []OrderDishDTO  `json:"items"`
@@ -188,6 +194,7 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		ServiceFee:         req.ServiceFee,
 		PayForAll:          req.PayForAll,
 		PayerMapping:       req.PayerMapping,
+		Promocode:          req.Promocode,
 	}
 
 	orderPublicID, err := h.orderClient.CreateOrder(ctx, userID, input, idemKey)
@@ -335,10 +342,12 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 		splits := make([]OrderSplitDTO, 0, len(o.Splits))
 		for _, split := range o.Splits {
 			splits = append(splits, OrderSplitDTO{
-				SplitID: split.SplitID,
-				UserID:  split.UserID,
-				Amount:  split.Amount,
-				Status:  split.Status,
+				SplitID:        split.SplitID,
+				UserID:         split.UserID,
+				BaseAmount:     split.BaseAmount,
+				DiscountAmount: split.DiscountAmount,
+				Amount:         split.Amount,
+				Status:         split.Status,
 			})
 		}
 
@@ -349,6 +358,8 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 			RestaurantName:     o.RestaurantName,
 			RestaurantImageURL: brandLogo,
 			TotalCost:          o.TotalCost,
+			AppliedPromocode:   o.Promocode,
+			DiscountAmount:     o.DiscountAmount,
 			Status:             o.Status,
 			CreatedAt:          o.CreatedAt.Format("02.01.2006"),
 			Items:              items,
