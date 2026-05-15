@@ -29,21 +29,25 @@ func mapDomainToPBOrder(o domain.Order) *pb.Order {
 	splits := make([]*pb.OrderSplit, 0, len(o.Splits))
 	for _, split := range o.Splits {
 		splits = append(splits, &pb.OrderSplit{
-			SplitId: split.ID,
-			UserId:  split.UserID,
-			Amount:  split.Amount,
-			Status:  split.Status,
+			SplitId:        split.ID,
+			UserId:         split.UserID,
+			BaseAmount:     split.BaseAmount,
+			DiscountAmount: split.DiscountAmount,
+			Amount:         split.Amount,
+			Status:         split.Status,
 		})
 	}
 
 	return &pb.Order{
-		PublicId:       o.PublicID,
-		RestaurantName: o.RestaurantName,
-		TotalCost:      o.TotalCost,
-		Status:         o.Status,
-		CreatedAt:      timestamppb.New(o.CreatedAt),
-		Items:          items,
-		Splits:         splits,
+		PublicId:         o.PublicID,
+		RestaurantName:   o.RestaurantName,
+		TotalCost:        o.TotalCost,
+		Status:           o.Status,
+		CreatedAt:        timestamppb.New(o.CreatedAt),
+		Items:            items,
+		Splits:           splits,
+		AppliedPromocode: o.PromocodeString,
+		DiscountAmount:   &o.DiscountAmount,
 	}
 }
 
@@ -58,6 +62,7 @@ func mapCreateOrderInputFromPB(req *pb.CreateOrderRequest) domain.CreateOrderInp
 		PaymentMethodID:    req.PaymentMethodId,
 		PayForAll:          req.PayForAll,
 		PayerMapping:       req.PayerMapping,
+		Promocode:          req.Promocode,
 	}
 }
 

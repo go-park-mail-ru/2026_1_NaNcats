@@ -29,6 +29,7 @@ type CreateOrderInput struct {
 	PaymentMethodID string
 	PayForAll       bool
 	PayerMapping    map[int64]int64
+	Promocode       *string
 }
 
 type OrderDish struct {
@@ -40,10 +41,12 @@ type OrderDish struct {
 }
 
 type OrderSplit struct {
-	SplitID string
-	UserID  int64
-	Amount  int64
-	Status  string
+	SplitID        string
+	UserID         int64
+	BaseAmount     int64
+	DiscountAmount int64
+	Amount         int64
+	Status         string
 }
 
 type Order struct {
@@ -51,6 +54,8 @@ type Order struct {
 	RestaurantName    string
 	RestaurantBrandID int64
 	TotalCost         int64
+	Promocode         *string
+	DiscountAmount    int64
 	Status            string
 	CreatedAt         time.Time
 	Items             []OrderDish
@@ -84,6 +89,7 @@ func (c *orderClient) CreateOrder(ctx context.Context, userID int64, input Creat
 		DeliveryCost:       input.DeliveryCost,
 		ServiceFee:         input.ServiceFee,
 		IdempotencyKey:     idempotencyKey,
+		Promocode:          input.Promocode,
 	}
 
 	resp, err := c.client.CreateOrder(ctx, req)
@@ -132,10 +138,12 @@ func (c *orderClient) GetOrders(ctx context.Context, userID int64, limit, offset
 		splits := make([]OrderSplit, 0, len(pbO.Splits))
 		for _, pbSplit := range pbO.Splits {
 			splits = append(splits, OrderSplit{
-				SplitID: pbSplit.SplitId,
-				UserID:  pbSplit.UserId,
-				Amount:  pbSplit.Amount,
-				Status:  pbSplit.Status,
+				SplitID:        pbSplit.SplitId,
+				UserID:         pbSplit.UserId,
+				BaseAmount:     pbSplit.BaseAmount,
+				DiscountAmount: pbSplit.DiscountAmount,
+				Amount:         pbSplit.Amount,
+				Status:         pbSplit.Status,
 			})
 		}
 
@@ -143,6 +151,8 @@ func (c *orderClient) GetOrders(ctx context.Context, userID int64, limit, offset
 			PublicID:       pbO.PublicId,
 			RestaurantName: pbO.RestaurantName,
 			TotalCost:      pbO.TotalCost,
+			Promocode:      pbO.AppliedPromocode,
+			DiscountAmount: pbO.GetDiscountAmount(),
 			Status:         pbO.Status,
 			CreatedAt:      pbO.CreatedAt.AsTime(),
 			Items:          items,
