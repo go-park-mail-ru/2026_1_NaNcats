@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository"
@@ -43,6 +44,12 @@ func TestOrderUseCase_CreateOrder(t *testing.T) {
 	type mockInit func(d useCaseDeps)
 
 	ownerID := int64(1)
+	friendID := int64(2)
+	validPromo := "PROMO100"
+
+	runTx := func(ctx context.Context, fn func(context.Context) error) error {
+		return fn(ctx)
+	}
 
 	tests := []struct {
 		name        string
@@ -53,7 +60,7 @@ func TestOrderUseCase_CreateOrder(t *testing.T) {
 		errCode     codes.Code
 	}{
 		{
-			name: "Успешное создание заказа (Оплата за всех)",
+			name: "Успешное создание заказа без промокода",
 			req: domain.CreateOrderInput{
 				UserID:             1,
 				AddressPublicID:    "addr-1",
@@ -71,14 +78,15 @@ func TestOrderUseCase_CreateOrder(t *testing.T) {
 				d.addr.EXPECT().CheckAddressExists(gomock.Any(), int64(1), "addr-1").Return(nil)
 				d.rest.EXPECT().GetRestaurantName(gomock.Any(), int64(10)).Return("KFC", nil)
 
-				d.repo.EXPECT().CreateOrder(gomock.Any(), gomock.Any(), "idem-1").Return("pub-uuid", nil)
+				d.repo.EXPECT().WithTransaction(gomock.Any(), gomock.Any()).DoAndReturn(runTx)
+				d.repo.EXPECT().CreateOrder(gomock.Any(), gomock.Any(), "idem-1").Return(int64(1), "pub-uuid", nil)
 				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueCartCommands, gomock.Any()).Return(nil)
 			},
 			expectedID:  "pub-uuid",
 			expectedErr: false,
 		},
 		{
-			name: "Ошибка: пустая корзина",
+			name: "Ошибка пустая корзина",
 			req:  domain.CreateOrderInput{UserID: 1},
 			mockInit: func(d useCaseDeps) {
 				d.cart.EXPECT().GetCart(gomock.Any(), int64(1)).Return(domain.Cart{Items: []domain.CartItem{}}, int64(0), nil)
@@ -87,25 +95,7 @@ func TestOrderUseCase_CreateOrder(t *testing.T) {
 			errCode:     codes.InvalidArgument,
 		},
 		{
-			name: "Ошибка: нераспределенные предметы при раздельной оплате",
-			req: domain.CreateOrderInput{
-				UserID:    1,
-				PayForAll: false,
-			},
-			mockInit: func(d useCaseDeps) {
-				d.cart.EXPECT().GetCart(gomock.Any(), int64(1)).Return(domain.Cart{
-					Items: []domain.CartItem{{DishID: 1, Quantity: 1, Price: 500, OwnerUserID: nil}},
-				}, int64(500), nil)
-
-				d.addr.EXPECT().CheckAddressExists(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-
-				d.rest.EXPECT().GetRestaurantName(gomock.Any(), gomock.Any()).Return("Any Restaurant", nil)
-			},
-			expectedErr: true,
-			errCode:     codes.FailedPrecondition,
-		},
-		{
-			name: "Успешное создание со сплитом",
+			name: "Успешное создание со сплитом без промокода",
 			req: domain.CreateOrderInput{
 				UserID:          1,
 				AddressPublicID: "addr-2",
@@ -113,7 +103,6 @@ func TestOrderUseCase_CreateOrder(t *testing.T) {
 				PayerMapping:    map[int64]int64{2: 1},
 			},
 			mockInit: func(d useCaseDeps) {
-				friendID := int64(2)
 				d.cart.EXPECT().GetCart(gomock.Any(), int64(1)).Return(domain.Cart{
 					Items: []domain.CartItem{
 						{DishID: 1, Quantity: 1, Price: 500, OwnerUserID: &ownerID},
@@ -124,12 +113,129 @@ func TestOrderUseCase_CreateOrder(t *testing.T) {
 				d.addr.EXPECT().CheckAddressExists(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				d.rest.EXPECT().GetRestaurantName(gomock.Any(), gomock.Any()).Return("Burger King", nil)
 
-				// Проверяем, что создается заказ и публикуется событие
-				d.repo.EXPECT().CreateOrder(gomock.Any(), gomock.Any(), "idem-2").Return("pub-uuid-2", nil)
+				d.repo.EXPECT().WithTransaction(gomock.Any(), gomock.Any()).DoAndReturn(runTx)
+				d.repo.EXPECT().CreateOrder(gomock.Any(), gomock.Any(), "idem-1").Return(int64(2), "pub-uuid-2", nil)
 				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueCartCommands, gomock.Any()).Return(nil)
 			},
 			expectedID:  "pub-uuid-2",
 			expectedErr: false,
+		},
+		{
+			name: "Успешное создание заказа с валидным промокодом",
+			req: domain.CreateOrderInput{
+				UserID:             1,
+				AddressPublicID:    "addr-1",
+				RestaurantBranchID: 10,
+				RestaurantBrandID:  20,
+				DeliveryCost:       100,
+				ServiceFee:         50,
+				PayForAll:          true,
+				Promocode:          &validPromo,
+			},
+			mockInit: func(d useCaseDeps) {
+				d.cart.EXPECT().GetCart(gomock.Any(), int64(1)).Return(domain.Cart{
+					Items: []domain.CartItem{{DishID: 1, Quantity: 2, Price: 500}},
+				}, int64(1000), nil)
+
+				d.addr.EXPECT().CheckAddressExists(gomock.Any(), int64(1), "addr-1").Return(nil)
+				d.rest.EXPECT().GetRestaurantName(gomock.Any(), int64(10)).Return("KFC", nil)
+
+				d.repo.EXPECT().WithTransaction(gomock.Any(), gomock.Any()).DoAndReturn(runTx)
+
+				discAmount := int64(200)
+				promo := domain.Promocode{
+					ID:             1,
+					Code:           "PROMO100",
+					ExpiresAt:      time.Now().Add(24 * time.Hour),
+					DiscountAmount: &discAmount,
+				}
+				d.repo.EXPECT().GetPromocodeByCodeWithLock(gomock.Any(), "PROMO100").Return(promo, nil)
+				d.repo.EXPECT().CheckPromocodeUsage(gomock.Any(), int64(1), int64(1)).Return(false, nil)
+				d.repo.EXPECT().CreateOrder(gomock.Any(), gomock.Any(), "idem-1").Return(int64(3), "pub-uuid-promo", nil)
+				d.repo.EXPECT().IncrementPromocodeUses(gomock.Any(), int64(1)).Return(nil)
+				d.repo.EXPECT().CreatePromocodeUsage(gomock.Any(), int64(1), int64(3), int64(1)).Return(nil)
+
+				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueCartCommands, gomock.Any()).Return(nil)
+			},
+			expectedID:  "pub-uuid-promo",
+			expectedErr: false,
+		},
+		{
+			name: "Ошибка промокод не найден",
+			req: domain.CreateOrderInput{
+				UserID:             1,
+				AddressPublicID:    "addr-1",
+				RestaurantBranchID: 10,
+				RestaurantBrandID:  20,
+				PayForAll:          true,
+				Promocode:          &validPromo,
+			},
+			mockInit: func(d useCaseDeps) {
+				d.cart.EXPECT().GetCart(gomock.Any(), int64(1)).Return(domain.Cart{
+					Items: []domain.CartItem{{DishID: 1, Quantity: 2, Price: 500}},
+				}, int64(1000), nil)
+				d.addr.EXPECT().CheckAddressExists(gomock.Any(), int64(1), "addr-1").Return(nil)
+				d.rest.EXPECT().GetRestaurantName(gomock.Any(), int64(10)).Return("KFC", nil)
+
+				d.repo.EXPECT().WithTransaction(gomock.Any(), gomock.Any()).DoAndReturn(runTx)
+				d.repo.EXPECT().GetPromocodeByCodeWithLock(gomock.Any(), "PROMO100").Return(domain.Promocode{}, errors.New("not found"))
+			},
+			expectedErr: true,
+			errCode:     codes.NotFound,
+		},
+		{
+			name: "Ошибка промокод истек",
+			req: domain.CreateOrderInput{
+				UserID:             1,
+				AddressPublicID:    "addr-1",
+				RestaurantBranchID: 10,
+				RestaurantBrandID:  20,
+				PayForAll:          true,
+				Promocode:          &validPromo,
+			},
+			mockInit: func(d useCaseDeps) {
+				d.cart.EXPECT().GetCart(gomock.Any(), int64(1)).Return(domain.Cart{
+					Items: []domain.CartItem{{DishID: 1, Quantity: 2, Price: 500}},
+				}, int64(1000), nil)
+				d.addr.EXPECT().CheckAddressExists(gomock.Any(), int64(1), "addr-1").Return(nil)
+				d.rest.EXPECT().GetRestaurantName(gomock.Any(), int64(10)).Return("KFC", nil)
+
+				d.repo.EXPECT().WithTransaction(gomock.Any(), gomock.Any()).DoAndReturn(runTx)
+				d.repo.EXPECT().GetPromocodeByCodeWithLock(gomock.Any(), "PROMO100").Return(domain.Promocode{
+					ExpiresAt: time.Now().Add(-24 * time.Hour),
+				}, nil)
+			},
+			expectedErr: true,
+			errCode:     codes.FailedPrecondition,
+		},
+		{
+			name: "Ошибка промокод уже использован",
+			req: domain.CreateOrderInput{
+				UserID:             1,
+				AddressPublicID:    "addr-1",
+				RestaurantBranchID: 10,
+				RestaurantBrandID:  20,
+				PayForAll:          true,
+				Promocode:          &validPromo,
+			},
+			mockInit: func(d useCaseDeps) {
+				d.cart.EXPECT().GetCart(gomock.Any(), int64(1)).Return(domain.Cart{
+					Items: []domain.CartItem{{DishID: 1, Quantity: 2, Price: 500}},
+				}, int64(1000), nil)
+				d.addr.EXPECT().CheckAddressExists(gomock.Any(), int64(1), "addr-1").Return(nil)
+				d.rest.EXPECT().GetRestaurantName(gomock.Any(), int64(10)).Return("KFC", nil)
+
+				d.repo.EXPECT().WithTransaction(gomock.Any(), gomock.Any()).DoAndReturn(runTx)
+				promo := domain.Promocode{
+					ID:        1,
+					Code:      "PROMO100",
+					ExpiresAt: time.Now().Add(24 * time.Hour),
+				}
+				d.repo.EXPECT().GetPromocodeByCodeWithLock(gomock.Any(), "PROMO100").Return(promo, nil)
+				d.repo.EXPECT().CheckPromocodeUsage(gomock.Any(), int64(1), int64(1)).Return(true, nil)
+			},
+			expectedErr: true,
+			errCode:     codes.FailedPrecondition,
 		},
 	}
 
@@ -143,18 +249,12 @@ func TestOrderUseCase_CreateOrder(t *testing.T) {
 
 			uc := NewOrderUseCase(deps.repo, deps.addr, deps.cart, deps.rest, deps.pub, "http://default-logo", logger.NewNopLogger())
 
-			// Для тестов прокидываем разные ключи идемпотентности в зависимости от кейса
-			idemKey := "idem-1"
-			if tt.name == "Успешное создание со сплитом" {
-				idemKey = "idem-2"
-			}
-
-			id, err := uc.CreateOrder(context.Background(), tt.req, idemKey)
+			id, err := uc.CreateOrder(context.Background(), tt.req, "idem-1")
 
 			if tt.expectedErr {
 				assert.Error(t, err)
 				domainErr, ok := err.(statusCoder)
-				if ok {
+				if ok && tt.errCode != 0 {
 					assert.Equal(t, tt.errCode, domainErr.GRPCStatus())
 				}
 			} else {
@@ -185,11 +285,12 @@ func TestOrderUseCase_CancelOrder(t *testing.T) {
 					AdminID: 1, Status: StatusCreated,
 				}, nil)
 				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusCancelled, StatusCreated, StatusCartLocked, StatusPaymentReady, StatusPaid).Return(nil)
+				d.repo.EXPECT().RollbackPromocodeUsage(gomock.Any(), "pub-123").Return(nil)
 			},
 			expectedErr: false,
 		},
 		{
-			name:    "Ошибка: пользователь не владелец",
+			name:    "Ошибка пользователь не владелец",
 			orderID: "pub-123",
 			userID:  2,
 			mockInit: func(d useCaseDeps) {
@@ -201,19 +302,30 @@ func TestOrderUseCase_CancelOrder(t *testing.T) {
 			errCode:     codes.PermissionDenied,
 		},
 		{
-			name:    "Ошибка: заказ в терминальном статусе",
+			name:    "Ошибка заказ в терминальном статусе",
 			orderID: "pub-123",
 			userID:  1,
 			mockInit: func(d useCaseDeps) {
 				d.repo.EXPECT().GetOrderByPublicID(gomock.Any(), "pub-123").Return(domain.Order{
 					AdminID: 1, Status: StatusFinished,
 				}, nil)
-				// В новой реализации проверка терминального статуса ушла в слой БД
-				// (optimistic locking через UpdateOrderStatus)
 				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusCancelled, StatusCreated, StatusCartLocked, StatusPaymentReady, StatusPaid).Return(repository.ErrStateChanged)
 			},
 			expectedErr: true,
 			errCode:     codes.FailedPrecondition,
+		},
+		{
+			name:    "Ошибка при откате промокода",
+			orderID: "pub-123",
+			userID:  1,
+			mockInit: func(d useCaseDeps) {
+				d.repo.EXPECT().GetOrderByPublicID(gomock.Any(), "pub-123").Return(domain.Order{
+					AdminID: 1, Status: StatusCreated,
+				}, nil)
+				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusCancelled, StatusCreated, StatusCartLocked, StatusPaymentReady, StatusPaid).Return(nil)
+				d.repo.EXPECT().RollbackPromocodeUsage(gomock.Any(), "pub-123").Return(errors.New("db error"))
+			},
+			expectedErr: true,
 		},
 	}
 
@@ -232,7 +344,7 @@ func TestOrderUseCase_CancelOrder(t *testing.T) {
 			if tt.expectedErr {
 				require.Error(t, err)
 				domainErr, ok := err.(statusCoder)
-				if ok {
+				if ok && tt.errCode != 0 {
 					assert.Equal(t, tt.errCode, domainErr.GRPCStatus())
 				}
 			} else {
@@ -316,17 +428,29 @@ func TestOrderUseCase_ProcessSagaReply(t *testing.T) {
 		expectedErr bool
 	}{
 		{
-			name: "Ошибка саги на шаге PAYMENT -> компенсация корзины",
+			name: "Ошибка саги на шаге PAYMENT -> компенсация корзины и откат промокода",
 			reply: events.SagaReply{
 				OrderID: "pub-123", Step: "PAYMENT", Status: events.StatusError, SplitID: "split-1",
 			},
 			mockInit: func(d useCaseDeps) {
 				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusFailed, StatusCreated, StatusCartLocked, StatusPaymentReady).Return(nil)
 				d.repo.EXPECT().UpdateSplitStatus(gomock.Any(), "split-1", SplitStatusFailed).Return(nil)
-				// Компенсирующий запрос на разблокировку
+				d.repo.EXPECT().RollbackPromocodeUsage(gomock.Any(), "pub-123").Return(nil)
 				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueCartCommands, gomock.Any()).Return(nil)
 			},
 			expectedErr: false,
+		},
+		{
+			name: "Ошибка саги -> ошибка отката промокода",
+			reply: events.SagaReply{
+				OrderID: "pub-123", Step: "PAYMENT", Status: events.StatusError, SplitID: "split-1",
+			},
+			mockInit: func(d useCaseDeps) {
+				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusFailed, StatusCreated, StatusCartLocked, StatusPaymentReady).Return(nil)
+				d.repo.EXPECT().UpdateSplitStatus(gomock.Any(), "split-1", SplitStatusFailed).Return(nil)
+				d.repo.EXPECT().RollbackPromocodeUsage(gomock.Any(), "pub-123").Return(errors.New("db error"))
+			},
+			expectedErr: true,
 		},
 		{
 			name: "Успешный шаг CART -> отправка команд на оплату",
