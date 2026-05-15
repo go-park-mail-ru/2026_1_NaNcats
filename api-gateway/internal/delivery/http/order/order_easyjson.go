@@ -102,11 +102,23 @@ func easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			} else {
 				out.SplitID = string(in.String())
 			}
-		case "user_id":
+		case "user_public_id":
 			if in.IsNull() {
 				in.Skip()
 			} else {
-				out.UserID = int64(in.Int64())
+				out.UserPublicID = string(in.String())
+			}
+		case "user_name":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.UserName = string(in.String())
+			}
+		case "user_avatar":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.UserAvatar = string(in.String())
 			}
 		case "base_amount":
 			if in.IsNull() {
@@ -152,9 +164,19 @@ func easyjson120d1ca2EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		out.String(string(in.SplitID))
 	}
 	{
-		const prefix string = ",\"user_id\":"
+		const prefix string = ",\"user_public_id\":"
 		out.RawString(prefix)
-		out.Int64(int64(in.UserID))
+		out.String(string(in.UserPublicID))
+	}
+	{
+		const prefix string = ",\"user_name\":"
+		out.RawString(prefix)
+		out.String(string(in.UserName))
+	}
+	{
+		const prefix string = ",\"user_avatar\":"
+		out.RawString(prefix)
+		out.String(string(in.UserAvatar))
 	}
 	{
 		const prefix string = ",\"base_amount\":"
@@ -280,7 +302,7 @@ func easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 				in.Delim('[')
 				if out.Items == nil {
 					if !in.IsDelim(']') {
-						out.Items = make([]OrderDishDTO, 0, 1)
+						out.Items = make([]OrderDishDTO, 0, 0)
 					} else {
 						out.Items = []OrderDishDTO{}
 					}
@@ -307,7 +329,7 @@ func easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 				in.Delim('[')
 				if out.Splits == nil {
 					if !in.IsDelim(']') {
-						out.Splits = make([]OrderSplitDTO, 0, 1)
+						out.Splits = make([]OrderSplitDTO, 0, 0)
 					} else {
 						out.Splits = []OrderSplitDTO{}
 					}
@@ -482,18 +504,46 @@ func easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			} else {
 				out.Price = int64(in.Int64())
 			}
-		case "owner_user_id":
+		case "owner_public_id":
 			if in.IsNull() {
 				in.Skip()
-				out.OwnerUserID = nil
+				out.OwnerPublicID = nil
 			} else {
-				if out.OwnerUserID == nil {
-					out.OwnerUserID = new(int64)
+				if out.OwnerPublicID == nil {
+					out.OwnerPublicID = new(string)
 				}
 				if in.IsNull() {
 					in.Skip()
 				} else {
-					*out.OwnerUserID = int64(in.Int64())
+					*out.OwnerPublicID = string(in.String())
+				}
+			}
+		case "owner_name":
+			if in.IsNull() {
+				in.Skip()
+				out.OwnerName = nil
+			} else {
+				if out.OwnerName == nil {
+					out.OwnerName = new(string)
+				}
+				if in.IsNull() {
+					in.Skip()
+				} else {
+					*out.OwnerName = string(in.String())
+				}
+			}
+		case "owner_avatar":
+			if in.IsNull() {
+				in.Skip()
+				out.OwnerAvatar = nil
+			} else {
+				if out.OwnerAvatar == nil {
+					out.OwnerAvatar = new(string)
+				}
+				if in.IsNull() {
+					in.Skip()
+				} else {
+					*out.OwnerAvatar = string(in.String())
 				}
 			}
 		default:
@@ -535,10 +585,20 @@ func easyjson120d1ca2EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		out.RawString(prefix)
 		out.Int64(int64(in.Price))
 	}
-	if in.OwnerUserID != nil {
-		const prefix string = ",\"owner_user_id\":"
+	if in.OwnerPublicID != nil {
+		const prefix string = ",\"owner_public_id\":"
 		out.RawString(prefix)
-		out.Int64(int64(*in.OwnerUserID))
+		out.String(string(*in.OwnerPublicID))
+	}
+	if in.OwnerName != nil {
+		const prefix string = ",\"owner_name\":"
+		out.RawString(prefix)
+		out.String(string(*in.OwnerName))
+	}
+	if in.OwnerAvatar != nil {
+		const prefix string = ",\"owner_avatar\":"
+		out.RawString(prefix)
+		out.String(string(*in.OwnerAvatar))
 	}
 	out.RawByte('}')
 }
@@ -693,18 +753,18 @@ func easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			} else {
 				in.Delim('{')
 				if !in.IsDelim('}') {
-					out.PayerMapping = make(map[int64]int64)
+					out.PayerMapping = make(map[string]string)
 				} else {
 					out.PayerMapping = nil
 				}
 				for !in.IsDelim('}') {
-					key := int64(in.Int64Str())
+					key := string(in.String())
 					in.WantColon()
-					var v7 int64
+					var v7 string
 					if in.IsNull() {
 						in.Skip()
 					} else {
-						v7 = int64(in.Int64())
+						v7 = string(in.String())
 					}
 					(out.PayerMapping)[key] = v7
 					in.WantComma()
@@ -786,9 +846,9 @@ func easyjson120d1ca2EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 				} else {
 					out.RawByte(',')
 				}
-				out.Int64Str(int64(v8Name))
+				out.String(string(v8Name))
 				out.RawByte(':')
-				out.Int64(int64(v8Value))
+				out.String(string(v8Value))
 			}
 			out.RawByte('}')
 		}
