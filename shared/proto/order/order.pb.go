@@ -152,13 +152,15 @@ func (x *OrderDish) GetOwnerUserId() int64 {
 }
 
 type OrderSplit struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	SplitId       string                 `protobuf:"bytes,1,opt,name=split_id,json=splitId,proto3" json:"split_id,omitempty"`
-	UserId        int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Amount        int64                  `protobuf:"varint,3,opt,name=amount,proto3" json:"amount,omitempty"`
-	Status        string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	SplitId        string                 `protobuf:"bytes,1,opt,name=split_id,json=splitId,proto3" json:"split_id,omitempty"`
+	UserId         int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Amount         int64                  `protobuf:"varint,3,opt,name=amount,proto3" json:"amount,omitempty"`
+	Status         string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
+	BaseAmount     int64                  `protobuf:"varint,5,opt,name=base_amount,json=baseAmount,proto3" json:"base_amount,omitempty"`
+	DiscountAmount int64                  `protobuf:"varint,6,opt,name=discount_amount,json=discountAmount,proto3" json:"discount_amount,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *OrderSplit) Reset() {
@@ -217,6 +219,20 @@ func (x *OrderSplit) GetStatus() string {
 		return x.Status
 	}
 	return ""
+}
+
+func (x *OrderSplit) GetBaseAmount() int64 {
+	if x != nil {
+		return x.BaseAmount
+	}
+	return 0
+}
+
+func (x *OrderSplit) GetDiscountAmount() int64 {
+	if x != nil {
+		return x.DiscountAmount
+	}
+	return 0
 }
 
 type Order struct {
@@ -741,13 +757,16 @@ const file_order_order_proto_rawDesc = "" +
 	"\bquantity\x18\x03 \x01(\x05R\bquantity\x12\x14\n" +
 	"\x05price\x18\x04 \x01(\x03R\x05price\x12'\n" +
 	"\rowner_user_id\x18\x05 \x01(\x03H\x00R\vownerUserId\x88\x01\x01B\x10\n" +
-	"\x0e_owner_user_id\"p\n" +
+	"\x0e_owner_user_id\"\xba\x01\n" +
 	"\n" +
 	"OrderSplit\x12\x19\n" +
 	"\bsplit_id\x18\x01 \x01(\tR\asplitId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x16\n" +
 	"\x06amount\x18\x03 \x01(\x03R\x06amount\x12\x16\n" +
-	"\x06status\x18\x04 \x01(\tR\x06status\"\x9c\x03\n" +
+	"\x06status\x18\x04 \x01(\tR\x06status\x12\x1f\n" +
+	"\vbase_amount\x18\x05 \x01(\x03R\n" +
+	"baseAmount\x12'\n" +
+	"\x0fdiscount_amount\x18\x06 \x01(\x03R\x0ediscountAmount\"\x9c\x03\n" +
 	"\x05Order\x12\x1b\n" +
 	"\tpublic_id\x18\x01 \x01(\tR\bpublicId\x12'\n" +
 	"\x0frestaurant_name\x18\x02 \x01(\tR\x0erestaurantName\x12\x1d\n" +
