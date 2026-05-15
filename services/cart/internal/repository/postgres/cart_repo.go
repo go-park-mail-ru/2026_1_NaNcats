@@ -11,6 +11,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/repository"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/postgres"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type cartRowDB struct {
@@ -37,7 +38,45 @@ func NewCartRepo(pool postgres.PgxPool) repository.CartRepository {
 	}
 }
 
-func insertOutboxEvent(ctx context.Context, tx pgx.Tx, aggregateID string, eventType string, payload any) error {
+type txKey struct{}
+
+type PgxQuerier interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+func (r *cartRepo) getTxOrDB(ctx context.Context) PgxQuerier {
+	if tx, ok := ctx.Value(txKey{}).(pgx.Tx); ok {
+		return tx
+	}
+	return r.pool
+}
+
+func (r *cartRepo) WithTransaction(ctx context.Context, fn func(txCtx context.Context) error) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+
+	txCtx := context.WithValue(ctx, txKey{}, tx)
+
+	err = fn(txCtx)
+	if err != nil {
+		if rbErr := tx.Rollback(ctx); rbErr != nil && !errors.Is(rbErr, pgx.ErrTxClosed) {
+			return fmt.Errorf("rollback error: %v, original error: %w", rbErr, err)
+		}
+		return err
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit tx: %w", err)
+	}
+
+	return nil
+}
+
+func insertOutboxEvent(ctx context.Context, q PgxQuerier, aggregateID string, eventType string, payload any) error {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("marshal outbox payload: %w", err)
@@ -47,7 +86,7 @@ func insertOutboxEvent(ctx context.Context, tx pgx.Tx, aggregateID string, event
 		INSERT INTO "outbox_events" (aggregate_id, event_type, payload)
 		VALUES ($1, $2, $3)
 	`
-	_, err = tx.Exec(ctx, query, aggregateID, eventType, payloadBytes)
+	_, err = q.Exec(ctx, query, aggregateID, eventType, payloadBytes)
 	return err
 }
 
@@ -104,9 +143,9 @@ func (r *cartRepo) LockCart(ctx context.Context, cartID string) error {
 		"cart_id": cartID,
 	}
 
-	return r.execWithOutbox(ctx, cartID, "CartLocked", payload, func(tx pgx.Tx) error {
+	return r.execWithOutbox(ctx, cartID, "CartLocked", payload, func(q PgxQuerier) error {
 		query := `UPDATE "cart" SET status = $1, updated_at = NOW() WHERE cart_id = $2`
-		_, err := tx.Exec(ctx, query, domain.CartStatusLocked, cartID)
+		_, err := q.Exec(ctx, query, domain.CartStatusLocked, cartID)
 		return err
 	})
 }
@@ -114,9 +153,9 @@ func (r *cartRepo) LockCart(ctx context.Context, cartID string) error {
 func (r *cartRepo) UnlockCart(ctx context.Context, cartID string) error {
 	payload := map[string]any{"status": domain.CartStatusActive}
 
-	return r.execWithOutbox(ctx, cartID, "CartUnlocked", payload, func(tx pgx.Tx) error {
+	return r.execWithOutbox(ctx, cartID, "CartUnlocked", payload, func(q PgxQuerier) error {
 		query := `UPDATE "cart" SET status = $1, updated_at = NOW() WHERE cart_id = $2`
-		res, err := tx.Exec(ctx, query, domain.CartStatusActive, cartID)
+		res, err := q.Exec(ctx, query, domain.CartStatusActive, cartID)
 		if err != nil {
 			return fmt.Errorf("unlock cart: %w", err)
 		}
@@ -128,11 +167,11 @@ func (r *cartRepo) UnlockCart(ctx context.Context, cartID string) error {
 }
 
 func (r *cartRepo) ClearCart(ctx context.Context, cartID string) error {
-	return r.execWithOutbox(ctx, cartID, "CartCleared", map[string]any{}, func(tx pgx.Tx) error {
-		if _, err := tx.Exec(ctx, `DELETE FROM "cart_dish" WHERE cart_id = $1`, cartID); err != nil {
+	return r.execWithOutbox(ctx, cartID, "CartCleared", map[string]any{}, func(q PgxQuerier) error {
+		if _, err := q.Exec(ctx, `DELETE FROM "cart_dish" WHERE cart_id = $1`, cartID); err != nil {
 			return fmt.Errorf("clear cart dishes: %w", err)
 		}
-		if _, err := tx.Exec(ctx, `UPDATE "cart" SET status='active', mode='solo', updated_at=NOW() WHERE cart_id = $1`, cartID); err != nil {
+		if _, err := q.Exec(ctx, `UPDATE "cart" SET status='active', mode='solo', updated_at=NOW() WHERE cart_id = $1`, cartID); err != nil {
 			return fmt.Errorf("reset cart status: %w", err)
 		}
 		return nil
@@ -142,9 +181,9 @@ func (r *cartRepo) ClearCart(ctx context.Context, cartID string) error {
 func (r *cartRepo) UpdateCartMode(ctx context.Context, cartID string, mode string) error {
 	payload := map[string]any{"mode": mode}
 
-	return r.execWithOutbox(ctx, cartID, "CartModeUpdated", payload, func(tx pgx.Tx) error {
+	return r.execWithOutbox(ctx, cartID, "CartModeUpdated", payload, func(q PgxQuerier) error {
 		query := `UPDATE "cart" SET mode = $1, updated_at = NOW() WHERE cart_id = $2`
-		res, err := tx.Exec(ctx, query, mode, cartID)
+		res, err := q.Exec(ctx, query, mode, cartID)
 		if err != nil {
 			return fmt.Errorf("update cart mode: %w", err)
 		}
@@ -291,43 +330,43 @@ func (r *cartRepo) GetCartByID(ctx context.Context, cartID string) (domain.Cart,
 }
 
 func (r *cartRepo) UpdateItemQuantity(ctx context.Context, cartID string, dishID int64, quantity int32) error {
-	return r.execWithOutbox(ctx, cartID, "ItemUpdated", map[string]any{"dish_id": dishID, "quantity": quantity}, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, `UPDATE "cart_dish" SET quantity = $1, updated_at = NOW() WHERE cart_id = $2 AND dish_id = $3`, quantity, cartID, dishID)
+	return r.execWithOutbox(ctx, cartID, "ItemUpdated", map[string]any{"dish_id": dishID, "quantity": quantity}, func(q PgxQuerier) error {
+		_, err := q.Exec(ctx, `UPDATE "cart_dish" SET quantity = $1, updated_at = NOW() WHERE cart_id = $2 AND dish_id = $3`, quantity, cartID, dishID)
 		return err
 	})
 }
 
 func (r *cartRepo) RemoveItem(ctx context.Context, cartID string, dishID int64) error {
-	return r.execWithOutbox(ctx, cartID, "ItemRemoved", map[string]any{"dish_id": dishID}, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, `DELETE FROM "cart_dish" WHERE cart_id = $1 AND dish_id = $2`, cartID, dishID)
+	return r.execWithOutbox(ctx, cartID, "ItemRemoved", map[string]any{"dish_id": dishID}, func(q PgxQuerier) error {
+		_, err := q.Exec(ctx, `DELETE FROM "cart_dish" WHERE cart_id = $1 AND dish_id = $2`, cartID, dishID)
 		return err
 	})
 }
 
 func (r *cartRepo) ReassignItemOwner(ctx context.Context, cartID string, dishID int64, newOwnerID *int64) error {
-	return r.execWithOutbox(ctx, cartID, "ItemReassigned", map[string]any{"dish_id": dishID, "new_owner_id": newOwnerID}, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, `UPDATE "cart_dish" SET owner_user_id = $1, updated_at = NOW() WHERE cart_id = $2 AND dish_id = $3`, newOwnerID, cartID, dishID)
+	return r.execWithOutbox(ctx, cartID, "ItemReassigned", map[string]any{"dish_id": dishID, "new_owner_id": newOwnerID}, func(q PgxQuerier) error {
+		_, err := q.Exec(ctx, `UPDATE "cart_dish" SET owner_user_id = $1, updated_at = NOW() WHERE cart_id = $2 AND dish_id = $3`, newOwnerID, cartID, dishID)
 		return err
 	})
 }
 
 func (r *cartRepo) OrphanUserItems(ctx context.Context, cartID string, targetUserID int64) error {
-	return r.execWithOutbox(ctx, cartID, "ItemsOrphaned", map[string]any{"user_id": targetUserID}, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, `UPDATE "cart_dish" SET owner_user_id = NULL WHERE cart_id = $1 AND owner_user_id = $2`, cartID, targetUserID)
+	return r.execWithOutbox(ctx, cartID, "ItemsOrphaned", map[string]any{"user_id": targetUserID}, func(q PgxQuerier) error {
+		_, err := q.Exec(ctx, `UPDATE "cart_dish" SET owner_user_id = NULL WHERE cart_id = $1 AND owner_user_id = $2`, cartID, targetUserID)
 		return err
 	})
 }
 
 func (r *cartRepo) AddMember(ctx context.Context, cartID string, userID int64) error {
-	return r.execWithOutbox(ctx, cartID, "MemberJoined", map[string]any{"user_id": userID}, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, `INSERT INTO "cart_member" (cart_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, cartID, userID)
+	return r.execWithOutbox(ctx, cartID, "MemberJoined", map[string]any{"user_id": userID}, func(q PgxQuerier) error {
+		_, err := q.Exec(ctx, `INSERT INTO "cart_member" (cart_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, cartID, userID)
 		return err
 	})
 }
 
 func (r *cartRepo) RemoveMember(ctx context.Context, cartID string, userID int64) error {
-	return r.execWithOutbox(ctx, cartID, "MemberKicked", map[string]any{"user_id": userID}, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, `DELETE FROM "cart_member" WHERE cart_id = $1 AND user_id = $2`, cartID, userID)
+	return r.execWithOutbox(ctx, cartID, "MemberKicked", map[string]any{"user_id": userID}, func(q PgxQuerier) error {
+		_, err := q.Exec(ctx, `DELETE FROM "cart_member" WHERE cart_id = $1 AND user_id = $2`, cartID, userID)
 		return err
 	})
 }
@@ -345,7 +384,16 @@ func (r *cartRepo) GetInviteByToken(ctx context.Context, token string) (domain.C
 	return invite, err
 }
 
-func (r *cartRepo) execWithOutbox(ctx context.Context, cartID string, eventType string, payload any, fn func(pgx.Tx) error) error {
+func (r *cartRepo) execWithOutbox(ctx context.Context, cartID string, eventType string, payload any, fn func(PgxQuerier) error) error {
+	q := r.getTxOrDB(ctx)
+
+	if _, isTx := q.(pgx.Tx); isTx {
+		if err := fn(q); err != nil {
+			return err
+		}
+		return insertOutboxEvent(ctx, q, cartID, eventType, payload)
+	}
+
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -413,4 +461,16 @@ func (r *cartRepo) CreateCart(ctx context.Context, adminID int64, brandID int64)
 	}
 
 	return cartID, nil
+}
+
+func (r *cartRepo) KickMemberAtomic(ctx context.Context, cartID string, targetUserID int64) error {
+	return r.WithTransaction(ctx, func(txCtx context.Context) error {
+		if err := r.RemoveMember(txCtx, cartID, targetUserID); err != nil {
+			return err
+		}
+		if err := r.OrphanUserItems(txCtx, cartID, targetUserID); err != nil {
+			return err
+		}
+		return nil
+	})
 }

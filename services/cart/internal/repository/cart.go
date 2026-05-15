@@ -8,6 +8,7 @@ import (
 
 //go:generate mockgen -destination=mocks/cart_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/repository CartRepository
 type CartRepository interface {
+	WithTransaction(ctx context.Context, fn func(txCtx context.Context) error) error
 	// Базовые операции с корзиной
 	GetCartByUserID(ctx context.Context, userID int64) (domain.Cart, error)
 	GetCartByID(ctx context.Context, cartID string) (domain.Cart, error)
@@ -29,5 +30,6 @@ type CartRepository interface {
 	GetInviteByToken(ctx context.Context, token string) (domain.CartInvite, error)
 	AddMember(ctx context.Context, cartID string, userID int64) error
 	RemoveMember(ctx context.Context, cartID string, userID int64) error
+	KickMemberAtomic(ctx context.Context, cartID string, targetUserID int64) error
 	DowngradeToSolo(ctx context.Context, cartID string, adminID int64) error
 }
