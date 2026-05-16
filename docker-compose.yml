@@ -153,6 +153,7 @@ services:
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - ./infrastructure/clickhouse/logs:/var/log/clickhouse-server
+      - ./infrastructure/clickhouse/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "localhost:8123/ping"]
       interval: 10s
