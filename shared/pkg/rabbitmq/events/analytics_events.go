@@ -3,7 +3,13 @@ package events
 //go:generate easyjson $GOFILE
 
 const (
-	QueueAnalytics = "queue.analytics.events"
+	ExchangeAnalytics = "exchange.analytics"
+
+	// Routing Keys для разных типов событий
+	RKOrderCreated = "analytics.order.created"
+	RKOrderStatus  = "analytics.order.status_changed"
+
+	QueueAnalytics = "queue.analytics.clickhouse"
 )
 
 // Структура для передачи заказа, соответствует orders_report_log
