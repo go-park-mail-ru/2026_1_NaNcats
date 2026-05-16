@@ -9,14 +9,9 @@ GATEWAY_PKG = ./api-gateway/cmd/api/main.go
 COVERAGE_FILE = coverage.out
 COVERAGE_HTML = coverage.html
 
-DB_USER ?= user
-DB_PASSWORD ?= password
 DB_HOST ?= localhost
 DB_PORT ?= 5432
 
-# Дефолты для брокеров / кэша. Чтобы локальный шелл с DATABASE_URL=...nancats или
-# другими env-переменными не «перебивал» yaml-конфиги микросервисов.
-# Можно переопределить через .env или через `make VAR=... run`.
 RABBITMQ_URL ?= amqp://guest:guest@localhost:5672/
 REDIS_URL ?= redis://localhost:6379/0
 
@@ -39,11 +34,6 @@ run-all:
 	@echo "Все сервисы запущены в фоне, логи и PID процессов в директории .tmp_pids/"
 
 # Запуск конкретного сервиса.
-#
-# Каждому сервису явно прокидываем DATABASE_URL/RABBITMQ_URL/REDIS_URL, чтобы
-# случайные env-переменные из шелла (например, `DATABASE_URL=postgres://...nancats`,
-# оставшаяся от другого окружения) не «перебивали» yaml-конфиги. Префикс `VAR=...`
-# у nohup переопределяет наследуемое значение для дочернего процесса.
 run:
 	@if [ -z "$(s)" ]; then echo "Укажите сервис"; exit 1; fi
 	@if [ -f .tmp_pids/$(s).pid ]; then echo "Сервис уже запущен"; exit 1; fi
@@ -80,9 +70,7 @@ stop-all:
 	done
 	@echo "Все сервисы остановлены"
 
-# Маппинг service -> port (нужен, чтобы при stop добить и дочерний бинарь,
-# который go run спавнит в процесс-обёртку. Без этого `make stop && make run`
-# оставляет старый бинарь висеть на порту, и новая версия кода не подхватывается).
+# Порты сервисов
 PORT_api-gateway = 8080
 PORT_address     = 50051
 PORT_user        = 50052
@@ -93,9 +81,7 @@ PORT_payment     = 50056
 PORT_order       = 50057
 PORT_support     = 50058
 
-# Остановка конкретного сервиса.
-# Убиваем И обёртку `go run` (по pid-файлу), И дочерний бинарь (по порту),
-# иначе при `make stop && make run` старый бинарь остаётся висеть.
+# Остановка конкретного сервиса
 stop:
 	@if [ -z "$(s)" ]; then echo "Укажите сервис"; exit 1; fi
 	@if [ -f .tmp_pids/$(s).pid ]; then \
@@ -233,7 +219,13 @@ migrate-down:
 	@echo "Migrating DOWN: $(s)..."
 	migrate -path ./services/$(s)/db/migrations -database "$(call get_db_url,$(s))" down
 
-CLICKHOUSE_URL = "clickhouse://$(CH_USER):$(CH_PASSWORD)@$(CH_HOST):$(CH_PORT)/$(CH_DB)?x-multi-statement=true"
+CH_HOST ?= localhost
+CH_PORT ?= 9000
+CH_DB   ?= analytics
+CH_USER     ?= $(CLICKHOUSE_USER)
+CH_PASSWORD ?= $(CLICKHOUSE_PASSWORD)
+
+CLICKHOUSE_URL = "clickhouse://$(CH_HOST):$(CH_PORT)/$(CH_DB)?username=$(CH_USER)&password=$(CH_PASSWORD)&x-multi-statement=true"
 
 # Создать миграцию для ClickHouse
 migrate-ch-create:
@@ -279,7 +271,6 @@ logs-tail:
 	docker logs -f --tail 100 go_backend
 
 # Очистить логи контейнеров
-# это требует прав sudo или доступа к папке docker
 logs-clear:
 	sudo sh -c "truncate -s 0 /var/lib/docker/containers/*/*-json.log"
 	rm -f .tmp_pids/*.log

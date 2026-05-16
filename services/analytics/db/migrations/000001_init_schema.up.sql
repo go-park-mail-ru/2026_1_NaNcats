@@ -1,3 +1,5 @@
+USE analytics;
+
 -- Таблица заказов
 CREATE TABLE IF NOT EXISTS orders_report_log (
     event_time DateTime64(3, 'Europe/Moscow'),
