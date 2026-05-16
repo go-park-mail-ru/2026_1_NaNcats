@@ -45,6 +45,7 @@ type LoginRequest struct {
 
 //easyjson:json
 type LoginResponse struct {
+	ID        int64  `json:"id" example:"42"`
 	Name      string `json:"name" example:"Иван"`
 	Email     string `json:"email" example:"ivan@example.com"`
 	AvatarURL string `json:"avatar_url" example:"users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"`
@@ -198,6 +199,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	response.SetCookie(w, "session_id", session.Id, session.ExpiresAt.AsTime())
 
 	response.JSON(w, http.StatusOK, LoginResponse{
+		ID:        session.UserId,
 		Name:      userResp.Name,
 		Email:     userResp.Email,
 		AvatarURL: userResp.AvatarUrl,
@@ -251,6 +253,7 @@ func (h *AuthHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.JSON(w, http.StatusOK, LoginResponse{
+		ID:        userID,
 		Name:      userResp.Name,
 		Email:     userResp.Email,
 		AvatarURL: userResp.AvatarUrl,

@@ -112,8 +112,9 @@ func TestCartRepo_AddItem(t *testing.T) {
 					WithArgs(cartID).
 					WillReturnRows(pgxmock.NewRows([]string{"status"}).AddRow("active"))
 
+				// owner_user_id входит в первичный ключ и передаётся как int64.
 				mock.ExpectExec(`INSERT INTO "cart_dish"`).
-					WithArgs(cartID, item.DishID, item.OwnerUserID, item.Quantity).
+					WithArgs(cartID, item.DishID, *item.OwnerUserID, item.Quantity).
 					WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 				mock.ExpectExec(`INSERT INTO "outbox_events"`).

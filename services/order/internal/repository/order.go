@@ -17,7 +17,7 @@ type OrderRepository interface {
 	GetOrdersByUserID(ctx context.Context, userID int64, limit, offset int32) ([]domain.Order, error)
 	UpdateOrderStatus(ctx context.Context, publicID string, newStatus string, expectedStatuses ...string) error
 
-	UpdateSplitStatusByPaymentID(ctx context.Context, yookassaPaymentID, newStatus string) (string, error)
+	UpdateSplitStatusByPaymentID(ctx context.Context, yookassaPaymentID, newStatus string) (splitID string, orderPublicID string, err error)
 	UpdateSplitStatus(ctx context.Context, splitID string, newStatus string) error
 	AreAllSplitsPaid(ctx context.Context, orderPublicID string) (bool, error)
 	SetSplitYookassaID(ctx context.Context, splitID string, yookassaID string) error

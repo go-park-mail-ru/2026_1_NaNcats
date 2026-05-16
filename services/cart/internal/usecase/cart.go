@@ -419,19 +419,15 @@ func (u *cartUseCase) RemoveItem(ctx context.Context, cartID string, userID, dis
 		return err
 	}
 
-	item := cart.GetItem(dishID)
+	// Каждый участник управляет только своими позициями: берём позицию
+	// инициатора запроса (одно блюдо может быть у нескольких участников).
+	item := cart.GetItem(dishID, userID)
 	if item == nil {
 		span.AddEvent("item_already_absent") // Событие для идемпотентного выхода
 		return nil
 	}
 
-	if cart.AdminID != userID {
-		if item.OwnerUserID == nil || *item.OwnerUserID != userID {
-			return domain.ErrForbidden
-		}
-	}
-
-	return u.cartRepo.RemoveItem(ctx, cartID, dishID)
+	return u.cartRepo.RemoveItem(ctx, cartID, dishID, userID)
 }
 
 func (u *cartUseCase) UpdateItemQuantity(ctx context.Context, cartID string, userID, dishID int64, qty int32, idempotencyKey string) error {
@@ -452,20 +448,14 @@ func (u *cartUseCase) UpdateItemQuantity(ctx context.Context, cartID string, use
 		return err
 	}
 
-	item := cart.GetItem(dishID)
+	// Меняем только свою позицию блюда: у каждого участника она своя.
+	item := cart.GetItem(dishID, userID)
 	if item == nil {
 		span.AddEvent("item_not_found_in_cart")
 		return domain.ErrDishNotFound
 	}
 
-	// Гость не может менять чужое или ничейное
-	if cart.AdminID != userID {
-		if item.OwnerUserID == nil || *item.OwnerUserID != userID {
-			return domain.ErrForbidden
-		}
-	}
-
-	return u.cartRepo.UpdateItemQuantity(ctx, cartID, dishID, qty)
+	return u.cartRepo.UpdateItemQuantity(ctx, cartID, dishID, userID, qty)
 }
 
 func (u *cartUseCase) ReassignItemOwner(ctx context.Context, cartID string, adminID, dishID int64, newOwnerID *int64, idempotencyKey string) error {

@@ -67,12 +67,11 @@ func TestOrderRepo_CreateOrder(t *testing.T) {
 
 				b := mock.ExpectBatch()
 
-				ownerID := int64(1)
 				pmID := "pm-123"
 
-				// 3. Вставка блюд (добавилось поле dish_name)
+				// 3. Вставка блюд (owner_user_id передаётся как int64)
 				b.ExpectExec(`INSERT INTO "order_dish"`).
-					WithArgs(int64(42), int64(100), "Burger", 2, int64(500), &ownerID).
+					WithArgs(int64(42), int64(100), "Burger", 2, int64(500), int64(1)).
 					WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 				// 4. Вставка сплитов

@@ -218,6 +218,12 @@ func easyjson4a0f95aaDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		key := in.UnsafeFieldName(false)
 		in.WantColon()
 		switch key {
+		case "id":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.ID = int64(in.Int64())
+			}
 		case "name":
 			if in.IsNull() {
 				in.Skip()
@@ -257,8 +263,13 @@ func easyjson4a0f95aaEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 	first := true
 	_ = first
 	{
-		const prefix string = ",\"name\":"
+		const prefix string = ",\"id\":"
 		out.RawString(prefix[1:])
+		out.Int64(int64(in.ID))
+	}
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix)
 		out.String(string(in.Name))
 	}
 	{
