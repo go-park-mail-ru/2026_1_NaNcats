@@ -20,10 +20,12 @@ type CartRepository interface {
 	SetCartRestaurantBrand(ctx context.Context, cartID string, brandID int64) error
 	GetActiveCartByUserID(ctx context.Context, userID int64) (domain.Cart, error)
 	CreateCart(ctx context.Context, adminID int64, brandID int64) (string, error)
-	// Гранулярные операции с позициями
+	// Гранулярные операции с позициями. В совместной корзине одно блюдо может
+	// быть у нескольких участников отдельными строками, поэтому позиция
+	// адресуется парой (dishID, ownerID).
 	AddItem(ctx context.Context, cartID string, item domain.CartItem) error
-	RemoveItem(ctx context.Context, cartID string, dishID int64) error
-	UpdateItemQuantity(ctx context.Context, cartID string, dishID int64, quantity int32) error
+	RemoveItem(ctx context.Context, cartID string, dishID, ownerID int64) error
+	UpdateItemQuantity(ctx context.Context, cartID string, dishID, ownerID int64, quantity int32) error
 	ReassignItemOwner(ctx context.Context, cartID string, dishID int64, newOwnerID *int64) error
 	OrphanUserItems(ctx context.Context, cartID string, targetUserID int64) error // Делает позиции кикнутого юзера ничейными
 	// Управление Shared Cart

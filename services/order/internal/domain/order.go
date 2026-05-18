@@ -4,7 +4,8 @@ import "time"
 
 type OrderSplit struct {
 	ID                string
-	OrderID           int64
+	OrderID           int64  // Внутренний id заказа
+	OrderPublicID     string // Публичный UUID заказа (для саги и WS-маршрутизации)
 	UserID            int64
 	BaseAmount        int64
 	DiscountAmount    int64

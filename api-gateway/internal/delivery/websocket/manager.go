@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
@@ -19,8 +20,9 @@ type Room struct {
 }
 
 type WsManager struct {
-	orderConns sync.Map
+	orderRooms sync.Map
 	cartRooms  sync.Map
+	connSeq    atomic.Int64
 	redisPool  *redis.Pool
 	channel    string
 	logger     logger.Logger
@@ -34,26 +36,28 @@ func NewWsManager(rp *redis.Pool, channel string, l logger.Logger) *WsManager {
 	}
 }
 
+// AddOrderConnection подключает зрителя к комнате заказа. Комната допускает
+// несколько соединений одновременно: организатор и участники совместного
+// заказа смотрят его параллельно, поэтому новое подключение не вытесняет уже
+// открытые.
 func (m *WsManager) AddOrderConnection(orderID string, conn *websocket.Conn) {
-	if oldConn, ok := m.orderConns.LoadAndDelete(orderID); ok {
-		err := oldConn.(*websocket.Conn).Close()
-		if err != nil {
-			m.logger.Warn("error while closing old order connection", logger.Err(err))
-		}
-	}
+	val, _ := m.orderRooms.LoadOrStore(orderID, &Room{clients: make(map[int64]*websocket.Conn)})
+	room := val.(*Room)
 
+	connID := m.connSeq.Add(1)
+
+	room.mu.Lock()
+	room.clients[connID] = conn
+	room.mu.Unlock()
+
+	// Новому зрителю сразу отдаём последнее событие заказа из кэша.
 	rc := m.redisPool.Get()
 	cachedMsg, err := redis.Bytes(rc.Do("GET", "ws_cache:order:"+orderID))
 	rc.Close()
-
 	if err == nil && len(cachedMsg) > 0 {
-		m.logger.Info("CACHE HIT")
 		_ = conn.WriteMessage(websocket.TextMessage, cachedMsg)
-	} else {
-		m.logger.Info("CACHE MISS")
 	}
 
-	m.orderConns.Store(orderID, conn)
 	m.logger.Info("Order WebSocket connected", logger.String("order_id", orderID))
 
 	go func() {
@@ -66,21 +70,49 @@ func (m *WsManager) AddOrderConnection(orderID string, conn *websocket.Conn) {
 		}
 	}()
 
-	go m.readOrderPump(orderID, conn)
+	go m.readOrderPump(orderID, connID, conn)
 }
 
-func (m *WsManager) RemoveOrderConnection(orderID string) {
-	if conn, ok := m.orderConns.LoadAndDelete(orderID); ok {
-		err := conn.(*websocket.Conn).Close()
-		if err != nil {
-			m.logger.Warn("error while closing old order connection", logger.Err(err))
-		}
+func (m *WsManager) RemoveOrderConnection(orderID string, connID int64) {
+	val, ok := m.orderRooms.Load(orderID)
+	if !ok {
+		return
+	}
+	room := val.(*Room)
+
+	room.mu.Lock()
+	if conn, exists := room.clients[connID]; exists {
+		_ = conn.Close()
+		delete(room.clients, connID)
 		m.logger.Info("Order WebSocket disconnected", logger.String("order_id", orderID))
+	}
+	isEmpty := len(room.clients) == 0
+	room.mu.Unlock()
+
+	if isEmpty {
+		m.orderRooms.Delete(orderID)
 	}
 }
 
-func (m *WsManager) readOrderPump(orderID string, conn *websocket.Conn) {
-	defer m.RemoveOrderConnection(orderID)
+// closeOrderRoom закрывает все соединения комнаты заказа и удаляет её. Нужен
+// при терминальном статусе заказа, когда обновлять больше нечего.
+func (m *WsManager) closeOrderRoom(orderID string) {
+	val, ok := m.orderRooms.LoadAndDelete(orderID)
+	if !ok {
+		return
+	}
+	room := val.(*Room)
+
+	room.mu.Lock()
+	for _, conn := range room.clients {
+		_ = conn.Close()
+	}
+	room.clients = make(map[int64]*websocket.Conn)
+	room.mu.Unlock()
+}
+
+func (m *WsManager) readOrderPump(orderID string, connID int64, conn *websocket.Conn) {
+	defer m.RemoveOrderConnection(orderID, connID)
 	conn.SetReadLimit(512)
 
 	conn.SetPongHandler(func(string) error {
@@ -265,24 +297,23 @@ func (m *WsManager) deliverToLocalSocket(event events.GatewayEvent) error {
 	}
 
 	if event.OrderID != "" {
-		if val, ok := m.orderConns.Load(event.OrderID); ok {
-			conn := val.(*websocket.Conn)
+		if val, ok := m.orderRooms.Load(event.OrderID); ok {
+			room := val.(*Room)
 
-			err = conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
-			if err != nil {
-				m.logger.Error("failed to set write deadline for order socket", err)
-				return err
+			room.mu.RLock()
+			for connID, conn := range room.clients {
+				if err := conn.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
+					m.logger.Warn("Failed to set write deadline for order socket", logger.Int("conn_id", int(connID)))
+					continue
+				}
+				if err := conn.WriteMessage(websocket.TextMessage, msgBytes); err != nil {
+					m.logger.Warn("Failed to write to order websocket", logger.Err(err))
+				}
 			}
-
-			err = conn.WriteMessage(websocket.TextMessage, msgBytes)
-			if err != nil {
-				m.logger.Warn("Failed to write to order websocket", logger.Err(err))
-				m.RemoveOrderConnection(event.OrderID)
-				return err
-			}
+			room.mu.RUnlock()
 
 			if event.Status == "finished" || event.Status == "cancelled" || event.Status == "failed" {
-				m.RemoveOrderConnection(event.OrderID)
+				m.closeOrderRoom(event.OrderID)
 			}
 		}
 	}

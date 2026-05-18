@@ -53,6 +53,7 @@ message Order {
   repeated OrderSplit splits = 7;
   optional string applied_promocode = 8;
   optional int64 discount_amount = 9;
+  int64 restaurant_brand_id = 10;
 }
 
 message CreateOrderRequest {

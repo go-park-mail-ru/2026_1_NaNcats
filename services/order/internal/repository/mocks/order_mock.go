@@ -266,12 +266,13 @@ func (mr *MockOrderRepositoryMockRecorder) UpdateSplitStatus(ctx, splitID, newSt
 }
 
 // UpdateSplitStatusByPaymentID mocks base method.
-func (m *MockOrderRepository) UpdateSplitStatusByPaymentID(ctx context.Context, yookassaPaymentID, newStatus string) (string, error) {
+func (m *MockOrderRepository) UpdateSplitStatusByPaymentID(ctx context.Context, yookassaPaymentID, newStatus string) (string, string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateSplitStatusByPaymentID", ctx, yookassaPaymentID, newStatus)
 	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // UpdateSplitStatusByPaymentID indicates an expected call of UpdateSplitStatusByPaymentID.

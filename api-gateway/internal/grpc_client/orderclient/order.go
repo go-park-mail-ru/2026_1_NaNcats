@@ -148,15 +148,14 @@ func (c *orderClient) GetOrders(ctx context.Context, userID int64, limit, offset
 		}
 
 		orders = append(orders, Order{
-			PublicID:       pbO.PublicId,
-			RestaurantName: pbO.RestaurantName,
-			TotalCost:      pbO.TotalCost,
-			Promocode:      pbO.AppliedPromocode,
-			DiscountAmount: pbO.GetDiscountAmount(),
-			Status:         pbO.Status,
-			CreatedAt:      pbO.CreatedAt.AsTime(),
-			Items:          items,
-			Splits:         splits,
+			PublicID:          pbO.PublicId,
+			RestaurantBrandID: pbO.RestaurantBrandId,
+			RestaurantName:    pbO.RestaurantName,
+			TotalCost:         pbO.TotalCost,
+			Status:            pbO.Status,
+			CreatedAt:         pbO.CreatedAt.AsTime(),
+			Items:             items,
+			Splits:            splits,
 		})
 	}
 

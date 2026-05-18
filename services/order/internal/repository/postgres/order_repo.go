@@ -141,7 +141,12 @@ func (r *orderRepo) CreateOrder(ctx context.Context, order domain.Order, idempot
 			VALUES ($1, $2, $3, $4, $5, $6)
 		`
 		for _, item := range order.Items {
-			batch.Queue(dishQuery, orderID, item.DishID, item.Name, item.Quantity, item.Price, item.OwnerUserID)
+			// owner_user_id входит в первичный ключ и не бывает NULL: ничьё сохраняем как 0.
+			ownerID := int64(0)
+			if item.OwnerUserID != nil {
+				ownerID = *item.OwnerUserID
+			}
+			batch.Queue(dishQuery, orderID, item.DishID, item.Name, item.Quantity, item.Price, ownerID)
 		}
 	}
 
@@ -181,23 +186,25 @@ func (r *orderRepo) CreateOrder(ctx context.Context, order domain.Order, idempot
 	return orderID, orderPublicID, nil
 }
 
-func (r *orderRepo) UpdateSplitStatusByPaymentID(ctx context.Context, yookassaPaymentID, newStatus string) (string, error) {
+// UpdateSplitStatusByPaymentID помечает долю счёта по её платежу в YooKassa и
+// возвращает идентификатор самой доли и публичный идентификатор заказа.
+func (r *orderRepo) UpdateSplitStatusByPaymentID(ctx context.Context, yookassaPaymentID, newStatus string) (string, string, error) {
 	query := `
 		UPDATE "order_split"
 		SET status = $1, updated_at = NOW()
 		WHERE yookassa_payment_id = $2
-		RETURNING (SELECT public_id FROM "order" WHERE id = "order_split".order_id);
+		RETURNING id, (SELECT public_id FROM "order" WHERE id = "order_split".order_id);
 	`
-	var splitID string
-	err := r.pool.QueryRow(ctx, query, newStatus, yookassaPaymentID).Scan(&splitID)
+	var splitID, orderPublicID string
+	err := r.pool.QueryRow(ctx, query, newStatus, yookassaPaymentID).Scan(&splitID, &orderPublicID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return "", errors.New("split not found by payment ID")
+			return "", "", errors.New("split not found by payment ID")
 		}
-		return "", fmt.Errorf("update split status: %w", err)
+		return "", "", fmt.Errorf("update split status: %w", err)
 	}
 
-	return splitID, nil
+	return splitID, orderPublicID, nil
 }
 
 func (r *orderRepo) AreAllSplitsPaid(ctx context.Context, orderPublicID string) (bool, error) {
@@ -254,13 +261,16 @@ func (r *orderRepo) SetSplitYookassaID(ctx context.Context, splitID string, yook
 
 func (r *orderRepo) GetSplitByID(ctx context.Context, splitID string) (domain.OrderSplit, error) {
 	query := `
-		SELECT id, order_id, user_id, amount, status, payment_method_id, yookassa_payment_id, created_at, updated_at 
-		FROM "order_split" WHERE id = $1
+		SELECT s.id, s.order_id, s.user_id, s.amount, s.status, s.payment_method_id,
+		       s.yookassa_payment_id, s.created_at, s.updated_at, o.public_id
+		FROM "order_split" s
+		JOIN "order" o ON o.id = s.order_id
+		WHERE s.id = $1
 	`
 	var s domain.OrderSplit
 	err := r.pool.QueryRow(ctx, query, splitID).Scan(
 		&s.ID, &s.OrderID, &s.UserID, &s.Amount, &s.Status,
-		&s.PaymentMethodID, &s.YookassaPaymentID, &s.CreatedAt, &s.UpdatedAt,
+		&s.PaymentMethodID, &s.YookassaPaymentID, &s.CreatedAt, &s.UpdatedAt, &s.OrderPublicID,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -314,6 +324,9 @@ func (r *orderRepo) GetOrderByPublicID(ctx context.Context, publicID string) (do
 	if courierID != nil {
 		o.CourierID = *courierID
 	}
+	// PromocodeID в домене это *int64 (необязательный FK): прокидываем
+	// указатель как есть, без разыменования.
+	o.PromocodeID = promoID
 
 	dishQuery := `SELECT dish_id, dish_name, quantity, price, owner_user_id FROM "order_dish" WHERE order_id = $1`
 	dishRows, _ := r.pool.Query(ctx, dishQuery, o.ID)

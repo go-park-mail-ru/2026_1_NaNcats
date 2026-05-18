@@ -3,9 +3,6 @@ package usecase
 import (
 	"context"
 	"errors"
-	"fmt"
-	"math/big"
-	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository"
@@ -34,6 +31,10 @@ const (
 	SplitStatusPaid      = "paid"
 	SplitStatusFailed    = "failed"
 	SplitStatusCancelled = "cancelled"
+
+	// StatusSplitPaid не является статусом заказа: это сигнал фронту об
+	// оплате одной доли счёта, по нему модалка помечает долю оплаченной.
+	StatusSplitPaid = "split_paid"
 )
 
 //go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase OrderUseCase,CartClient,AddressClient,RestaurantClient,MessagePublisher
@@ -401,11 +402,21 @@ func (o *orderUseCase) UpdateOrderStatusByPaymentID(ctx context.Context, payment
 		return nil
 	}
 
-	orderPublicID, err := o.orderRepo.UpdateSplitStatusByPaymentID(ctx, paymentID, SplitStatusPaid)
+	splitID, orderPublicID, err := o.orderRepo.UpdateSplitStatusByPaymentID(ctx, paymentID, SplitStatusPaid)
 	if err != nil {
 		return err
 	}
-	span.SetAttributes(attribute.String("order.public_id", orderPublicID))
+	span.SetAttributes(
+		attribute.String("order.public_id", orderPublicID),
+		attribute.String("split.id", splitID),
+	)
+
+	// Отдельным событием сообщаем фронту, что эта доля счёта оплачена.
+	_ = o.rabbitPublisher.PublishJSON(ctx, events.QueueGatewayEvents, events.GatewayEvent{
+		OrderID: orderPublicID,
+		SplitID: splitID,
+		Status:  StatusSplitPaid,
+	})
 
 	allPaid, err := o.orderRepo.AreAllSplitsPaid(ctx, orderPublicID)
 	if err != nil {
@@ -458,8 +469,10 @@ func (o *orderUseCase) PayForFriend(ctx context.Context, splitID string, adminID
 		return errutil.Wrap("CANNOT_REASSIGN", "failed to reassign split", err, codes.InvalidArgument)
 	}
 
+	// В сагу передаём публичный UUID заказа: по нему gateway находит нужный
+	// WebSocket-канал. С внутренним числовым id событие оплаты не дойдёт.
 	payCmd := events.SagaCommand{
-		OrderID:         fmt.Sprintf("%d", split.OrderID),
+		OrderID:         split.OrderPublicID,
 		SplitID:         split.ID,
 		UserID:          adminID,
 		Action:          events.CommandCreatePayment,

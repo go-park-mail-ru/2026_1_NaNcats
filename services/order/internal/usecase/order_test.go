@@ -376,8 +376,11 @@ func TestOrderUseCase_UpdateOrderStatusByPaymentID(t *testing.T) {
 			paymentID: "pay-2",
 			status:    "succeeded",
 			mockInit: func(d useCaseDeps) {
-				d.repo.EXPECT().UpdateSplitStatusByPaymentID(gomock.Any(), "pay-2", SplitStatusPaid).Return("pub-order", nil)
+				d.repo.EXPECT().UpdateSplitStatusByPaymentID(gomock.Any(), "pay-2", SplitStatusPaid).Return("split-2", "pub-order", nil)
 				d.repo.EXPECT().AreAllSplitsPaid(gomock.Any(), "pub-order").Return(false, nil)
+
+				// Ивент об оплате конкретной доли уходит всегда
+				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueGatewayEvents, gomock.Any()).Return(nil)
 			},
 			expectedErr: false,
 		},
@@ -386,12 +389,12 @@ func TestOrderUseCase_UpdateOrderStatusByPaymentID(t *testing.T) {
 			paymentID: "pay-3",
 			status:    "succeeded",
 			mockInit: func(d useCaseDeps) {
-				d.repo.EXPECT().UpdateSplitStatusByPaymentID(gomock.Any(), "pay-3", SplitStatusPaid).Return("pub-order", nil)
+				d.repo.EXPECT().UpdateSplitStatusByPaymentID(gomock.Any(), "pay-3", SplitStatusPaid).Return("split-3", "pub-order", nil)
 				d.repo.EXPECT().AreAllSplitsPaid(gomock.Any(), "pub-order").Return(true, nil)
 				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-order", StatusPaid, StatusCreated, StatusCartLocked, StatusPaymentReady).Return(nil)
 
-				// Должен уйти ивент в RabbitMQ
-				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueGatewayEvents, gomock.Any()).Return(nil)
+				// Ивент об оплате доли и ивент о полной оплате заказа
+				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueGatewayEvents, gomock.Any()).Return(nil).Times(2)
 			},
 			expectedErr: false,
 		},

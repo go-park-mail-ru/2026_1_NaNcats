@@ -468,31 +468,15 @@ func (u *cartUseCase) RemoveItem(ctx context.Context, cartID string, userID, dis
 			return err
 		}
 
-		cart, err := u.cartRepo.GetCartByID(txCtx, cartID)
-		if err != nil {
-			return err
-		}
-
-		item := cart.GetItem(dishID)
-		if item == nil {
-			span.AddEvent("item_already_absent")
-			return nil
-		}
-
-		if cart.AdminID != userID {
-			if item.OwnerUserID == nil || *item.OwnerUserID != userID {
-				return domain.ErrForbidden
-			}
-		}
-
-		return u.cartRepo.RemoveItem(txCtx, cartID, dishID)
-	})
-
-	if errors.Is(err, domain.ErrIdempotencyConflict) {
-		span.AddEvent("idempotency_hit_skipping")
+	// Каждый участник управляет только своими позициями: берём позицию
+	// инициатора запроса (одно блюдо может быть у нескольких участников).
+	item := cart.GetItem(dishID, userID)
+	if item == nil {
+		span.AddEvent("item_already_absent") // Событие для идемпотентного выхода
 		return nil
 	}
-	return err
+
+	return u.cartRepo.RemoveItem(ctx, cartID, dishID, userID)
 }
 
 func (u *cartUseCase) UpdateItemQuantity(ctx context.Context, cartID string, userID, dishID int64, qty int32, idempotencyKey string) error {
@@ -508,36 +492,19 @@ func (u *cartUseCase) UpdateItemQuantity(ctx context.Context, cartID string, use
 		return domain.ErrInvalidQuantity
 	}
 
-	err := u.cartRepo.WithTransaction(ctx, func(txCtx context.Context) error {
-		if err := u.cartRepo.CheckAndSaveIdempotency(txCtx, userID, idempotencyKey, "UpdateItemQuantity"); err != nil {
-			return err
-		}
-
-		cart, err := u.cartRepo.GetCartByID(txCtx, cartID)
-		if err != nil {
-			return err
-		}
-
-		item := cart.GetItem(dishID)
-		if item == nil {
-			span.AddEvent("item_not_found_in_cart")
-			return domain.ErrDishNotFound
-		}
-
-		if cart.AdminID != userID {
-			if item.OwnerUserID == nil || *item.OwnerUserID != userID {
-				return domain.ErrForbidden
-			}
-		}
-
-		return u.cartRepo.UpdateItemQuantity(txCtx, cartID, dishID, qty)
-	})
-
-	if errors.Is(err, domain.ErrIdempotencyConflict) {
-		span.AddEvent("idempotency_hit_skipping")
-		return nil
+	cart, err := u.cartRepo.GetCartByID(ctx, cartID)
+	if err != nil {
+		return err
 	}
-	return err
+
+	// Меняем только свою позицию блюда: у каждого участника она своя.
+	item := cart.GetItem(dishID, userID)
+	if item == nil {
+		span.AddEvent("item_not_found_in_cart")
+		return domain.ErrDishNotFound
+	}
+
+	return u.cartRepo.UpdateItemQuantity(ctx, cartID, dishID, userID, qty)
 }
 
 func (u *cartUseCase) ReassignItemOwner(ctx context.Context, cartID string, adminID, dishID int64, newOwnerID *int64, idempotencyKey string) error {
