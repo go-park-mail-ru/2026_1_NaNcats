@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package user;
+
+option go_package = "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/user";
+
+// Микросервис игры (Модуль внутри User)
+service WordleService {
+  // Метод получения текущего состояния игры за сегодня
+  rpc GetDailyWordleState (GetDailyWordleStateRequest) returns (GetDailyWordleStateResponse); 
+  // Метод применения попытки (угадывание слова)
+  rpc MakeWordleGuess (MakeWordleGuessRequest) returns (MakeWordleGuessResponse);
+}
+
+enum GameStatus {
+  GAME_STATUS_UNSPECIFIED = 0;
+  GAME_STATUS_PLAYING = 1;
+  GAME_STATUS_WON = 2;
+  GAME_STATUS_LOST = 3;
+}
+
+enum LetterState {
+  LETTER_STATE_UNSPECIFIED = 0;
+  LETTER_STATE_CORRECT = 1;
+  LETTER_STATE_PRESENT = 2;
+  LETTER_STATE_ABSENT = 3;
+}
+
+message WordleGuessResult {
+  string word = 1;
+  repeated LetterState letters = 2; 
+}
+
+message GetDailyWordleStateRequest {
+  int64 user_id = 1;
+}
+
+message GetDailyWordleStateResponse {
+  int32 word_length = 1;
+  int32 max_attempts = 2;
+  GameStatus status = 3;
+  repeated WordleGuessResult guesses = 4;
+}
+
+message MakeWordleGuessRequest {
+  int64 user_id = 1;
+  string guess = 2;
+  string idempotency_key = 3;
+}
+
+message MakeWordleGuessResponse {
+  GameStatus status = 1;
+  WordleGuessResult guess_result = 2;
+  int64 bonus_awarded = 3;
+}
