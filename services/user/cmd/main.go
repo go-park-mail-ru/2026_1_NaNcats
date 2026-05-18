@@ -130,6 +130,7 @@ func main() {
 	)
 
 	pb.RegisterUserServiceServer(grpcServer, userHandler)
+	pb.RegisterWordleServiceServer(grpcServer, gameHandler)
 	reflection.Register(grpcServer)
 
 	listener, err := net.Listen("tcp", ":"+cfg.GRPC.Port)
