@@ -206,18 +206,18 @@ func easyjsonDdb0949aDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			} else {
 				out.DishID = int64(in.Int64())
 			}
-		case "new_owner_public_id":
+		case "new_owner_id":
 			if in.IsNull() {
 				in.Skip()
-				out.NewOwnerPublicID = nil
+				out.NewOwnerID = nil
 			} else {
-				if out.NewOwnerPublicID == nil {
-					out.NewOwnerPublicID = new(string)
+				if out.NewOwnerID == nil {
+					out.NewOwnerID = new(int64)
 				}
 				if in.IsNull() {
 					in.Skip()
 				} else {
-					*out.NewOwnerPublicID = string(in.String())
+					*out.NewOwnerID = int64(in.Int64())
 				}
 			}
 		default:
@@ -245,12 +245,12 @@ func easyjsonDdb0949aEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		out.Int64(int64(in.DishID))
 	}
 	{
-		const prefix string = ",\"new_owner_public_id\":"
+		const prefix string = ",\"new_owner_id\":"
 		out.RawString(prefix)
-		if in.NewOwnerPublicID == nil {
+		if in.NewOwnerID == nil {
 			out.RawString("null")
 		} else {
-			out.String(string(*in.NewOwnerPublicID))
+			out.Int64(int64(*in.NewOwnerID))
 		}
 	}
 	out.RawByte('}')
@@ -299,11 +299,11 @@ func easyjsonDdb0949aDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			} else {
 				out.CartID = string(in.String())
 			}
-		case "target_public_id":
+		case "target_user_id":
 			if in.IsNull() {
 				in.Skip()
 			} else {
-				out.TargetPublicID = string(in.String())
+				out.TargetUserID = int64(in.Int64())
 			}
 		default:
 			in.SkipRecursive()
@@ -325,9 +325,9 @@ func easyjsonDdb0949aEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		out.String(string(in.CartID))
 	}
 	{
-		const prefix string = ",\"target_public_id\":"
+		const prefix string = ",\"target_user_id\":"
 		out.RawString(prefix)
-		out.String(string(in.TargetPublicID))
+		out.Int64(int64(in.TargetUserID))
 	}
 	out.RawByte('}')
 }
