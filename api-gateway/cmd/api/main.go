@@ -34,6 +34,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/addressclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/authclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/cartclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/gameclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/orderclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/paymentclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/restaurantclient"
@@ -155,6 +156,7 @@ func main() {
 
 	authClient := authclient.NewAuthClient(pbAuth.NewAuthServiceClient(authConn))
 	userClient := userclient.NewUserClient(pbUser.NewUserServiceClient(userConn))
+	gameClient := gameclient.NewGameClient(pbUser.NewWordleServiceClient(userConn))
 	restClient := restaurantclient.NewRestaurantClient(pbRestaurant.NewRestaurantServiceClient(restConn))
 	cartClient := cartclient.NewCartClient(pbCart.NewCartServiceClient(cartConn))
 	addrClient := addressclient.NewAddressClient(pbAddress.NewAddressServiceClient(addrConn))
@@ -173,6 +175,7 @@ func main() {
 
 	authHandler := authHttp.NewAuthHandler(authClient, userClient, appLogger, validate)
 	userProfileHandler := userHttp.NewUserProfileHandler(userClient, appLogger)
+	gameHandler := gameHttp.NewGameHandler(gameClient, appLogger)
 	restaurantHandler := restaurantHttp.NewRestaurantHandler(restClient, appLogger)
 	cartHandler := cartHttp.NewCartHandler(cartClient, userClient, wsManager, appLogger)
 	addressHandler := addressHttp.NewAddressHandler(addrClient, appLogger)
@@ -209,6 +212,10 @@ func main() {
 	mux.Handle("PATCH /api/profile", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(userProfileHandler.UpdateProfile))))
 	mux.Handle("POST /api/profile/avatar", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(userProfileHandler.UpdateAvatar))))
 	mux.Handle("DELETE /api/profile/avatar", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(userProfileHandler.DeleteAvatar))))
+
+	// === GAME (5 БУКВ) ===
+	mux.Handle("GET /api/game/wordle", authMW.RequireAuth(http.HandlerFunc(gameHandler.GetDailyWordleState)))
+	mux.Handle("POST /api/game/wordle/guess", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(gameHandler.MakeWordleGuess))))
 
 	// === ADMIN ===
 	mux.Handle("POST /api/admin/users/role",
