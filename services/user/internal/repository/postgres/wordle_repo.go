@@ -154,7 +154,11 @@ func (r *wordleRepo) SaveGuessWithTransaction(ctx context.Context, guess domain.
 			INSERT INTO "wordle_streak" (user_id, current_streak, last_played)
 			VALUES ($1, 1, $2)
 			ON CONFLICT (user_id) DO UPDATE 
-			SET current_streak = wordle_streak.current_streak + 1,
+			SET current_streak = CASE 
+			        WHEN "wordle_streak".last_played = EXCLUDED.last_played - 1 THEN "wordle_streak".current_streak + 1
+			        WHEN "wordle_streak".last_played = EXCLUDED.last_played THEN "wordle_streak".current_streak
+			        ELSE 1 
+			    END,
 			    last_played = EXCLUDED.last_played,
 			    updated_at = NOW()
 		`
@@ -176,11 +180,14 @@ func (r *wordleRepo) SaveGuessWithTransaction(ctx context.Context, guess domain.
 
 	if isLoss {
 		updateStreakLossQuery := `
-			UPDATE "wordle_streak"
-			SET current_streak = 0, last_played = $1, updated_at = NOW()
-			WHERE user_id = $2
+			INSERT INTO "wordle_streak" (user_id, current_streak, last_played)
+			VALUES ($1, 0, $2)
+			ON CONFLICT (user_id) DO UPDATE 
+			SET current_streak = 0, 
+			    last_played = EXCLUDED.last_played, 
+			    updated_at = NOW()
 		`
-		_, err = tx.Exec(ctx, updateStreakLossQuery, dateStr, guess.UserID)
+		_, err = tx.Exec(ctx, updateStreakLossQuery, guess.UserID, dateStr)
 		if err != nil {
 			return err
 		}
