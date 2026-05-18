@@ -20,12 +20,6 @@ type WordleUseCase interface {
 	MakeGuess(ctx context.Context, userID int64, guess string, idempotencyKey string) (domain.MakeWordleGuessResult, error)
 }
 
-type MakeWordleGuessResult struct {
-	Status       domain.GameStatus
-	GuessResult  domain.WordleGuessResult
-	BonusAwarded int64
-}
-
 type wordleUseCase struct {
 	repo   repository.WordleRepository
 	logger logger.Logger

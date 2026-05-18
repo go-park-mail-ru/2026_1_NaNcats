@@ -52,3 +52,9 @@ type DailyGameState struct {
 	Status  GameStatus
 	Guesses []WordleGuessResult
 }
+
+type MakeWordleGuessResult struct {
+	Status       GameStatus
+	GuessResult  WordleGuessResult
+	BonusAwarded int64
+}
