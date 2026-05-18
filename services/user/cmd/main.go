@@ -86,6 +86,7 @@ func main() {
 
 	userRepo := userPG.NewUserRepo(pool)
 	clientProfileRepo := userPG.NewClientProfileRepo(pool)
+	wordleRepo := userPG.NewWordleRepo(pool)
 
 	rabbitClient, err := rabbitmq.NewRabbitClient(cfg.RabbitMQURL, appLogger)
 	if err != nil {
@@ -95,10 +96,14 @@ func main() {
 
 	userUC := userUsecase.NewUserUseCase(userRepo, s3Repo, cfg.DefaultAvatarURL, rabbitClient, appLogger)
 	tracedUserUC := usecase.NewUserUseCaseTracingMiddleware(userUC)
+	wordleUC := usecase.NewWordleUseCase(wordleRepo, appLogger)
+
 	clientProfileUC := userUsecase.NewClientProfileUseCase(clientProfileRepo)
 	tracedProfileUC := usecase.NewClientProfileUseCaseTracingMiddleware(clientProfileUC)
+	tracedWordleUC := usecase.NewWordleUseCaseTracingMiddleware(wordleUC)
 
 	userHandler := userDelivery.NewUserHandler(tracedUserUC, tracedProfileUC)
+	gameHandler := userDelivery.NewGameHandler(tracedWordleUC)
 
 	// Контекст, который отменяется по сигналу ОС
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
