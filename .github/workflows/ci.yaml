@@ -1,0 +1,91 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+  
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - service: api-gateway
+            context_path: ./api-gateway
+            build_path: ./api-gateway/cmd/api/main.go
+          - service: address
+            context_path: ./services/address
+            build_path: ./services/address/cmd/main.go
+          - service: auth
+            context_path: ./services/auth
+            build_path: ./services/auth/cmd/main.go
+          - service: cart
+            context_path: ./services/cart
+            build_path: ./services/cart/cmd/main.go
+          - service: order
+            context_path: ./services/order
+            build_path: ./services/order/cmd/main.go
+          - service: payment
+            context_path: ./services/payment
+            build_path: ./services/payment/cmd/main.go
+          - service: restaurant
+            context_path: ./services/restaurant
+            build_path: ./services/restaurant/cmd/main.go
+          - service: support
+            context_path: ./services/support
+            build_path: ./services/support/cmd/main.go
+          - service: user
+            context_path: ./services/user
+            build_path: ./services/user/cmd/main.go
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            changed:
+              - '${{ matrix.context_path }}/**'
+              - 'shared/**'
+              - 'go.mod'
+              - 'go.sum'
+              - 'Dockerfile'
+
+      - name: Setup Go
+        if: steps.filter.outputs.changed == 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stabe'
+          cache: true
+      
+      - name: Run Unit Tests
+        if: steps.filter.outputs.changed == 'true'
+        run: go test -v ${{ matrix.context_path }}/...
+
+      - name: Login to Github Container Registry
+        if: steps.filter.outputs.changed == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        if: steps.filter.outputs.changed == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ghcr.io/2026_1_nancats/${{ matrix.service }}:latest
+          build-args: |
+            BUILD_PATH=${{ matrix.build_path }}
