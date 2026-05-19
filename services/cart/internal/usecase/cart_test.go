@@ -121,6 +121,10 @@ func TestCartUseCase_LockCart(t *testing.T) {
 			cartID: "cart-123",
 			userID: 1,
 			mockInit: func(repo *repoMocks.MockCartRepository) {
+				repo.EXPECT().WithTransaction(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+					return fn(ctx)
+				})
+				repo.EXPECT().CheckAndSaveIdempotency(gomock.Any(), int64(1), "idem-1", "LockCart").Return(nil)
 				repo.EXPECT().GetCartByID(gomock.Any(), "cart-123").Return(domain.Cart{
 					ID:      "cart-123",
 					AdminID: 1,
@@ -136,6 +140,10 @@ func TestCartUseCase_LockCart(t *testing.T) {
 			cartID: "cart-123",
 			userID: 2,
 			mockInit: func(repo *repoMocks.MockCartRepository) {
+				repo.EXPECT().WithTransaction(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+					return fn(ctx)
+				})
+				repo.EXPECT().CheckAndSaveIdempotency(gomock.Any(), int64(2), "idem-1", "LockCart").Return(nil)
 				repo.EXPECT().GetCartByID(gomock.Any(), "cart-123").Return(domain.Cart{
 					ID:      "cart-123",
 					AdminID: 1,
@@ -148,6 +156,10 @@ func TestCartUseCase_LockCart(t *testing.T) {
 			cartID: "cart-123",
 			userID: 1,
 			mockInit: func(repo *repoMocks.MockCartRepository) {
+				repo.EXPECT().WithTransaction(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+					return fn(ctx)
+				})
+				repo.EXPECT().CheckAndSaveIdempotency(gomock.Any(), int64(1), "idem-1", "LockCart").Return(nil)
 				repo.EXPECT().GetCartByID(gomock.Any(), "cart-123").Return(domain.Cart{
 					ID:      "cart-123",
 					AdminID: 1,
@@ -200,6 +212,11 @@ func TestCartUseCase_AddItem(t *testing.T) {
 				restClient.EXPECT().GetDishesByIDs(gomock.Any(), []int64{100}).
 					Return([]domain.Dish{{ID: 100, RestaurantBrandID: 50}}, nil)
 
+				repo.EXPECT().WithTransaction(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+					return fn(ctx)
+				})
+				repo.EXPECT().CheckAndSaveIdempotency(gomock.Any(), int64(1), "idem-1", "AddItem").Return(nil)
+
 				repo.EXPECT().GetActiveCartByUserID(gomock.Any(), int64(1)).
 					Return(domain.Cart{}, errors.New("not found"))
 
@@ -229,6 +246,11 @@ func TestCartUseCase_AddItem(t *testing.T) {
 			mockInit: func(repo *repoMocks.MockCartRepository, restClient *ucMocks.MockRestaurantClient) {
 				restClient.EXPECT().GetDishesByIDs(gomock.Any(), []int64{100}).
 					Return([]domain.Dish{{ID: 100, RestaurantBrandID: 50}}, nil)
+
+				repo.EXPECT().WithTransaction(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+					return fn(ctx)
+				})
+				repo.EXPECT().CheckAndSaveIdempotency(gomock.Any(), int64(1), "idem-1", "AddItem").Return(nil)
 
 				repo.EXPECT().GetCartByID(gomock.Any(), "cart-1").Return(domain.Cart{
 					ID:                "cart-1",
