@@ -14,3 +14,4 @@ s3:
 
 otel:
   service_name: "support-service"
+  collector_addr: "otel-collector:4317"

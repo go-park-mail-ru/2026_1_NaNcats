@@ -1,0 +1,16 @@
+logger:
+  level: "debug"
+
+otel:
+  service_name: "analytics-service"
+  collector_addr: "otel-collector:4317"
+
+clickhouse:
+  host: "localhost"
+  port: "9000"
+  user: "admin"
+  database: "analytics"
+
+ingester:
+  batch_size: 1000
+  flush_interval: "5s"
