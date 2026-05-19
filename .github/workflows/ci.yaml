@@ -13,7 +13,10 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     strategy:
+      fail-fast: false
       matrix:
         include:
           - service: api-gateway
@@ -64,7 +67,7 @@ jobs:
         if: steps.filter.outputs.changed == 'true'
         uses: actions/setup-go@v5
         with:
-          go-version: 'stabe'
+          go-version: '1.26.1'
           cache: true
       
       - name: Run Unit Tests
