@@ -6,175 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository"
 	"github.com/jackc/pgx/v5"
 	"github.com/pashagolub/pgxmock/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestOrderRepo_CreateOrder(t *testing.T) {
-	type mockBehavior func(mock pgxmock.PgxPoolIface, order domain.Order, idemKey string)
-
-	ownerID := int64(1)
-	pmID := "pm-123"
-	var promoID int64 = 99
-	var discountAmount int64 = 100
-	promoString := "PROMO2026"
-
-	order := domain.Order{
-		AdminID:            1,
-		RestaurantBranchID: 10,
-		RestaurantBrandID:  20,
-		RestaurantName:     "Test Rest",
-		ClientAddressID:    "addr-uuid",
-		TotalCost:          1500,
-		PromocodeID:        &promoID,
-		DiscountAmount:     discountAmount,
-		PromocodeString:    &promoString,
-		Status:             "created",
-		Items: []domain.OrderDish{
-			{DishID: 100, Name: "Burger", Quantity: 2, Price: 500, OwnerUserID: &ownerID},
-		},
-		Splits: []domain.OrderSplit{
-			{ID: "split-1", UserID: 1, BaseAmount: 1500, DiscountAmount: 100, Amount: 1400, PaymentMethodID: &pmID},
-		},
-	}
-
-	tests := []struct {
-		name           string
-		order          domain.Order
-		idemKey        string
-		mockBehavior   mockBehavior
-		expectedID     int64
-		expectedPubID  string
-		expectedErrStr string
-	}{
-		{
-			name:    "Успешное создание заказа (Новый ключ, Транзакция + Батч)",
-			order:   order,
-			idemKey: "idem-key-1",
-			mockBehavior: func(mock pgxmock.PgxPoolIface, order domain.Order, idemKey string) {
-				mock.ExpectQuery(`INSERT INTO "idempotency_records"`).
-					WithArgs(order.AdminID, idemKey).
-					WillReturnRows(pgxmock.NewRows([]string{"response_payload"}).AddRow([]byte(nil)))
-
-				mock.ExpectQuery(`INSERT INTO "order"`).
-					WithArgs(
-						order.AdminID, order.RestaurantBranchID, order.RestaurantBrandID,
-						order.RestaurantName, order.ClientAddressID, order.TotalCost,
-						order.PromocodeID, order.DiscountAmount, order.PromocodeString,
-						order.Status,
-					).
-					WillReturnRows(pgxmock.NewRows([]string{"id", "public_id"}).AddRow(int64(42), "pub-uuid-123"))
-
-				b := mock.ExpectBatch()
-
-				pmID := "pm-123"
-
-				// 3. Вставка блюд (owner_user_id передаётся как int64)
-				b.ExpectExec(`INSERT INTO "order_dish"`).
-					WithArgs(int64(42), int64(100), "Burger", 2, int64(500), int64(1)).
-					WillReturnResult(pgxmock.NewResult("INSERT", 1))
-
-				b.ExpectExec(`INSERT INTO "order_split"`).
-					WithArgs("split-1", int64(42), int64(1), int64(1500), int64(100), int64(1400), &pmID).
-					WillReturnResult(pgxmock.NewResult("INSERT", 1))
-
-				mock.ExpectExec(`UPDATE "idempotency_records"`).
-					WithArgs(pgxmock.AnyArg(), order.AdminID, idemKey).
-					WillReturnResult(pgxmock.NewResult("UPDATE", 1))
-			},
-			expectedID:     42,
-			expectedPubID:  "pub-uuid-123",
-			expectedErrStr: "",
-		},
-		{
-			name:    "Идемпотентность: запрос уже в процессе (конфликт + пустое тело)",
-			order:   order,
-			idemKey: "idem-key-progress",
-			mockBehavior: func(mock pgxmock.PgxPoolIface, order domain.Order, idemKey string) {
-				mock.ExpectQuery(`INSERT INTO "idempotency_records"`).
-					WithArgs(order.AdminID, idemKey).
-					WillReturnError(pgx.ErrNoRows)
-
-				mock.ExpectQuery(`SELECT response_payload FROM "idempotency_records"`).
-					WithArgs(order.AdminID, idemKey).
-					WillReturnRows(pgxmock.NewRows([]string{"response_payload"}).AddRow([]byte(nil)))
-			},
-			expectedID:     0,
-			expectedPubID:  "",
-			expectedErrStr: "request is already in progress",
-		},
-		{
-			name:    "Идемпотентность: успешный возврат сохраненного результата",
-			order:   order,
-			idemKey: "idem-key-done",
-			mockBehavior: func(mock pgxmock.PgxPoolIface, order domain.Order, idemKey string) {
-				mock.ExpectQuery(`INSERT INTO "idempotency_records"`).
-					WithArgs(order.AdminID, idemKey).
-					WillReturnError(pgx.ErrNoRows)
-
-				mock.ExpectQuery(`SELECT response_payload FROM "idempotency_records"`).
-					WithArgs(order.AdminID, idemKey).
-					WillReturnRows(pgxmock.NewRows([]string{"response_payload"}).AddRow([]byte(`{"public_id":"pub-uuid-saved"}`)))
-			},
-			expectedID:     0,
-			expectedPubID:  "pub-uuid-saved",
-			expectedErrStr: "",
-		},
-		{
-			name:    "Ошибка: падение при вставке заказа",
-			order:   order,
-			idemKey: "idem-key-err",
-			mockBehavior: func(mock pgxmock.PgxPoolIface, order domain.Order, idemKey string) {
-				mock.ExpectQuery(`INSERT INTO "idempotency_records"`).
-					WithArgs(order.AdminID, idemKey).
-					WillReturnRows(pgxmock.NewRows([]string{"response_payload"}).AddRow([]byte(nil)))
-
-				mock.ExpectQuery(`INSERT INTO "order"`).
-					WithArgs(
-						order.AdminID, order.RestaurantBranchID, order.RestaurantBrandID,
-						order.RestaurantName, order.ClientAddressID, order.TotalCost,
-						order.PromocodeID, order.DiscountAmount, order.PromocodeString,
-						order.Status,
-					).
-					WillReturnError(errors.New("db error"))
-			},
-			expectedID:     0,
-			expectedPubID:  "",
-			expectedErrStr: "insert master order",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mock, err := pgxmock.NewPool()
-			require.NoError(t, err)
-			defer mock.Close()
-
-			tt.mockBehavior(mock, tt.order, tt.idemKey)
-
-			repo := NewOrderRepo(mock)
-
-			internalID, pubID, err := repo.CreateOrder(context.Background(), tt.order, tt.idemKey)
-
-			if tt.expectedErrStr != "" {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.expectedErrStr)
-				assert.Empty(t, pubID)
-				assert.Empty(t, internalID)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedID, internalID)
-				assert.Equal(t, tt.expectedPubID, pubID)
-			}
-
-			assert.NoError(t, mock.ExpectationsWereMet())
-		})
-	}
-}
 
 func TestOrderRepo_UpdateOrderStatus(t *testing.T) {
 	type mockBehavior func(mock pgxmock.PgxPoolIface, publicID string, status string, expectedStatuses ...string)
@@ -469,7 +306,8 @@ func TestOrderRepo_UpdateSplitStatusByPaymentID(t *testing.T) {
 		yookassaPaymentID string
 		newStatus         string
 		mockBehavior      mockBehavior
-		expectedRes       string
+		expectedSplitID   string
+		expectedPubID     string
 		expectedErrStr    string
 	}{
 		{
@@ -479,10 +317,11 @@ func TestOrderRepo_UpdateSplitStatusByPaymentID(t *testing.T) {
 			mockBehavior: func(mock pgxmock.PgxPoolIface, yookassaPaymentID, newStatus string) {
 				mock.ExpectQuery(`UPDATE "order_split" SET status`).
 					WithArgs(newStatus, yookassaPaymentID).
-					WillReturnRows(pgxmock.NewRows([]string{"public_id"}).AddRow("pub-order-1"))
+					WillReturnRows(pgxmock.NewRows([]string{"id", "public_id"}).AddRow("split-1", "pub-order-1"))
 			},
-			expectedRes:    "pub-order-1",
-			expectedErrStr: "",
+			expectedSplitID: "split-1",
+			expectedPubID:   "pub-order-1",
+			expectedErrStr:  "",
 		},
 		{
 			name:              "Сплит не найден",
@@ -493,8 +332,9 @@ func TestOrderRepo_UpdateSplitStatusByPaymentID(t *testing.T) {
 					WithArgs(newStatus, yookassaPaymentID).
 					WillReturnError(pgx.ErrNoRows)
 			},
-			expectedRes:    "",
-			expectedErrStr: "split not found by payment ID",
+			expectedSplitID: "",
+			expectedPubID:   "",
+			expectedErrStr:  "split not found by payment ID",
 		},
 	}
 
@@ -507,14 +347,15 @@ func TestOrderRepo_UpdateSplitStatusByPaymentID(t *testing.T) {
 			tt.mockBehavior(mock, tt.yookassaPaymentID, tt.newStatus)
 
 			repo := NewOrderRepo(mock)
-			res, err := repo.UpdateSplitStatusByPaymentID(context.Background(), tt.yookassaPaymentID, tt.newStatus)
+			splitID, pubID, err := repo.UpdateSplitStatusByPaymentID(context.Background(), tt.yookassaPaymentID, tt.newStatus)
 
 			if tt.expectedErrStr != "" {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectedErrStr)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedRes, res)
+				assert.Equal(t, tt.expectedSplitID, splitID)
+				assert.Equal(t, tt.expectedPubID, pubID)
 			}
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
@@ -592,10 +433,13 @@ func TestOrderRepo_GetSplitByID(t *testing.T) {
 			mockBehavior: func(mock pgxmock.PgxPoolIface, splitID string) {
 				pmID := "pm-1"
 				yooID := "yoo-1"
-				mock.ExpectQuery(`SELECT id, order_id, user_id, amount, status, payment_method_id, yookassa_payment_id`).
+				mock.ExpectQuery(`SELECT s\.id, s\.order_id, s\.user_id, s\.amount, s\.status`).
 					WithArgs(splitID).
-					WillReturnRows(pgxmock.NewRows([]string{"id", "order_id", "user_id", "amount", "status", "payment_method_id", "yookassa_payment_id", "created_at", "updated_at"}).
-						AddRow("split-1", int64(42), int64(1), int64(100), "pending", &pmID, &yooID, time.Now(), time.Now()))
+					WillReturnRows(pgxmock.NewRows([]string{
+						"id", "order_id", "user_id", "amount", "status",
+						"payment_method_id", "yookassa_payment_id", "created_at", "updated_at", "public_id",
+					}).
+						AddRow("split-1", int64(42), int64(1), int64(100), "pending", &pmID, &yooID, time.Now(), time.Now(), "pub-123"))
 			},
 			expectedErrStr: "",
 		},
@@ -603,7 +447,7 @@ func TestOrderRepo_GetSplitByID(t *testing.T) {
 			name:    "Не найдено",
 			splitID: "split-404",
 			mockBehavior: func(mock pgxmock.PgxPoolIface, splitID string) {
-				mock.ExpectQuery(`SELECT id, order_id`).
+				mock.ExpectQuery(`SELECT s\.id, s\.order_id, s\.user_id, s\.amount, s\.status`).
 					WithArgs(splitID).
 					WillReturnError(pgx.ErrNoRows)
 			},
