@@ -85,9 +85,9 @@ type UpdateQuantityRequest struct {
 
 //easyjson:json
 type ReassignOwnerRequest struct {
-	CartID     string `json:"cart_id"`
-	DishID     int64  `json:"dish_id"`
-	NewOwnerID *int64 `json:"new_owner_id"` // nil - снять владельца
+	CartID           string  `json:"cart_id"`
+	DishID           int64   `json:"dish_id"`
+	NewOwnerPublicID *string `json:"new_owner_public_id"`
 }
 
 //easyjson:json
@@ -97,8 +97,8 @@ type JoinCartRequest struct {
 
 //easyjson:json
 type KickMemberRequest struct {
-	CartID       string `json:"cart_id"`
-	TargetUserID int64  `json:"target_user_id"`
+	CartID         string `json:"cart_id"`
+	TargetPublicID string `json:"target_public_id"`
 }
 
 //easyjson:json
@@ -503,7 +503,22 @@ func (h *CartHandler) ReassignOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.cartClient.ReassignItemOwner(ctx, req.CartID, userID, req.DishID, req.NewOwnerID, idemKey)
+	var newOwnerID *int64
+	if req.NewOwnerPublicID != nil {
+		id, err := h.userClient.ResolvePublicID(ctx, *req.NewOwnerPublicID)
+		if err != nil {
+			if errors.Is(err, userclient.ErrUserNotFound) {
+				response.Error(w, http.StatusBadRequest, "target user not found")
+				return
+			}
+			h.logger.Error("failed to resolve public ID", err)
+			response.Error(w, http.StatusInternalServerError, "internal server error")
+			return
+		}
+		newOwnerID = &id
+	}
+
+	err := h.cartClient.ReassignItemOwner(ctx, req.CartID, userID, req.DishID, newOwnerID, idemKey)
 	if err != nil {
 		if errors.Is(err, cartclient.ErrForbidden) {
 			response.Error(w, http.StatusForbidden, "only admin can reassign items")
@@ -594,12 +609,18 @@ func (h *CartHandler) KickMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.TargetUserID == 0 {
-		response.Error(w, http.StatusBadRequest, "target_user_id is required")
+	targetInternalID, err := h.userClient.ResolvePublicID(ctx, req.TargetPublicID)
+	if err != nil {
+		if errors.Is(err, userclient.ErrUserNotFound) {
+			response.Error(w, http.StatusBadRequest, "target user not found")
+			return
+		}
+		h.logger.Error("failed to resolve public ID", err)
+		response.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
-	err := h.cartClient.KickMember(ctx, req.CartID, userID, req.TargetUserID, idemKey)
+	err = h.cartClient.KickMember(ctx, req.CartID, userID, targetInternalID, idemKey)
 	if err != nil {
 		if errors.Is(err, cartclient.ErrForbidden) {
 			response.Error(w, http.StatusForbidden, "only admin can kick members")

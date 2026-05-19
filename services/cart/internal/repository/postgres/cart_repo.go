@@ -198,12 +198,12 @@ func (r *cartRepo) ClearCart(ctx context.Context, cartID string) error {
 		}
 		// После очистки корзина снова в соло-режиме, поэтому убираем гостей:
 		// иначе при следующем приглашении они вернулись бы сами.
-		if _, err := tx.Exec(ctx,
+		if _, err := q.Exec(ctx,
 			`DELETE FROM "cart_member" WHERE cart_id = $1 AND user_id <> (SELECT admin_id FROM "cart" WHERE cart_id = $1)`,
 			cartID); err != nil {
 			return fmt.Errorf("clear cart members: %w", err)
 		}
-		if _, err := tx.Exec(ctx, `UPDATE "cart" SET status='active', mode='solo', updated_at=NOW() WHERE cart_id = $1`, cartID); err != nil {
+		if _, err := q.Exec(ctx, `UPDATE "cart" SET status='active', mode='solo', updated_at=NOW() WHERE cart_id = $1`, cartID); err != nil {
 			return fmt.Errorf("reset cart status: %w", err)
 		}
 		return nil
@@ -384,15 +384,15 @@ func (r *cartRepo) GetCartByID(ctx context.Context, cartID string) (domain.Cart,
 }
 
 func (r *cartRepo) UpdateItemQuantity(ctx context.Context, cartID string, dishID, ownerID int64, quantity int32) error {
-	return r.execWithOutbox(ctx, cartID, "ItemUpdated", map[string]any{"dish_id": dishID, "quantity": quantity}, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, `UPDATE "cart_dish" SET quantity = $1, updated_at = NOW() WHERE cart_id = $2 AND dish_id = $3 AND owner_user_id = $4`, quantity, cartID, dishID, ownerID)
+	return r.execWithOutbox(ctx, cartID, "ItemUpdated", map[string]any{"dish_id": dishID, "quantity": quantity}, func(q PgxQuerier) error {
+		_, err := q.Exec(ctx, `UPDATE "cart_dish" SET quantity = $1, updated_at = NOW() WHERE cart_id = $2 AND dish_id = $3 AND owner_user_id = $4`, quantity, cartID, dishID, ownerID)
 		return err
 	})
 }
 
 func (r *cartRepo) RemoveItem(ctx context.Context, cartID string, dishID, ownerID int64) error {
-	return r.execWithOutbox(ctx, cartID, "ItemRemoved", map[string]any{"dish_id": dishID}, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, `DELETE FROM "cart_dish" WHERE cart_id = $1 AND dish_id = $2 AND owner_user_id = $3`, cartID, dishID, ownerID)
+	return r.execWithOutbox(ctx, cartID, "ItemRemoved", map[string]any{"dish_id": dishID}, func(q PgxQuerier) error {
+		_, err := q.Exec(ctx, `DELETE FROM "cart_dish" WHERE cart_id = $1 AND dish_id = $2 AND owner_user_id = $3`, cartID, dishID, ownerID)
 		return err
 	})
 }
@@ -404,8 +404,8 @@ func (r *cartRepo) ReassignItemOwner(ctx context.Context, cartID string, dishID 
 	if newOwnerID != nil {
 		target = *newOwnerID
 	}
-	return r.execWithOutbox(ctx, cartID, "ItemReassigned", map[string]any{"dish_id": dishID, "new_owner_id": newOwnerID}, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, `
+	return r.execWithOutbox(ctx, cartID, "ItemReassigned", map[string]any{"dish_id": dishID, "new_owner_id": newOwnerID}, func(q PgxQuerier) error {
+		_, err := q.Exec(ctx, `
 			WITH moved AS (
 				DELETE FROM "cart_dish"
 				WHERE cart_id = $1 AND dish_id = $2 AND owner_user_id = 0
@@ -424,8 +424,8 @@ func (r *cartRepo) ReassignItemOwner(ctx context.Context, cartID string, dishID 
 // (owner_user_id = 0). Если ничейная позиция блюда уже есть, количества
 // складываются.
 func (r *cartRepo) OrphanUserItems(ctx context.Context, cartID string, targetUserID int64) error {
-	return r.execWithOutbox(ctx, cartID, "ItemsOrphaned", map[string]any{"user_id": targetUserID}, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, `
+	return r.execWithOutbox(ctx, cartID, "ItemsOrphaned", map[string]any{"user_id": targetUserID}, func(q PgxQuerier) error {
+		_, err := q.Exec(ctx, `
 			WITH victim AS (
 				DELETE FROM "cart_dish"
 				WHERE cart_id = $1 AND owner_user_id = $2

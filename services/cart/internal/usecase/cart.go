@@ -468,15 +468,27 @@ func (u *cartUseCase) RemoveItem(ctx context.Context, cartID string, userID, dis
 			return err
 		}
 
-	// Каждый участник управляет только своими позициями: берём позицию
-	// инициатора запроса (одно блюдо может быть у нескольких участников).
-	item := cart.GetItem(dishID, userID)
-	if item == nil {
-		span.AddEvent("item_already_absent") // Событие для идемпотентного выхода
+		cart, err := u.cartRepo.GetCartByID(txCtx, cartID)
+		if err != nil {
+			return err
+		}
+
+		// Каждый участник управляет только своими позициями: берём позицию
+		// инициатора запроса (одно блюдо может быть у нескольких участников).
+		item := cart.GetItem(dishID, userID)
+		if item == nil {
+			span.AddEvent("item_already_absent") // Событие для идемпотентного выхода
+			return nil
+		}
+
+		return u.cartRepo.RemoveItem(txCtx, cartID, dishID, userID)
+	})
+
+	if errors.Is(err, domain.ErrIdempotencyConflict) {
+		span.AddEvent("idempotency_hit_skipping")
 		return nil
 	}
-
-	return u.cartRepo.RemoveItem(ctx, cartID, dishID, userID)
+	return err
 }
 
 func (u *cartUseCase) UpdateItemQuantity(ctx context.Context, cartID string, userID, dishID int64, qty int32, idempotencyKey string) error {

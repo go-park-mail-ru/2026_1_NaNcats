@@ -324,9 +324,6 @@ func (r *orderRepo) GetOrderByPublicID(ctx context.Context, publicID string) (do
 	if courierID != nil {
 		o.CourierID = *courierID
 	}
-	// PromocodeID в домене это *int64 (необязательный FK): прокидываем
-	// указатель как есть, без разыменования.
-	o.PromocodeID = promoID
 
 	dishQuery := `SELECT dish_id, dish_name, quantity, price, owner_user_id FROM "order_dish" WHERE order_id = $1`
 	dishRows, _ := r.pool.Query(ctx, dishQuery, o.ID)
