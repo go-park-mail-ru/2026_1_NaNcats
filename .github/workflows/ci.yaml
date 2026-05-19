@@ -81,6 +81,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+        
+      - name: Repository Owner
+        if: steps.filter.outputs.changed == 'true'
+        run: |
+          echo "REPO_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
 
       - name: Build and push
         if: steps.filter.outputs.changed == 'true'
@@ -89,6 +94,6 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ghcr.io/2026_1_nancats/${{ matrix.service }}:latest
+          tags: ghcr.io/${{ env.REPO_OWNER }}/${{ matrix.service }}:latest
           build-args: |
             BUILD_PATH=${{ matrix.build_path }}
