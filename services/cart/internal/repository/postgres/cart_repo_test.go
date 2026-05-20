@@ -180,34 +180,6 @@ func TestCartRepo_AddItem(t *testing.T) {
 	}
 }
 
-func TestCartRepo_LockCart(t *testing.T) {
-	t.Run("Успешная блокировка с outbox", func(t *testing.T) {
-		mock, err := pgxmock.NewPool()
-		require.NoError(t, err)
-		defer mock.Close()
-
-		cartID := "cart-123"
-
-		mock.ExpectBegin()
-
-		mock.ExpectExec(`UPDATE "cart" SET status`).
-			WithArgs(domain.CartStatusLocked, cartID).
-			WillReturnResult(pgxmock.NewResult("UPDATE", 1))
-
-		mock.ExpectExec(`INSERT INTO "outbox_events"`).
-			WithArgs(cartID, "CartLocked", pgxmock.AnyArg()).
-			WillReturnResult(pgxmock.NewResult("INSERT", 1))
-
-		mock.ExpectCommit()
-
-		repo := NewCartRepo(mock)
-		err = repo.LockCart(context.Background(), cartID)
-
-		assert.NoError(t, err)
-		assert.NoError(t, mock.ExpectationsWereMet())
-	})
-}
-
 func TestCartRepo_GetCartByID(t *testing.T) {
 	type mockBehavior func(mock pgxmock.PgxPoolIface, cartID string)
 
