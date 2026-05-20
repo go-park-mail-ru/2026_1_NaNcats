@@ -11,7 +11,69 @@ permissions:
   packages: write
 
 jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: api-gateway
+            context_path: ./api-gateway
+          - service: address
+            context_path: ./services/address
+          - service: auth
+            context_path: ./services/auth
+          - service: cart
+            context_path: ./services/cart
+          - service: order
+            context_path: ./services/order
+          - service: payment
+            context_path: ./services/payment
+          - service: restaurant
+            context_path: ./services/restaurant
+          - service: support
+            context_path: ./services/support
+          - service: user
+            context_path: ./services/user
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            changed:
+              - '${{ matrix.context_path }}/**'
+              - 'shared/**''
+              - 'go.mod'
+              - 'go.sum'
+              - 'Dockerfile''
+      
+      - name: Setup Go
+        if: steps.filter.outputs.changed == 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.1'
+          cache: true
+        
+      - name: Run golangci-lint
+        if: steps.filter.outputs.changed == 'true'
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.56.2
+          args: --timeout=5m {{ matrix.context_path }}/... ./shared/...
+
+      - name: Run Unit Tests
+        if: steps.filter.outputs.changed == 'true'
+        run: go test -v ${{ matrix.context_path }}/...
+            
   build-and-push:
+    needs: lint-and-test
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -62,17 +124,6 @@ jobs:
               - 'go.mod'
               - 'go.sum'
               - 'Dockerfile'
-
-      - name: Setup Go
-        if: steps.filter.outputs.changed == 'true'
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.26.1'
-          cache: true
-      
-      - name: Run Unit Tests
-        if: steps.filter.outputs.changed == 'true'
-        run: go test -v ${{ matrix.context_path }}/...
 
       - name: Login to Github Container Registry
         if: steps.filter.outputs.changed == 'true'
