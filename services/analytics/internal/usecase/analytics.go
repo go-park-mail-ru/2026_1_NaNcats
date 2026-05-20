@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/analytics/internal/repository"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq/events"
 )
@@ -18,6 +19,7 @@ type AnalyticsUseCase interface {
 }
 
 type analyticsUseCase struct {
+	repo          repository.AnalyticsRepository
 	conn          driver.Conn
 	batchSize     int
 	flushInterval time.Duration
@@ -28,8 +30,9 @@ type analyticsUseCase struct {
 	buffer []events.AnalyticsOrderEvent
 }
 
-func NewAnalyticsUseCase(conn driver.Conn, batchSize int, interval time.Duration, l logger.Logger) AnalyticsUseCase {
+func NewAnalyticsUseCase(conn driver.Conn, batchSize int, interval time.Duration, l logger.Logger, repo repository.AnalyticsRepository) AnalyticsUseCase {
 	return &analyticsUseCase{
+		repo:          repo,
 		conn:          conn,
 		batchSize:     batchSize,
 		flushInterval: interval,
@@ -51,7 +54,7 @@ func (u *analyticsUseCase) flush(ctx context.Context) {
 
 	u.logger.Debug("flushing batch to clickhouse", logger.Int("count", len(batchData)))
 
-	if err := u.writeToClickHouse(ctx, batchData); err != nil {
+	if err := u.repo.InsertBatch(ctx, batchData); err != nil {
 		u.logger.Error("failed to write batch to clickhouse", err)
 		// TODO: вернуть данные в буфер или сохранить в файл
 	}
@@ -85,10 +88,5 @@ func (u *analyticsUseCase) Collect(ctx context.Context, event events.AnalyticsOr
 		go u.flush(context.Background())
 	}
 
-	return nil
-}
-
-func (u *analyticsUseCase) writeToClickHouse(ctx context.Context, data []events.AnalyticsOrderEvent) error {
-	// Временно заглушка
 	return nil
 }
