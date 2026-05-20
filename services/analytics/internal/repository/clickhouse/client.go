@@ -27,13 +27,27 @@ func NewClickHouseClient(cfg config.ClickHouseConfig) (driver.Conn, error) {
 			var d net.Dialer
 			return d.DialContext(ctx, "tcp", addr)
 		},
-		// Включаем сжатие LZ4 для экономии трафика при больших батчах
-		Compression: &clickhouse.Compression{
-			Method: clickhouse.CompressionLZ4,
-		},
-		// Таймаут
+		// Настройки для высокой производительности и надежности
 		Settings: clickhouse.Settings{
 			"max_execution_time": 60,
+			// Включаем асинхронные вставки на стороне сервера
+			"async_insert": 1,
+
+			// Ждем, пока ClickHouse подтвердит, что данные записаны в его буфер
+			// RabbitMQ Consumer сделает Ack только когда CH принял данные
+			"wait_for_async_insert": 1,
+
+			// Timeout сброса буфера в CH
+			"async_insert_busy_timeout_ms": 5000,
+
+			// Лимит по количеству запросов
+			"async_insert_max_query_number": 1000,
+
+			// Лимит на объем данных
+			"async_insert_max_data_size": 10485760,
+		},
+		Compression: &clickhouse.Compression{
+			Method: clickhouse.CompressionLZ4,
 		},
 		ConnMaxLifetime: time.Duration(10) * time.Minute,
 		MaxOpenConns:    10,
@@ -44,7 +58,7 @@ func NewClickHouseClient(cfg config.ClickHouseConfig) (driver.Conn, error) {
 		return nil, fmt.Errorf("failed to open clickhouse connection: %w", err)
 	}
 
-	// Проверяем доступность базы сразу при старте
+	// Проверка связи
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 

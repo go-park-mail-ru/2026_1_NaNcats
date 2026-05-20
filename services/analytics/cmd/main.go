@@ -21,7 +21,7 @@ func main() {
 
 	rawLogger, err := logger.NewZapLogger(cfg.Logger.Level)
 	if err != nil {
-		log.Fatalf("cannot start without logger: %v", err)
+		log.Fatalf("Cannot start without logger: %v", err)
 	}
 	appLogger := infrastructureLogger.NewLoggerAdapter(rawLogger)
 	appLogger.Info("Starting Analytics Ingester service...")

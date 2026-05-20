@@ -7,5 +7,5 @@ import (
 )
 
 type AnalyticsRepository interface {
-	InsertBatch(ctx context.Context, data []events.AnalyticsOrderEvent) error
+	InsertEvent(ctx context.Context, event events.AnalyticsOrderEvent) error
 }
