@@ -94,6 +94,6 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ghcr.io/${{ env.REPO_OWNER }}/${{ matrix.service }}:latest
+          tags: ghcr.io/${{ env.REPO_OWNER }}/2026_1_nancats/${{ matrix.service }}:latest
           build-args: |
             BUILD_PATH=${{ matrix.build_path }}
