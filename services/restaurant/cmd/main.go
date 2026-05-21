@@ -22,7 +22,6 @@ import (
 	restaurantDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/delivery/grpc"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/infrastructure/config"
 	restaurantPG "github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/repository/postgres"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/usecase"
 	restaurantUseCase "github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/usecase"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
 
@@ -88,10 +87,10 @@ func main() {
 	categoryUC := restaurantUseCase.NewCategoryUseCase(brandRepo)
 
 	brandUC := restaurantUseCase.NewRestaurantBrandUseCase(brandRepo, cfg.DefaultRestaurantLogoURL, s3Repo, appLogger)
-	tracedBrandUC := usecase.NewRestaurantBrandUseCaseTracingMiddleware(brandUC)
+	tracedBrandUC := restaurantUseCase.NewRestaurantBrandUseCaseTracingMiddleware(brandUC)
 
 	dishUC := restaurantUseCase.NewDishUseCase(dishRepo, cfg.DefaultFoodLogoURL, s3Repo, appLogger)
-	tracedDishUC := usecase.NewDishUseCaseTracingMiddleware(dishUC)
+	tracedDishUC := restaurantUseCase.NewDishUseCaseTracingMiddleware(dishUC)
 
 	restaurantHandler := restaurantDelivery.NewRestaurantHandler(categoryUC, tracedBrandUC, tracedDishUC)
 
