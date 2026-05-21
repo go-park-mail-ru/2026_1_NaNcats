@@ -261,6 +261,7 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderIn
 
 		items := make([]domain.OrderDish, 0, len(cart.Items))
 		for _, item := range cart.Items {
+			//nolint:staticcheck
 			items = append(items, domain.OrderDish{
 				DishID:      item.DishID,
 				Name:        item.Name,

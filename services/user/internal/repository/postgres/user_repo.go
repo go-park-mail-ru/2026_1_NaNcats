@@ -279,9 +279,10 @@ func (r *userRepo) UpdateUserRole(ctx context.Context, userID int64, newRole str
 	}
 
 	// Создание нового профиля
-	if newRole == "courier" {
+	switch newRole {
+	case "courier":
 		_, err = tx.Exec(ctx, `INSERT INTO "courier_profile" (account_id, status) VALUES ($1, 'offline')`, userID)
-	} else if newRole == "owner" {
+	case "owner":
 		_, err = tx.Exec(ctx, `INSERT INTO "owner_profile" (account_id) VALUES ($1)`, userID)
 	}
 

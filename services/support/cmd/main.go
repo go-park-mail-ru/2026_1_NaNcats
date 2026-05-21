@@ -29,7 +29,6 @@ import (
 	supportRabbitMQ "github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/delivery/rabbitmq"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/infrastructure/config"
 	supportPG "github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/repository/postgres"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/usecase"
 	supportUseCase "github.com/go-park-mail-ru/2026_1_NaNcats/services/support/internal/usecase"
 )
 
@@ -71,7 +70,7 @@ func main() {
 
 	supportRepo := supportPG.NewSupportRepo(pool)
 	supportUC := supportUseCase.NewSupportUseCase(supportRepo)
-	tracedSupportUC := usecase.NewSupportUseCaseTracingMiddleware(supportUC)
+	tracedSupportUC := supportUseCase.NewSupportUseCaseTracingMiddleware(supportUC)
 	supportHandler := supportDelivery.NewSupportHandler(tracedSupportUC)
 
 	rabbitClient, err := rabbitmq.NewRabbitClient(cfg.RabbitMQURL, appLogger)

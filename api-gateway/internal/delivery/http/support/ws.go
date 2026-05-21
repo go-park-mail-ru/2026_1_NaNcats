@@ -103,7 +103,9 @@ func (h *SupportHandler) ConnectChat(w http.ResponseWriter, r *http.Request) {
 		msgID, err := h.supportClient.SendMessage(ctx, input, wsMsg.IdempotencyKey)
 		if err != nil {
 			l.Error("failed to save message via grpc", err)
-			conn.WriteJSON(map[string]interface{}{"error": "failed to send message"})
+			if wErr := conn.WriteJSON(map[string]interface{}{"error": "failed to send message"}); wErr != nil {
+				l.Error("failed to write websocket response", wErr)
+			}
 			continue
 		}
 

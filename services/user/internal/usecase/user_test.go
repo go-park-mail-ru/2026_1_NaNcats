@@ -14,7 +14,6 @@ import (
 	repoMocks "github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/repository/mocks"
 	ucMocks "github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/usecase/mocks"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	loggerMocks "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq/events"
 	s3Mocks "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/s3/mocks"
@@ -428,7 +427,7 @@ func TestUserUseCase_UpdateAvatar(t *testing.T) {
 			fs := s3Mocks.NewMockFileStorage(ctrl)
 			tt.mockInit(ur, fs)
 
-			uc := NewUserUseCase(ur, fs, defaultAvatar, nil, logger.NewNopLogger())
+			uc := NewUserUseCase(ur, fs, defaultAvatar, nil, loggerMocks.NewNopLogger())
 			res, err := uc.UpdateAvatar(ctx, userID, tt.imageData, idemKey)
 
 			if tt.expectedError != "" {
@@ -500,7 +499,7 @@ func TestUserUseCase_DeleteAvatar(t *testing.T) {
 
 			tt.mockInit(ur, fs)
 
-			uc := NewUserUseCase(ur, fs, defaultAvatar, nil, logger.NewNopLogger())
+			uc := NewUserUseCase(ur, fs, defaultAvatar, nil, loggerMocks.NewNopLogger())
 			res, err := uc.DeleteAvatar(ctx, userID, "idem")
 
 			if tt.expectedError != nil {
@@ -597,7 +596,7 @@ func TestUserUseCase_UpdateRole(t *testing.T) {
 
 			ur := repoMocks.NewMockUserRepository(ctrl)
 			mp := ucMocks.NewMockMessagePublisher(ctrl)
-			l := logger.NewNopLogger()
+			l := loggerMocks.NewNopLogger()
 
 			tt.mockInit(ur, mp)
 

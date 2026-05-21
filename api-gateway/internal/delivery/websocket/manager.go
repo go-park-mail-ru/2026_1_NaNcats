@@ -236,8 +236,8 @@ func (m *WsManager) RunPubSubListener(ctx context.Context) {
 
 	go func() {
 		<-ctx.Done()
-		psc.Unsubscribe()
-		conn.Close()
+		_ = psc.Unsubscribe()
+		_ = conn.Close()
 	}()
 
 	m.logger.Info("Started listening to Redis Pub/Sub", logger.String("channel", m.channel))
