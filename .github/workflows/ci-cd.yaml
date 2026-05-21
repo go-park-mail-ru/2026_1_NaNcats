@@ -49,10 +49,9 @@ jobs:
           filters: |
             changed:
               - '${{ matrix.context_path }}/**'
-              - 'shared/**''
+              - 'shared/**'
               - 'go.mod'
               - 'go.sum'
-              - 'Dockerfile''
       
       - name: Setup Go
         if: steps.filter.outputs.changed == 'true'
@@ -60,13 +59,13 @@ jobs:
         with:
           go-version: '1.26.1'
           cache: true
-        
+
       - name: Run golangci-lint
         if: steps.filter.outputs.changed == 'true'
         uses: golangci/golangci-lint-action@v6
         with:
           version: v1.56.2
-          args: --timeout=5m {{ matrix.context_path }}/... ./shared/...
+          args: --timeout=5m ${{ matrix.context_path }}/... ./shared/...
 
       - name: Run Unit Tests
         if: steps.filter.outputs.changed == 'true'
@@ -152,12 +151,68 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - service: api-gateway
+            context_path: ./api-gateway
+          - service: address
+            context_path: ./services/address
+          - service: auth
+            context_path: ./services/auth
+          - service: cart
+            context_path: ./services/cart
+          - service: order
+            context_path: ./services/order
+          - service: payment
+            context_path: ./services/payment
+          - service: restaurant
+            context_path: ./services/restaurant
+          - service: support
+            context_path: ./services/support
+          - service: user
+            context_path: ./services/user
+    
     steps:
-      - name: SSH to k3s server and Deploy
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Check for changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            changed:
+              - '${{ matrix.context_path }}/**'
+              - 'shared/**'
+              - 'helm/**'
+      
+      - name: Copy Helm charts to server
+        if: steps.filter.outputs.changed == 'true'
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "./helm/"
+          target: "/home/ubuntu/k8s_manifests/"
+
+      - name: SSH to k3s server and Deploy via Helm
+        if: steps.filter.outputs.changed == 'true'
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            kubectl apply -f /хз_какой_путь
+            REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+            echo "Деплой сервиса ${{ matrix.service }}"
+            helm upgrade --install ${{ matrix.service }}-release /home/ubuntu/k8s_manifests/helm/nancats-service \
+              -f /home/ubuntu/k8s_manifests/helm/values-${{ matrix.service }}.yaml \
+              --set image.repository=ghcr.io/${REPO_OWNER}/2026_1_nancats/${{ matrix.service }} \
+              --set image.tag=latest \
+              --set serviceName=${{ matrix.service }}-service

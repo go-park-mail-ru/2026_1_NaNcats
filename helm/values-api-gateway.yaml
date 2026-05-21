@@ -1,0 +1,19 @@
+serviceName: api-gateway-service
+image:
+  repository: ghcr.io/go-park-mail-ru/2026_1_nancats/api-gateway
+service:
+  port: 8080
+env:
+  CONFIG_PATH: "./api-gateway/config.yaml"
+  OTEL_SERVICE_NAME: "api-gateway"
+  PORT: "8080"
+  REDIS_ADDR: "redis-service-redis:6379"
+  RABBITMQ_URL: "amqp://guest:guest@rabbitmq-service-rabbitmq:5672/"
+  AUTH_SERVICE_ADDR: "auth-service:50054"
+  USER_SERVICE_ADDR: "user-service:50052"
+  RESTAURANT_SERVICE_ADDR: "restaurant-service:50053"
+  CART_SERVICE_ADDR: "cart-service:50055"
+  ADDRESS_SERVICE_ADDR: "address-service:50051"
+  PAYMENT_SERVICE_ADDR: "payment-service:50056"
+  ORDER_SERVICE_ADDR: "order-service:50057"
+  SUPPORT_SERVICE_ADDR: "support-service:50058"

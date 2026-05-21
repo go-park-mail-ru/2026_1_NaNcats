@@ -1,0 +1,12 @@
+serviceName: address-service
+image:
+  repository: ghcr.io/go-park-mail-ru/2026_1_nancats/address
+service:
+  port: 50051
+env:
+  CONFIG_PATH: "./services/address/config.yaml"
+  DATABASE_URL: "postgres://db_user:$(DB_PASSWORD)@postgres-service-postgresql:5432/address_db?sslmode=disable"
+secrets:
+  DB_PASSWORD:
+    secretName: nancats-prod-secrets
+    secretKey: db-password

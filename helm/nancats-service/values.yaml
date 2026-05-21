@@ -1,0 +1,28 @@
+replicaCount: 1
+serviceName: placeholder-service
+
+image:
+  repository: ghcr.io/go-park-mail-ru/2026_1_nancats/placeholder
+  tag: latest
+  pullPolicy: Always
+
+service:
+  port: 8080
+
+sharedEnv:
+  LOG_LEVEL: "debug"
+  DEFAULT_AVATAR_URL: "https://nancats-bucket.storage.yandexcloud.net/avatars/default-avatar.webp"
+  DEFAULT_RESTAURANT_LOGO_URL: "https://nancats-bucket.storage.yandexcloud.net/restaurants/default-restaurant-logo.webp"
+  DEFAULT_FOOD_LOGO_URL: "https://nancats-bucket.storage.yandexcloud.net/foods/default-food-logo.webp"
+  OTEL_COLLECTOR_ADDR: "otel-collector:4317"
+
+sharedSecrets:
+  S3_KEY_ID:
+    secretName: nancats-prod-secrets
+    secretKey: s3-key-id
+  S3_SECRET_KEY:
+    secretName: nancats-prod-secrets
+    secretKey: s3-secret-key
+
+env: {}
+secrets: {}

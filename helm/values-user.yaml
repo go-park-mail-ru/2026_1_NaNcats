@@ -1,0 +1,13 @@
+serviceName: user-service
+image:
+  repository: ghcr.io/go-park-mail-ru/2026_1_nancats/user
+service:
+  port: 50052
+env:
+  CONFIG_PATH: "./services/user/config.yaml"
+  RABBITMQ_URL: "amqp://guest:guest@rabbitmq-service-rabbitmq:5672/"
+  DATABASE_URL: "postgres://db_user:$(DB_PASSWORD)@postgres-service-postgresql:5432/user_db?sslmode=disable"
+secrets:
+  DB_PASSWORD:
+    secretName: nancats-prod-secrets
+    secretKey: db-password
