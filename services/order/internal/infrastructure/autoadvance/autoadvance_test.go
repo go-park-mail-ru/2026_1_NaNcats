@@ -10,6 +10,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/infrastructure/autoadvance/mocks"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository"
 	repoMocks "github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository/mocks"
+	ucMocks "github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase/mocks"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq/events"
 	"github.com/stretchr/testify/assert"
@@ -94,7 +95,9 @@ func TestRunner_tick(t *testing.T) {
 			pubMock := mocks.NewMockPublisher(ctrl)
 			tt.mockInit(repoMock, pubMock)
 
-			runner := New(repoMock, pubMock, 1*time.Millisecond, logger.NewNopLogger())
+			ucMock := ucMocks.NewMockOrderUseCase(ctrl)
+
+			runner := New(repoMock, pubMock, 1*time.Millisecond, logger.NewNopLogger(), ucMock)
 
 			assert.NotPanics(t, func() {
 				runner.tick(context.Background())

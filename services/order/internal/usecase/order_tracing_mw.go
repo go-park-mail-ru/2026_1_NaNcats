@@ -30,6 +30,23 @@ func NewOrderUseCaseTracingMiddleware(next OrderUseCase) OrderUseCaseTracingMidd
 	}
 }
 
+// AdvanceOrderStatus трассирует выполнение метода AdvanceOrderStatus
+func (m OrderUseCaseTracingMiddleware) AdvanceOrderStatus(ctx context.Context, publicID string, newStatus string, expectedStatus string) (err error) {
+
+	ctx, span := m.tracer.Start(ctx, "OrderUseCase.AdvanceOrderStatus")
+
+	defer span.End()
+
+	err = m.next.AdvanceOrderStatus(ctx, publicID, newStatus, expectedStatus)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
 // CancelOrder трассирует выполнение метода CancelOrder
 func (m OrderUseCaseTracingMiddleware) CancelOrder(ctx context.Context, orderPublicID string, userID int64) (err error) {
 

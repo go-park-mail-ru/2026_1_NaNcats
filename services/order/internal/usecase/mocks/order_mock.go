@@ -42,6 +42,20 @@ func (m *MockOrderUseCase) EXPECT() *MockOrderUseCaseMockRecorder {
 	return m.recorder
 }
 
+// AdvanceOrderStatus mocks base method.
+func (m *MockOrderUseCase) AdvanceOrderStatus(ctx context.Context, publicID, newStatus, expectedStatus string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AdvanceOrderStatus", ctx, publicID, newStatus, expectedStatus)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AdvanceOrderStatus indicates an expected call of AdvanceOrderStatus.
+func (mr *MockOrderUseCaseMockRecorder) AdvanceOrderStatus(ctx, publicID, newStatus, expectedStatus any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdvanceOrderStatus", reflect.TypeOf((*MockOrderUseCase)(nil).AdvanceOrderStatus), ctx, publicID, newStatus, expectedStatus)
+}
+
 // CancelOrder mocks base method.
 func (m *MockOrderUseCase) CancelOrder(ctx context.Context, orderPublicID string, userID int64) error {
 	m.ctrl.T.Helper()

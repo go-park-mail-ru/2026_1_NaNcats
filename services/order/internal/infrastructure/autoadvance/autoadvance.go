@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq/events"
 )
@@ -33,18 +34,20 @@ var transitions = map[string]string{
 }
 
 type Runner struct {
-	repo      repository.OrderRepository
-	publisher Publisher
-	interval  time.Duration
-	logger    logger.Logger
+	repo         repository.OrderRepository
+	publisher    Publisher
+	orderUseCase usecase.OrderUseCase
+	interval     time.Duration
+	logger       logger.Logger
 }
 
-func New(repo repository.OrderRepository, pub Publisher, interval time.Duration, l logger.Logger) *Runner {
+func New(repo repository.OrderRepository, pub Publisher, interval time.Duration, l logger.Logger, orderUseCase usecase.OrderUseCase) *Runner {
 	return &Runner{
-		repo:      repo,
-		publisher: pub,
-		interval:  interval,
-		logger:    l,
+		repo:         repo,
+		publisher:    pub,
+		orderUseCase: orderUseCase,
+		interval:     interval,
+		logger:       l,
 	}
 }
 
@@ -80,7 +83,7 @@ func (r *Runner) tick(ctx context.Context) {
 			continue
 		}
 
-		err = r.repo.UpdateOrderStatus(ctx, o.PublicID, next, o.Status)
+		err = r.orderUseCase.AdvanceOrderStatus(ctx, o.PublicID, next, o.Status)
 		if err != nil {
 			if errors.Is(err, repository.ErrStateChanged) {
 				r.logger.Info("autoadvance: state changed concurrently, skipping",

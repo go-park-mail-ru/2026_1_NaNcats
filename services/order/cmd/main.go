@@ -121,7 +121,7 @@ func main() {
 		appLogger.Fatal("Failed to start RabbitMQ consumer", err)
 	}
 
-	advancer := autoadvance.New(orderRepo, rabbitClient, 15*time.Second, appLogger)
+	advancer := autoadvance.New(orderRepo, rabbitClient, 15*time.Second, appLogger, tracedOrderUC)
 	go advancer.Run(ctx)
 
 	cleanup, err := metrics.InitMetrics(ctx, cfg.OTEL.ServiceName, cfg.OTEL.CollectorAddr)

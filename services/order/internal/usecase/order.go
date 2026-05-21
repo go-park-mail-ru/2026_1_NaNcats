@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -67,6 +68,7 @@ type OrderUseCase interface {
 	ProcessSagaReply(ctx context.Context, reply events.SagaReply) error
 	PayForFriend(ctx context.Context, splitID string, adminID int64, paymentMethodID, idempotencyKey string) error
 	CancelOrder(ctx context.Context, orderPublicID string, userID int64) error
+	AdvanceOrderStatus(ctx context.Context, publicID string, newStatus string, expectedStatus string) error
 }
 
 type orderUseCase struct {
@@ -320,6 +322,30 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderIn
 
 	span.SetAttributes(attribute.String("order.public_id", orderPublicID))
 
+	createdOrder, err := o.orderRepo.GetOrderByPublicID(ctx, orderPublicID)
+	if err != nil {
+		o.logger.Error("order created, but failed to fetch it for initial analytics event", err, logger.String("order_id", orderPublicID))
+	} else {
+		orderType := "solo"
+		if len(createdOrder.Splits) > 1 {
+			orderType = "shared"
+		}
+
+		initialEvent := events.AnalyticsOrderEvent{
+			EventTime:     time.Now().UnixMilli(),
+			OrderPublicID: orderPublicID,
+			RestaurantID:  createdOrder.RestaurantBrandID,
+			ClientID:      createdOrder.AdminID,
+			TotalCostRaw:  createdOrder.TotalCost,
+			DiscountRaw:   createdOrder.DiscountAmount,
+			Status:        createdOrder.Status,
+			PrevStatus:    "none",
+			OrderType:     orderType,
+			MembersCount:  int32(len(createdOrder.Splits)),
+		}
+		_ = o.rabbitPublisher.PublishJSON(ctx, events.QueueAnalytics, initialEvent)
+	}
+
 	for _, split := range createdSplits {
 		pmID := ""
 		if split.PaymentMethodID != nil {
@@ -341,6 +367,80 @@ func (o *orderUseCase) CreateOrder(ctx context.Context, req domain.CreateOrderIn
 	return orderPublicID, nil
 }
 
+func (o *orderUseCase) AdvanceOrderStatus(ctx context.Context, publicID string, newStatus string, expectedStatus string) error {
+	return o.updateStatusAndPublishAnalytics(ctx, publicID, newStatus, expectedStatus)
+}
+
+// Централизованный хелпер для изменения статуса заказа в БД и синхронной отправки события в очередь кликхауса
+func (o *orderUseCase) updateStatusAndPublishAnalytics(ctx context.Context, orderPublicID string, newStatus string, expectedStatuses ...string) error {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.String("order.public_id", orderPublicID),
+		attribute.String("order.status.new", newStatus),
+	)
+
+	// Извлекаем заказ из репозитория для получения его параметров
+	order, err := o.orderRepo.GetOrderByPublicID(ctx, orderPublicID)
+	if err != nil {
+		return fmt.Errorf("failed to get order for analytics: %w", err)
+	}
+
+	prevStatus := order.Status
+	if prevStatus == newStatus {
+		return nil // Статус не изменился, ничего делать не нужно
+	}
+
+	// Обновляем статус в базе данных
+	err = o.orderRepo.UpdateOrderStatus(ctx, orderPublicID, newStatus, expectedStatuses...)
+	if err != nil {
+		return err
+	}
+
+	// Формируем список купленных блюд, только если заказ успешно оплачен
+	var items []events.AnalyticsOrderItem
+	if newStatus == StatusPaid {
+		items = make([]events.AnalyticsOrderItem, 0, len(order.Items))
+		for _, item := range order.Items {
+			var uid int64
+			if item.OwnerUserID != nil {
+				uid = *item.OwnerUserID
+			}
+			items = append(items, events.AnalyticsOrderItem{
+				DishID:      item.DishID,
+				DishName:    item.Name,
+				Quantity:    int32(item.Quantity),
+				PriceRaw:    item.Price,
+				RowTotalRaw: item.Price * int64(item.Quantity),
+				UserID:      uid,
+			})
+		}
+	}
+
+	orderType := "solo"
+	if len(order.Splits) > 1 {
+		orderType = "shared"
+	}
+
+	// Собираем полное событие
+	analyticsEvent := events.AnalyticsOrderEvent{
+		EventTime:     time.Now().UnixMilli(),
+		OrderPublicID: orderPublicID,
+		RestaurantID:  order.RestaurantBrandID,
+		ClientID:      order.AdminID,
+		TotalCostRaw:  order.TotalCost,
+		DiscountRaw:   order.DiscountAmount,
+		Status:        newStatus,
+		PrevStatus:    prevStatus,
+		OrderType:     orderType,
+		MembersCount:  int32(len(order.Splits)),
+		Items:         items,
+	}
+
+	// Асинхронно отправляем событие в RabbitMQ
+	_ = o.rabbitPublisher.PublishJSON(ctx, events.QueueAnalytics, analyticsEvent)
+	return nil
+}
+
 func (o *orderUseCase) CancelOrder(ctx context.Context, orderPublicID string, userID int64) error {
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(
@@ -356,7 +456,7 @@ func (o *orderUseCase) CancelOrder(ctx context.Context, orderPublicID string, us
 		return errutil.New("FORBIDDEN", "user is not the owner of this order", codes.PermissionDenied)
 	}
 
-	err = o.orderRepo.UpdateOrderStatus(ctx, orderPublicID, StatusCancelled, StatusCreated, StatusCartLocked, StatusPaymentReady, StatusPaid)
+	err = o.updateStatusAndPublishAnalytics(ctx, orderPublicID, StatusCancelled, StatusCreated, StatusCartLocked, StatusPaymentReady, StatusPaid)
 	if err != nil {
 		if errors.Is(err, repository.ErrStateChanged) {
 			return errutil.New("ORDER_IN_PROGRESS_OR_TERMINAL", "order is being prepared or already finished, cannot cancel", codes.FailedPrecondition)
@@ -428,7 +528,7 @@ func (o *orderUseCase) UpdateOrderStatusByPaymentID(ctx context.Context, payment
 	span.SetAttributes(attribute.Bool("order.all_splits_paid", allPaid))
 
 	if allPaid {
-		err = o.orderRepo.UpdateOrderStatus(ctx, orderPublicID, StatusPaid, StatusCreated, StatusCartLocked, StatusPaymentReady)
+		err = o.updateStatusAndPublishAnalytics(ctx, orderPublicID, StatusPaid, StatusCreated, StatusCartLocked, StatusPaymentReady)
 		if err != nil {
 			if errors.Is(err, repository.ErrStateChanged) {
 				span.AddEvent("order_already_advanced_ignoring_paid")
