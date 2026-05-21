@@ -15,7 +15,7 @@ DB_PORT ?= 5432
 RABBITMQ_URL ?= amqp://guest:guest@localhost:5672/
 REDIS_URL ?= redis://localhost:6379/0
 
-MICROSERVICES = auth user restaurant cart address payment order support
+MICROSERVICES = auth user restaurant cart address payment order support analytics
 ALL_SERVICES = $(MICROSERVICES) api-gateway
 
 $(shell mkdir -p .tmp_pids)
