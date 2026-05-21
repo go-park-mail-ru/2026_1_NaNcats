@@ -26,6 +26,8 @@ type Config struct {
 	OTEL        config.OTELConfig       `yaml:"otel"`
 	RabbitMQURL string                  `yaml:"rabbit_mq_url" env:"RABBITMQ_URL" env-required:"true"`
 	GRPC        config.GRPCServerConfig `yaml:"grpc"`
+
+	RestaurantServiceAddr string `yaml:"restaurant_service_addr" env:"RESTAURANT_SERVICE_ADDR" env-default:"localhost:50053"`
 }
 
 func Load() *Config {

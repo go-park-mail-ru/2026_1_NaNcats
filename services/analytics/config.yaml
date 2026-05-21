@@ -18,3 +18,5 @@ ingester:
 grpc:
   port: "50059"
   timeout: "5s"
+
+restaurant_service_addr: "localhost:50053"

@@ -11,11 +11,13 @@ import (
 	"github.com/joho/godotenv"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 
 	analyticsDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/analytics/internal/delivery/grpc"
 	analyticsConsumer "github.com/go-park-mail-ru/2026_1_NaNcats/services/analytics/internal/delivery/rabbitmq"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/analytics/internal/infrastructure/config"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/analytics/internal/infrastructure/grpc_client"
 	clickhouseRepo "github.com/go-park-mail-ru/2026_1_NaNcats/services/analytics/internal/repository/clickhouse"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/analytics/internal/usecase"
 	infrastructureLogger "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/common/logger"
@@ -24,6 +26,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/metrics"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/analytics"
+	pbRestaurant "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
 )
 
 func main() {
@@ -60,6 +63,21 @@ func main() {
 	defer chConn.Close()
 	appLogger.Info("Connected to ClickHouse", logger.String("addr", cfg.ClickHouse.Host))
 
+	grpcOpts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+	}
+
+	restConn, err := grpc.NewClient(cfg.RestaurantServiceAddr, grpcOpts...)
+	if err != nil {
+		appLogger.Fatal("Failed to create Restaurant Service gRPC client", err)
+	}
+	defer restConn.Close()
+	appLogger.Info("gRPC client connected to Restaurant Service", logger.String("addr", cfg.RestaurantServiceAddr))
+
+	resGrpcClient := pbRestaurant.NewRestaurantServiceClient(restConn)
+	resClient := grpc_client.NewRestaurantClient(resGrpcClient)
+
 	repo := clickhouseRepo.NewAnalyticsRepository(
 		chConn,
 		appLogger,
@@ -67,7 +85,7 @@ func main() {
 		cfg.Ingester.FlushInterval,
 	)
 
-	uc := usecase.NewAnalyticsUseCase(repo, appLogger)
+	uc := usecase.NewAnalyticsUseCase(repo, appLogger, resClient)
 
 	grpcServer := grpc.NewServer(
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
