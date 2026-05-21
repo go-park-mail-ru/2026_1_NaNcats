@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/common"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/imageutil"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
@@ -135,6 +136,13 @@ func (rb *restaurantBrandUseCase) GetRestaurantBrandByID(ctx context.Context, id
 }
 
 func (uc *restaurantBrandUseCase) CreateRestaurantBrand(ctx context.Context, b domain.RestaurantBrand, image []byte, idemKey string) (domain.RestaurantBrand, error) {
+	ownerID, ok := common.GetUserID(ctx)
+	if !ok {
+		return domain.RestaurantBrand{}, domain.ErrUnauthorized
+	}
+
+	b.OwnerProfileID = ownerID
+
 	if len(image) > 0 {
 		webpData, err := imageutil.ConvertToWebp(bytes.NewReader(image))
 		if err != nil {
@@ -155,9 +163,18 @@ func (uc *restaurantBrandUseCase) CreateRestaurantBrand(ctx context.Context, b d
 }
 
 func (uc *restaurantBrandUseCase) UpdateRestaurantBrand(ctx context.Context, b domain.RestaurantBrand, newImage []byte, idemKey string) (domain.RestaurantBrand, error) {
+	ownerID, ok := common.GetUserID(ctx)
+	if !ok {
+		return domain.RestaurantBrand{}, domain.ErrUnauthorized
+	}
+
 	existing, err := uc.restaurantBrandRepo.GetByID(ctx, b.ID)
 	if err != nil {
 		return domain.RestaurantBrand{}, err
+	}
+
+	if existing.OwnerProfileID != ownerID {
+		return domain.RestaurantBrand{}, domain.ErrPermissionDenied
 	}
 
 	if len(newImage) > 0 {
@@ -195,10 +212,26 @@ func (uc *restaurantBrandUseCase) UpdateRestaurantBrand(ctx context.Context, b d
 		b.PromotionTier = existing.PromotionTier
 	}
 
+	b.OwnerProfileID = existing.OwnerProfileID
+
 	return uc.restaurantBrandRepo.Update(ctx, b)
 }
 
 func (rb *restaurantBrandUseCase) DeleteRestaurantBrand(ctx context.Context, id int64) error {
+	ownerID, ok := common.GetUserID(ctx)
+	if !ok {
+		return domain.ErrUnauthorized
+	}
+
+	existing, err := rb.restaurantBrandRepo.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if existing.OwnerProfileID != ownerID {
+		return domain.ErrPermissionDenied
+	}
+
 	return rb.restaurantBrandRepo.Delete(ctx, id)
 }
 
