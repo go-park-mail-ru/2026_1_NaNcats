@@ -100,9 +100,10 @@ func TestDishUseCase_GetDishesByRestaurantBrandID(t *testing.T) {
 			defer ctrl.Finish()
 
 			repo := mocks.NewMockDishRepository(ctrl)
+			repoBrand := mocks.NewMockRestaurantBrandRepository(ctrl)
 			tt.mockInit(repo)
 
-			uc := NewDishUseCase(repo, defaultLogo, nil, nil)
+			uc := NewDishUseCase(repo, repoBrand, defaultLogo, nil, nil)
 			res, err := uc.GetDishesByRestaurantBrandID(context.Background(), tt.brandID, tt.limit, tt.offset)
 
 			if tt.expectedError != nil {
@@ -173,9 +174,10 @@ func TestDishUseCase_GetDishesByIDs(t *testing.T) {
 			defer ctrl.Finish()
 
 			repo := mocks.NewMockDishRepository(ctrl)
+			repoBrand := mocks.NewMockRestaurantBrandRepository(ctrl)
 			tt.mockInit(repo)
 
-			uc := NewDishUseCase(repo, defaultLogo, nil, nil)
+			uc := NewDishUseCase(repo, repoBrand, defaultLogo, nil, nil)
 			res, err := uc.GetDishesByIDs(context.Background(), tt.ids)
 
 			if tt.expectedError != nil {
@@ -233,9 +235,10 @@ func TestDishUseCase_SearchDishes(t *testing.T) {
 			defer ctrl.Finish()
 
 			repo := mocks.NewMockDishRepository(ctrl)
+			repoBrand := mocks.NewMockRestaurantBrandRepository(ctrl)
 			tt.mockInit(repo)
 
-			uc := NewDishUseCase(repo, defaultLogo, nil, nil)
+			uc := NewDishUseCase(repo, repoBrand, defaultLogo, nil, nil)
 			res, err := uc.SearchDishes(context.Background(), query, limit)
 
 			if tt.expectedError != nil {
@@ -294,9 +297,10 @@ func TestDishUseCase_SearchDishesByBrand(t *testing.T) {
 			defer ctrl.Finish()
 
 			repo := mocks.NewMockDishRepository(ctrl)
+			repoBrand := mocks.NewMockRestaurantBrandRepository(ctrl)
 			tt.mockInit(repo)
 
-			uc := NewDishUseCase(repo, defaultLogo, nil, nil)
+			uc := NewDishUseCase(repo, repoBrand, defaultLogo, nil, nil)
 			res, err := uc.SearchDishesByBrand(context.Background(), brandID, query, limit)
 
 			if tt.expectedError != nil {
@@ -385,10 +389,11 @@ func TestDishUseCase_CreateDish(t *testing.T) {
 			defer ctrl.Finish()
 
 			dr := mocks.NewMockDishRepository(ctrl)
+			repoBrand := mocks.NewMockRestaurantBrandRepository(ctrl)
 			fs := s3Mocks.NewMockFileStorage(ctrl)
 			tt.mockInit(dr, fs)
 
-			uc := NewDishUseCase(dr, defaultLogo, fs, nil)
+			uc := NewDishUseCase(dr, repoBrand, defaultLogo, fs, nil)
 			_, err := uc.CreateDish(ctx, dishInput, tt.image, idemKey)
 
 			if tt.expectedError != "" {
@@ -473,10 +478,11 @@ func TestDishUseCase_UpdateDish(t *testing.T) {
 			defer ctrl.Finish()
 
 			dr := mocks.NewMockDishRepository(ctrl)
+			repoBrand := mocks.NewMockRestaurantBrandRepository(ctrl)
 			fs := s3Mocks.NewMockFileStorage(ctrl)
 			tt.mockInit(dr, fs)
 
-			uc := NewDishUseCase(dr, defaultLogo, fs, nil)
+			uc := NewDishUseCase(dr, repoBrand, defaultLogo, fs, nil)
 			_, err := uc.UpdateDish(ctx, tt.input, tt.newImage, "idem")
 
 			if tt.expectedError != "" {
@@ -522,9 +528,10 @@ func TestDishUseCase_DeleteDish(t *testing.T) {
 			defer ctrl.Finish()
 
 			dr := mocks.NewMockDishRepository(ctrl)
+			repoBrand := mocks.NewMockRestaurantBrandRepository(ctrl)
 			tt.mockInit(dr)
 
-			uc := NewDishUseCase(dr, "", nil, nil)
+			uc := NewDishUseCase(dr, repoBrand, "", nil, nil)
 			err := uc.DeleteDish(ctx, dishID)
 
 			assert.Equal(t, tt.wantErr, err != nil)

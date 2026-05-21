@@ -89,7 +89,7 @@ func main() {
 	brandUC := restaurantUseCase.NewRestaurantBrandUseCase(brandRepo, cfg.DefaultRestaurantLogoURL, s3Repo, appLogger)
 	tracedBrandUC := restaurantUseCase.NewRestaurantBrandUseCaseTracingMiddleware(brandUC)
 
-	dishUC := restaurantUseCase.NewDishUseCase(dishRepo, cfg.DefaultFoodLogoURL, s3Repo, appLogger)
+	dishUC := restaurantUseCase.NewDishUseCase(dishRepo, brandRepo, cfg.DefaultFoodLogoURL, s3Repo, appLogger)
 	tracedDishUC := restaurantUseCase.NewDishUseCaseTracingMiddleware(dishUC)
 
 	restaurantHandler := restaurantDelivery.NewRestaurantHandler(categoryUC, tracedBrandUC, tracedDishUC)

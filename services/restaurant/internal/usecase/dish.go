@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/common"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/imageutil"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
@@ -30,18 +31,20 @@ type DishUseCase interface {
 }
 
 type dishUseCase struct {
-	dishRepo           repository.DishRepository
-	defaultFoodLogoURL string
-	fileStorage        s3.FileStorage
-	logger             logger.Logger
+	dishRepo            repository.DishRepository
+	defaultFoodLogoURL  string
+	restaurantBrandRepo repository.RestaurantBrandRepository
+	fileStorage         s3.FileStorage
+	logger              logger.Logger
 }
 
-func NewDishUseCase(dr repository.DishRepository, dflurl string, s3 s3.FileStorage, l logger.Logger) DishUseCase {
+func NewDishUseCase(dr repository.DishRepository, rbr repository.RestaurantBrandRepository, dflurl string, s3 s3.FileStorage, l logger.Logger) DishUseCase {
 	return &dishUseCase{
-		dishRepo:           dr,
-		defaultFoodLogoURL: dflurl,
-		fileStorage:        s3,
-		logger:             l,
+		dishRepo:            dr,
+		restaurantBrandRepo: rbr,
+		defaultFoodLogoURL:  dflurl,
+		fileStorage:         s3,
+		logger:              l,
 	}
 }
 
@@ -136,6 +139,19 @@ func (uc *dishUseCase) SearchDishesByBrand(ctx context.Context, brandID int64, q
 }
 
 func (uc *dishUseCase) CreateDish(ctx context.Context, d domain.Dish, image []byte, idemKey string) (domain.Dish, error) {
+	ownerID, ok := common.GetUserID(ctx)
+	if !ok {
+		return domain.Dish{}, domain.ErrUnauthorized
+	}
+
+	brand, err := uc.restaurantBrandRepo.GetByID(ctx, d.RestaurantBrandID)
+	if err != nil {
+		return domain.Dish{}, err
+	}
+	if brand.OwnerProfileID != ownerID {
+		return domain.Dish{}, domain.ErrPermissionDenied
+	}
+
 	if len(image) > 0 {
 		webpData, err := imageutil.ConvertToWebp(bytes.NewReader(image))
 		if err != nil {
@@ -156,9 +172,22 @@ func (uc *dishUseCase) CreateDish(ctx context.Context, d domain.Dish, image []by
 }
 
 func (uc *dishUseCase) UpdateDish(ctx context.Context, d domain.Dish, newImage []byte, idemKey string) (domain.Dish, error) {
+	ownerID, ok := common.GetUserID(ctx)
+	if !ok {
+		return domain.Dish{}, domain.ErrUnauthorized
+	}
+
 	existing, err := uc.dishRepo.GetDishByID(ctx, d.ID)
 	if err != nil {
 		return domain.Dish{}, err
+	}
+
+	brand, err := uc.restaurantBrandRepo.GetByID(ctx, existing.RestaurantBrandID)
+	if err != nil {
+		return domain.Dish{}, err
+	}
+	if brand.OwnerProfileID != ownerID {
+		return domain.Dish{}, domain.ErrPermissionDenied
 	}
 
 	if len(newImage) > 0 {
@@ -196,10 +225,30 @@ func (uc *dishUseCase) UpdateDish(ctx context.Context, d domain.Dish, newImage [
 		d.Price = existing.Price
 	}
 
+	d.RestaurantBrandID = existing.RestaurantBrandID
+
 	return uc.dishRepo.Update(ctx, d)
 }
 
 func (uc *dishUseCase) DeleteDish(ctx context.Context, id int64) error {
+	ownerID, ok := common.GetUserID(ctx)
+	if !ok {
+		return domain.ErrUnauthorized
+	}
+
+	existing, err := uc.dishRepo.GetDishByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	brand, err := uc.restaurantBrandRepo.GetByID(ctx, existing.RestaurantBrandID)
+	if err != nil {
+		return err
+	}
+	if brand.OwnerProfileID != ownerID {
+		return domain.ErrPermissionDenied
+	}
+
 	return uc.dishRepo.Delete(ctx, id)
 }
 
