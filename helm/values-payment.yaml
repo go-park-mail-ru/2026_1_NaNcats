@@ -10,7 +10,7 @@ env:
   ORDER_SERVICE_ADDR: "order-service:50057"
   YOOKASSA_SHOP_ID: "1325612"
   YOOKASSA_RETURN_URL: "https://foodcourt.fun/profile"
-  DATABASE_URL: "postgres://db_user:$(DB_PASSWORD)@postgres-service-postgresql:5432/payment_db?sslmode=disable"
+  DATABASE_URL: "postgres://nancat_admin:$(DB_PASSWORD)@postgres-service-postgresql:5432/payment_db?sslmode=disable"
 secrets:
   DB_PASSWORD:
     secretName: nancats-prod-secrets
