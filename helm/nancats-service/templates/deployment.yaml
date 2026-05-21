@@ -12,6 +12,8 @@ spec:
       labels:
         app: {{ .Values.serviceName }}
     spec:
+      imagePullSecrets:
+        - name: ghcr-login-secret
       containers:
         - name: app
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
