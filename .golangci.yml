@@ -1,0 +1,9 @@
+version: "2"
+
+linters:
+  settings:
+    errcheck:
+      exclude-functions:
+        - (*net/http.ResponseWriter).Write
+        - io.Closer.Close
+        - (*database/sql.Tx).Rollback
