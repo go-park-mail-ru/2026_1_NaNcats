@@ -53,7 +53,13 @@ func main() {
 	defer chConn.Close()
 	appLogger.Info("Connected to ClickHouse", logger.String("addr", cfg.ClickHouse.Host))
 
-	repo := clickhouseRepo.NewAnalyticsRepository(chConn)
+	repo := clickhouseRepo.NewAnalyticsRepository(
+		chConn,
+		appLogger,
+		cfg.Ingester.BatchSize,
+		cfg.Ingester.FlushInterval,
+	)
+
 	uc := usecase.NewAnalyticsUseCase(repo, appLogger)
 
 	rabbitClient, err := rabbitmq.NewRabbitClient(cfg.RabbitMQURL, appLogger)
@@ -72,4 +78,10 @@ func main() {
 
 	<-ctx.Done()
 	appLogger.Info("Received shutdown signal, stopping Analytics Ingester gracefully...")
+
+	if err := repo.Close(); err != nil {
+		appLogger.Error("failed to gracefully close analytics repository", err)
+	} else {
+		appLogger.Info("Analytics repository gracefully stopped, all buffered data flushed")
+	}
 }

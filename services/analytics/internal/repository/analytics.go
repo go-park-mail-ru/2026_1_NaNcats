@@ -8,4 +8,6 @@ import (
 
 type AnalyticsRepository interface {
 	InsertEvent(ctx context.Context, event events.AnalyticsOrderEvent) error
+	// Инициирует завершение работы фонового воркера
+	Close() error
 }
