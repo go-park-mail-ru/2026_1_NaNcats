@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	addressHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/address"
+	analyticsHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/analytics"
 	authHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/auth"
 	cartHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/cart"
 	orderHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/order"
@@ -30,8 +31,10 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/rabbitmq"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/websocket"
 	rabbitclient "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq"
+	pbAnalytics "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/analytics"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/addressclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/analyticsclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/authclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/cartclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/orderclient"
@@ -153,6 +156,9 @@ func main() {
 	supportConn := mustInitConn(cfg.GRPCClients.SupportAddr, "Support Service", appLogger, grpcOpts)
 	defer supportConn.Close()
 
+	analyticsConn := mustInitConn(cfg.GRPCClients.AnalyticsAddr, "Analytics Service", appLogger, grpcOpts)
+	defer analyticsConn.Close()
+
 	authClient := authclient.NewAuthClient(pbAuth.NewAuthServiceClient(authConn))
 	userClient := userclient.NewUserClient(pbUser.NewUserServiceClient(userConn))
 	restClient := restaurantclient.NewRestaurantClient(pbRestaurant.NewRestaurantServiceClient(restConn))
@@ -161,6 +167,7 @@ func main() {
 	payClient := paymentclient.NewPaymentClient(pbPayment.NewPaymentServiceClient(payConn))
 	orderClient := orderclient.NewOrderClient(pbOrder.NewOrderServiceClient(orderConn))
 	supportClient := supportclient.NewSupportClient(pbSupport.NewSupportServiceClient(supportConn))
+	analyticsClient := analyticsclient.NewAnalyticsClient(pbAnalytics.NewAnalyticsServiceClient(analyticsConn))
 	rabbitClient, err := rabbitclient.NewRabbitClient(cfg.RabbitMQURL, appLogger)
 	if err != nil {
 		appLogger.Fatal("failed to init RabbitMq client", err)
@@ -188,6 +195,7 @@ func main() {
 	corsMW := middleware.NewCORSMiddleware(cfg.HTTP.AllowedOrigins)
 	authMW := middleware.NewAuthMiddleware(authClient, appLogger)
 	csrfMW := middleware.NewCSRFMiddleware(authClient, appLogger)
+	analyticsHandler := analyticsHttp.NewAnalyticsHandler(analyticsClient, appLogger)
 
 	gatewayConsumer := rabbitmq.NewGatewayConsumer(rabbitClient, wsManager, appLogger)
 	if err := gatewayConsumer.Start(ctx); err != nil {
@@ -215,6 +223,64 @@ func main() {
 		authMW.RequireAuth(
 			authMW.RequireRole("admin")(
 				csrfMW.Check(http.HandlerFunc(userProfileHandler.AdminUpdateRole)),
+			),
+		),
+	)
+
+	mux.Handle("POST /api/owner/restaurants",
+		authMW.RequireAuth(
+			authMW.RequireRole("owner")(
+				csrfMW.Check(http.HandlerFunc(restaurantHandler.CreateBrand)),
+			),
+		),
+	)
+	mux.Handle("PATCH /api/owner/restaurants/{id}",
+		authMW.RequireAuth(
+			authMW.RequireRole("owner")(
+				csrfMW.Check(http.HandlerFunc(restaurantHandler.UpdateBrand)),
+			),
+		),
+	)
+	mux.Handle("PATCH /api/owner/restaurants/{id}/logo",
+		authMW.RequireAuth(
+			authMW.RequireRole("owner")(
+				csrfMW.Check(http.HandlerFunc(restaurantHandler.UpdateBrandLogo)),
+			),
+		),
+	)
+	mux.Handle("DELETE /api/owner/restaurants/{id}",
+		authMW.RequireAuth(
+			authMW.RequireRole("owner")(
+				csrfMW.Check(http.HandlerFunc(restaurantHandler.DeleteBrand)),
+			),
+		),
+	)
+	mux.Handle("POST /api/owner/restaurants/{id}/dishes",
+		authMW.RequireAuth(
+			authMW.RequireRole("owner")(
+				csrfMW.Check(http.HandlerFunc(restaurantHandler.CreateDish)),
+			),
+		),
+	)
+	mux.Handle("PUT /api/owner/dishes/{id}",
+		authMW.RequireAuth(
+			authMW.RequireRole("owner")(
+				csrfMW.Check(http.HandlerFunc(restaurantHandler.UpdateDish)),
+			),
+		),
+	)
+	mux.Handle("DELETE /api/owner/dishes/{id}",
+		authMW.RequireAuth(
+			authMW.RequireRole("owner")(
+				csrfMW.Check(http.HandlerFunc(restaurantHandler.DeleteDish)),
+			),
+		),
+	)
+
+	mux.Handle("GET /api/owner/analytics",
+		authMW.RequireAuth(
+			authMW.RequireRole("owner")(
+				http.HandlerFunc(analyticsHandler.GetOwnerAnalytics),
 			),
 		),
 	)
