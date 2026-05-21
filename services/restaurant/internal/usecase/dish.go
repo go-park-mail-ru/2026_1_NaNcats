@@ -190,6 +190,8 @@ func (uc *dishUseCase) UpdateDish(ctx context.Context, d domain.Dish, newImage [
 		return domain.Dish{}, domain.ErrPermissionDenied
 	}
 
+	d.ImageURL = existing.ImageURL
+
 	if len(newImage) > 0 {
 		webpData, err := imageutil.ConvertToWebp(bytes.NewReader(newImage))
 		if err == nil {

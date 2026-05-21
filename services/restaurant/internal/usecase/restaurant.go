@@ -177,6 +177,8 @@ func (uc *restaurantBrandUseCase) UpdateRestaurantBrand(ctx context.Context, b d
 		return domain.RestaurantBrand{}, domain.ErrPermissionDenied
 	}
 
+	b.LogoURL = existing.LogoURL
+
 	if len(newImage) > 0 {
 		webpData, err := imageutil.ConvertToWebp(bytes.NewReader(newImage))
 		if err == nil {
