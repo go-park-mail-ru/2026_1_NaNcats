@@ -22,4 +22,5 @@ ingress:
   enabled: true
   host: foodcourt.fun
   tlsSecret: foodcourt-tls-secret
+  path: /api
 
