@@ -206,3 +206,191 @@ func (r *clickhouseRepo) flush(batch []bufferedEvent) {
 
 	r.logger.Debug("successfully flushed analytics batch to ClickHouse", logger.Int("batch_size", len(batch)))
 }
+
+func (r *clickhouseRepo) GetOwnerStats(ctx context.Context, restaurantID int64, startTime, endTime time.Time) (repository.OwnerStats, error) {
+	stats := repository.OwnerStats{
+		Operational: repository.OperationalStats{
+			StatusCounts: make(map[string]int64),
+		},
+		Dishes:     make([]repository.BestSeller, 0),
+		OrderTypes: make([]repository.OrderTypeStat, 0),
+		Timeline:   make([]repository.DailyStat, 0),
+	}
+
+	// Финансовые показатели
+	financialQuery := `
+		SELECT 
+			toInt64(count(DISTINCT order_public_id)) AS total_orders,
+			toInt64(count(DISTINCT order_public_id) FILTER (WHERE is_financial_impact = 1)) AS paid_orders,
+			COALESCE(sum(restaurant_revenue_raw) FILTER (WHERE is_financial_impact = 1), 0) AS net_revenue,
+			COALESCE(sum(discount_raw) FILTER (WHERE is_financial_impact = 1), 0) AS total_discounts
+		FROM orders_report_log
+		WHERE restaurant_id = $1
+		  AND event_time >= $2
+		  AND event_time <= $3;
+	`
+
+	var totalOrders int64
+	var paidOrders int64
+	var netRevenue int64
+	var totalDiscounts int64
+
+	err := r.conn.QueryRow(ctx, financialQuery, restaurantID, startTime, endTime).Scan(&totalOrders, &paidOrders, &netRevenue, &totalDiscounts)
+	if err != nil {
+		return stats, fmt.Errorf("query financial stats failed: %w", err)
+	}
+
+	stats.Financial.TotalRevenueRaw = netRevenue
+	stats.Financial.TotalDiscountsRaw = totalDiscounts
+	stats.Financial.TotalOrdersCount = totalOrders
+
+	if paidOrders > 0 {
+		stats.Financial.AverageTicketRaw = netRevenue / paidOrders
+	}
+
+	// Среднее время готовки
+	cookingTimeQuery := `
+		SELECT 
+			toInt64(nanToZero(avg(waiting_time - progress_time))) AS avg_cooking_time_sec
+		FROM (
+			SELECT 
+				order_public_id,
+				maxIf(toUnixTimestamp(event_time), status = 'waiting') AS waiting_time,
+				maxIf(toUnixTimestamp(event_time), status = 'in_progress') AS progress_time
+			FROM orders_report_log
+			WHERE restaurant_id = $1
+			  AND event_time >= $2
+			  AND event_time <= $3
+			GROUP BY order_public_id
+			HAVING waiting_time > 0 AND progress_time > 0
+		);
+	`
+	var avgCookingTimeFloat float64
+	err = r.conn.QueryRow(ctx, cookingTimeQuery, restaurantID, startTime, endTime).Scan(&stats.Operational.AvgCookingTimeSec)
+	if err != nil {
+		return stats, fmt.Errorf("query cooking time failed: %w", err)
+	}
+	stats.Operational.AvgCookingTimeSec = int64(avgCookingTimeFloat)
+
+	// Уникальное распределение текущих статусов заказов за период
+	statusFunnelQuery := `
+		SELECT status, toInt64(count(*)) AS count
+		FROM (
+			SELECT 
+				order_public_id,
+				argMax(status, event_time) AS status
+			FROM orders_report_log
+			WHERE restaurant_id = $1
+			  AND event_time >= $2
+			  AND event_time <= $3
+			GROUP BY order_public_id
+		)
+		GROUP BY status;
+	`
+
+	statusRows, err := r.conn.Query(ctx, statusFunnelQuery, restaurantID, startTime, endTime)
+	if err != nil {
+		return stats, fmt.Errorf("query status funnel failed: %w", err)
+	}
+	defer statusRows.Close()
+
+	for statusRows.Next() {
+		var status string
+		var count int64
+		if err := statusRows.Scan(&status, &count); err != nil {
+			return stats, fmt.Errorf("scan status funnel row failed: %w", err)
+		}
+		stats.Operational.StatusCounts[status] = count
+	}
+
+	// Топ-10 продаваемых блюд
+	bestSellersQuery := `
+		SELECT 
+			dish_id,
+			any(dish_name) AS name,
+			toInt32(COALESCE(sum(quantity), 0)) AS units_sold,
+			toInt64(COALESCE(sum(row_total_raw), 0)) AS total_revenue
+		FROM order_items_report_log
+		WHERE restaurant_id = $1
+		  AND event_time >= $2
+		  AND event_time <= $3
+		GROUP BY dish_id
+		ORDER BY units_sold DESC
+		LIMIT 10;
+	`
+
+	dishRows, err := r.conn.Query(ctx, bestSellersQuery, restaurantID, startTime, endTime)
+	if err != nil {
+		return stats, fmt.Errorf("query best sellers failed: %w", err)
+	}
+	defer dishRows.Close()
+
+	for dishRows.Next() {
+		var dish repository.BestSeller
+		err := dishRows.Scan(&dish.DishID, &dish.DishName, &dish.UnitsSold, &dish.TotalRevenueRaw)
+		if err != nil {
+			return stats, fmt.Errorf("scan best seller row failed: %w", err)
+		}
+		stats.Dishes = append(stats.Dishes, dish)
+	}
+
+	// Разделение типов заказов (Solo vs Shared)
+	orderTypesQuery := `
+		SELECT 
+			order_type,
+			toInt64(count(DISTINCT order_public_id)) AS orders_count,
+			if(isNaN(avg(members_count)), 1.0, avg(members_count)) AS avg_group_size
+		FROM orders_report_log
+		WHERE restaurant_id = $1
+		  AND event_time >= $2
+		  AND event_time <= $3
+		  AND status = 'cart_locked' 
+		GROUP BY order_type;
+	`
+
+	typeRows, err := r.conn.Query(ctx, orderTypesQuery, restaurantID, startTime, endTime)
+	if err != nil {
+		return stats, fmt.Errorf("query order types failed: %w", err)
+	}
+	defer typeRows.Close()
+
+	for typeRows.Next() {
+		var stat repository.OrderTypeStat
+		err := typeRows.Scan(&stat.OrderType, &stat.OrdersCount, &stat.AvgGroupSize)
+		if err != nil {
+			return stats, fmt.Errorf("scan order type row failed: %w", err)
+		}
+		stats.OrderTypes = append(stats.OrderTypes, stat)
+	}
+
+	// ВременнАя шкала по дням
+	timelineQuery := `
+		SELECT 
+			toStartOfDay(event_time) AS day,
+			COALESCE(sum(restaurant_revenue_raw) FILTER (WHERE is_financial_impact = 1), 0) AS daily_revenue,
+			toInt64(count(DISTINCT order_public_id)) AS daily_orders
+		FROM orders_report_log
+		WHERE restaurant_id = $1
+		  AND event_time >= $2
+		  AND event_time <= $3
+		GROUP BY day
+		ORDER BY day ASC;
+	`
+
+	timelineRows, err := r.conn.Query(ctx, timelineQuery, restaurantID, startTime, endTime)
+	if err != nil {
+		return stats, fmt.Errorf("query timeline failed: %w", err)
+	}
+	defer timelineRows.Close()
+
+	for timelineRows.Next() {
+		var pt repository.DailyStat
+		err := timelineRows.Scan(&pt.Date, &pt.RevenueRaw, &pt.OrdersCount)
+		if err != nil {
+			return stats, fmt.Errorf("scan timeline row failed: %w", err)
+		}
+		stats.Timeline = append(stats.Timeline, pt)
+	}
+
+	return stats, nil
+}

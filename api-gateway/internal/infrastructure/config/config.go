@@ -13,6 +13,7 @@ type GRPCClientsConfig struct {
 	PaymentAddr    string `yaml:"payment_service_addr" env:"PAYMENT_SERVICE_ADDR"`
 	OrderAddr      string `yaml:"order_service_addr" env:"ORDER_SERVICE_ADDR"`
 	SupportAddr    string `yaml:"support_service_addr" env:"SUPPORT_SERVICE_ADDR"`
+	AnalyticsAddr  string `yaml:"analytics_service_addr" env:"ANALYTICS_SERVICE_ADDR"`
 }
 
 type Config struct {

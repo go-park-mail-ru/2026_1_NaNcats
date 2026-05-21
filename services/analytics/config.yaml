@@ -14,3 +14,7 @@ clickhouse:
 ingester:
   batch_size: 1000
   flush_interval: "5s"
+
+grpc:
+  port: "50059"
+  timeout: "5s"

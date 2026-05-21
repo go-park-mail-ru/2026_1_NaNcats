@@ -20,11 +20,12 @@ type IngesterConfig struct {
 }
 
 type Config struct {
-	Logger      config.LoggerConfig `yaml:"logger"`
-	ClickHouse  ClickHouseConfig    `yaml:"clickhouse"`
-	Ingester    IngesterConfig      `yaml:"ingester"`
-	OTEL        config.OTELConfig   `yaml:"otel"`
-	RabbitMQURL string              `yaml:"rabbit_mq_url" env:"RABBITMQ_URL" env-required:"true"`
+	Logger      config.LoggerConfig     `yaml:"logger"`
+	ClickHouse  ClickHouseConfig        `yaml:"clickhouse"`
+	Ingester    IngesterConfig          `yaml:"ingester"`
+	OTEL        config.OTELConfig       `yaml:"otel"`
+	RabbitMQURL string                  `yaml:"rabbit_mq_url" env:"RABBITMQ_URL" env-required:"true"`
+	GRPC        config.GRPCServerConfig `yaml:"grpc"`
 }
 
 func Load() *Config {

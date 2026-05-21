@@ -5,13 +5,18 @@ import (
 	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/analytics/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/errutil"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq/events"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc/codes"
 )
 
 // Интерфейс для обработки входящих аналитических событий
 type AnalyticsUseCase interface {
 	ProcessEvent(ctx context.Context, event events.AnalyticsOrderEvent) error
+	GetOwnerStats(ctx context.Context, restaurantID int64, startTime, endTime time.Time) (repository.OwnerStats, error)
 }
 
 type analyticsUseCase struct {
@@ -47,4 +52,27 @@ func (u *analyticsUseCase) ProcessEvent(ctx context.Context, event events.Analyt
 	}
 
 	return nil
+}
+
+func (u *analyticsUseCase) GetOwnerStats(ctx context.Context, restaurantID int64, startTime, endTime time.Time) (repository.OwnerStats, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.Int64("restaurant.id", restaurantID),
+		attribute.String("query.start_time", startTime.Format(time.RFC3339)),
+		attribute.String("query.end_time", endTime.Format(time.RFC3339)),
+	)
+
+	if startTime.After(endTime) {
+		return repository.OwnerStats{}, errutil.New("INVALID_TIME_RANGE", "start_time must be before end_time", codes.InvalidArgument)
+	}
+
+	stats, err := u.repo.GetOwnerStats(ctx, restaurantID, startTime, endTime)
+	if err != nil {
+		u.logger.Error("failed to fetch owner stats from repository", err,
+			logger.Int64("restaurant_id", restaurantID),
+		)
+		return repository.OwnerStats{}, errutil.Internal("failed to fetch analytics data", err)
+	}
+
+	return stats, nil
 }
