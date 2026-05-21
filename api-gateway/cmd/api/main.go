@@ -218,15 +218,7 @@ func main() {
 	mux.Handle("POST /api/profile/avatar", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(userProfileHandler.UpdateAvatar))))
 	mux.Handle("DELETE /api/profile/avatar", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(userProfileHandler.DeleteAvatar))))
 
-	// === ADMIN ===
-	mux.Handle("POST /api/admin/users/role",
-		authMW.RequireAuth(
-			authMW.RequireRole("admin")(
-				csrfMW.Check(http.HandlerFunc(userProfileHandler.AdminUpdateRole)),
-			),
-		),
-	)
-
+	// === OWNER ===
 	mux.Handle("POST /api/owner/restaurants",
 		authMW.RequireAuth(
 			authMW.RequireRole("owner")(
