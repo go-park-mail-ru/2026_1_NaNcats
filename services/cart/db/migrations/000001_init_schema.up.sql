@@ -1,10 +1,8 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 CREATE TYPE cart_mode AS ENUM('solo', 'shared');
 CREATE TYPE cart_status AS ENUM('active', 'locked');
 
 CREATE TABLE "cart" (
-	cart_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+	cart_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     admin_id BIGINT NOT NULL, -- Создатель комнаты, имеет права на кик и смену оунеров
     restaurant_brand_id BIGINT NOT NULL,
 
@@ -52,7 +50,7 @@ CREATE TABLE "cart_invite" (
 );
 
 CREATE TABLE "outbox_events" (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     aggregate_id TEXT NOT NULL,
     event_type TEXT NOT NULL,
     payload JSONB NOT NULL,
