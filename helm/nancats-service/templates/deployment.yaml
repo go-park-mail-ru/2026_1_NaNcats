@@ -23,14 +23,6 @@ spec:
           {{- $hasEnv := or .Values.sharedEnv .Values.env .Values.sharedSecrets .Values.secrets }}
           {{- if $hasEnv }}
           env:
-            {{- range $key, $value := .Values.sharedEnv }}
-            - name: {{ $key }}
-              value: {{ $value | quote }}
-            {{- end }}
-            {{- range $key, $value := .Values.env }}
-            - name: {{ $key }}
-              value: {{ $value | quote }}
-            {{- end }}
             {{- range $key, $val := .Values.sharedSecrets }}
             - name: {{ $key }}
               valueFrom:
@@ -44,5 +36,14 @@ spec:
                 secretKeyRef:
                   name: {{ $val.secretName }}
                   key: {{ $val.secretKey }}
+            {{- end }}
+
+            {{- range $key, $value := .Values.sharedEnv }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
             {{- end }}
           {{- end }}
