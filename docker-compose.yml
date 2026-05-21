@@ -286,6 +286,26 @@ services:
       rabbitmq:
         condition: service_healthy
   
+  analytics_service:
+    build:
+      context: .
+      args:
+        BUILD_PATH: ./services/analytics/cmd/main.go
+    container_name: analytics_service
+    environment:
+      <<: *shared-env
+      CONFIG_PATH: ./services/analytics/config.yaml
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-admin}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-password}
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-analytics}
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+  
   support_service:
     build:
       context: .
