@@ -75,6 +75,7 @@ type OrderSplitDTO struct {
 //easyjson:json
 type OrderHistoryResponse struct {
 	OrderID            string          `json:"order_id"`
+	RestaurantID       int64           `json:"restaurant_id"`
 	RestaurantName     string          `json:"restaurant_name"`
 	RestaurantImageURL string          `json:"restaurant_image_url"`
 	TotalCost          int64           `json:"total_cost"`
@@ -421,6 +422,7 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 
 		resp = append(resp, OrderHistoryResponse{
 			OrderID:            o.PublicID,
+			RestaurantID:       o.RestaurantBrandID,
 			RestaurantName:     o.RestaurantName,
 			RestaurantImageURL: brandLogo,
 			TotalCost:          o.TotalCost,
