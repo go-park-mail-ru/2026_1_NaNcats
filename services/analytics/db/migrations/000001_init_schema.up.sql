@@ -26,9 +26,9 @@ CREATE TABLE IF NOT EXISTS orders_report_log (
     -- Будет 1 только при переходе в 'paid' чтобы не было дублей для денежных полей
     is_financial_impact Int8 DEFAULT 0 
 ) 
-ENGINE = MergeTree()
+ENGINE = ReplacingMergeTree(event_time)
 PARTITION BY toYYYYMM(event_date)
-ORDER BY (restaurant_id, event_time);
+ORDER BY (restaurant_id, order_public_id, status);
 
 -- Таблица блюд
 CREATE TABLE IF NOT EXISTS order_items_report_log (
