@@ -5,5 +5,5 @@ service:
   port: 50054
 env:
   CONFIG_PATH: "./services/auth/config.yaml"
-  REDIS_URL: "redis://redis-service-redis:6379/0"
+  REDIS_URL: "redis://redis-service-master:6379/0"
   USER_SERVICE_ADDR: "user-service:50052"

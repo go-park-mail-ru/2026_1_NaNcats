@@ -5,8 +5,8 @@ service:
   port: 50056
 env:
   CONFIG_PATH: "./services/payment/config.yaml"
-  RABBITMQ_URL: "amqp://guest:guest@rabbitmq-service-rabbitmq:5672/"
-  REDIS_URL: "redis://redis-service-redis:6379/0"
+  RABBITMQ_URL: "amqp://guest:guest@rabbitmq-service:5672/"
+  REDIS_URL: "redis://redis-service-master:6379/0"
   ORDER_SERVICE_ADDR: "order-service:50057"
   YOOKASSA_SHOP_ID: "1325612"
   YOOKASSA_RETURN_URL: "https://foodcourt.fun/profile"

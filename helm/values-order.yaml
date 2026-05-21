@@ -5,7 +5,7 @@ service:
   port: 50057
 env:
   CONFIG_PATH: "./services/order/config.yaml"
-  RABBITMQ_URL: "amqp://guest:guest@rabbitmq-service-rabbitmq:5672/"
+  RABBITMQ_URL: "amqp://guest:guest@rabbitmq-service:5672/"
   ADDRESS_SERVICE_ADDR: "address-service:50051"
   CART_SERVICE_ADDR: "cart-service:50055"
   PAYMENT_SERVICE_ADDR: "payment-service:50056"
