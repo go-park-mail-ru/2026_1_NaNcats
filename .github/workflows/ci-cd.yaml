@@ -198,7 +198,7 @@ jobs:
           host: ${{ secrets.SERVER_IP }}
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "./helm/"
+          source: "helm/**"
           target: "/home/ubuntu/k8s_manifests/"
 
       - name: SSH to k3s server and Deploy via Helm

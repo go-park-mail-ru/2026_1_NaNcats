@@ -17,3 +17,9 @@ env:
   PAYMENT_SERVICE_ADDR: "payment-service:50056"
   ORDER_SERVICE_ADDR: "order-service:50057"
   SUPPORT_SERVICE_ADDR: "support-service:50058"
+
+ingress:
+  enabled: true
+  host: foodcourt.fun
+  tlsSecret: foodcourt-tls-secret
+

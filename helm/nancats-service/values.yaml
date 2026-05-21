@@ -1,6 +1,9 @@
 replicaCount: 1
 serviceName: placeholder-service
 
+ingress:
+  enabled: false
+
 image:
   repository: ghcr.io/go-park-mail-ru/2026_1_nancats/placeholder
   tag: latest
