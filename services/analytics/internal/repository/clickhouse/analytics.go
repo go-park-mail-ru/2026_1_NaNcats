@@ -7,6 +7,7 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/analytics/internal/repository"
+	rabbitmqErrors "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq/errors"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq/events"
 	"github.com/google/uuid"
 )
@@ -23,7 +24,7 @@ func (r *clickhouseRepo) InsertEvent(ctx context.Context, event events.Analytics
 	t := time.UnixMilli(event.EventTime)
 	orderUUID, err := uuid.Parse(event.OrderPublicID)
 	if err != nil {
-		return fmt.Errorf("parse order uuid: %w", err)
+		return rabbitmqErrors.NewPermanentError(fmt.Errorf("parse order uuid [%s] failed: %w", event.OrderPublicID, err))
 	}
 
 	orderBatch, err := r.conn.PrepareBatch(ctx, `

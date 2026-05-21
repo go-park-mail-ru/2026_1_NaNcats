@@ -2,10 +2,12 @@ package rabbitmq
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/analytics/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq"
+	rabbitmqErrors "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq/errors"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq/events"
 	"github.com/mailru/easyjson"
 )
@@ -29,7 +31,7 @@ func (c *AnalyticsConsumer) Start(ctx context.Context) error {
 		var event events.AnalyticsOrderEvent
 		if err := easyjson.Unmarshal(body, &event); err != nil {
 			c.logger.Error("failed to unmarshal analytics event, message dropped", err)
-			return nil // Возвращаем nil, чтобы не зацикливать битый JSON в очереди
+			return rabbitmqErrors.NewPermanentError(fmt.Errorf("unmarshal payload failed: %w", err))
 		}
 
 		c.logger.Debug("received analytics event",

@@ -70,6 +70,20 @@ func (mr *MockAMQPChannelMockRecorder) ConsumeWithContext(ctx, queue, consumer, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConsumeWithContext", reflect.TypeOf((*MockAMQPChannel)(nil).ConsumeWithContext), ctx, queue, consumer, autoAck, exclusive, noLocal, noWait, args)
 }
 
+// ExchangeDeclare mocks base method.
+func (m *MockAMQPChannel) ExchangeDeclare(name, kind string, durable, autoDelete, internal, noWait bool, args amqp091.Table) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExchangeDeclare", name, kind, durable, autoDelete, internal, noWait, args)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ExchangeDeclare indicates an expected call of ExchangeDeclare.
+func (mr *MockAMQPChannelMockRecorder) ExchangeDeclare(name, kind, durable, autoDelete, internal, noWait, args any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExchangeDeclare", reflect.TypeOf((*MockAMQPChannel)(nil).ExchangeDeclare), name, kind, durable, autoDelete, internal, noWait, args)
+}
+
 // PublishWithContext mocks base method.
 func (m *MockAMQPChannel) PublishWithContext(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp091.Publishing) error {
 	m.ctrl.T.Helper()
@@ -96,6 +110,20 @@ func (m *MockAMQPChannel) Qos(prefetchCount, prefetchSize int, global bool) erro
 func (mr *MockAMQPChannelMockRecorder) Qos(prefetchCount, prefetchSize, global any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Qos", reflect.TypeOf((*MockAMQPChannel)(nil).Qos), prefetchCount, prefetchSize, global)
+}
+
+// QueueBind mocks base method.
+func (m *MockAMQPChannel) QueueBind(name, key, exchange string, noWait bool, args amqp091.Table) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "QueueBind", name, key, exchange, noWait, args)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// QueueBind indicates an expected call of QueueBind.
+func (mr *MockAMQPChannelMockRecorder) QueueBind(name, key, exchange, noWait, args any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueueBind", reflect.TypeOf((*MockAMQPChannel)(nil).QueueBind), name, key, exchange, noWait, args)
 }
 
 // QueueDeclare mocks base method.
