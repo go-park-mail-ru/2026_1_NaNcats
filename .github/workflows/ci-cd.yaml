@@ -62,7 +62,7 @@ jobs:
 
       - name: Run golangci-lint
         if: steps.filter.outputs.changed == 'true'
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
           version: v2.12.2
           args: --timeout=5m ${{ matrix.context_path }}/... ./shared/...
