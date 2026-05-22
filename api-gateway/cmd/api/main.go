@@ -11,7 +11,6 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gomodule/redigo/redis"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -120,14 +119,6 @@ func main() {
 	}
 	defer redisPool.Close()
 
-	// Прямое подключение к order_db нужно только промокодам: у них пока нет
-	// собственного gRPC-сервиса, поэтому хендлер ходит в БД напрямую.
-	promoDBPool, err := pgxpool.New(ctx, cfg.OrderDBURL)
-	if err != nil {
-		appLogger.Fatal("Failed to connect to order DB for promos", err)
-	}
-	defer promoDBPool.Close()
-
 	grpcOpts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
@@ -192,7 +183,7 @@ func main() {
 	redisHub := supportHttp.NewRedisHub(redisPool, appLogger)
 	supportHandler := supportHttp.NewSupportHandler(supportClient, redisHub, appLogger)
 	reviewHandler := reviewHttp.NewReviewHandler(appLogger)
-	promoHandler := promoHttp.NewPromoHandler(promoDBPool, appLogger)
+	promoHandler := promoHttp.NewPromoHandler(pbOrder.NewPromoServiceClient(orderConn), appLogger)
 
 	reqIDMW := middleware.NewRequestIDMiddleware()
 	loggingMW := middleware.NewLoggingMiddleware(appLogger)

@@ -57,15 +57,16 @@ CREATE TABLE "order_review" (
 CREATE TABLE "order_dish" (
 	order_id BIGINT,
 	dish_id BIGINT,
-	PRIMARY KEY (order_id, dish_id),
+	-- owner_user_id входит в первичный ключ: одно блюдо у разных участников
+	-- совместного заказа хранится отдельными строками. 0 = позиция ничья.
+	owner_user_id BIGINT NOT NULL DEFAULT 0,
+	PRIMARY KEY (order_id, dish_id, owner_user_id),
 
 	dish_name TEXT NOT NULL,
-	
+
 	quantity INT NOT NULL CHECK (quantity > 0),
 	price BIGINT NOT NULL CHECK (price >= 1000000),
-	
-	owner_user_id BIGINT, 
-	
+
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	
 	CONSTRAINT fk_order_dish_order
@@ -110,7 +111,8 @@ CREATE TABLE "promocode" (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     code TEXT NOT NULL UNIQUE
         CHECK (char_length(code) >= 2 AND char_length(code) <= 50),
-    
+    title TEXT NOT NULL DEFAULT '',
+
     discount_percent INT
         CHECK (discount_percent > 0 AND discount_percent <= 100),
     discount_amount BIGINT
@@ -140,20 +142,35 @@ CREATE TABLE "promocode" (
 CREATE TABLE "promocode_usage" (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     promocode_id BIGINT NOT NULL,
-    order_id BIGINT NOT NULL,
+    -- order_id может быть NULL: использование промокода фиксируется и тогда,
+    -- когда заказ ещё не сопоставлен, а при удалении заказа просто обнуляется.
+    order_id BIGINT,
     user_id BIGINT NOT NULL,
-    
+
     UNIQUE (promocode_id, user_id),
-    
+
     used_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-    
+
     CONSTRAINT fk_promocode_usage_promocode
         FOREIGN KEY (promocode_id)
         REFERENCES "promocode"(id)
         ON DELETE CASCADE,
-        
+
     CONSTRAINT fk_promocode_usage_order
         FOREIGN KEY (order_id)
         REFERENCES "order"(id)
+        ON DELETE SET NULL
+);
+
+-- Промокоды, "сохранённые" пользователем в профиль.
+CREATE TABLE "user_promocode" (
+    user_id BIGINT NOT NULL,
+    promocode_id BIGINT NOT NULL,
+    added_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    PRIMARY KEY (user_id, promocode_id),
+
+    CONSTRAINT fk_user_promocode_promocode
+        FOREIGN KEY (promocode_id)
+        REFERENCES "promocode"(id)
         ON DELETE CASCADE
 );

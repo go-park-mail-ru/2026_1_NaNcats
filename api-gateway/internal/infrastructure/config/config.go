@@ -21,7 +21,6 @@ type Config struct {
 	GRPCClients GRPCClientsConfig   `yaml:"grpc_clients"`
 	OTEL        config.OTELConfig   `yaml:"otel"`
 	RabbitMQURL string              `yaml:"rabbit_mq_url" env:"RABBITMQ_URL" env-required:"true"`
-	OrderDBURL  string              `yaml:"order_db_url" env:"ORDER_DB_URL" env-default:"postgres://postgres:postgres@localhost:5432/order_db?sslmode=disable"`
 }
 
 type HTTPConfig struct {

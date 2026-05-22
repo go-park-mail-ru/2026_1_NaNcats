@@ -21,6 +21,21 @@ service OrderService {
   rpc CancelOrder (CancelOrderRequest) returns (google.protobuf.Empty);
 }
 
+// Сервис промокодов. Промокоды хранятся в БД OrderService, поэтому
+// вся работа с ними реализована здесь, а api-gateway ходит сюда по gRPC.
+service PromoService {
+  // Промокоды, привязанные к пользователю
+  rpc GetUserPromos (GetUserPromosRequest) returns (PromocodeList);
+  // Действующие промокоды ресторана
+  rpc GetRestaurantPromos (GetRestaurantPromosRequest) returns (PromocodeList);
+  // Привязка промокода к пользователю по коду
+  rpc BindPromocode (BindPromocodeRequest) returns (Promocode);
+  // Проверка промокода для заказа и расчёт скидки
+  rpc ValidatePromocode (ValidatePromocodeRequest) returns (ValidatePromocodeResponse);
+  // Фиксация использования промокода после оформления заказа
+  rpc UsePromocode (UsePromocodeRequest) returns (google.protobuf.Empty);
+}
+
 message CancelOrderRequest {
   string order_public_id = 1;
   int64 user_id = 2;
@@ -53,6 +68,8 @@ message Order {
   repeated OrderDish items = 7;
   repeated OrderSplit splits = 8;
   int64 restaurant_brand_id = 9;
+  optional string applied_promocode = 10;
+  int64 discount_amount = 11;
 }
 
 message CreateOrderRequest {
@@ -97,4 +114,55 @@ message PayForFriendRequest {
   int64 payer_user_id = 2;
   string payment_method_id = 3;
   string idempotency_key = 4;
+}
+
+// --- Промокоды ---
+
+message Promocode {
+  int64 id = 1;
+  string code = 2;
+  string title = 3;
+  optional int32 discount_percent = 4;
+  optional int64 discount_amount = 5;
+  int64 min_order_amount = 6;
+  optional string expires_at = 7;
+  repeated int64 restaurant_brand_ids = 8;
+}
+
+message PromocodeList {
+  repeated Promocode promocodes = 1;
+}
+
+message GetUserPromosRequest {
+  int64 user_id = 1;
+}
+
+message GetRestaurantPromosRequest {
+  int64 restaurant_brand_id = 1;
+}
+
+message BindPromocodeRequest {
+  int64 user_id = 1;
+  string code = 2;
+}
+
+message ValidatePromocodeRequest {
+  int64 user_id = 1;
+  string code = 2;
+  int64 restaurant_brand_id = 3;
+  int64 order_amount = 4;
+  int64 delivery_cost = 5;
+  int64 service_fee = 6;
+}
+
+message ValidatePromocodeResponse {
+  bool valid = 1;
+  int64 discount = 2;
+  string reason = 3;
+}
+
+message UsePromocodeRequest {
+  int64 user_id = 1;
+  string code = 2;
+  string order_public_id = 3;
 }

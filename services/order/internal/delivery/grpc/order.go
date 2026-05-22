@@ -47,6 +47,8 @@ func mapDomainToPBOrder(o domain.Order) *pb.Order {
 		CreatedAt:         timestamppb.New(o.CreatedAt),
 		Items:             items,
 		Splits:            splits,
+		AppliedPromocode:  o.PromocodeString,
+		DiscountAmount:    o.DiscountAmount,
 	}
 }
 

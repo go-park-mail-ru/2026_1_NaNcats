@@ -15,10 +15,11 @@ CREATE TABLE "cart" (
 CREATE TABLE "cart_dish" (
 	cart_id UUID,
     dish_id BIGINT,
-    PRIMARY KEY (cart_id, dish_id),
-	
-	owner_user_id BIGINT, 
-    
+	-- owner_user_id входит в первичный ключ: одно блюдо у разных участников
+	-- совместной корзины хранится отдельными строками. 0 = позиция ничья.
+	owner_user_id BIGINT NOT NULL DEFAULT 0,
+    PRIMARY KEY (cart_id, dish_id, owner_user_id),
+
     quantity INT NOT NULL CHECK (quantity > 0),
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,

@@ -5,6 +5,7 @@ import "time"
 type Promocode struct {
 	ID                int64
 	Code              string
+	Title             string
 	DiscountPercent   *int
 	DiscountAmount    *int64
 	MaxUses           *int
@@ -15,6 +16,22 @@ type Promocode struct {
 	IsGlobal          bool
 	CreatedAt         time.Time
 	ExpiresAt         time.Time
+}
+
+// RestaurantBrandIDs возвращает список брендов, к которым привязан промокод.
+// Промокод scope-ится одним брендом (либо ни одним — тогда список пуст).
+func (p Promocode) RestaurantBrandIDs() []int64 {
+	if p.RestaurantBrandID == nil {
+		return []int64{}
+	}
+	return []int64{*p.RestaurantBrandID}
+}
+
+// PromoValidation — результат проверки промокода для конкретного заказа.
+type PromoValidation struct {
+	Valid    bool
+	Discount int64
+	Reason   string
 }
 
 type PromocodeUsage struct {

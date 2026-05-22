@@ -624,6 +624,9 @@ func TestOrderUseCase_ProcessSagaReply(t *testing.T) {
 			mockInit: func(d useCaseDeps) {
 				// Платёж не создался, но заказ валиден: переводим в payment_ready,
 				// чтобы фронт мог предложить повторную оплату/другую карту.
+				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusFailed, StatusCreated, StatusCartLocked, StatusPaymentReady).Return(nil)
+				d.repo.EXPECT().UpdateSplitStatus(gomock.Any(), "split-1", SplitStatusFailed).Return(nil)
+				d.repo.EXPECT().RollbackPromocodeUsage(gomock.Any(), "pub-123").Return(nil)
 				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusPaymentReady).Return(nil)
 				d.repo.EXPECT().UpdateSplitStatus(gomock.Any(), "split-1", SplitStatusFailed).Return(nil)
 				// Событие для фронта через gateway-очередь.

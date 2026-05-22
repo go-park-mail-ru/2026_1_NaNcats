@@ -116,6 +116,10 @@ func main() {
 	tracedOrderUC := orderUseCase.NewOrderUseCaseTracingMiddleware(orderUC)
 	orderHandler := orderDelivery.NewOrderHandler(tracedOrderUC)
 
+	promoRepo := orderPG.NewPromoRepo(pool)
+	promoUC := orderUseCase.NewPromoUseCase(promoRepo)
+	promoHandler := orderDelivery.NewPromoHandler(promoUC)
+
 	orderConsumer := orderRabbitMQ.NewOrderConsumer(rabbitClient, orderUC, appLogger)
 	if err := orderConsumer.Start(ctx); err != nil {
 		appLogger.Fatal("Failed to start RabbitMQ consumer", err)
@@ -145,6 +149,7 @@ func main() {
 	)
 
 	pb.RegisterOrderServiceServer(grpcServer, orderHandler)
+	pb.RegisterPromoServiceServer(grpcServer, promoHandler)
 	reflection.Register(grpcServer)
 
 	listener, err := net.Listen("tcp", ":"+cfg.GRPC.Port)
