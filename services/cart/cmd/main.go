@@ -24,7 +24,6 @@ import (
 	cartGrpcClient "github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/infrastructure/grpc_client"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/infrastructure/outbox"
 	cartPG "github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/repository/postgres"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/usecase"
 	cartUseCase "github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/usecase"
 
 	cartRabbitMQ "github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/delivery/rabbitmq"
@@ -96,7 +95,7 @@ func main() {
 
 	cartRepo := cartPG.NewCartRepo(pool)
 	cartUC := cartUseCase.NewCartUseCase(cartRepo, restaurantClient, cfg.DefaultFoodLogoURL)
-	tracedCartUC := usecase.NewCartUseCaseTracingMiddleware(cartUC)
+	tracedCartUC := cartUseCase.NewCartUseCaseTracingMiddleware(cartUC)
 	cartHandler := cartDelivery.NewCartHandler(tracedCartUC)
 
 	rabbitClient, err := rabbitmq.NewRabbitClient(cfg.RabbitMQURL, appLogger)

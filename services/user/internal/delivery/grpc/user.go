@@ -21,6 +21,7 @@ func mapDomainToPBUser(u domain.User) *pb.User {
 		Role:         u.Role,
 		AvatarUrl:    u.AvatarURL,
 		PasswordHash: u.PasswordHash,
+		PublicId:     u.PublicID,
 	}
 }
 
@@ -179,4 +180,27 @@ func (h *UserHandler) UpdateUserRole(ctx context.Context, req *pb.UpdateUserRole
 		return nil, grpcutil.ToGRPCError(err)
 	}
 	return &emptypb.Empty{}, nil
+}
+
+func (h *UserHandler) GetUsersByIDs(ctx context.Context, req *pb.GetUsersByIDsRequest) (*pb.GetUsersByIDsResponse, error) {
+	users, err := h.userUC.GetUsersByIDs(ctx, req.UserIds)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	pbUsers := make(map[int64]*pb.User, len(users))
+	for id, u := range users {
+		pbUsers[id] = mapDomainToPBUser(u)
+	}
+
+	return &pb.GetUsersByIDsResponse{Users: pbUsers}, nil
+}
+
+func (h *UserHandler) ResolvePublicID(ctx context.Context, req *pb.ResolvePublicIDRequest) (*pb.ResolvePublicIDResponse, error) {
+	user, err := h.userUC.GetByPublicID(ctx, req.PublicId)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	return &pb.ResolvePublicIDResponse{UserId: user.ID}, nil
 }

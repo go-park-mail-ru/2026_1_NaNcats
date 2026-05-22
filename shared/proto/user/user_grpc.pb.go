@@ -30,6 +30,8 @@ const (
 	UserService_CheckUserExists_FullMethodName     = "/user.UserService/CheckUserExists"
 	UserService_GetUserProfile_FullMethodName      = "/user.UserService/GetUserProfile"
 	UserService_UpdateUserRole_FullMethodName      = "/user.UserService/UpdateUserRole"
+	UserService_GetUsersByIDs_FullMethodName       = "/user.UserService/GetUsersByIDs"
+	UserService_ResolvePublicID_FullMethodName     = "/user.UserService/ResolvePublicID"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -58,6 +60,10 @@ type UserServiceClient interface {
 	GetUserProfile(ctx context.Context, in *GetUserProfileRequest, opts ...grpc.CallOption) (*GetUserProfileResponse, error)
 	// Метод смены роли пользователя
 	UpdateUserRole(ctx context.Context, in *UpdateUserRoleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Получить пользователей пачкой
+	GetUsersByIDs(ctx context.Context, in *GetUsersByIDsRequest, opts ...grpc.CallOption) (*GetUsersByIDsResponse, error)
+	// Обратный поиск внутреннего ID по публичному
+	ResolvePublicID(ctx context.Context, in *ResolvePublicIDRequest, opts ...grpc.CallOption) (*ResolvePublicIDResponse, error)
 }
 
 type userServiceClient struct {
@@ -168,6 +174,26 @@ func (c *userServiceClient) UpdateUserRole(ctx context.Context, in *UpdateUserRo
 	return out, nil
 }
 
+func (c *userServiceClient) GetUsersByIDs(ctx context.Context, in *GetUsersByIDsRequest, opts ...grpc.CallOption) (*GetUsersByIDsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUsersByIDsResponse)
+	err := c.cc.Invoke(ctx, UserService_GetUsersByIDs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) ResolvePublicID(ctx context.Context, in *ResolvePublicIDRequest, opts ...grpc.CallOption) (*ResolvePublicIDResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResolvePublicIDResponse)
+	err := c.cc.Invoke(ctx, UserService_ResolvePublicID_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
@@ -194,6 +220,10 @@ type UserServiceServer interface {
 	GetUserProfile(context.Context, *GetUserProfileRequest) (*GetUserProfileResponse, error)
 	// Метод смены роли пользователя
 	UpdateUserRole(context.Context, *UpdateUserRoleRequest) (*emptypb.Empty, error)
+	// Получить пользователей пачкой
+	GetUsersByIDs(context.Context, *GetUsersByIDsRequest) (*GetUsersByIDsResponse, error)
+	// Обратный поиск внутреннего ID по публичному
+	ResolvePublicID(context.Context, *ResolvePublicIDRequest) (*ResolvePublicIDResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -233,6 +263,12 @@ func (UnimplementedUserServiceServer) GetUserProfile(context.Context, *GetUserPr
 }
 func (UnimplementedUserServiceServer) UpdateUserRole(context.Context, *UpdateUserRoleRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateUserRole not implemented")
+}
+func (UnimplementedUserServiceServer) GetUsersByIDs(context.Context, *GetUsersByIDsRequest) (*GetUsersByIDsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUsersByIDs not implemented")
+}
+func (UnimplementedUserServiceServer) ResolvePublicID(context.Context, *ResolvePublicIDRequest) (*ResolvePublicIDResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResolvePublicID not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
@@ -435,6 +471,42 @@ func _UserService_UpdateUserRole_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_GetUsersByIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUsersByIDsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetUsersByIDs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetUsersByIDs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetUsersByIDs(ctx, req.(*GetUsersByIDsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_ResolvePublicID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResolvePublicIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ResolvePublicID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ResolvePublicID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ResolvePublicID(ctx, req.(*ResolvePublicIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -481,6 +553,14 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateUserRole",
 			Handler:    _UserService_UpdateUserRole_Handler,
+		},
+		{
+			MethodName: "GetUsersByIDs",
+			Handler:    _UserService_GetUsersByIDs_Handler,
+		},
+		{
+			MethodName: "ResolvePublicID",
+			Handler:    _UserService_ResolvePublicID_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

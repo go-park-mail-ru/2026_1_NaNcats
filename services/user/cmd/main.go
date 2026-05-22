@@ -23,7 +23,6 @@ import (
 	userDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/delivery/grpc"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/infrastructure/config"
 	userPG "github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/repository/postgres"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/usecase"
 	userUsecase "github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/usecase"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/user"
 
@@ -94,9 +93,9 @@ func main() {
 	defer rabbitClient.Close()
 
 	userUC := userUsecase.NewUserUseCase(userRepo, s3Repo, cfg.DefaultAvatarURL, rabbitClient, appLogger)
-	tracedUserUC := usecase.NewUserUseCaseTracingMiddleware(userUC)
+	tracedUserUC := userUsecase.NewUserUseCaseTracingMiddleware(userUC)
 	clientProfileUC := userUsecase.NewClientProfileUseCase(clientProfileRepo)
-	tracedProfileUC := usecase.NewClientProfileUseCaseTracingMiddleware(clientProfileUC)
+	tracedProfileUC := userUsecase.NewClientProfileUseCaseTracingMiddleware(clientProfileUC)
 
 	userHandler := userDelivery.NewUserHandler(tracedUserUC, tracedProfileUC)
 

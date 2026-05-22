@@ -25,6 +25,8 @@ type UserClient interface {
 	UpdateAvatar(ctx context.Context, userID int64, fileBytes []byte, idempotencyKey string) (string, error)
 	DeleteAvatar(ctx context.Context, userID int64, idempotencyKey string) (string, error)
 	UpdateRole(ctx context.Context, userID int64, newRole string, idempotencyKey string) error
+	GetUsersByIDs(ctx context.Context, userIDs []int64) (map[int64]*pbUser.User, error)
+	ResolvePublicID(ctx context.Context, publicID string) (int64, error)
 }
 
 type userClient struct {
@@ -146,4 +148,32 @@ func (c *userClient) UpdateRole(ctx context.Context, userID int64, newRole strin
 		return ErrInternal
 	}
 	return nil
+}
+
+func (c *userClient) GetUsersByIDs(ctx context.Context, userIDs []int64) (map[int64]*pbUser.User, error) {
+	resp, err := c.client.GetUsersByIDs(ctx, &pbUser.GetUsersByIDsRequest{
+		UserIds: userIDs,
+	})
+	if err != nil {
+		return nil, ErrInternal
+	}
+
+	if resp.Users == nil {
+		return make(map[int64]*pbUser.User), nil
+	}
+	return resp.Users, nil
+}
+
+func (c *userClient) ResolvePublicID(ctx context.Context, publicID string) (int64, error) {
+	resp, err := c.client.ResolvePublicID(ctx, &pbUser.ResolvePublicIDRequest{
+		PublicId: publicID,
+	})
+	if err != nil {
+		st, ok := status.FromError(err)
+		if ok && st.Code() == codes.NotFound {
+			return 0, ErrUserNotFound
+		}
+		return 0, ErrInternal
+	}
+	return resp.UserId, nil
 }

@@ -206,18 +206,18 @@ func easyjsonDdb0949aDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			} else {
 				out.DishID = int64(in.Int64())
 			}
-		case "new_owner_id":
+		case "new_owner_public_id":
 			if in.IsNull() {
 				in.Skip()
-				out.NewOwnerID = nil
+				out.NewOwnerPublicID = nil
 			} else {
-				if out.NewOwnerID == nil {
-					out.NewOwnerID = new(int64)
+				if out.NewOwnerPublicID == nil {
+					out.NewOwnerPublicID = new(string)
 				}
 				if in.IsNull() {
 					in.Skip()
 				} else {
-					*out.NewOwnerID = int64(in.Int64())
+					*out.NewOwnerPublicID = string(in.String())
 				}
 			}
 		default:
@@ -245,12 +245,12 @@ func easyjsonDdb0949aEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		out.Int64(int64(in.DishID))
 	}
 	{
-		const prefix string = ",\"new_owner_id\":"
+		const prefix string = ",\"new_owner_public_id\":"
 		out.RawString(prefix)
-		if in.NewOwnerID == nil {
+		if in.NewOwnerPublicID == nil {
 			out.RawString("null")
 		} else {
-			out.Int64(int64(*in.NewOwnerID))
+			out.String(string(*in.NewOwnerPublicID))
 		}
 	}
 	out.RawByte('}')
@@ -299,11 +299,11 @@ func easyjsonDdb0949aDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			} else {
 				out.CartID = string(in.String())
 			}
-		case "target_user_id":
+		case "target_public_id":
 			if in.IsNull() {
 				in.Skip()
 			} else {
-				out.TargetUserID = int64(in.Int64())
+				out.TargetPublicID = string(in.String())
 			}
 		default:
 			in.SkipRecursive()
@@ -325,9 +325,9 @@ func easyjsonDdb0949aEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		out.String(string(in.CartID))
 	}
 	{
-		const prefix string = ",\"target_user_id\":"
+		const prefix string = ",\"target_public_id\":"
 		out.RawString(prefix)
-		out.Int64(int64(in.TargetUserID))
+		out.String(string(in.TargetPublicID))
 	}
 	out.RawByte('}')
 }
@@ -520,7 +520,7 @@ func easyjsonDdb0949aDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			if in.IsNull() {
 				in.Skip()
 			} else {
-				out.AdminID = int64(in.Int64())
+				out.AdminID = string(in.String())
 			}
 		case "restaurant_id":
 			if in.IsNull() {
@@ -554,7 +554,7 @@ func easyjsonDdb0949aDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 				in.Delim('[')
 				if out.Items == nil {
 					if !in.IsDelim(']') {
-						out.Items = make([]CartItemDTO, 0, 1)
+						out.Items = make([]CartItemDTO, 0, 0)
 					} else {
 						out.Items = []CartItemDTO{}
 					}
@@ -581,7 +581,7 @@ func easyjsonDdb0949aDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 				in.Delim('[')
 				if out.Members == nil {
 					if !in.IsDelim(']') {
-						out.Members = make([]CartMemberDTO, 0, 2)
+						out.Members = make([]CartMemberDTO, 0, 1)
 					} else {
 						out.Members = []CartMemberDTO{}
 					}
@@ -622,7 +622,7 @@ func easyjsonDdb0949aEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 	{
 		const prefix string = ",\"admin_id\":"
 		out.RawString(prefix)
-		out.Int64(int64(in.AdminID))
+		out.String(string(in.AdminID))
 	}
 	{
 		const prefix string = ",\"restaurant_id\":"
@@ -714,11 +714,23 @@ func easyjsonDdb0949aDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		key := in.UnsafeFieldName(false)
 		in.WantColon()
 		switch key {
-		case "user_id":
+		case "public_id":
 			if in.IsNull() {
 				in.Skip()
 			} else {
-				out.UserID = int64(in.Int64())
+				out.PublicID = string(in.String())
+			}
+		case "name":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.Name = string(in.String())
+			}
+		case "avatar_url":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.AvatarURL = string(in.String())
 			}
 		case "joined_at":
 			if in.IsNull() {
@@ -741,9 +753,19 @@ func easyjsonDdb0949aEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 	first := true
 	_ = first
 	{
-		const prefix string = ",\"user_id\":"
+		const prefix string = ",\"public_id\":"
 		out.RawString(prefix[1:])
-		out.Int64(int64(in.UserID))
+		out.String(string(in.PublicID))
+	}
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix)
+		out.String(string(in.Name))
+	}
+	{
+		const prefix string = ",\"avatar_url\":"
+		out.RawString(prefix)
+		out.String(string(in.AvatarURL))
 	}
 	{
 		const prefix string = ",\"joined_at\":"
@@ -820,18 +842,46 @@ func easyjsonDdb0949aDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			} else {
 				out.ImageURL = string(in.String())
 			}
-		case "owner_user_id":
+		case "owner_public_id":
 			if in.IsNull() {
 				in.Skip()
-				out.OwnerUserID = nil
+				out.OwnerPublicID = nil
 			} else {
-				if out.OwnerUserID == nil {
-					out.OwnerUserID = new(int64)
+				if out.OwnerPublicID == nil {
+					out.OwnerPublicID = new(string)
 				}
 				if in.IsNull() {
 					in.Skip()
 				} else {
-					*out.OwnerUserID = int64(in.Int64())
+					*out.OwnerPublicID = string(in.String())
+				}
+			}
+		case "owner_name":
+			if in.IsNull() {
+				in.Skip()
+				out.OwnerName = nil
+			} else {
+				if out.OwnerName == nil {
+					out.OwnerName = new(string)
+				}
+				if in.IsNull() {
+					in.Skip()
+				} else {
+					*out.OwnerName = string(in.String())
+				}
+			}
+		case "owner_avatar":
+			if in.IsNull() {
+				in.Skip()
+				out.OwnerAvatar = nil
+			} else {
+				if out.OwnerAvatar == nil {
+					out.OwnerAvatar = new(string)
+				}
+				if in.IsNull() {
+					in.Skip()
+				} else {
+					*out.OwnerAvatar = string(in.String())
 				}
 			}
 		default:
@@ -873,10 +923,20 @@ func easyjsonDdb0949aEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		out.RawString(prefix)
 		out.String(string(in.ImageURL))
 	}
-	if in.OwnerUserID != nil {
-		const prefix string = ",\"owner_user_id\":"
+	if in.OwnerPublicID != nil {
+		const prefix string = ",\"owner_public_id\":"
 		out.RawString(prefix)
-		out.Int64(int64(*in.OwnerUserID))
+		out.String(string(*in.OwnerPublicID))
+	}
+	if in.OwnerName != nil {
+		const prefix string = ",\"owner_name\":"
+		out.RawString(prefix)
+		out.String(string(*in.OwnerName))
+	}
+	if in.OwnerAvatar != nil {
+		const prefix string = ",\"owner_avatar\":"
+		out.RawString(prefix)
+		out.String(string(*in.OwnerAvatar))
 	}
 	out.RawByte('}')
 }

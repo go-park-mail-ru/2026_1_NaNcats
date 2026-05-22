@@ -14,9 +14,7 @@ const (
 
 // команды оркестратора
 const (
-	CommandLockCart      = "LOCK_CART"
 	CommandUnlockCart    = "UNLOCK_CART"
-	CommandClearCart     = "CLEAR_CART"
 	CommandCreatePayment = "CREATE_PAYMENT"
 )
 

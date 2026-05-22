@@ -3,7 +3,6 @@ package restaurantclient
 import (
 	"context"
 	"errors"
-	"net/url"
 	"testing"
 
 	pbRestaurant "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
@@ -11,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func TestRestaurantClient_GetRestaurantBrandsList(t *testing.T) {
@@ -127,11 +126,11 @@ func TestRestaurantClient_GetRestaurantBrandByID(t *testing.T) {
 
 			if tt.wantErr != nil {
 				assert.ErrorIs(t, err, tt.wantErr)
-				assert.Nil(t, res)
+				assert.Empty(t, res.ID)
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, res)
-				assert.Equal(t, tt.id, res.Id)
+				assert.Equal(t, tt.id, res.ID)
 			}
 		})
 	}
@@ -366,11 +365,11 @@ func TestRestaurantClient_GetDishByID(t *testing.T) {
 
 			if tt.wantErr != nil {
 				assert.ErrorIs(t, err, tt.wantErr)
-				assert.Nil(t, res)
+				assert.Empty(t, res.ID)
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, res)
-				assert.Equal(t, tt.id, res.Id)
+				assert.Equal(t, tt.id, res.ID)
 			}
 		})
 	}
@@ -420,7 +419,7 @@ func TestRestaurantClient_CreateRestaurantBrand(t *testing.T) {
 
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.Nil(t, res)
+				assert.Equal(t, RestaurantBrand{}, res)
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, res)
@@ -501,7 +500,7 @@ func TestRestaurantClient_UpdateRestaurantBrand(t *testing.T) {
 
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.Nil(t, res)
+				assert.Equal(t, RestaurantBrand{}, res)
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, res)
@@ -522,7 +521,7 @@ func TestRestaurantClient_DeleteRestaurantBrand(t *testing.T) {
 			name: "Успешное удаление",
 			mockInit: func(m *mocks.MockRestaurantServiceClient) {
 				m.EXPECT().DeleteRestaurantBrand(gomock.Any(), &pbRestaurant.DeleteBrandRequest{Id: 10}).
-					Return(nil, nil)
+					Return(&emptypb.Empty{}, nil)
 			},
 			wantErr: false,
 		},
@@ -601,7 +600,7 @@ func TestRestaurantClient_CreateDish(t *testing.T) {
 
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.Nil(t, res)
+				assert.Zero(t, res)
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, res)
@@ -680,7 +679,7 @@ func TestRestaurantClient_UpdateDish(t *testing.T) {
 
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.Nil(t, res)
+				assert.Zero(t, res)
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, res)
@@ -701,7 +700,7 @@ func TestRestaurantClient_DeleteDish(t *testing.T) {
 			name: "Успешное удаление блюда",
 			mockInit: func(m *mocks.MockRestaurantServiceClient) {
 				m.EXPECT().DeleteDish(gomock.Any(), &pbRestaurant.DeleteDishRequest{Id: 10}).
-					Return(nil, nil)
+					Return(&emptypb.Empty{}, nil)
 			},
 			wantErr: false,
 		},
@@ -735,123 +734,10 @@ func TestRestaurantClient_DeleteDish(t *testing.T) {
 	}
 }
 
-func TestRestaurantClient_GetRestaurantBrandsListByCategory(t *testing.T) {
-	type mockInit func(m *mocks.MockRestaurantServiceClient)
-
-	tests := []struct {
-		name       string
-		categoryID int64
-		mockInit   mockInit
-		wantErr    error
-	}{
-		{
-			name:       "Успешное получение по ID категории",
-			categoryID: 42,
-			mockInit: func(m *mocks.MockRestaurantServiceClient) {
-				m.EXPECT().GetRestaurantBrandsList(gomock.Any(), &pbRestaurant.GetRestaurantBrandsListRequest{
-					Limit: 10, Offset: 0,
-				}).DoAndReturn(func(ctx context.Context, in *pbRestaurant.GetRestaurantBrandsListRequest, opts ...any) (*pbRestaurant.GetRestaurantBrandsListResponse, error) {
-					md, ok := metadata.FromOutgoingContext(ctx)
-					if !ok || md.Get("x-category-id")[0] != "42" {
-						return nil, errors.New("metadata mismatch")
-					}
-					return &pbRestaurant.GetRestaurantBrandsListResponse{RestaurantBrands: []*pbRestaurant.RestaurantBrand{{Id: 1}}}, nil
-				})
-			},
-			wantErr: nil,
-		},
-		{
-			name:       "Ошибка gRPC при получении по категории",
-			categoryID: 1,
-			mockInit: func(m *mocks.MockRestaurantServiceClient) {
-				m.EXPECT().GetRestaurantBrandsList(gomock.Any(), gomock.Any()).
-					Return(nil, errors.New("rpc error"))
-			},
-			wantErr: ErrInternal,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			mockSvc := mocks.NewMockRestaurantServiceClient(ctrl)
-			tt.mockInit(mockSvc)
-
-			client := NewRestaurantClient(mockSvc)
-			res, err := client.GetRestaurantBrandsListByCategory(context.Background(), tt.categoryID, 10, 0)
-
-			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr)
-			} else {
-				assert.NoError(t, err)
-				assert.NotEmpty(t, res)
-			}
-		})
-	}
-}
-
-func TestRestaurantClient_GetRestaurantBrandsListByCategoryName(t *testing.T) {
-	type mockInit func(m *mocks.MockRestaurantServiceClient)
-
-	catName := "Пицца и Суши"
-	escapedName := url.QueryEscape(catName)
-
-	tests := []struct {
-		name     string
-		mockInit mockInit
-		wantErr  error
-	}{
-		{
-			name: "Успешное получение по имени категории",
-			mockInit: func(m *mocks.MockRestaurantServiceClient) {
-				m.EXPECT().GetRestaurantBrandsList(gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, in *pbRestaurant.GetRestaurantBrandsListRequest, opts ...any) (*pbRestaurant.GetRestaurantBrandsListResponse, error) {
-						md, _ := metadata.FromOutgoingContext(ctx)
-						if md.Get("x-category-name")[0] != escapedName {
-							return nil, errors.New("bad escape")
-						}
-						return &pbRestaurant.GetRestaurantBrandsListResponse{}, nil
-					})
-			},
-			wantErr: nil,
-		},
-		{
-			name: "Ошибка gRPC при получении по имени",
-			mockInit: func(m *mocks.MockRestaurantServiceClient) {
-				m.EXPECT().GetRestaurantBrandsList(gomock.Any(), gomock.Any()).
-					Return(nil, errors.New("fail"))
-			},
-			wantErr: ErrInternal,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			mockSvc := mocks.NewMockRestaurantServiceClient(ctrl)
-			tt.mockInit(mockSvc)
-
-			client := NewRestaurantClient(mockSvc)
-			_, err := client.GetRestaurantBrandsListByCategoryName(context.Background(), catName, 10, 0)
-
-			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
 func TestRestaurantClient_SearchRestaurantBrands(t *testing.T) {
 	type mockInit func(m *mocks.MockRestaurantServiceClient)
 
 	query := "Бургер King"
-	escapedQuery := url.QueryEscape(query)
 
 	tests := []struct {
 		name     string
@@ -861,23 +747,20 @@ func TestRestaurantClient_SearchRestaurantBrands(t *testing.T) {
 		{
 			name: "Успешный поиск ресторанов",
 			mockInit: func(m *mocks.MockRestaurantServiceClient) {
-				m.EXPECT().GetRestaurantBrandsList(gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, in *pbRestaurant.GetRestaurantBrandsListRequest, opts ...any) (*pbRestaurant.GetRestaurantBrandsListResponse, error) {
-						md, _ := metadata.FromOutgoingContext(ctx)
-						if md.Get("x-search-query")[0] != escapedQuery {
-							return nil, errors.New("bad search metadata")
-						}
-						return &pbRestaurant.GetRestaurantBrandsListResponse{
-							RestaurantBrands: []*pbRestaurant.RestaurantBrand{{Id: 100}},
-						}, nil
-					})
+				m.EXPECT().SearchRestaurantBrands(gomock.Any(), &pbRestaurant.SearchRestaurantBrandsRequest{
+					Query:  query,
+					Limit:  10,
+					Offset: 0,
+				}).Return(&pbRestaurant.GetRestaurantBrandsListResponse{
+					RestaurantBrands: []*pbRestaurant.RestaurantBrand{{Id: 100}},
+				}, nil)
 			},
 			wantErr: nil,
 		},
 		{
 			name: "Ошибка gRPC при поиске",
 			mockInit: func(m *mocks.MockRestaurantServiceClient) {
-				m.EXPECT().GetRestaurantBrandsList(gomock.Any(), gomock.Any()).
+				m.EXPECT().SearchRestaurantBrands(gomock.Any(), gomock.Any()).
 					Return(nil, errors.New("search error"))
 			},
 			wantErr: ErrInternal,
@@ -920,17 +803,12 @@ func TestRestaurantClient_SearchDishes(t *testing.T) {
 			query: "бургер",
 			limit: 10,
 			mockInit: func(m *mocks.MockRestaurantServiceClient) {
-				m.EXPECT().GetDishesByIDs(gomock.Any(), &pbRestaurant.GetDishesByIDsRequest{
-					DishIds: []int64{},
-				}).DoAndReturn(func(ctx context.Context, in *pbRestaurant.GetDishesByIDsRequest, opts ...any) (*pbRestaurant.GetDishesByIDsResponse, error) {
-					md, ok := metadata.FromOutgoingContext(ctx)
-					if !ok || md.Get("x-dish-search")[0] != url.QueryEscape("бургер") || md.Get("x-dish-search-limit")[0] != "10" {
-						return nil, errors.New("metadata mismatch")
-					}
-					return &pbRestaurant.GetDishesByIDsResponse{
-						Dishes: []*pbRestaurant.Dish{{Id: 1, Name: "Бургер"}},
-					}, nil
-				})
+				m.EXPECT().SearchDishes(gomock.Any(), &pbRestaurant.SearchDishesRequest{
+					Query: "бургер",
+					Limit: 10,
+				}).Return(&pbRestaurant.GetDishesByIDsResponse{
+					Dishes: []*pbRestaurant.Dish{{Id: 1, Name: "Бургер"}},
+				}, nil)
 			},
 			wantErr: nil,
 		},
@@ -939,7 +817,7 @@ func TestRestaurantClient_SearchDishes(t *testing.T) {
 			query: "pizza",
 			limit: 5,
 			mockInit: func(m *mocks.MockRestaurantServiceClient) {
-				m.EXPECT().GetDishesByIDs(gomock.Any(), gomock.Any()).
+				m.EXPECT().SearchDishes(gomock.Any(), gomock.Any()).
 					Return(nil, errors.New("rpc error"))
 			},
 			wantErr: ErrInternal,
@@ -985,19 +863,13 @@ func TestRestaurantClient_SearchDishesByBrand(t *testing.T) {
 			query:   "cola",
 			limit:   20,
 			mockInit: func(m *mocks.MockRestaurantServiceClient) {
-				m.EXPECT().GetDishesByRestaurantBrandID(gomock.Any(), &pbRestaurant.GetDishesByRestaurantBrandIDRequest{
+				m.EXPECT().SearchDishesByBrand(gomock.Any(), &pbRestaurant.SearchDishesByBrandRequest{
 					RestaurantBrandId: 1,
+					Query:             "cola",
 					Limit:             20,
-					Offset:            0,
-				}).DoAndReturn(func(ctx context.Context, in *pbRestaurant.GetDishesByRestaurantBrandIDRequest, opts ...any) (*pbRestaurant.GetDishesByRestaurantBrandIDResponse, error) {
-					md, ok := metadata.FromOutgoingContext(ctx)
-					if !ok || md.Get("x-dish-search")[0] != "cola" {
-						return nil, errors.New("metadata mismatch")
-					}
-					return &pbRestaurant.GetDishesByRestaurantBrandIDResponse{
-						Dishes: []*pbRestaurant.Dish{{Id: 10, Name: "Cola"}},
-					}, nil
-				})
+				}).Return(&pbRestaurant.GetDishesByRestaurantBrandIDResponse{
+					Dishes: []*pbRestaurant.Dish{{Id: 10, Name: "Cola"}},
+				}, nil)
 			},
 			wantErr: nil,
 		},
@@ -1007,7 +879,7 @@ func TestRestaurantClient_SearchDishesByBrand(t *testing.T) {
 			query:   "fries",
 			limit:   10,
 			mockInit: func(m *mocks.MockRestaurantServiceClient) {
-				m.EXPECT().GetDishesByRestaurantBrandID(gomock.Any(), gomock.Any()).
+				m.EXPECT().SearchDishesByBrand(gomock.Any(), gomock.Any()).
 					Return(nil, errors.New("fail"))
 			},
 			wantErr: ErrInternal,
@@ -1031,6 +903,63 @@ func TestRestaurantClient_SearchDishesByBrand(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, res)
+			}
+		})
+	}
+}
+
+func TestRestaurantClient_GetRestaurantBrandsByCategoryName(t *testing.T) {
+	type mockInit func(m *mocks.MockRestaurantServiceClient)
+
+	catName := "Пицца и Суши"
+
+	tests := []struct {
+		name     string
+		mockInit mockInit
+		wantErr  bool
+	}{
+		{
+			name: "Успешное получение по имени категории",
+			mockInit: func(m *mocks.MockRestaurantServiceClient) {
+				m.EXPECT().GetRestaurantBrandsByCategory(gomock.Any(), &pbRestaurant.GetRestaurantBrandsByCategoryRequest{
+					CategoryName: catName,
+					Limit:        10,
+					Offset:       0,
+				}).Return(&pbRestaurant.GetRestaurantBrandsListResponse{
+					RestaurantBrands: []*pbRestaurant.RestaurantBrand{{Id: 1}},
+				}, nil)
+			},
+			wantErr: false,
+		},
+		{
+			name: "Ошибка gRPC при получении по имени",
+			mockInit: func(m *mocks.MockRestaurantServiceClient) {
+				m.EXPECT().GetRestaurantBrandsByCategory(gomock.Any(), gomock.Any()).
+					Return(nil, errors.New("fail"))
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockSvc := mocks.NewMockRestaurantServiceClient(ctrl)
+			tt.mockInit(mockSvc)
+
+			client := NewRestaurantClient(mockSvc)
+
+			res, err := client.GetRestaurantBrandsByCategoryName(context.Background(), catName, 10, 0)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, res)
+			} else {
+				assert.NoError(t, err)
+				assert.NotEmpty(t, res)
+				assert.Equal(t, int64(1), res[0].ID)
 			}
 		})
 	}

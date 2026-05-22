@@ -1,22 +1,27 @@
-# Шаг 1: Сборка
+FROM migrate/migrate:v4.17.0 AS migrate
+
 FROM golang:1.26.1-alpine AS builder
 WORKDIR /app
 
-RUN apk add --no-cache curl gcc musl-dev
+RUN apk add --no-cache gcc musl-dev
 
-RUN curl -L https://github.com/golang-migrate/migrate/releases/download/v4.17.0/migrate.linux-amd64.tar.gz | tar xvz
+COPY --from=migrate /migrate /app/migrate
 
 COPY go.mod go.sum ./
 
-RUN --mount=type=cache,target=/go/pkg/mod go mod download
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
 
 COPY . .
 
 ARG BUILD_PATH
 
+ENV GOCACHE=/root/.cache/go-build
+ENV GOMODCACHE=/go/pkg/mod
+
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    CGO_ENABLED=1 GOOS=linux go build -o /app/bin/service ${BUILD_PATH}
+    CGO_ENABLED=1 GOOS=linux go build -ldflags="-w -s" -o /app/bin/service ${BUILD_PATH}
 
 FROM alpine:latest
 WORKDIR /app

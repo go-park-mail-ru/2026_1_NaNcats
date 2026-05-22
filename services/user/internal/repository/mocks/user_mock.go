@@ -101,6 +101,36 @@ func (mr *MockUserRepositoryMockRecorder) GetUserByID(ctx, id any) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByID", reflect.TypeOf((*MockUserRepository)(nil).GetUserByID), ctx, id)
 }
 
+// GetUserByPublicID mocks base method.
+func (m *MockUserRepository) GetUserByPublicID(ctx context.Context, publicID string) (domain.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserByPublicID", ctx, publicID)
+	ret0, _ := ret[0].(domain.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserByPublicID indicates an expected call of GetUserByPublicID.
+func (mr *MockUserRepositoryMockRecorder) GetUserByPublicID(ctx, publicID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByPublicID", reflect.TypeOf((*MockUserRepository)(nil).GetUserByPublicID), ctx, publicID)
+}
+
+// GetUsersByIDs mocks base method.
+func (m *MockUserRepository) GetUsersByIDs(ctx context.Context, userIDs []int64) ([]domain.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUsersByIDs", ctx, userIDs)
+	ret0, _ := ret[0].([]domain.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUsersByIDs indicates an expected call of GetUsersByIDs.
+func (mr *MockUserRepositoryMockRecorder) GetUsersByIDs(ctx, userIDs any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersByIDs", reflect.TypeOf((*MockUserRepository)(nil).GetUsersByIDs), ctx, userIDs)
+}
+
 // UpdateAvatarURL mocks base method.
 func (m *MockUserRepository) UpdateAvatarURL(ctx context.Context, userID int64, newAvatarURL string) error {
 	m.ctrl.T.Helper()

@@ -56,6 +56,20 @@ func (mr *MockAddressUseCaseMockRecorder) AddAddress(ctx, userID, addr, idempote
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddAddress", reflect.TypeOf((*MockAddressUseCase)(nil).AddAddress), ctx, userID, addr, idempotencyKey)
 }
 
+// CheckAddressExists mocks base method.
+func (m *MockAddressUseCase) CheckAddressExists(ctx context.Context, userID int64, addressPublicID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckAddressExists", ctx, userID, addressPublicID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CheckAddressExists indicates an expected call of CheckAddressExists.
+func (mr *MockAddressUseCaseMockRecorder) CheckAddressExists(ctx, userID, addressPublicID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckAddressExists", reflect.TypeOf((*MockAddressUseCase)(nil).CheckAddressExists), ctx, userID, addressPublicID)
+}
+
 // DeleteAddress mocks base method.
 func (m *MockAddressUseCase) DeleteAddress(ctx context.Context, userID int64, addressPublicID, idempotencyKey string) error {
 	m.ctrl.T.Helper()

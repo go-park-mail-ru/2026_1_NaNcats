@@ -69,6 +69,20 @@ func (mr *MockCartRepositoryMockRecorder) AddMember(ctx, cartID, userID any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddMember", reflect.TypeOf((*MockCartRepository)(nil).AddMember), ctx, cartID, userID)
 }
 
+// CheckAndSaveIdempotency mocks base method.
+func (m *MockCartRepository) CheckAndSaveIdempotency(ctx context.Context, userID int64, key, method string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckAndSaveIdempotency", ctx, userID, key, method)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CheckAndSaveIdempotency indicates an expected call of CheckAndSaveIdempotency.
+func (mr *MockCartRepositoryMockRecorder) CheckAndSaveIdempotency(ctx, userID, key, method any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckAndSaveIdempotency", reflect.TypeOf((*MockCartRepository)(nil).CheckAndSaveIdempotency), ctx, userID, key, method)
+}
+
 // ClearCart mocks base method.
 func (m *MockCartRepository) ClearCart(ctx context.Context, cartID string) error {
 	m.ctrl.T.Helper()
@@ -172,6 +186,20 @@ func (mr *MockCartRepositoryMockRecorder) GetInviteByToken(ctx, token any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInviteByToken", reflect.TypeOf((*MockCartRepository)(nil).GetInviteByToken), ctx, token)
 }
 
+// KickMemberAtomic mocks base method.
+func (m *MockCartRepository) KickMemberAtomic(ctx context.Context, cartID string, targetUserID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "KickMemberAtomic", ctx, cartID, targetUserID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// KickMemberAtomic indicates an expected call of KickMemberAtomic.
+func (mr *MockCartRepositoryMockRecorder) KickMemberAtomic(ctx, cartID, targetUserID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KickMemberAtomic", reflect.TypeOf((*MockCartRepository)(nil).KickMemberAtomic), ctx, cartID, targetUserID)
+}
+
 // LockCart mocks base method.
 func (m *MockCartRepository) LockCart(ctx context.Context, cartID string) error {
 	m.ctrl.T.Helper()
@@ -215,17 +243,17 @@ func (mr *MockCartRepositoryMockRecorder) ReassignItemOwner(ctx, cartID, dishID,
 }
 
 // RemoveItem mocks base method.
-func (m *MockCartRepository) RemoveItem(ctx context.Context, cartID string, dishID int64) error {
+func (m *MockCartRepository) RemoveItem(ctx context.Context, cartID string, dishID, ownerID int64) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RemoveItem", ctx, cartID, dishID)
+	ret := m.ctrl.Call(m, "RemoveItem", ctx, cartID, dishID, ownerID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RemoveItem indicates an expected call of RemoveItem.
-func (mr *MockCartRepositoryMockRecorder) RemoveItem(ctx, cartID, dishID any) *gomock.Call {
+func (mr *MockCartRepositoryMockRecorder) RemoveItem(ctx, cartID, dishID, ownerID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveItem", reflect.TypeOf((*MockCartRepository)(nil).RemoveItem), ctx, cartID, dishID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveItem", reflect.TypeOf((*MockCartRepository)(nil).RemoveItem), ctx, cartID, dishID, ownerID)
 }
 
 // RemoveMember mocks base method.
@@ -299,15 +327,29 @@ func (mr *MockCartRepositoryMockRecorder) UpdateCartMode(ctx, cartID, mode any) 
 }
 
 // UpdateItemQuantity mocks base method.
-func (m *MockCartRepository) UpdateItemQuantity(ctx context.Context, cartID string, dishID int64, quantity int32) error {
+func (m *MockCartRepository) UpdateItemQuantity(ctx context.Context, cartID string, dishID, ownerID int64, quantity int32) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateItemQuantity", ctx, cartID, dishID, quantity)
+	ret := m.ctrl.Call(m, "UpdateItemQuantity", ctx, cartID, dishID, ownerID, quantity)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateItemQuantity indicates an expected call of UpdateItemQuantity.
-func (mr *MockCartRepositoryMockRecorder) UpdateItemQuantity(ctx, cartID, dishID, quantity any) *gomock.Call {
+func (mr *MockCartRepositoryMockRecorder) UpdateItemQuantity(ctx, cartID, dishID, ownerID, quantity any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateItemQuantity", reflect.TypeOf((*MockCartRepository)(nil).UpdateItemQuantity), ctx, cartID, dishID, quantity)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateItemQuantity", reflect.TypeOf((*MockCartRepository)(nil).UpdateItemQuantity), ctx, cartID, dishID, ownerID, quantity)
+}
+
+// WithTransaction mocks base method.
+func (m *MockCartRepository) WithTransaction(ctx context.Context, fn func(context.Context) error) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithTransaction", ctx, fn)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// WithTransaction indicates an expected call of WithTransaction.
+func (mr *MockCartRepositoryMockRecorder) WithTransaction(ctx, fn any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithTransaction", reflect.TypeOf((*MockCartRepository)(nil).WithTransaction), ctx, fn)
 }

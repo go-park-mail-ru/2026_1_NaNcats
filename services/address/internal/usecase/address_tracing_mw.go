@@ -46,6 +46,23 @@ func (m AddressUseCaseTracingMiddleware) AddAddress(ctx context.Context, userID 
 	return
 }
 
+// CheckAddressExists трассирует выполнение метода CheckAddressExists
+func (m AddressUseCaseTracingMiddleware) CheckAddressExists(ctx context.Context, userID int64, addressPublicID string) (err error) {
+
+	ctx, span := m.tracer.Start(ctx, "AddressUseCase.CheckAddressExists")
+
+	defer span.End()
+
+	err = m.next.CheckAddressExists(ctx, userID, addressPublicID)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
 // DeleteAddress трассирует выполнение метода DeleteAddress
 func (m AddressUseCaseTracingMiddleware) DeleteAddress(ctx context.Context, userID int64, addressPublicID string, idempotencyKey string) (err error) {
 

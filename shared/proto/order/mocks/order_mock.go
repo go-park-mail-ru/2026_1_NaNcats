@@ -83,26 +83,6 @@ func (mr *MockOrderServiceClientMockRecorder) CreateOrder(ctx, in any, opts ...a
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrder", reflect.TypeOf((*MockOrderServiceClient)(nil).CreateOrder), varargs...)
 }
 
-// GetOrderPaymentID mocks base method.
-func (m *MockOrderServiceClient) GetOrderPaymentID(ctx context.Context, in *order.GetOrderPaymentIDRequest, opts ...grpc.CallOption) (*order.GetOrderPaymentIDResponse, error) {
-	m.ctrl.T.Helper()
-	varargs := []any{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetOrderPaymentID", varargs...)
-	ret0, _ := ret[0].(*order.GetOrderPaymentIDResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOrderPaymentID indicates an expected call of GetOrderPaymentID.
-func (mr *MockOrderServiceClientMockRecorder) GetOrderPaymentID(ctx, in any, opts ...any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrderPaymentID", reflect.TypeOf((*MockOrderServiceClient)(nil).GetOrderPaymentID), varargs...)
-}
-
 // GetOrders mocks base method.
 func (m *MockOrderServiceClient) GetOrders(ctx context.Context, in *order.GetOrdersRequest, opts ...grpc.CallOption) (*order.GetOrdersResponse, error) {
 	m.ctrl.T.Helper()
@@ -124,14 +104,14 @@ func (mr *MockOrderServiceClientMockRecorder) GetOrders(ctx, in any, opts ...any
 }
 
 // PayForFriend mocks base method.
-func (m *MockOrderServiceClient) PayForFriend(ctx context.Context, in *order.PayForFriendRequest, opts ...grpc.CallOption) (*order.PayForFriendResponse, error) {
+func (m *MockOrderServiceClient) PayForFriend(ctx context.Context, in *order.PayForFriendRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "PayForFriend", varargs...)
-	ret0, _ := ret[0].(*order.PayForFriendResponse)
+	ret0, _ := ret[0].(*emptypb.Empty)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

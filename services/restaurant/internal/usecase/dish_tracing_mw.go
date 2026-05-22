@@ -97,6 +97,40 @@ func (m DishUseCaseTracingMiddleware) GetDishesByRestaurantBrandID(ctx context.C
 	return
 }
 
+// SearchDishes трассирует выполнение метода SearchDishes
+func (m DishUseCaseTracingMiddleware) SearchDishes(ctx context.Context, query string, limit int) (da1 []domain.Dish, err error) {
+
+	ctx, span := m.tracer.Start(ctx, "DishUseCase.SearchDishes")
+
+	defer span.End()
+
+	da1, err = m.next.SearchDishes(ctx, query, limit)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
+// SearchDishesByBrand трассирует выполнение метода SearchDishesByBrand
+func (m DishUseCaseTracingMiddleware) SearchDishesByBrand(ctx context.Context, brandID int64, query string, limit int) (da1 []domain.Dish, err error) {
+
+	ctx, span := m.tracer.Start(ctx, "DishUseCase.SearchDishesByBrand")
+
+	defer span.End()
+
+	da1, err = m.next.SearchDishesByBrand(ctx, brandID, query, limit)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
 // UpdateDish трассирует выполнение метода UpdateDish
 func (m DishUseCaseTracingMiddleware) UpdateDish(ctx context.Context, d domain.Dish, newImage []byte, idemKey string) (d1 domain.Dish, err error) {
 

@@ -80,6 +80,23 @@ func (m RestaurantBrandUseCaseTracingMiddleware) GetRestaurantBrandByID(ctx cont
 	return
 }
 
+// GetRestaurantBrandsByCategoryName трассирует выполнение метода GetRestaurantBrandsByCategoryName
+func (m RestaurantBrandUseCaseTracingMiddleware) GetRestaurantBrandsByCategoryName(ctx context.Context, categoryName string, limit int, offset int) (ra1 []domain.RestaurantBrand, err error) {
+
+	ctx, span := m.tracer.Start(ctx, "RestaurantBrandUseCase.GetRestaurantBrandsByCategoryName")
+
+	defer span.End()
+
+	ra1, err = m.next.GetRestaurantBrandsByCategoryName(ctx, categoryName, limit, offset)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
 // GetRestaurantBrandsByIDs трассирует выполнение метода GetRestaurantBrandsByIDs
 func (m RestaurantBrandUseCaseTracingMiddleware) GetRestaurantBrandsByIDs(ctx context.Context, brandIDs []int64) (ra1 []domain.RestaurantBrand, err error) {
 
@@ -105,6 +122,23 @@ func (m RestaurantBrandUseCaseTracingMiddleware) GetRestaurantBrandsList(ctx con
 	defer span.End()
 
 	ra1, err = m.next.GetRestaurantBrandsList(ctx, limit, offset)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
+// SearchRestaurantBrands трассирует выполнение метода SearchRestaurantBrands
+func (m RestaurantBrandUseCaseTracingMiddleware) SearchRestaurantBrands(ctx context.Context, query string, limit int, offset int) (ra1 []domain.RestaurantBrand, err error) {
+
+	ctx, span := m.tracer.Start(ctx, "RestaurantBrandUseCase.SearchRestaurantBrands")
+
+	defer span.End()
+
+	ra1, err = m.next.SearchRestaurantBrands(ctx, query, limit, offset)
 
 	if err != nil {
 		span.RecordError(err)

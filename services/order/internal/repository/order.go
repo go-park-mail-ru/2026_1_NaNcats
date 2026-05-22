@@ -2,19 +2,24 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/domain"
 )
 
+var ErrStateChanged = errors.New("order state has changed or order not found")
+
 //go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository OrderRepository
 
 type OrderRepository interface {
-	CreateOrder(ctx context.Context, order domain.Order, idempotencyKey string) (string, error)
-	GetOrderByPublicID(ctx context.Context, publicID string) (domain.Order, error)
-	GetOrdersByUserID(ctx context.Context, userID int64) ([]domain.Order, error)
-	UpdateOrderStatus(ctx context.Context, publicID string, newStatus string) error
+	WithTransaction(ctx context.Context, fn func(txCtx context.Context) error) error
 
-	UpdateSplitStatusByPaymentID(ctx context.Context, yookassaPaymentID, newStatus string) (string, error)
+	CreateOrder(ctx context.Context, order domain.Order, idempotencyKey string) (int64, string, error)
+	GetOrderByPublicID(ctx context.Context, publicID string) (domain.Order, error)
+	GetOrdersByUserID(ctx context.Context, userID int64, limit, offset int32) ([]domain.Order, error)
+	UpdateOrderStatus(ctx context.Context, publicID string, newStatus string, expectedStatuses ...string) error
+
+	UpdateSplitStatusByPaymentID(ctx context.Context, yookassaPaymentID, newStatus string) (splitID string, orderPublicID string, err error)
 	UpdateSplitStatus(ctx context.Context, splitID string, newStatus string) error
 	AreAllSplitsPaid(ctx context.Context, orderPublicID string) (bool, error)
 	SetSplitYookassaID(ctx context.Context, splitID string, yookassaID string) error
@@ -23,4 +28,11 @@ type OrderRepository interface {
 
 	// Возвращает заказы, статусы которых нужно продвигать в фоне
 	GetOrdersByStatuses(ctx context.Context, statuses []string) ([]domain.Order, error)
+
+	GetPromocodeByCodeWithLock(ctx context.Context, code string) (domain.Promocode, error)
+	CheckPromocodeUsage(ctx context.Context, promoID, userID int64) (bool, error)
+	IncrementPromocodeUses(ctx context.Context, promoID int64) error
+	CreatePromocodeUsage(ctx context.Context, promoID, orderID, userID int64) error
+
+	RollbackPromocodeUsage(ctx context.Context, orderPublicID string) error
 }

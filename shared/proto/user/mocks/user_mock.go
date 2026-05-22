@@ -183,6 +183,46 @@ func (mr *MockUserServiceClientMockRecorder) GetUserProfile(ctx, in any, opts ..
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserProfile", reflect.TypeOf((*MockUserServiceClient)(nil).GetUserProfile), varargs...)
 }
 
+// GetUsersByIDs mocks base method.
+func (m *MockUserServiceClient) GetUsersByIDs(ctx context.Context, in *user.GetUsersByIDsRequest, opts ...grpc.CallOption) (*user.GetUsersByIDsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetUsersByIDs", varargs...)
+	ret0, _ := ret[0].(*user.GetUsersByIDsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUsersByIDs indicates an expected call of GetUsersByIDs.
+func (mr *MockUserServiceClientMockRecorder) GetUsersByIDs(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersByIDs", reflect.TypeOf((*MockUserServiceClient)(nil).GetUsersByIDs), varargs...)
+}
+
+// ResolvePublicID mocks base method.
+func (m *MockUserServiceClient) ResolvePublicID(ctx context.Context, in *user.ResolvePublicIDRequest, opts ...grpc.CallOption) (*user.ResolvePublicIDResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ResolvePublicID", varargs...)
+	ret0, _ := ret[0].(*user.ResolvePublicIDResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ResolvePublicID indicates an expected call of ResolvePublicID.
+func (mr *MockUserServiceClientMockRecorder) ResolvePublicID(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResolvePublicID", reflect.TypeOf((*MockUserServiceClient)(nil).ResolvePublicID), varargs...)
+}
+
 // UpdateAvatar mocks base method.
 func (m *MockUserServiceClient) UpdateAvatar(ctx context.Context, in *user.UpdateAvatarRequest, opts ...grpc.CallOption) (*user.UpdateAvatarResponse, error) {
 	m.ctrl.T.Helper()

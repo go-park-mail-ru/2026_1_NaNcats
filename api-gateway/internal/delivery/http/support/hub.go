@@ -105,7 +105,7 @@ func (h *RedisHub) subscribeToRedis(ctx context.Context, ticketPublicID string) 
 			h.mu.RUnlock()
 
 			if len(localConns) == 0 {
-				psc.Unsubscribe(channel)
+				_ = psc.Unsubscribe(channel)
 				return
 			}
 

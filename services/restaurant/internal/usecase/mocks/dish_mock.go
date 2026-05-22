@@ -100,6 +100,36 @@ func (mr *MockDishUseCaseMockRecorder) GetDishesByRestaurantBrandID(ctx, restaur
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDishesByRestaurantBrandID", reflect.TypeOf((*MockDishUseCase)(nil).GetDishesByRestaurantBrandID), ctx, restaurantBrandID, limit, offset)
 }
 
+// SearchDishes mocks base method.
+func (m *MockDishUseCase) SearchDishes(ctx context.Context, query string, limit int) ([]domain.Dish, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchDishes", ctx, query, limit)
+	ret0, _ := ret[0].([]domain.Dish)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchDishes indicates an expected call of SearchDishes.
+func (mr *MockDishUseCaseMockRecorder) SearchDishes(ctx, query, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchDishes", reflect.TypeOf((*MockDishUseCase)(nil).SearchDishes), ctx, query, limit)
+}
+
+// SearchDishesByBrand mocks base method.
+func (m *MockDishUseCase) SearchDishesByBrand(ctx context.Context, brandID int64, query string, limit int) ([]domain.Dish, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchDishesByBrand", ctx, brandID, query, limit)
+	ret0, _ := ret[0].([]domain.Dish)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchDishesByBrand indicates an expected call of SearchDishesByBrand.
+func (mr *MockDishUseCaseMockRecorder) SearchDishesByBrand(ctx, brandID, query, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchDishesByBrand", reflect.TypeOf((*MockDishUseCase)(nil).SearchDishesByBrand), ctx, brandID, query, limit)
+}
+
 // UpdateDish mocks base method.
 func (m *MockDishUseCase) UpdateDish(ctx context.Context, d domain.Dish, newImage []byte, idemKey string) (domain.Dish, error) {
 	m.ctrl.T.Helper()

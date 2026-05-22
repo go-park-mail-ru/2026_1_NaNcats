@@ -37,6 +37,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 				ServiceFee:         29,
 				PaymentMethodId:    "pm-123",
 				PayForAll:          true,
+				PayerMapping:       map[int64]int64{2: 500, 3: 1000},
 				IdempotencyKey:     "idem-key",
 			},
 			mockInit: func(m *mocks.MockOrderUseCase) {
@@ -49,6 +50,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 					ServiceFee:         29,
 					PaymentMethodID:    "pm-123",
 					PayForAll:          true,
+					PayerMapping:       map[int64]int64{2: 500, 3: 1000},
 				}
 				m.EXPECT().CreateOrder(gomock.Any(), expectedInput, "idem-key").
 					Return("pub-order-123", nil)
@@ -109,9 +111,13 @@ func TestOrderHandler_GetOrders(t *testing.T) {
 	}{
 		{
 			name: "Успешное получение списка заказов",
-			req:  &pb.GetOrdersRequest{UserId: 1},
+			req: &pb.GetOrdersRequest{
+				UserId: 1,
+				Limit:  10,
+				Offset: 0,
+			},
 			mockInit: func(m *mocks.MockOrderUseCase) {
-				m.EXPECT().GetOrders(gomock.Any(), int64(1)).Return([]domain.Order{
+				m.EXPECT().GetOrders(gomock.Any(), int64(1), int32(10), int32(0)).Return([]domain.Order{
 					{
 						PublicID:       "pub-1",
 						RestaurantName: "KFC",
@@ -132,9 +138,13 @@ func TestOrderHandler_GetOrders(t *testing.T) {
 		},
 		{
 			name: "Ошибка в UseCase",
-			req:  &pb.GetOrdersRequest{UserId: 1},
+			req: &pb.GetOrdersRequest{
+				UserId: 1,
+				Limit:  10,
+				Offset: 20,
+			},
 			mockInit: func(m *mocks.MockOrderUseCase) {
-				m.EXPECT().GetOrders(gomock.Any(), int64(1)).Return(nil, errors.New("db error"))
+				m.EXPECT().GetOrders(gomock.Any(), int64(1), int32(10), int32(20)).Return(nil, errors.New("db error"))
 			},
 			expectedCode: codes.Internal,
 		},
@@ -280,59 +290,6 @@ func TestOrderHandler_PayForFriend(t *testing.T) {
 			if tt.expectedCode == codes.OK {
 				assert.NoError(t, grpcErr)
 				assert.NotNil(t, resp)
-			} else {
-				st, _ := status.FromError(grpcErr)
-				assert.Equal(t, tt.expectedCode, st.Code())
-			}
-		})
-	}
-}
-
-func TestOrderHandler_GetOrderPaymentID(t *testing.T) {
-	type mockInit func(m *mocks.MockOrderUseCase)
-
-	tests := []struct {
-		name         string
-		req          *pb.GetOrderPaymentIDRequest
-		mockInit     mockInit
-		expectedCode codes.Code
-	}{
-		{
-			name: "Успешное получение Payment ID",
-			req:  &pb.GetOrderPaymentIDRequest{OrderPublicId: "pub-1", UserId: 1},
-			mockInit: func(m *mocks.MockOrderUseCase) {
-				m.EXPECT().GetOrderPaymentID(gomock.Any(), "pub-1", int64(1)).Return("pay-123", nil)
-			},
-			expectedCode: codes.OK,
-		},
-		{
-			name: "Ошибка при получении Payment ID",
-			req:  &pb.GetOrderPaymentIDRequest{OrderPublicId: "pub-err", UserId: 1},
-			mockInit: func(m *mocks.MockOrderUseCase) {
-				m.EXPECT().GetOrderPaymentID(gomock.Any(), "pub-err", int64(1)).
-					Return("", errors.New("not found"))
-			},
-			expectedCode: codes.Internal,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			mockUC := mocks.NewMockOrderUseCase(ctrl)
-			tt.mockInit(mockUC)
-
-			handler := NewOrderHandler(mockUC)
-			resp, err := handler.GetOrderPaymentID(context.Background(), tt.req)
-
-			grpcErr := grpcutil.ToGRPCError(err)
-
-			if tt.expectedCode == codes.OK {
-				assert.NoError(t, grpcErr)
-				require.NotNil(t, resp)
-				assert.Equal(t, "pay-123", resp.YookassaPaymentId)
 			} else {
 				st, _ := status.FromError(grpcErr)
 				assert.Equal(t, tt.expectedCode, st.Code())

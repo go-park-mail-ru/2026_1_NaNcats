@@ -184,10 +184,10 @@ func main() {
 	authHandler := authHttp.NewAuthHandler(authClient, userClient, appLogger, validate)
 	userProfileHandler := userHttp.NewUserProfileHandler(userClient, appLogger)
 	restaurantHandler := restaurantHttp.NewRestaurantHandler(restClient, appLogger)
-	cartHandler := cartHttp.NewCartHandler(cartClient, wsManager, appLogger)
+	cartHandler := cartHttp.NewCartHandler(cartClient, userClient, wsManager, appLogger)
 	addressHandler := addressHttp.NewAddressHandler(addrClient, appLogger)
 	paymentHandler := paymentHttp.NewPaymentHandler(payClient, appLogger)
-	orderHandler := orderHttp.NewOrderHandler(orderClient, payClient, restClient, wsManager, appLogger)
+	orderHandler := orderHttp.NewOrderHandler(orderClient, payClient, restClient, userClient, wsManager, appLogger)
 
 	redisHub := supportHttp.NewRedisHub(redisPool, appLogger)
 	supportHandler := supportHttp.NewSupportHandler(supportClient, redisHub, appLogger)
@@ -273,7 +273,6 @@ func main() {
 	mux.Handle("GET /api/profile/orders", authMW.RequireAuth(http.HandlerFunc(orderHandler.GetMyOrders)))
 	mux.Handle("GET /api/ws/orders/{id}", authMW.RequireAuth(http.HandlerFunc(orderHandler.TrackOrderWS)))
 	mux.Handle("POST /api/orders/splits/{id}/pay", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.PayForFriend))))
-	mux.Handle("POST /api/orders/{id}/check-payment", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.CheckPayment))))
 	mux.Handle("POST /api/orders/{id}/cancel", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.CancelOrder))))
 
 	// === PROMOS ===

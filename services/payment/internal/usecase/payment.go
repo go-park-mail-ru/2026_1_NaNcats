@@ -180,8 +180,6 @@ func (p *paymentUseCase) InitiateCardBinding(ctx context.Context, userID int64, 
 		return "", errutil.Internal("empty confirmation url from yookassa", errors.New("malformed provider response"))
 	}
 
-	confirmationURL = resp.Confirmation.ConfirmationURL
-
 	err = p.cacheRepo.SetPendingBinding(ctx, resp.ID, userID, 15*time.Minute)
 	if err != nil {
 		return "", errutil.Internal("failed to save pending binding state", err)
