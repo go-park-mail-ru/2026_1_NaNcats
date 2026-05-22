@@ -200,6 +200,12 @@ func easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			} else {
 				out.OrderID = string(in.String())
 			}
+		case "restaurant_id":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.RestaurantID = int64(in.Int64())
+			}
 		case "restaurant_name":
 			if in.IsNull() {
 				in.Skip()
@@ -302,6 +308,11 @@ func easyjson120d1ca2EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		const prefix string = ",\"order_id\":"
 		out.RawString(prefix[1:])
 		out.String(string(in.OrderID))
+	}
+	{
+		const prefix string = ",\"restaurant_id\":"
+		out.RawString(prefix)
+		out.Int64(int64(in.RestaurantID))
 	}
 	{
 		const prefix string = ",\"restaurant_name\":"

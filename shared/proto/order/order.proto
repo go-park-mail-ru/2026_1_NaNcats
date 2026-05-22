@@ -62,6 +62,7 @@ message Order {
   google.protobuf.Timestamp created_at = 6;
   repeated OrderDish items = 7;
   repeated OrderSplit splits = 8;
+  int64 restaurant_brand_id = 9;
 }
 
 message CreateOrderRequest {

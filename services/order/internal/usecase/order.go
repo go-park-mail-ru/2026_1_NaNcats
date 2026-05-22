@@ -401,17 +401,35 @@ func (o *orderUseCase) ProcessSagaReply(ctx context.Context, reply events.SagaRe
 
 	if reply.Status == events.StatusError {
 		span.SetAttributes(attribute.String("saga.error_details", reply.ErrorMessage))
+		o.logger.Error("saga step failed", fmt.Errorf("%s", reply.ErrorMessage),
+			logger.String("order_id", reply.OrderID),
+			logger.String("step", reply.Step),
+			logger.String("split_id", reply.SplitID),
+		)
 
-		_ = o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusFailed)
-		if reply.SplitID != "" {
-			_ = o.orderRepo.UpdateSplitStatus(ctx, reply.SplitID, SplitStatusFailed)
-		}
-		// Откат корзины
 		if reply.Step == "PAYMENT" {
-			span.AddEvent("compensating_cart_unlock")
-			_ = o.rabbitPublisher.PublishJSON(ctx, events.QueueCartCommands, events.SagaCommand{
-				OrderID: reply.OrderID, Action: events.CommandUnlockCart, IdempotencyKey: reply.OrderID + "_compensate",
-			})
+			// Платёж не создался, но сам заказ валиден: переводим в
+			// payment_ready и шлём событие с ошибкой, чтобы фронт предложил
+			// повторить оплату или сменить карту, а не убивал заказ.
+			_ = o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusPaymentReady)
+			if reply.SplitID != "" {
+				_ = o.orderRepo.UpdateSplitStatus(ctx, reply.SplitID, SplitStatusFailed)
+			}
+
+			gatewayEvent := events.GatewayEvent{
+				OrderID: reply.OrderID,
+				SplitID: reply.SplitID,
+				UserID:  reply.UserID,
+				Status:  StatusPaymentReady,
+				Error:   reply.ErrorMessage,
+			}
+			_ = o.rabbitPublisher.PublishJSON(ctx, events.QueueGatewayEvents, gatewayEvent)
+		} else {
+			// Сбой не на шаге оплаты — заказ помечаем проваленным.
+			_ = o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusFailed)
+			if reply.SplitID != "" {
+				_ = o.orderRepo.UpdateSplitStatus(ctx, reply.SplitID, SplitStatusFailed)
+			}
 		}
 		return nil
 	}

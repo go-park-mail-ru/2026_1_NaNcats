@@ -311,15 +311,17 @@ func TestOrderUseCase_ProcessSagaReply(t *testing.T) {
 		expectedErr bool
 	}{
 		{
-			name: "Ошибка саги на шаге PAYMENT -> компенсация корзины",
+			name: "Ошибка саги на шаге PAYMENT -> заказ в payment_ready для ретрая",
 			reply: events.SagaReply{
 				OrderID: "pub-123", Step: "PAYMENT", Status: events.StatusError, SplitID: "split-1",
 			},
 			mockInit: func(d useCaseDeps) {
-				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusFailed).Return(nil)
+				// Платёж не создался, но заказ валиден: переводим в payment_ready,
+				// чтобы фронт мог предложить повторную оплату/другую карту.
+				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusPaymentReady).Return(nil)
 				d.repo.EXPECT().UpdateSplitStatus(gomock.Any(), "split-1", SplitStatusFailed).Return(nil)
-				// Компенсирующий запрос на разблокировку
-				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueCartCommands, gomock.Any()).Return(nil)
+				// Событие для фронта через gateway-очередь.
+				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueGatewayEvents, gomock.Any()).Return(nil)
 			},
 			expectedErr: false,
 		},

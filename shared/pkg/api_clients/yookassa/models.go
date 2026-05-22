@@ -24,6 +24,12 @@ type CreatePaymentRequest struct {
 	SavePaymentMethod bool                              `json:"save_payment_method"`
 	Description       string                            `json:"description,omitempty"`
 	PaymentMethodID   string                            `json:"payment_method_id,omitempty"`
+	PaymentMethodData *PaymentMethodData                `json:"payment_method_data,omitempty"`
+}
+
+//easyjson:json
+type PaymentMethodData struct {
+	Type string `json:"type"`
 }
 
 //easyjson:json

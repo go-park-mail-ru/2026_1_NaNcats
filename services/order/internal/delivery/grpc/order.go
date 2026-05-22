@@ -37,6 +37,7 @@ func mapDomainToPBOrder(o domain.Order) *pb.Order {
 
 	return &pb.Order{
 		PublicId:          o.PublicID,
+		RestaurantBrandId: o.RestaurantBrandID,
 		RestaurantName:    o.RestaurantName,
 		RestaurantLogoUrl: o.RestaurantLogoURL,
 		TotalCost:         o.TotalCost,

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -60,17 +61,17 @@ func (c *Client) CreatePayment(ctx context.Context, req CreatePaymentRequest, id
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
 		switch resp.StatusCode {
 		case http.StatusBadRequest:
-			return nil, ErrBadRequest
+			return nil, fmt.Errorf("%w: %s", ErrBadRequest, string(body))
 		case http.StatusUnauthorized, http.StatusForbidden:
-			return nil, ErrUnauthorized
+			return nil, fmt.Errorf("%w: %s", ErrUnauthorized, string(body))
 		case http.StatusNotFound:
-			return nil, ErrNotFound
+			return nil, fmt.Errorf("%w: %s", ErrNotFound, string(body))
 		default:
-			return nil, fmt.Errorf("yookassa returned error status: %d", resp.StatusCode)
+			return nil, fmt.Errorf("yookassa returned error status %d: %s", resp.StatusCode, string(body))
 		}
-
 	}
 
 	var yookassaResponse PaymentResponse

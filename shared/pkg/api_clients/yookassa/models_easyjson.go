@@ -1510,6 +1510,16 @@ func easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsSharedPkgApiClientsY
 			} else {
 				out.PaymentMethodID = string(in.String())
 			}
+		case "payment_method_data":
+			if in.IsNull() {
+				in.Skip()
+				out.PaymentMethodData = nil
+			} else {
+				if out.PaymentMethodData == nil {
+					out.PaymentMethodData = new(PaymentMethodData)
+				}
+				easyjsonD2b7633eDecodePaymentMethodData(in, out.PaymentMethodData)
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -1553,6 +1563,11 @@ func easyjsonD2b7633eEncodeGithubComGoParkMailRu20261NaNcatsSharedPkgApiClientsY
 		const prefix string = ",\"payment_method_id\":"
 		out.RawString(prefix)
 		out.String(string(in.PaymentMethodID))
+	}
+	if in.PaymentMethodData != nil {
+		const prefix string = ",\"payment_method_data\":"
+		out.RawString(prefix)
+		easyjsonD2b7633eEncodePaymentMethodData(out, *in.PaymentMethodData)
 	}
 	out.RawByte('}')
 }
@@ -1663,4 +1678,67 @@ func (v *CreatePaymentMethodRequest) UnmarshalJSON(data []byte) error {
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *CreatePaymentMethodRequest) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjsonD2b7633eDecodeGithubComGoParkMailRu20261NaNcatsSharedPkgApiClientsYookassa16(l, v)
+}
+func easyjsonD2b7633eDecodePaymentMethodData(in *jlexer.Lexer, out *PaymentMethodData) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		switch key {
+		case "type":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.Type = string(in.String())
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonD2b7633eEncodePaymentMethodData(out *jwriter.Writer, in PaymentMethodData) {
+	out.RawByte('{')
+	{
+		const prefix string = ",\"type\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Type))
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v PaymentMethodData) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjsonD2b7633eEncodePaymentMethodData(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v PaymentMethodData) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjsonD2b7633eEncodePaymentMethodData(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *PaymentMethodData) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjsonD2b7633eDecodePaymentMethodData(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *PaymentMethodData) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjsonD2b7633eDecodePaymentMethodData(l, v)
 }

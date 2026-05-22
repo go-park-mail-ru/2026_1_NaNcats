@@ -68,6 +68,14 @@ func (p *paymentUseCase) CreatePayment(ctx context.Context, amount int64, paymen
 	kopecks := (amount%1_000_000)/10_000 + 100
 	value := strconv.FormatInt(rubles, 10) + "." + strconv.FormatInt(kopecks, 10)[1:]
 
+	span.SetAttributes(attribute.String("payment.amount_formatted", value))
+	p.logger.Info("creating yookassa payment",
+		logger.Int64("amount_micros", amount),
+		logger.String("amount_value", value),
+		logger.String("payment_method_id", paymentMethodID),
+		logger.String("idempotency_key", idempotencyKey),
+	)
+
 	paymentRequest := yookassa.CreatePaymentRequest{
 		Amount: yookassa.CreatePaymentRequestAmount{
 			Value:    value,
@@ -86,9 +94,26 @@ func (p *paymentUseCase) CreatePayment(ctx context.Context, amount int64, paymen
 
 	if paymentMethodID != "" {
 		paymentRequest.PaymentMethodID = paymentMethodID
+	} else {
+		paymentRequest.PaymentMethodData = &yookassa.PaymentMethodData{
+			Type: "bank_card",
+		}
 	}
 
 	paymentResponse, err := p.yookassaClient.CreatePayment(ctx, paymentRequest, idempotencyKey)
+
+	if err != nil && paymentMethodID != "" && (errors.Is(err, yookassa.ErrBadRequest) || errors.Is(err, yookassa.ErrNotFound)) {
+		p.logger.Info("saved card rejected by yookassa, falling back to new card payment",
+			logger.String("payment_method_id", paymentMethodID),
+			logger.Err(err),
+		)
+		paymentRequest.PaymentMethodID = ""
+		paymentRequest.PaymentMethodData = &yookassa.PaymentMethodData{
+			Type: "bank_card",
+		}
+		paymentResponse, err = p.yookassaClient.CreatePayment(ctx, paymentRequest, idempotencyKey+"-fallback")
+	}
+
 	if err != nil {
 		switch {
 		case errors.Is(err, yookassa.ErrBadRequest):
@@ -122,15 +147,23 @@ func (p *paymentUseCase) InitiateCardBinding(ctx context.Context, userID int64, 
 		attribute.String("binding.idempotency_key", idempotencyKey),
 	)
 
-	req := yookassa.CreatePaymentMethodRequest{
-		Type: "bank_card",
-		Confirmation: &yookassa.PaymentMethodRequestConfirmation{
+	req := yookassa.CreatePaymentRequest{
+		Amount: yookassa.CreatePaymentRequestAmount{
+			Value:    "1.00",
+			Currency: "RUB",
+		},
+		Capture:           true,
+		SavePaymentMethod: true,
+		Confirmation: &yookassa.CreatePaymentRequestConfirmation{
 			Type:      "redirect",
 			ReturnURL: p.returnURL,
 		},
+		PaymentMethodData: &yookassa.PaymentMethodData{
+			Type: "bank_card",
+		},
 	}
 
-	resp, err := p.yookassaClient.CreatePaymentMethod(ctx, req, idempotencyKey)
+	resp, err := p.yookassaClient.CreatePayment(ctx, req, idempotencyKey)
 	if err != nil {
 		if errors.Is(err, yookassa.ErrBadRequest) {
 			return "", errutil.Wrap("BINDING_INVALID_CONFIG", "yookassa rejected binding request", err, codes.InvalidArgument)
