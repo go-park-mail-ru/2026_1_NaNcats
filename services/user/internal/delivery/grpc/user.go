@@ -58,15 +58,58 @@ func mapDomainToPBClientProfile(u domain.ClientProfile) *pb.ClientProfile {
 
 type UserHandler struct {
 	pb.UnimplementedUserServiceServer
-	userUC   usecase.UserUseCase
-	clientUC usecase.ClientProfileUseCase
+	userUC        usecase.UserUseCase
+	clientUC      usecase.ClientProfileUseCase
+	achievementUC usecase.AchievementUseCase
 }
 
-func NewUserHandler(uuc usecase.UserUseCase, cpuc usecase.ClientProfileUseCase) *UserHandler {
+func NewUserHandler(uuc usecase.UserUseCase, cpuc usecase.ClientProfileUseCase, auc usecase.AchievementUseCase) *UserHandler {
 	return &UserHandler{
-		userUC:   uuc,
-		clientUC: cpuc,
+		userUC:        uuc,
+		clientUC:      cpuc,
+		achievementUC: auc,
 	}
+}
+
+func (h *UserHandler) OnOrderPaid(ctx context.Context, req *pb.OnOrderPaidRequest) (*emptypb.Empty, error) {
+	if err := h.achievementUC.OnOrderPaid(ctx, req.UserId, req.RestaurantId, req.PaidAt.AsTime()); err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (h *UserHandler) ListAchievements(ctx context.Context, _ *emptypb.Empty) (*pb.ListAchievementsResponse, error) {
+	items, err := h.achievementUC.ListAll(ctx)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	resp := &pb.ListAchievementsResponse{Achievements: make([]*pb.Achievement, 0, len(items))}
+	for _, a := range items {
+		resp.Achievements = append(resp.Achievements, &pb.Achievement{
+			Id:          a.ID,
+			Code:        a.Code,
+			Title:       a.Title,
+			Description: a.Description,
+			Icon:        a.Icon,
+			SortOrder:   int32(a.SortOrder),
+		})
+	}
+	return resp, nil
+}
+
+func (h *UserHandler) GetUserAchievements(ctx context.Context, req *pb.GetUserAchievementsRequest) (*pb.GetUserAchievementsResponse, error) {
+	items, err := h.achievementUC.ListForUser(ctx, req.UserId)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	resp := &pb.GetUserAchievementsResponse{Achievements: make([]*pb.UserAchievement, 0, len(items))}
+	for _, ua := range items {
+		resp.Achievements = append(resp.Achievements, &pb.UserAchievement{
+			AchievementId: ua.AchievementID,
+			AwardedAt:     timestamppb.New(ua.AwardedAt),
+		})
+	}
+	return resp, nil
 }
 
 func (h *UserHandler) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error) {

@@ -3,10 +3,12 @@ package userclient
 import (
 	"context"
 	"errors"
+	"time"
 
 	pbUser "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/user"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 var (
@@ -17,6 +19,21 @@ var (
 )
 
 //go:generate mockgen -destination=mocks/user_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/userclient UserClient
+
+type Achievement struct {
+	ID          int64
+	Code        string
+	Title       string
+	Description string
+	Icon        string
+	SortOrder   int32
+}
+
+type UserAchievement struct {
+	AchievementID int64
+	AwardedAt     time.Time
+}
+
 type UserClient interface {
 	CreateUser(ctx context.Context, name, email, password, idempotencyKey string) (int64, error)
 	GetByID(ctx context.Context, userID int64) (*pbUser.User, error)
@@ -27,6 +44,8 @@ type UserClient interface {
 	UpdateRole(ctx context.Context, userID int64, newRole string, idempotencyKey string) error
 	GetUsersByIDs(ctx context.Context, userIDs []int64) (map[int64]*pbUser.User, error)
 	ResolvePublicID(ctx context.Context, publicID string) (int64, error)
+	ListAchievements(ctx context.Context) ([]Achievement, error)
+	GetUserAchievements(ctx context.Context, userID int64) ([]UserAchievement, error)
 }
 
 type userClient struct {
@@ -162,6 +181,44 @@ func (c *userClient) GetUsersByIDs(ctx context.Context, userIDs []int64) (map[in
 		return make(map[int64]*pbUser.User), nil
 	}
 	return resp.Users, nil
+}
+
+func (c *userClient) ListAchievements(ctx context.Context) ([]Achievement, error) {
+	resp, err := c.client.ListAchievements(ctx, &emptypb.Empty{})
+	if err != nil {
+		return nil, ErrInternal
+	}
+	out := make([]Achievement, 0, len(resp.Achievements))
+	for _, a := range resp.Achievements {
+		out = append(out, Achievement{
+			ID:          a.Id,
+			Code:        a.Code,
+			Title:       a.Title,
+			Description: a.Description,
+			Icon:        a.Icon,
+			SortOrder:   a.SortOrder,
+		})
+	}
+	return out, nil
+}
+
+func (c *userClient) GetUserAchievements(ctx context.Context, userID int64) ([]UserAchievement, error) {
+	resp, err := c.client.GetUserAchievements(ctx, &pbUser.GetUserAchievementsRequest{UserId: userID})
+	if err != nil {
+		return nil, ErrInternal
+	}
+	out := make([]UserAchievement, 0, len(resp.Achievements))
+	for _, ua := range resp.Achievements {
+		var awardedAt time.Time
+		if ua.AwardedAt != nil {
+			awardedAt = ua.AwardedAt.AsTime()
+		}
+		out = append(out, UserAchievement{
+			AchievementID: ua.AchievementId,
+			AwardedAt:     awardedAt,
+		})
+	}
+	return out, nil
 }
 
 func (c *userClient) ResolvePublicID(ctx context.Context, publicID string) (int64, error) {

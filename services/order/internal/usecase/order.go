@@ -40,7 +40,7 @@ const (
 	StatusSplitPaid = "split_paid"
 )
 
-//go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase OrderUseCase,CartClient,AddressClient,RestaurantClient,MessagePublisher
+//go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase OrderUseCase,CartClient,AddressClient,RestaurantClient,UserClient,MessagePublisher
 //go:generate gowrap gen -i OrderUseCase -t ../../../../shared/templates/tracing.tmpl -o order_tracing_mw.go -v TracerName=order-service
 
 type CartClient interface {
@@ -55,6 +55,10 @@ type AddressClient interface {
 
 type RestaurantClient interface {
 	GetRestaurantName(ctx context.Context, branchID int64) (string, error)
+}
+
+type UserClient interface {
+	OnOrderPaid(ctx context.Context, userID, restaurantID int64, orderPublicID string, paidAt time.Time) error
 }
 
 type MessagePublisher interface {
@@ -75,6 +79,7 @@ type orderUseCase struct {
 	addressClient            AddressClient
 	cartClient               CartClient
 	restaurantClient         RestaurantClient
+	userClient               UserClient
 	rabbitPublisher          MessagePublisher
 	defaultRestaurantLogoURL string
 	logger                   logger.Logger
@@ -85,6 +90,7 @@ func NewOrderUseCase(
 	ac AddressClient,
 	cc CartClient,
 	rc RestaurantClient,
+	uc UserClient,
 	rp MessagePublisher,
 	drlurl string,
 	l logger.Logger,
@@ -94,6 +100,7 @@ func NewOrderUseCase(
 		addressClient:            ac,
 		cartClient:               cc,
 		restaurantClient:         rc,
+		userClient:               uc,
 		rabbitPublisher:          rp,
 		defaultRestaurantLogoURL: drlurl,
 		logger:                   l,
@@ -449,6 +456,17 @@ func (o *orderUseCase) UpdateOrderStatusByPaymentID(ctx context.Context, payment
 			Status:  StatusPaid,
 		}
 		_ = o.rabbitPublisher.PublishJSON(ctx, events.QueueGatewayEvents, gatewayEvent)
+
+		paidOrder, getErr := o.orderRepo.GetOrderByPublicID(ctx, orderPublicID)
+		if getErr != nil {
+			o.logger.WithContext(ctx).Warn("failed to load order for OnOrderPaid hook",
+				logger.String("order_id", orderPublicID), logger.Err(getErr))
+		} else if o.userClient != nil {
+			if hookErr := o.userClient.OnOrderPaid(ctx, paidOrder.AdminID, paidOrder.RestaurantBranchID, orderPublicID, time.Now()); hookErr != nil {
+				o.logger.WithContext(ctx).Warn("user-service OnOrderPaid hook failed",
+					logger.String("order_id", orderPublicID), logger.Err(hookErr))
+			}
+		}
 	}
 
 	return nil

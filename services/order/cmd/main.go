@@ -32,6 +32,7 @@ import (
 	cartPb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/cart"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/order"
 	restaurantPb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
+	userPb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/user"
 
 	orderDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/delivery/grpc"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/infrastructure/config"
@@ -84,6 +85,8 @@ func main() {
 	defer cartConn.Close()
 	resConn := createGrpcConn(cfg.RestaurantServiceAddr, "Restaurant", appLogger)
 	defer resConn.Close()
+	userConn := createGrpcConn(cfg.UserServiceAddr, "User", appLogger)
+	defer userConn.Close()
 
 	addressGrpcClient := addressPb.NewAddressServiceClient(addrConn)
 	addressClient := orderGrpcClient.NewAddressClient(addressGrpcClient)
@@ -93,6 +96,9 @@ func main() {
 
 	restaurantGrpcClient := restaurantPb.NewRestaurantServiceClient(resConn)
 	restaurantClient := orderGrpcClient.NewRestaurantClient(restaurantGrpcClient)
+
+	userGrpcClient := userPb.NewUserServiceClient(userConn)
+	userClient := orderGrpcClient.NewUserClient(userGrpcClient)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -109,6 +115,7 @@ func main() {
 		addressClient,
 		cartClient,
 		restaurantClient,
+		userClient,
 		rabbitClient,
 		cfg.DefaultRestaurantLogoURL,
 		appLogger,

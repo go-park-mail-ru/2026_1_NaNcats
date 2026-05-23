@@ -62,7 +62,7 @@ func TestUserHandler_CreateUser(t *testing.T) {
 			userUC := mocks.NewMockUserUseCase(ctrl)
 			tt.mockInit(userUC)
 
-			h := NewUserHandler(userUC, nil)
+			h := NewUserHandler(userUC, nil, nil)
 			resp, err := h.CreateUser(context.Background(), tt.req)
 
 			if tt.expectedCode == codes.OK {
@@ -120,7 +120,7 @@ func TestUserHandler_CreateClientProfile(t *testing.T) {
 			clientUC := mocks.NewMockClientProfileUseCase(ctrl)
 			tt.mockInit(clientUC)
 
-			h := NewUserHandler(nil, clientUC)
+			h := NewUserHandler(nil, clientUC, nil)
 			resp, err := h.CreateClientProfile(context.Background(), tt.req)
 
 			if tt.expectedCode == codes.OK {
@@ -195,7 +195,7 @@ func TestUserHandler_UpdateProfile(t *testing.T) {
 			userUC := mocks.NewMockUserUseCase(ctrl)
 			tt.mockInit(userUC)
 
-			h := NewUserHandler(userUC, nil)
+			h := NewUserHandler(userUC, nil, nil)
 			resp, err := h.UpdateProfile(context.Background(), tt.req)
 
 			if tt.expectedCode == codes.OK {
@@ -258,7 +258,7 @@ func TestUserHandler_UpdateAvatar(t *testing.T) {
 			userUC := mocks.NewMockUserUseCase(ctrl)
 			tt.mockInit(userUC)
 
-			h := NewUserHandler(userUC, nil)
+			h := NewUserHandler(userUC, nil, nil)
 			resp, err := h.UpdateAvatar(context.Background(), tt.req)
 
 			if tt.expectedCode == codes.OK {
@@ -316,7 +316,7 @@ func TestUserHandler_DeleteAvatar(t *testing.T) {
 			userUC := mocks.NewMockUserUseCase(ctrl)
 			tt.mockInit(userUC)
 
-			h := NewUserHandler(userUC, nil)
+			h := NewUserHandler(userUC, nil, nil)
 			resp, err := h.DeleteAvatar(context.Background(), tt.req)
 
 			if tt.expectedCode == codes.OK {
@@ -378,7 +378,7 @@ func TestUserHandler_GetByID(t *testing.T) {
 			userUC := mocks.NewMockUserUseCase(ctrl)
 			tt.mockInit(userUC)
 
-			h := NewUserHandler(userUC, nil)
+			h := NewUserHandler(userUC, nil, nil)
 			resp, err := h.GetByID(context.Background(), tt.req)
 
 			if tt.expectedCode == codes.OK {
@@ -430,7 +430,7 @@ func TestUserHandler_GetByEmail(t *testing.T) {
 			userUC := mocks.NewMockUserUseCase(ctrl)
 			tt.mockInit(userUC)
 
-			h := NewUserHandler(userUC, nil)
+			h := NewUserHandler(userUC, nil, nil)
 			resp, err := h.GetByEmail(context.Background(), tt.req)
 
 			st, _ := status.FromError(err)
@@ -480,7 +480,7 @@ func TestUserHandler_CheckUserExists(t *testing.T) {
 			userUC := mocks.NewMockUserUseCase(ctrl)
 			tt.mockInit(userUC)
 
-			h := NewUserHandler(userUC, nil)
+			h := NewUserHandler(userUC, nil, nil)
 			resp, err := h.CheckUserExists(context.Background(), tt.req)
 
 			st, _ := status.FromError(err)
@@ -540,7 +540,7 @@ func TestUserHandler_GetUserProfile(t *testing.T) {
 			clientUC := mocks.NewMockClientProfileUseCase(ctrl)
 			tt.mockInit(userUC, clientUC)
 
-			h := NewUserHandler(userUC, clientUC)
+			h := NewUserHandler(userUC, clientUC, nil)
 			resp, err := h.GetUserProfile(context.Background(), tt.req)
 
 			st, _ := status.FromError(err)
@@ -599,7 +599,7 @@ func TestUserHandler_UpdateUserRole(t *testing.T) {
 			userUC := mocks.NewMockUserUseCase(ctrl)
 			tt.mockInit(userUC)
 
-			h := NewUserHandler(userUC, nil)
+			h := NewUserHandler(userUC, nil, nil)
 			resp, err := h.UpdateUserRole(context.Background(), tt.req)
 
 			st, _ := status.FromError(err)

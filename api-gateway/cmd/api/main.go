@@ -211,6 +211,7 @@ func main() {
 	mux.Handle("PATCH /api/profile", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(userProfileHandler.UpdateProfile))))
 	mux.Handle("POST /api/profile/avatar", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(userProfileHandler.UpdateAvatar))))
 	mux.Handle("DELETE /api/profile/avatar", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(userProfileHandler.DeleteAvatar))))
+	mux.Handle("GET /api/profile/achievements", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.GetAchievements)))
 
 	// === ADMIN ===
 	mux.Handle("POST /api/admin/users/role",

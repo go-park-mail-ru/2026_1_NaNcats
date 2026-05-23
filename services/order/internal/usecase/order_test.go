@@ -368,7 +368,7 @@ func TestOrderUseCase_CreateOrder(t *testing.T) {
 			deps := setupDeps(ctrl)
 			tt.mockInit(deps)
 
-			uc := NewOrderUseCase(deps.repo, deps.addr, deps.cart, deps.rest, deps.pub, "http://default-logo", logger.NewNopLogger())
+			uc := NewOrderUseCase(deps.repo, deps.addr, deps.cart, deps.rest, nil, deps.pub, "http://default-logo", logger.NewNopLogger())
 
 			id, err := uc.CreateOrder(context.Background(), tt.req, idemKey)
 
@@ -482,7 +482,7 @@ func TestOrderUseCase_CancelOrder(t *testing.T) {
 			deps := setupDeps(ctrl)
 			tt.mockInit(deps)
 
-			uc := NewOrderUseCase(deps.repo, deps.addr, deps.cart, deps.rest, deps.pub, "", logger.NewNopLogger())
+			uc := NewOrderUseCase(deps.repo, deps.addr, deps.cart, deps.rest, nil, deps.pub, "", logger.NewNopLogger())
 
 			err := uc.CancelOrder(context.Background(), tt.orderID, tt.userID)
 
@@ -581,6 +581,7 @@ func TestOrderUseCase_UpdateOrderStatusByPaymentID(t *testing.T) {
 				d.repo.EXPECT().AreAllSplitsPaid(gomock.Any(), "pub-order").Return(true, nil)
 				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-order", StatusPaid, StatusCreated, StatusCartLocked, StatusPaymentReady).Return(nil)
 				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueGatewayEvents, gomock.Any()).Return(nil)
+				d.repo.EXPECT().GetOrderByPublicID(gomock.Any(), "pub-order").Return(domain.Order{PublicID: "pub-order", AdminID: 1, RestaurantBranchID: 42}, nil)
 			},
 			expectedErr: false,
 		},
@@ -594,7 +595,7 @@ func TestOrderUseCase_UpdateOrderStatusByPaymentID(t *testing.T) {
 			deps := setupDeps(ctrl)
 			tt.mockInit(deps)
 
-			uc := NewOrderUseCase(deps.repo, deps.addr, deps.cart, deps.rest, deps.pub, "", logger.NewNopLogger())
+			uc := NewOrderUseCase(deps.repo, deps.addr, deps.cart, deps.rest, nil, deps.pub, "", logger.NewNopLogger())
 
 			err := uc.UpdateOrderStatusByPaymentID(context.Background(), tt.paymentID, tt.status, "idem-key")
 
@@ -675,7 +676,7 @@ func TestOrderUseCase_ProcessSagaReply(t *testing.T) {
 			deps := setupDeps(ctrl)
 			tt.mockInit(deps)
 
-			uc := NewOrderUseCase(deps.repo, deps.addr, deps.cart, deps.rest, deps.pub, "", logger.NewNopLogger())
+			uc := NewOrderUseCase(deps.repo, deps.addr, deps.cart, deps.rest, nil, deps.pub, "", logger.NewNopLogger())
 
 			err := uc.ProcessSagaReply(context.Background(), tt.reply)
 
@@ -749,7 +750,7 @@ func TestOrderUseCase_GetOrders(t *testing.T) {
 			deps := setupDeps(ctrl)
 			tt.mockInit(deps)
 
-			uc := NewOrderUseCase(deps.repo, deps.addr, deps.cart, deps.rest, deps.pub, "http://default-logo", logger.NewNopLogger())
+			uc := NewOrderUseCase(deps.repo, deps.addr, deps.cart, deps.rest, nil, deps.pub, "http://default-logo", logger.NewNopLogger())
 
 			orders, err := uc.GetOrders(context.Background(), tt.userID, tt.limit, tt.offset)
 
@@ -859,7 +860,7 @@ func TestOrderUseCase_PayForFriend(t *testing.T) {
 			deps := setupDeps(ctrl)
 			tt.mockInit(deps)
 
-			uc := NewOrderUseCase(deps.repo, deps.addr, deps.cart, deps.rest, deps.pub, "http://default-logo", logger.NewNopLogger())
+			uc := NewOrderUseCase(deps.repo, deps.addr, deps.cart, deps.rest, nil, deps.pub, "http://default-logo", logger.NewNopLogger())
 
 			err := uc.PayForFriend(context.Background(), tt.splitID, tt.adminID, tt.paymentMethodID, tt.idemKey)
 
