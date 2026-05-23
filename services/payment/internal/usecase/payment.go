@@ -336,6 +336,23 @@ func (p *paymentUseCase) ProcessPaymentWebhook(ctx context.Context, payment *yoo
 		return nil
 	}
 
+	userID, cacheErr := p.cacheRepo.GetUserIDByPaymentID(ctx, payment.ID)
+	if cacheErr == nil {
+		span.SetAttributes(attribute.Int64("binding.user_id", userID))
+		if payment.Status == "succeeded" {
+			if err := p.saveCardFromBindingPayment(ctx, payment.ID, userID); err != nil {
+				return err
+			}
+		}
+		if delErr := p.cacheRepo.DeletePendingBinding(ctx, payment.ID); delErr != nil {
+			p.logger.WithContext(ctx).Warn("failed to delete pending binding from cache",
+				logger.String("payment_id", payment.ID),
+				logger.Err(delErr),
+			)
+		}
+		return nil
+	}
+
 	err := p.orderClient.UpdateOrderStatus(ctx, payment.ID, payment.Status)
 	if err != nil {
 		st, ok := status.FromError(err)
@@ -349,5 +366,38 @@ func (p *paymentUseCase) ProcessPaymentWebhook(ctx context.Context, payment *yoo
 		return errutil.Internal("failed to notify order service", err)
 	}
 
+	return nil
+}
+
+func (p *paymentUseCase) saveCardFromBindingPayment(ctx context.Context, paymentID string, userID int64) error {
+	span := trace.SpanFromContext(ctx)
+	resp, err := p.yookassaClient.GetPayment(ctx, paymentID)
+	if err != nil {
+		return errutil.Internal("failed to fetch binding payment from yookassa", err)
+	}
+	if resp.PaymentMethod == nil || !resp.PaymentMethod.Saved || resp.PaymentMethod.Card == nil {
+		span.AddEvent("binding_payment_method_missing_card")
+		return nil
+	}
+
+	method := domain.PaymentMethod{
+		UserID:      userID,
+		ExternalID:  resp.PaymentMethod.ID,
+		First6:      resp.PaymentMethod.Card.First6,
+		Last4:       resp.PaymentMethod.Card.Last4,
+		ExpiryMonth: resp.PaymentMethod.Card.ExpiryMonth,
+		ExpiryYear:  resp.PaymentMethod.Card.ExpiryYear,
+		CardType:    resp.PaymentMethod.Card.CardType,
+		IssuerName:  resp.PaymentMethod.Card.IssuerName,
+		IsDefault:   false,
+	}
+	_, err = p.paymentRepo.Create(ctx, method, resp.PaymentMethod.ID)
+	if err != nil {
+		if errors.Is(err, domain.ErrPaymentMethodAlreadyExists) {
+			span.AddEvent("payment_method_already_exists")
+			return nil
+		}
+		return errutil.Internal("failed to save payment method to db", err)
+	}
 	return nil
 }

@@ -7,7 +7,10 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/domain"
 )
 
-var ErrStateChanged = errors.New("order state has changed or order not found")
+var (
+	ErrStateChanged  = errors.New("order state has changed or order not found")
+	ErrSplitNotFound = errors.New("split not found by payment ID")
+)
 
 //go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository OrderRepository
 

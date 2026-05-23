@@ -146,7 +146,7 @@ func TestPaymentUseCase_ProcessPaymentMethodWebhook(t *testing.T) {
 }
 
 func TestPaymentUseCase_ProcessPaymentWebhook(t *testing.T) {
-	type mockInit func(orderMock *ucMocks.MockOrderClient)
+	type mockInit func(orderMock *ucMocks.MockOrderClient, cacheMock *repoMocks.MockPaymentCacheRepository)
 
 	tests := []struct {
 		name      string
@@ -159,7 +159,7 @@ func TestPaymentUseCase_ProcessPaymentWebhook(t *testing.T) {
 			payment: &yookassa.WebhookPaymentObject{
 				ID: "pay-1", Status: "pending",
 			},
-			mockInit:  func(o *ucMocks.MockOrderClient) {},
+			mockInit:  func(o *ucMocks.MockOrderClient, c *repoMocks.MockPaymentCacheRepository) {},
 			expectErr: false,
 		},
 		{
@@ -167,7 +167,8 @@ func TestPaymentUseCase_ProcessPaymentWebhook(t *testing.T) {
 			payment: &yookassa.WebhookPaymentObject{
 				ID: "pay-2", Status: "succeeded",
 			},
-			mockInit: func(o *ucMocks.MockOrderClient) {
+			mockInit: func(o *ucMocks.MockOrderClient, c *repoMocks.MockPaymentCacheRepository) {
+				c.EXPECT().GetUserIDByPaymentID(gomock.Any(), "pay-2").Return(int64(0), errors.New("cache miss"))
 				o.EXPECT().UpdateOrderStatus(gomock.Any(), "pay-2", "succeeded").Return(nil)
 			},
 			expectErr: false,
@@ -177,7 +178,8 @@ func TestPaymentUseCase_ProcessPaymentWebhook(t *testing.T) {
 			payment: &yookassa.WebhookPaymentObject{
 				ID: "pay-3", Status: "canceled",
 			},
-			mockInit: func(o *ucMocks.MockOrderClient) {
+			mockInit: func(o *ucMocks.MockOrderClient, c *repoMocks.MockPaymentCacheRepository) {
+				c.EXPECT().GetUserIDByPaymentID(gomock.Any(), "pay-3").Return(int64(0), errors.New("cache miss"))
 				o.EXPECT().UpdateOrderStatus(gomock.Any(), "pay-3", "canceled").
 					Return(status.Error(codes.NotFound, "order not found"))
 			},
@@ -188,11 +190,23 @@ func TestPaymentUseCase_ProcessPaymentWebhook(t *testing.T) {
 			payment: &yookassa.WebhookPaymentObject{
 				ID: "pay-4", Status: "succeeded",
 			},
-			mockInit: func(o *ucMocks.MockOrderClient) {
+			mockInit: func(o *ucMocks.MockOrderClient, c *repoMocks.MockPaymentCacheRepository) {
+				c.EXPECT().GetUserIDByPaymentID(gomock.Any(), "pay-4").Return(int64(0), errors.New("cache miss"))
 				o.EXPECT().UpdateOrderStatus(gomock.Any(), "pay-4", "succeeded").
 					Return(status.Error(codes.Internal, "db crash"))
 			},
 			expectErr: true,
+		},
+		{
+			name: "Отмена привязки карты: чистим кеш, заказ не трогаем",
+			payment: &yookassa.WebhookPaymentObject{
+				ID: "pay-bind-1", Status: "canceled",
+			},
+			mockInit: func(o *ucMocks.MockOrderClient, c *repoMocks.MockPaymentCacheRepository) {
+				c.EXPECT().GetUserIDByPaymentID(gomock.Any(), "pay-bind-1").Return(int64(42), nil)
+				c.EXPECT().DeletePendingBinding(gomock.Any(), "pay-bind-1").Return(nil)
+			},
+			expectErr: false,
 		},
 	}
 
@@ -202,9 +216,10 @@ func TestPaymentUseCase_ProcessPaymentWebhook(t *testing.T) {
 			defer ctrl.Finish()
 
 			orderMock := ucMocks.NewMockOrderClient(ctrl)
-			tt.mockInit(orderMock)
+			cacheMock := repoMocks.NewMockPaymentCacheRepository(ctrl)
+			tt.mockInit(orderMock, cacheMock)
 
-			uc := NewPaymentUseCase(nil, nil, orderMock, nil, "", logger.NewNopLogger())
+			uc := NewPaymentUseCase(nil, cacheMock, orderMock, nil, "", logger.NewNopLogger())
 			err := uc.ProcessPaymentWebhook(context.Background(), tt.payment)
 
 			if tt.expectErr {

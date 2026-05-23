@@ -92,10 +92,11 @@ type PaymentResponseRecipient struct {
 
 //easyjson:json
 type PaymentResponsePaymentMethod struct {
-	ID     string `json:"id"`
-	Type   string `json:"type"`
-	Saved  bool   `json:"saved"`
-	Status string `json:"status"`
+	ID     string                     `json:"id"`
+	Type   string                     `json:"type"`
+	Saved  bool                       `json:"saved"`
+	Status string                     `json:"status"`
+	Card   *PaymentMethodResponseCard `json:"card,omitempty"`
 }
 
 //easyjson:json

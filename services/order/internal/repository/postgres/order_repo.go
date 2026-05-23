@@ -199,7 +199,7 @@ func (r *orderRepo) UpdateSplitStatusByPaymentID(ctx context.Context, yookassaPa
 	err := r.pool.QueryRow(ctx, query, newStatus, yookassaPaymentID).Scan(&splitID, &orderPublicID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return "", "", errors.New("split not found by payment ID")
+			return "", "", repository.ErrSplitNotFound
 		}
 		return "", "", fmt.Errorf("update split status: %w", err)
 	}

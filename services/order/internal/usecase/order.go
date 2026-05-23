@@ -408,6 +408,9 @@ func (o *orderUseCase) UpdateOrderStatusByPaymentID(ctx context.Context, payment
 
 	splitID, orderPublicID, err := o.orderRepo.UpdateSplitStatusByPaymentID(ctx, paymentID, SplitStatusPaid)
 	if err != nil {
+		if errors.Is(err, repository.ErrSplitNotFound) {
+			return errutil.Wrap("SPLIT_NOT_FOUND", "split not found by payment ID", err, codes.NotFound)
+		}
 		return err
 	}
 	span.SetAttributes(
