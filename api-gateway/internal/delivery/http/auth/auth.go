@@ -47,11 +47,12 @@ type LoginRequest struct {
 type LoginResponse struct {
 	// PublicID — публичный UUID пользователя. Внутренний числовой id наружу
 	// не отдаём: его утечка — это раскрытие внутренних идентификаторов.
-	PublicID  string `json:"public_id" example:"3fa85f64-5717-4562-b3fc-2c963f66afa6"`
-	Name      string `json:"name" example:"Иван"`
-	Email     string `json:"email" example:"ivan@example.com"`
-	AvatarURL string `json:"avatar_url" example:"users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"`
-	CSRFToken string `json:"csrf_token"`
+	PublicID    string `json:"public_id" example:"3fa85f64-5717-4562-b3fc-2c963f66afa6"`
+	Name        string `json:"name" example:"Иван"`
+	Email       string `json:"email" example:"ivan@example.com"`
+	AvatarURL   string `json:"avatar_url" example:"users/avatars/fjaun99f-8fna-h8ff-afvd-lmc01mca9jca.png"`
+	CSRFToken   string `json:"csrf_token,omitempty"`
+	StreakWeeks int32  `json:"streak_weeks,omitempty"`
 }
 
 //easyjson:json
@@ -200,13 +201,17 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	response.SetCookie(w, "session_id", session.Id, session.ExpiresAt.AsTime())
 
-	response.JSON(w, http.StatusOK, LoginResponse{
+	resp := LoginResponse{
 		PublicID:  userResp.PublicId,
 		Name:      userResp.Name,
 		Email:     userResp.Email,
 		AvatarURL: userResp.AvatarUrl,
 		CSRFToken: csrfToken,
-	})
+	}
+	if _, profile, perr := h.userClient.GetUserProfile(ctx, session.UserId); perr == nil && profile != nil {
+		resp.StreakWeeks = profile.StreakCount
+	}
+	response.JSON(w, http.StatusOK, resp)
 }
 
 // Logout godoc
@@ -254,12 +259,16 @@ func (h *AuthHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.JSON(w, http.StatusOK, LoginResponse{
+	resp := LoginResponse{
 		PublicID:  userResp.PublicId,
 		Name:      userResp.Name,
 		Email:     userResp.Email,
 		AvatarURL: userResp.AvatarUrl,
-	})
+	}
+	if _, profile, perr := h.userClient.GetUserProfile(ctx, userID); perr == nil && profile != nil {
+		resp.StreakWeeks = profile.StreakCount
+	}
+	response.JSON(w, http.StatusOK, resp)
 }
 
 // GetCSRF godoc
