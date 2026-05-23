@@ -10,7 +10,7 @@ env:
   CART_SERVICE_ADDR: "cart-service:50055"
   PAYMENT_SERVICE_ADDR: "payment-service:50056"
   RESTAURANT_SERVICE_ADDR: "restaurant-service:50053"
-  USER_SERVICE_ADDR: "user-service:50051"
+  USER_SERVICE_ADDR: "user-service:50052"
   DATABASE_URL: "postgres://nancat_admin:$(DB_PASSWORD)@postgres-service-postgresql:5432/order_db?sslmode=disable"
 secrets:
   DB_PASSWORD:
