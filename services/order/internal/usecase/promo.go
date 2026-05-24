@@ -83,8 +83,9 @@ func (u *promoUseCase) ValidatePromo(ctx context.Context, userID int64, code str
 		return domain.PromoValidation{Valid: false, Reason: "promo has expired"}, nil
 	}
 
-	// Минимальная сумма заказа сверяется с учётом доставки и сервисного сбора.
-	if promo.MinOrderAmount != nil && orderAmount+deliveryCost+serviceFee < *promo.MinOrderAmount {
+	// Минимальная сумма считается только по товарам (без доставки и сервисного сбора),
+	// чтобы поведение совпадало с проверкой в CreateOrder (cartTotalCost).
+	if promo.MinOrderAmount != nil && orderAmount < *promo.MinOrderAmount {
 		return domain.PromoValidation{Valid: false, Reason: "order amount is below minimum"}, nil
 	}
 
