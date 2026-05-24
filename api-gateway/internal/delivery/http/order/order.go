@@ -362,8 +362,10 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 	wg.Wait()
 
 	dishImages := make(map[int64]string, len(dishes))
+	dishNames := make(map[int64]string, len(dishes))
 	for _, d := range dishes {
 		dishImages[d.ID] = d.ImageURL
+		dishNames[d.ID] = d.Name
 	}
 
 	resp := make([]OrderHistoryResponse, 0, len(orders))
@@ -382,9 +384,16 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
+			// Старые заказы могли сохраниться без dish_name (cart-service не
+			// прокидывал название). Тогда подставляем актуальное имя из каталога.
+			dishName := item.DishName
+			if dishName == "" {
+				dishName = dishNames[item.DishID]
+			}
+
 			items = append(items, OrderDishDTO{
 				DishID:        item.DishID,
-				Name:          item.DishName,
+				Name:          dishName,
 				ImageURL:      imgURL,
 				Quantity:      item.Quantity,
 				Price:         item.Price,
