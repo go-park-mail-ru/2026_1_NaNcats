@@ -19,29 +19,36 @@ import (
 type OrderHistoryClient interface {
 	GetUserPaidBrands(ctx context.Context, userID int64) ([]int64, error)
 	GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error)
+	GetTopDishesByBrand(ctx context.Context, brandID int64, windowDays, limit int32) ([]int64, error)
 }
 
 type RecommendationsUseCase interface {
 	GetRecommendations(ctx context.Context, userID int64, limit int) ([]domain.RestaurantBrand, error)
+	GetRecommendedDishes(ctx context.Context, brandID, userID int64, limit int) ([]domain.Dish, error)
 }
 
 type recommendationsUseCase struct {
 	repo                     repository.RestaurantBrandRepository
+	dishRepo                 repository.DishRepository
 	orderClient              OrderHistoryClient
 	defaultRestaurantLogoURL string
+	defaultFoodLogoURL       string
 	logger                   logger.Logger
 }
 
 func NewRecommendationsUseCase(
 	repo repository.RestaurantBrandRepository,
+	dishRepo repository.DishRepository,
 	orderClient OrderHistoryClient,
-	defaultLogoURL string,
+	defaultLogoURL, defaultFoodLogoURL string,
 	l logger.Logger,
 ) RecommendationsUseCase {
 	return &recommendationsUseCase{
 		repo:                     repo,
+		dishRepo:                 dishRepo,
 		orderClient:              orderClient,
 		defaultRestaurantLogoURL: defaultLogoURL,
+		defaultFoodLogoURL:       defaultFoodLogoURL,
 		logger:                   l,
 	}
 }
@@ -156,6 +163,92 @@ func (u *recommendationsUseCase) applyDefaultLogos(brands []domain.RestaurantBra
 	for i := range brands {
 		if brands[i].LogoURL == "" {
 			brands[i].LogoURL = u.defaultRestaurantLogoURL
+		}
+	}
+}
+
+const topDishesWindowDays = 30
+
+// GetRecommendedDishes возвращает топ-N блюд бренда по продажам за 30 дней.
+// Если данных мало — добивает «первыми из меню», чтобы блок не пустовал.
+// userID пока не влияет на выдачу (закладываем под будущую персонализацию).
+func (u *recommendationsUseCase) GetRecommendedDishes(ctx context.Context, brandID, userID int64, limit int) ([]domain.Dish, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.Int64("brand.id", brandID),
+		attribute.Int64("user.id", userID),
+		attribute.Int("dishes.limit", limit),
+	)
+
+	if limit <= 0 {
+		limit = 4
+	}
+
+	topIDs, err := u.orderClient.GetTopDishesByBrand(ctx, brandID, topDishesWindowDays, int32(limit*2))
+	if err != nil {
+		u.logger.WithContext(ctx).Warn("recommended dishes: order client failed; falling back to menu order", logger.Err(err))
+		topIDs = nil
+	}
+	span.SetAttributes(attribute.Int("dishes.top_pool", len(topIDs)))
+
+	result := make([]domain.Dish, 0, limit)
+	picked := make(map[int64]struct{}, limit)
+
+	if len(topIDs) > 0 {
+		hot, err := u.dishRepo.GetDishesByIDs(ctx, topIDs)
+		if err != nil {
+			u.logger.WithContext(ctx).Warn("recommended dishes: dish lookup failed", logger.Err(err))
+		} else {
+			byID := make(map[int64]domain.Dish, len(hot))
+			for _, d := range hot {
+				if d.RestaurantBrandID == brandID {
+					byID[d.ID] = d
+				}
+			}
+			for _, id := range topIDs {
+				if len(result) >= limit {
+					break
+				}
+				d, ok := byID[id]
+				if !ok {
+					continue
+				}
+				result = append(result, d)
+				picked[d.ID] = struct{}{}
+			}
+		}
+	}
+
+	if len(result) < limit {
+		filler, err := u.dishRepo.GetDishesByRestaurantBrandID(ctx, brandID, limit*2, 0)
+		if err != nil {
+			u.logger.WithContext(ctx).Warn("recommended dishes: menu fallback failed", logger.Err(err))
+		} else {
+			for _, d := range filler {
+				if len(result) >= limit {
+					break
+				}
+				if _, dup := picked[d.ID]; dup {
+					continue
+				}
+				result = append(result, d)
+				picked[d.ID] = struct{}{}
+			}
+		}
+	}
+
+	u.applyDefaultFoodLogos(result)
+	span.SetAttributes(attribute.Int("dishes.returned", len(result)))
+	return result, nil
+}
+
+func (u *recommendationsUseCase) applyDefaultFoodLogos(dishes []domain.Dish) {
+	if u.defaultFoodLogoURL == "" {
+		return
+	}
+	for i := range dishes {
+		if dishes[i].ImageURL == "" {
+			dishes[i].ImageURL = u.defaultFoodLogoURL
 		}
 	}
 }

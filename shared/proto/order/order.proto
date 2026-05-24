@@ -23,6 +23,8 @@ service OrderService {
   rpc GetUserPaidBrands (GetUserPaidBrandsRequest) returns (BrandIDList);
   // Возвращает бренды, набравшие больше всего оплат за последние window_days.
   rpc GetTrendingBrands (GetTrendingBrandsRequest) returns (BrandIDList);
+  // Возвращает топ-N блюд ресторана по сумме quantity за window_days, paid|finished.
+  rpc GetTopDishesByBrand (GetTopDishesByBrandRequest) returns (DishIDList);
 }
 
 // Сервис промокодов. Промокоды хранятся в БД OrderService, поэтому
@@ -182,4 +184,14 @@ message GetTrendingBrandsRequest {
 
 message BrandIDList {
   repeated int64 brand_ids = 1;
+}
+
+message GetTopDishesByBrandRequest {
+  int64 brand_id = 1;
+  int32 window_days = 2;
+  int32 limit = 3;
+}
+
+message DishIDList {
+  repeated int64 dish_ids = 1;
 }

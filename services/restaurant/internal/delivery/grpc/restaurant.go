@@ -74,6 +74,18 @@ func (h *RestaurantHandler) GetRecommendations(ctx context.Context, req *pb.GetR
 	return &pb.GetRestaurantBrandsListResponse{RestaurantBrands: pbBrands}, nil
 }
 
+func (h *RestaurantHandler) GetRecommendedDishes(ctx context.Context, req *pb.GetRecommendedDishesRequest) (*pb.GetDishesByRestaurantBrandIDResponse, error) {
+	dishes, err := h.recoUC.GetRecommendedDishes(ctx, req.BrandId, req.UserId, int(req.Limit))
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	pbDishes := make([]*pb.Dish, 0, len(dishes))
+	for _, d := range dishes {
+		pbDishes = append(pbDishes, mapDomainToPBDish(d))
+	}
+	return &pb.GetDishesByRestaurantBrandIDResponse{Dishes: pbDishes}, nil
+}
+
 func (h *RestaurantHandler) GetRestaurantBrandsList(ctx context.Context, req *pb.GetRestaurantBrandsListRequest) (*pb.GetRestaurantBrandsListResponse, error) {
 	brands, err := h.brandUC.GetRestaurantBrandsList(ctx, int(req.Limit), int(req.Offset))
 	if err != nil {

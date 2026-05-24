@@ -144,3 +144,11 @@ func (h *OrderHandler) GetTrendingBrands(ctx context.Context, req *pb.GetTrendin
 	}
 	return &pb.BrandIDList{BrandIds: ids}, nil
 }
+
+func (h *OrderHandler) GetTopDishesByBrand(ctx context.Context, req *pb.GetTopDishesByBrandRequest) (*pb.DishIDList, error) {
+	ids, err := h.usecase.GetTopDishesByBrand(ctx, req.BrandId, req.WindowDays, req.Limit)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	return &pb.DishIDList{DishIds: ids}, nil
+}

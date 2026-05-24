@@ -27,6 +27,7 @@ const (
 	OrderService_CancelOrder_FullMethodName                  = "/order.OrderService/CancelOrder"
 	OrderService_GetUserPaidBrands_FullMethodName            = "/order.OrderService/GetUserPaidBrands"
 	OrderService_GetTrendingBrands_FullMethodName            = "/order.OrderService/GetTrendingBrands"
+	OrderService_GetTopDishesByBrand_FullMethodName          = "/order.OrderService/GetTopDishesByBrand"
 )
 
 // OrderServiceClient is the client API for OrderService service.
@@ -49,6 +50,8 @@ type OrderServiceClient interface {
 	GetUserPaidBrands(ctx context.Context, in *GetUserPaidBrandsRequest, opts ...grpc.CallOption) (*BrandIDList, error)
 	// Возвращает бренды, набравшие больше всего оплат за последние window_days.
 	GetTrendingBrands(ctx context.Context, in *GetTrendingBrandsRequest, opts ...grpc.CallOption) (*BrandIDList, error)
+	// Возвращает топ-N блюд ресторана по сумме quantity за window_days, paid|finished.
+	GetTopDishesByBrand(ctx context.Context, in *GetTopDishesByBrandRequest, opts ...grpc.CallOption) (*DishIDList, error)
 }
 
 type orderServiceClient struct {
@@ -129,6 +132,16 @@ func (c *orderServiceClient) GetTrendingBrands(ctx context.Context, in *GetTrend
 	return out, nil
 }
 
+func (c *orderServiceClient) GetTopDishesByBrand(ctx context.Context, in *GetTopDishesByBrandRequest, opts ...grpc.CallOption) (*DishIDList, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DishIDList)
+	err := c.cc.Invoke(ctx, OrderService_GetTopDishesByBrand_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OrderServiceServer is the server API for OrderService service.
 // All implementations must embed UnimplementedOrderServiceServer
 // for forward compatibility.
@@ -149,6 +162,8 @@ type OrderServiceServer interface {
 	GetUserPaidBrands(context.Context, *GetUserPaidBrandsRequest) (*BrandIDList, error)
 	// Возвращает бренды, набравшие больше всего оплат за последние window_days.
 	GetTrendingBrands(context.Context, *GetTrendingBrandsRequest) (*BrandIDList, error)
+	// Возвращает топ-N блюд ресторана по сумме quantity за window_days, paid|finished.
+	GetTopDishesByBrand(context.Context, *GetTopDishesByBrandRequest) (*DishIDList, error)
 	mustEmbedUnimplementedOrderServiceServer()
 }
 
@@ -179,6 +194,9 @@ func (UnimplementedOrderServiceServer) GetUserPaidBrands(context.Context, *GetUs
 }
 func (UnimplementedOrderServiceServer) GetTrendingBrands(context.Context, *GetTrendingBrandsRequest) (*BrandIDList, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetTrendingBrands not implemented")
+}
+func (UnimplementedOrderServiceServer) GetTopDishesByBrand(context.Context, *GetTopDishesByBrandRequest) (*DishIDList, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTopDishesByBrand not implemented")
 }
 func (UnimplementedOrderServiceServer) mustEmbedUnimplementedOrderServiceServer() {}
 func (UnimplementedOrderServiceServer) testEmbeddedByValue()                      {}
@@ -327,6 +345,24 @@ func _OrderService_GetTrendingBrands_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OrderService_GetTopDishesByBrand_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTopDishesByBrandRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).GetTopDishesByBrand(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_GetTopDishesByBrand_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).GetTopDishesByBrand(ctx, req.(*GetTopDishesByBrandRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // OrderService_ServiceDesc is the grpc.ServiceDesc for OrderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -361,6 +397,10 @@ var OrderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTrendingBrands",
 			Handler:    _OrderService_GetTrendingBrands_Handler,
+		},
+		{
+			MethodName: "GetTopDishesByBrand",
+			Handler:    _OrderService_GetTopDishesByBrand_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

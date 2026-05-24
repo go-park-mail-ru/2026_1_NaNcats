@@ -43,11 +43,19 @@ service RestaurantService {
 
   // Подбор рекомендованных ресторанов под пользователя (или гостя при user_id=0).
   rpc GetRecommendations (GetRecommendationsRequest) returns (GetRestaurantBrandsListResponse);
+  // Подбор рекомендованных блюд внутри конкретного ресторана.
+  rpc GetRecommendedDishes (GetRecommendedDishesRequest) returns (GetDishesByRestaurantBrandIDResponse);
 }
 
 message GetRecommendationsRequest {
   int64 user_id = 1;
   int32 limit = 2;
+}
+
+message GetRecommendedDishesRequest {
+  int64 brand_id = 1;
+  int64 user_id = 2;
+  int32 limit = 3;
 }
 
 message Category {

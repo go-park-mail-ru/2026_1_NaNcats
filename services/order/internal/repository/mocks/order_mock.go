@@ -176,6 +176,21 @@ func (mr *MockOrderRepositoryMockRecorder) GetSplitByID(ctx, splitID any) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSplitByID", reflect.TypeOf((*MockOrderRepository)(nil).GetSplitByID), ctx, splitID)
 }
 
+// GetTopDishesByBrand mocks base method.
+func (m *MockOrderRepository) GetTopDishesByBrand(ctx context.Context, brandID int64, windowDays, limit int32) ([]int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTopDishesByBrand", ctx, brandID, windowDays, limit)
+	ret0, _ := ret[0].([]int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTopDishesByBrand indicates an expected call of GetTopDishesByBrand.
+func (mr *MockOrderRepositoryMockRecorder) GetTopDishesByBrand(ctx, brandID, windowDays, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTopDishesByBrand", reflect.TypeOf((*MockOrderRepository)(nil).GetTopDishesByBrand), ctx, brandID, windowDays, limit)
+}
+
 // GetTrendingBrands mocks base method.
 func (m *MockOrderRepository) GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error) {
 	m.ctrl.T.Helper()

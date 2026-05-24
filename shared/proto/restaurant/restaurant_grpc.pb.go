@@ -37,6 +37,7 @@ const (
 	RestaurantService_UpdateDish_FullMethodName                    = "/restaurant.RestaurantService/UpdateDish"
 	RestaurantService_DeleteDish_FullMethodName                    = "/restaurant.RestaurantService/DeleteDish"
 	RestaurantService_GetRecommendations_FullMethodName            = "/restaurant.RestaurantService/GetRecommendations"
+	RestaurantService_GetRecommendedDishes_FullMethodName          = "/restaurant.RestaurantService/GetRecommendedDishes"
 )
 
 // RestaurantServiceClient is the client API for RestaurantService service.
@@ -73,6 +74,8 @@ type RestaurantServiceClient interface {
 	DeleteDish(ctx context.Context, in *DeleteDishRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Подбор рекомендованных ресторанов под пользователя (или гостя при user_id=0).
 	GetRecommendations(ctx context.Context, in *GetRecommendationsRequest, opts ...grpc.CallOption) (*GetRestaurantBrandsListResponse, error)
+	// Подбор рекомендованных блюд внутри конкретного ресторана.
+	GetRecommendedDishes(ctx context.Context, in *GetRecommendedDishesRequest, opts ...grpc.CallOption) (*GetDishesByRestaurantBrandIDResponse, error)
 }
 
 type restaurantServiceClient struct {
@@ -253,6 +256,16 @@ func (c *restaurantServiceClient) GetRecommendations(ctx context.Context, in *Ge
 	return out, nil
 }
 
+func (c *restaurantServiceClient) GetRecommendedDishes(ctx context.Context, in *GetRecommendedDishesRequest, opts ...grpc.CallOption) (*GetDishesByRestaurantBrandIDResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDishesByRestaurantBrandIDResponse)
+	err := c.cc.Invoke(ctx, RestaurantService_GetRecommendedDishes_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RestaurantServiceServer is the server API for RestaurantService service.
 // All implementations must embed UnimplementedRestaurantServiceServer
 // for forward compatibility.
@@ -287,6 +300,8 @@ type RestaurantServiceServer interface {
 	DeleteDish(context.Context, *DeleteDishRequest) (*emptypb.Empty, error)
 	// Подбор рекомендованных ресторанов под пользователя (или гостя при user_id=0).
 	GetRecommendations(context.Context, *GetRecommendationsRequest) (*GetRestaurantBrandsListResponse, error)
+	// Подбор рекомендованных блюд внутри конкретного ресторана.
+	GetRecommendedDishes(context.Context, *GetRecommendedDishesRequest) (*GetDishesByRestaurantBrandIDResponse, error)
 	mustEmbedUnimplementedRestaurantServiceServer()
 }
 
@@ -347,6 +362,9 @@ func (UnimplementedRestaurantServiceServer) DeleteDish(context.Context, *DeleteD
 }
 func (UnimplementedRestaurantServiceServer) GetRecommendations(context.Context, *GetRecommendationsRequest) (*GetRestaurantBrandsListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetRecommendations not implemented")
+}
+func (UnimplementedRestaurantServiceServer) GetRecommendedDishes(context.Context, *GetRecommendedDishesRequest) (*GetDishesByRestaurantBrandIDResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetRecommendedDishes not implemented")
 }
 func (UnimplementedRestaurantServiceServer) mustEmbedUnimplementedRestaurantServiceServer() {}
 func (UnimplementedRestaurantServiceServer) testEmbeddedByValue()                           {}
@@ -675,6 +693,24 @@ func _RestaurantService_GetRecommendations_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RestaurantService_GetRecommendedDishes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRecommendedDishesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RestaurantServiceServer).GetRecommendedDishes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RestaurantService_GetRecommendedDishes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RestaurantServiceServer).GetRecommendedDishes(ctx, req.(*GetRecommendedDishesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RestaurantService_ServiceDesc is the grpc.ServiceDesc for RestaurantService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -749,6 +785,10 @@ var RestaurantService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetRecommendations",
 			Handler:    _RestaurantService_GetRecommendations_Handler,
+		},
+		{
+			MethodName: "GetRecommendedDishes",
+			Handler:    _RestaurantService_GetRecommendedDishes_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

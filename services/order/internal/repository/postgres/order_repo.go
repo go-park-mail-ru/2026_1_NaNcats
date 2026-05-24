@@ -595,6 +595,40 @@ func (r *orderRepo) GetUserPaidBrands(ctx context.Context, userID int64) ([]int6
 	return out, rows.Err()
 }
 
+func (r *orderRepo) GetTopDishesByBrand(ctx context.Context, brandID int64, windowDays, limit int32) ([]int64, error) {
+	if windowDays <= 0 {
+		windowDays = 30
+	}
+	if limit <= 0 {
+		limit = 8
+	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT od.dish_id
+		FROM "order_dish" od
+		JOIN "order" o ON o.id = od.order_id
+		WHERE o.restaurant_brand_id = $1
+		  AND o.status IN ('paid', 'finished')
+		  AND o.created_at >= NOW() - ($2::int * INTERVAL '1 day')
+		GROUP BY od.dish_id
+		ORDER BY SUM(od.quantity) DESC, od.dish_id ASC
+		LIMIT $3
+	`, brandID, windowDays, limit)
+	if err != nil {
+		return nil, fmt.Errorf("get top dishes by brand: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]int64, 0, limit)
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("scan top dish id: %w", err)
+		}
+		out = append(out, id)
+	}
+	return out, rows.Err()
+}
+
 func (r *orderRepo) GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error) {
 	if windowDays <= 0 {
 		windowDays = 7

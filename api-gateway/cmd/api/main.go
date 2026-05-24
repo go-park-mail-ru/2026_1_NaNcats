@@ -225,6 +225,7 @@ func main() {
 	// === RESTAURANTS & DISHES ===
 	mux.HandleFunc("GET /api/restaurants/brands", restaurantHandler.GetRestaurantBrandsList)
 	mux.Handle("GET /api/restaurants/recommendations", authMW.OptionalAuth(http.HandlerFunc(restaurantHandler.GetRecommendations)))
+	mux.Handle("GET /api/restaurants/brands/{id}/recommended-dishes", authMW.OptionalAuth(http.HandlerFunc(restaurantHandler.GetRecommendedDishes)))
 	mux.HandleFunc("GET /api/restaurants/brands/{id}", restaurantHandler.GetRestaurantBrandByID)
 	mux.HandleFunc("GET /api/restaurants/brands/{id}/dishes", restaurantHandler.GetDishesByRestaurantBrandID)
 	mux.HandleFunc("GET /api/restaurants/categories", restaurantHandler.GetCategories)

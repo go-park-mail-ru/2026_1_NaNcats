@@ -74,6 +74,7 @@ type OrderUseCase interface {
 	CancelOrder(ctx context.Context, orderPublicID string, userID int64) error
 	GetUserPaidBrands(ctx context.Context, userID int64) ([]int64, error)
 	GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error)
+	GetTopDishesByBrand(ctx context.Context, brandID int64, windowDays, limit int32) ([]int64, error)
 }
 
 type orderUseCase struct {
@@ -614,4 +615,20 @@ func (o *orderUseCase) GetTrendingBrands(ctx context.Context, windowDays, limit 
 	}
 	span.SetAttributes(attribute.Int("trending.brands.count", len(brands)))
 	return brands, nil
+}
+
+func (o *orderUseCase) GetTopDishesByBrand(ctx context.Context, brandID int64, windowDays, limit int32) ([]int64, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.Int64("brand.id", brandID),
+		attribute.Int("top_dishes.window_days", int(windowDays)),
+		attribute.Int("top_dishes.limit", int(limit)),
+	)
+
+	ids, err := o.orderRepo.GetTopDishesByBrand(ctx, brandID, windowDays, limit)
+	if err != nil {
+		return nil, errutil.Internal("failed to fetch top dishes by brand", err)
+	}
+	span.SetAttributes(attribute.Int("top_dishes.count", len(ids)))
+	return ids, nil
 }

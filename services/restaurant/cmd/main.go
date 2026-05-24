@@ -107,7 +107,7 @@ func main() {
 	appLogger.Info("Connected to Order Service", logger.String("addr", cfg.OrderServiceAddr))
 	orderHistoryClient := restaurantGrpcClient.NewOrderClient(orderPb.NewOrderServiceClient(orderConn))
 
-	recoUC := restaurantUseCase.NewRecommendationsUseCase(brandRepo, orderHistoryClient, cfg.DefaultRestaurantLogoURL, appLogger)
+	recoUC := restaurantUseCase.NewRecommendationsUseCase(brandRepo, dishRepo, orderHistoryClient, cfg.DefaultRestaurantLogoURL, cfg.DefaultFoodLogoURL, appLogger)
 
 	restaurantHandler := restaurantDelivery.NewRestaurantHandler(categoryUC, tracedBrandUC, tracedDishUC, recoUC)
 

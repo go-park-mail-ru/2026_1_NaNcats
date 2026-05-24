@@ -411,3 +411,51 @@ func (h *RestaurantHandler) GetRecommendations(w http.ResponseWriter, r *http.Re
 	}
 	response.JSON(w, http.StatusOK, RestaurantBrandsResponse{RestaurantBrands: out})
 }
+
+// GetRecommendedDishes godoc
+// @Summary 		Рекомендованные блюда внутри ресторана
+// @Description		Топ блюд бренда по продажам за 30 дней (paid|finished). Если данных нет — первые из меню.
+// @Tags			restaurants
+// @Produce			json
+// @Param			id		path	int		true	"ID ресторана"
+// @Param			limit	query	int		false	"Сколько вернуть (по умолчанию 4)"
+// @Success			200		{object} DishesResponse
+// @Failure			400		{object} response.ErrorResponse
+// @Failure			500		{object} response.ErrorResponse
+// @Router			/restaurants/brands/{id}/recommended-dishes [get]
+func (h *RestaurantHandler) GetRecommendedDishes(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
+
+	brandIDStr := r.PathValue("id")
+	brandID, err := strconv.ParseInt(brandIDStr, 10, 64)
+	if err != nil || brandID <= 0 {
+		response.Error(w, http.StatusBadRequest, "Invalid restaurant id")
+		return
+	}
+
+	limit := 4
+	if q := r.URL.Query().Get("limit"); q != "" {
+		if v, err := strconv.Atoi(q); err == nil && v > 0 && v <= 24 {
+			limit = v
+		}
+	}
+
+	var userID int64
+	if id, ok := middleware.GetUserID(ctx); ok {
+		userID = id
+	}
+
+	dishes, err := h.restaurantClient.GetRecommendedDishes(ctx, brandID, userID, int32(limit))
+	if err != nil {
+		l.Error("failed to get recommended dishes", err)
+		response.Error(w, http.StatusInternalServerError, "Get recommended dishes error")
+		return
+	}
+
+	out := make([]DishResponse, 0, len(dishes))
+	for _, d := range dishes {
+		out = append(out, toDishResponse(d))
+	}
+	response.JSON(w, http.StatusOK, DishesResponse{Dishes: out})
+}

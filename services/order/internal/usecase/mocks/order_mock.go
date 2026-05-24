@@ -87,6 +87,21 @@ func (mr *MockOrderUseCaseMockRecorder) GetOrders(ctx, userID, limit, offset any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrders", reflect.TypeOf((*MockOrderUseCase)(nil).GetOrders), ctx, userID, limit, offset)
 }
 
+// GetTopDishesByBrand mocks base method.
+func (m *MockOrderUseCase) GetTopDishesByBrand(ctx context.Context, brandID int64, windowDays, limit int32) ([]int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTopDishesByBrand", ctx, brandID, windowDays, limit)
+	ret0, _ := ret[0].([]int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTopDishesByBrand indicates an expected call of GetTopDishesByBrand.
+func (mr *MockOrderUseCaseMockRecorder) GetTopDishesByBrand(ctx, brandID, windowDays, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTopDishesByBrand", reflect.TypeOf((*MockOrderUseCase)(nil).GetTopDishesByBrand), ctx, brandID, windowDays, limit)
+}
+
 // GetTrendingBrands mocks base method.
 func (m *MockOrderUseCase) GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error) {
 	m.ctrl.T.Helper()

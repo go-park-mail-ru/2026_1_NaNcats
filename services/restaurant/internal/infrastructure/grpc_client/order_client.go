@@ -33,3 +33,15 @@ func (c *orderClient) GetTrendingBrands(ctx context.Context, windowDays, limit i
 	}
 	return resp.BrandIds, nil
 }
+
+func (c *orderClient) GetTopDishesByBrand(ctx context.Context, brandID int64, windowDays, limit int32) ([]int64, error) {
+	resp, err := c.client.GetTopDishesByBrand(ctx, &pb.GetTopDishesByBrandRequest{
+		BrandId:    brandID,
+		WindowDays: windowDays,
+		Limit:      limit,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return resp.DishIds, nil
+}

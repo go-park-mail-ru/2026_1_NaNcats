@@ -36,6 +36,8 @@ type OrderRepository interface {
 	GetUserPaidBrands(ctx context.Context, userID int64) ([]int64, error)
 	// Топ-N брендов по количеству оплат за окно windowDays.
 	GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error)
+	// Топ-N блюд ресторана по SUM(quantity) за окно windowDays, paid|finished.
+	GetTopDishesByBrand(ctx context.Context, brandID int64, windowDays, limit int32) ([]int64, error)
 
 	GetPromocodeByCodeWithLock(ctx context.Context, code string) (domain.Promocode, error)
 	CheckPromocodeUsage(ctx context.Context, promoID, userID int64) (bool, error)
