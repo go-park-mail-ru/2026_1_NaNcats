@@ -72,6 +72,8 @@ type OrderUseCase interface {
 	ProcessSagaReply(ctx context.Context, reply events.SagaReply) error
 	PayForFriend(ctx context.Context, splitID string, adminID int64, paymentMethodID, idempotencyKey string) error
 	CancelOrder(ctx context.Context, orderPublicID string, userID int64) error
+	GetUserPaidBrands(ctx context.Context, userID int64) ([]int64, error)
+	GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error)
 }
 
 type orderUseCase struct {
@@ -585,4 +587,31 @@ func (o *orderUseCase) ProcessSagaReply(ctx context.Context, reply events.SagaRe
 	}
 
 	return nil
+}
+
+func (o *orderUseCase) GetUserPaidBrands(ctx context.Context, userID int64) ([]int64, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(attribute.Int64("user.id", userID))
+
+	brands, err := o.orderRepo.GetUserPaidBrands(ctx, userID)
+	if err != nil {
+		return nil, errutil.Internal("failed to fetch user paid brands", err)
+	}
+	span.SetAttributes(attribute.Int("user.paid_brands.count", len(brands)))
+	return brands, nil
+}
+
+func (o *orderUseCase) GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.Int("trending.window_days", int(windowDays)),
+		attribute.Int("trending.limit", int(limit)),
+	)
+
+	brands, err := o.orderRepo.GetTrendingBrands(ctx, windowDays, limit)
+	if err != nil {
+		return nil, errutil.Internal("failed to fetch trending brands", err)
+	}
+	span.SetAttributes(attribute.Int("trending.brands.count", len(brands)))
+	return brands, nil
 }

@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/restaurantclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
 )
@@ -370,4 +371,43 @@ func (h *RestaurantHandler) SearchRestaurants(w http.ResponseWriter, r *http.Req
 		Restaurants: brandList,
 		Dishes:      dishList,
 	})
+}
+
+// GetRecommendations godoc
+// @Summary 		Рекомендованные рестораны
+// @Description		Подбор по эвристике «похожие категории» с fallback на trending за 7 дней. Для гостя — trending или топ по promotion_tier.
+// @Tags			restaurants
+// @Produce			json
+// @Param			limit	query	int		false	"Сколько вернуть (по умолчанию 4)"
+// @Success			200		{object} RestaurantBrandsResponse
+// @Failure			500		{object} response.ErrorResponse
+// @Router			/restaurants/recommendations [get]
+func (h *RestaurantHandler) GetRecommendations(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
+
+	limit := 4
+	if q := r.URL.Query().Get("limit"); q != "" {
+		if v, err := strconv.Atoi(q); err == nil && v > 0 && v <= 24 {
+			limit = v
+		}
+	}
+
+	var userID int64
+	if id, ok := middleware.GetUserID(ctx); ok {
+		userID = id
+	}
+
+	brands, err := h.restaurantClient.GetRecommendations(ctx, userID, int32(limit))
+	if err != nil {
+		l.Error("failed to get recommendations", err)
+		response.Error(w, http.StatusInternalServerError, "Get recommendations error")
+		return
+	}
+
+	out := make([]RestaurantBrandResponse, 0, len(brands))
+	for _, b := range brands {
+		out = append(out, toRestaurantBrandResponse(b))
+	}
+	response.JSON(w, http.StatusOK, RestaurantBrandsResponse{RestaurantBrands: out})
 }

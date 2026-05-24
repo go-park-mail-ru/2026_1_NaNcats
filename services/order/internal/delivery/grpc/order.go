@@ -128,3 +128,19 @@ func (h *OrderHandler) CancelOrder(ctx context.Context, req *pb.CancelOrderReque
 	}
 	return &emptypb.Empty{}, nil
 }
+
+func (h *OrderHandler) GetUserPaidBrands(ctx context.Context, req *pb.GetUserPaidBrandsRequest) (*pb.BrandIDList, error) {
+	ids, err := h.usecase.GetUserPaidBrands(ctx, req.UserId)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	return &pb.BrandIDList{BrandIds: ids}, nil
+}
+
+func (h *OrderHandler) GetTrendingBrands(ctx context.Context, req *pb.GetTrendingBrandsRequest) (*pb.BrandIDList, error) {
+	ids, err := h.usecase.GetTrendingBrands(ctx, req.WindowDays, req.Limit)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	return &pb.BrandIDList{BrandIds: ids}, nil
+}

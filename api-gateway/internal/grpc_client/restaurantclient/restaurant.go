@@ -101,6 +101,7 @@ type RestaurantClient interface {
 	DeleteDish(ctx context.Context, id int64) error
 	UpdateDish(ctx context.Context, id int64, name, desc *string, price *int64, image []byte, idemKey string) (Dish, error)
 	CreateDish(ctx context.Context, brandID int64, name, desc string, price int64, image []byte, idemKey string) (Dish, error)
+	GetRecommendations(ctx context.Context, userID int64, limit int32) ([]RestaurantBrand, error)
 }
 
 type restaurantClient struct {
@@ -133,6 +134,21 @@ func (c *restaurantClient) GetRestaurantBrandsList(ctx context.Context, limit, o
 		return nil, ErrInternal
 	}
 
+	brands := make([]RestaurantBrand, 0, len(resp.RestaurantBrands))
+	for _, b := range resp.RestaurantBrands {
+		brands = append(brands, mapPBRestaurant(b))
+	}
+	return brands, nil
+}
+
+func (c *restaurantClient) GetRecommendations(ctx context.Context, userID int64, limit int32) ([]RestaurantBrand, error) {
+	resp, err := c.client.GetRecommendations(ctx, &pbRestaurant.GetRecommendationsRequest{
+		UserId: userID,
+		Limit:  limit,
+	})
+	if err != nil {
+		return nil, ErrInternal
+	}
 	brands := make([]RestaurantBrand, 0, len(resp.RestaurantBrands))
 	for _, b := range resp.RestaurantBrands {
 		brands = append(brands, mapPBRestaurant(b))

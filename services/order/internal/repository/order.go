@@ -32,6 +32,11 @@ type OrderRepository interface {
 	// Возвращает заказы, статусы которых нужно продвигать в фоне
 	GetOrdersByStatuses(ctx context.Context, statuses []string) ([]domain.Order, error)
 
+	// Бренды, у которых пользователь когда-либо оплачивал заказ (paid|finished).
+	GetUserPaidBrands(ctx context.Context, userID int64) ([]int64, error)
+	// Топ-N брендов по количеству оплат за окно windowDays.
+	GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error)
+
 	GetPromocodeByCodeWithLock(ctx context.Context, code string) (domain.Promocode, error)
 	CheckPromocodeUsage(ctx context.Context, promoID, userID int64) (bool, error)
 	IncrementPromocodeUses(ctx context.Context, promoID int64) error

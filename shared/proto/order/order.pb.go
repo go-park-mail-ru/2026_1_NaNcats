@@ -1247,6 +1247,146 @@ func (x *UsePromocodeRequest) GetOrderPublicId() string {
 	return ""
 }
 
+type GetUserPaidBrandsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserPaidBrandsRequest) Reset() {
+	*x = GetUserPaidBrandsRequest{}
+	mi := &file_order_order_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserPaidBrandsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserPaidBrandsRequest) ProtoMessage() {}
+
+func (x *GetUserPaidBrandsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_order_order_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserPaidBrandsRequest.ProtoReflect.Descriptor instead.
+func (*GetUserPaidBrandsRequest) Descriptor() ([]byte, []int) {
+	return file_order_order_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *GetUserPaidBrandsRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+type GetTrendingBrandsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WindowDays    int32                  `protobuf:"varint,1,opt,name=window_days,json=windowDays,proto3" json:"window_days,omitempty"`
+	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTrendingBrandsRequest) Reset() {
+	*x = GetTrendingBrandsRequest{}
+	mi := &file_order_order_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTrendingBrandsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTrendingBrandsRequest) ProtoMessage() {}
+
+func (x *GetTrendingBrandsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_order_order_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTrendingBrandsRequest.ProtoReflect.Descriptor instead.
+func (*GetTrendingBrandsRequest) Descriptor() ([]byte, []int) {
+	return file_order_order_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *GetTrendingBrandsRequest) GetWindowDays() int32 {
+	if x != nil {
+		return x.WindowDays
+	}
+	return 0
+}
+
+func (x *GetTrendingBrandsRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type BrandIDList struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BrandIds      []int64                `protobuf:"varint,1,rep,packed,name=brand_ids,json=brandIds,proto3" json:"brand_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrandIDList) Reset() {
+	*x = BrandIDList{}
+	mi := &file_order_order_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrandIDList) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrandIDList) ProtoMessage() {}
+
+func (x *BrandIDList) ProtoReflect() protoreflect.Message {
+	mi := &file_order_order_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrandIDList.ProtoReflect.Descriptor instead.
+func (*BrandIDList) Descriptor() ([]byte, []int) {
+	return file_order_order_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *BrandIDList) GetBrandIds() []int64 {
+	if x != nil {
+		return x.BrandIds
+	}
+	return nil
+}
+
 var File_order_order_proto protoreflect.FileDescriptor
 
 const file_order_order_proto_rawDesc = "" +
@@ -1362,13 +1502,23 @@ const file_order_order_proto_rawDesc = "" +
 	"\x13UsePromocodeRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x12\n" +
 	"\x04code\x18\x02 \x01(\tR\x04code\x12&\n" +
-	"\x0forder_public_id\x18\x03 \x01(\tR\rorderPublicId2\xee\x02\n" +
+	"\x0forder_public_id\x18\x03 \x01(\tR\rorderPublicId\"3\n" +
+	"\x18GetUserPaidBrandsRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\"Q\n" +
+	"\x18GetTrendingBrandsRequest\x12\x1f\n" +
+	"\vwindow_days\x18\x01 \x01(\x05R\n" +
+	"windowDays\x12\x14\n" +
+	"\x05limit\x18\x02 \x01(\x05R\x05limit\"*\n" +
+	"\vBrandIDList\x12\x1b\n" +
+	"\tbrand_ids\x18\x01 \x03(\x03R\bbrandIds2\x82\x04\n" +
 	"\fOrderService\x12D\n" +
 	"\vCreateOrder\x12\x19.order.CreateOrderRequest\x1a\x1a.order.CreateOrderResponse\x12>\n" +
 	"\tGetOrders\x12\x17.order.GetOrdersRequest\x1a\x18.order.GetOrdersResponse\x12R\n" +
 	"\x1cUpdateOrderStatusByPaymentID\x12\x1a.order.UpdateStatusRequest\x1a\x16.google.protobuf.Empty\x12B\n" +
 	"\fPayForFriend\x12\x1a.order.PayForFriendRequest\x1a\x16.google.protobuf.Empty\x12@\n" +
-	"\vCancelOrder\x12\x19.order.CancelOrderRequest\x1a\x16.google.protobuf.Empty2\xfe\x02\n" +
+	"\vCancelOrder\x12\x19.order.CancelOrderRequest\x1a\x16.google.protobuf.Empty\x12H\n" +
+	"\x11GetUserPaidBrands\x12\x1f.order.GetUserPaidBrandsRequest\x1a\x12.order.BrandIDList\x12H\n" +
+	"\x11GetTrendingBrands\x12\x1f.order.GetTrendingBrandsRequest\x1a\x12.order.BrandIDList2\xfe\x02\n" +
 	"\fPromoService\x12B\n" +
 	"\rGetUserPromos\x12\x1b.order.GetUserPromosRequest\x1a\x14.order.PromocodeList\x12N\n" +
 	"\x13GetRestaurantPromos\x12!.order.GetRestaurantPromosRequest\x1a\x14.order.PromocodeList\x12>\n" +
@@ -1388,7 +1538,7 @@ func file_order_order_proto_rawDescGZIP() []byte {
 	return file_order_order_proto_rawDescData
 }
 
-var file_order_order_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_order_order_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_order_order_proto_goTypes = []any{
 	(*CancelOrderRequest)(nil),         // 0: order.CancelOrderRequest
 	(*OrderDish)(nil),                  // 1: order.OrderDish
@@ -1408,15 +1558,18 @@ var file_order_order_proto_goTypes = []any{
 	(*ValidatePromocodeRequest)(nil),   // 15: order.ValidatePromocodeRequest
 	(*ValidatePromocodeResponse)(nil),  // 16: order.ValidatePromocodeResponse
 	(*UsePromocodeRequest)(nil),        // 17: order.UsePromocodeRequest
-	nil,                                // 18: order.CreateOrderRequest.PayerMappingEntry
-	(*timestamppb.Timestamp)(nil),      // 19: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),              // 20: google.protobuf.Empty
+	(*GetUserPaidBrandsRequest)(nil),   // 18: order.GetUserPaidBrandsRequest
+	(*GetTrendingBrandsRequest)(nil),   // 19: order.GetTrendingBrandsRequest
+	(*BrandIDList)(nil),                // 20: order.BrandIDList
+	nil,                                // 21: order.CreateOrderRequest.PayerMappingEntry
+	(*timestamppb.Timestamp)(nil),      // 22: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),              // 23: google.protobuf.Empty
 }
 var file_order_order_proto_depIdxs = []int32{
-	19, // 0: order.Order.created_at:type_name -> google.protobuf.Timestamp
+	22, // 0: order.Order.created_at:type_name -> google.protobuf.Timestamp
 	1,  // 1: order.Order.items:type_name -> order.OrderDish
 	2,  // 2: order.Order.splits:type_name -> order.OrderSplit
-	18, // 3: order.CreateOrderRequest.payer_mapping:type_name -> order.CreateOrderRequest.PayerMappingEntry
+	21, // 3: order.CreateOrderRequest.payer_mapping:type_name -> order.CreateOrderRequest.PayerMappingEntry
 	3,  // 4: order.GetOrdersResponse.orders:type_name -> order.Order
 	10, // 5: order.PromocodeList.promocodes:type_name -> order.Promocode
 	4,  // 6: order.OrderService.CreateOrder:input_type -> order.CreateOrderRequest
@@ -1424,23 +1577,27 @@ var file_order_order_proto_depIdxs = []int32{
 	8,  // 8: order.OrderService.UpdateOrderStatusByPaymentID:input_type -> order.UpdateStatusRequest
 	9,  // 9: order.OrderService.PayForFriend:input_type -> order.PayForFriendRequest
 	0,  // 10: order.OrderService.CancelOrder:input_type -> order.CancelOrderRequest
-	12, // 11: order.PromoService.GetUserPromos:input_type -> order.GetUserPromosRequest
-	13, // 12: order.PromoService.GetRestaurantPromos:input_type -> order.GetRestaurantPromosRequest
-	14, // 13: order.PromoService.BindPromocode:input_type -> order.BindPromocodeRequest
-	15, // 14: order.PromoService.ValidatePromocode:input_type -> order.ValidatePromocodeRequest
-	17, // 15: order.PromoService.UsePromocode:input_type -> order.UsePromocodeRequest
-	5,  // 16: order.OrderService.CreateOrder:output_type -> order.CreateOrderResponse
-	7,  // 17: order.OrderService.GetOrders:output_type -> order.GetOrdersResponse
-	20, // 18: order.OrderService.UpdateOrderStatusByPaymentID:output_type -> google.protobuf.Empty
-	20, // 19: order.OrderService.PayForFriend:output_type -> google.protobuf.Empty
-	20, // 20: order.OrderService.CancelOrder:output_type -> google.protobuf.Empty
-	11, // 21: order.PromoService.GetUserPromos:output_type -> order.PromocodeList
-	11, // 22: order.PromoService.GetRestaurantPromos:output_type -> order.PromocodeList
-	10, // 23: order.PromoService.BindPromocode:output_type -> order.Promocode
-	16, // 24: order.PromoService.ValidatePromocode:output_type -> order.ValidatePromocodeResponse
-	20, // 25: order.PromoService.UsePromocode:output_type -> google.protobuf.Empty
-	16, // [16:26] is the sub-list for method output_type
-	6,  // [6:16] is the sub-list for method input_type
+	18, // 11: order.OrderService.GetUserPaidBrands:input_type -> order.GetUserPaidBrandsRequest
+	19, // 12: order.OrderService.GetTrendingBrands:input_type -> order.GetTrendingBrandsRequest
+	12, // 13: order.PromoService.GetUserPromos:input_type -> order.GetUserPromosRequest
+	13, // 14: order.PromoService.GetRestaurantPromos:input_type -> order.GetRestaurantPromosRequest
+	14, // 15: order.PromoService.BindPromocode:input_type -> order.BindPromocodeRequest
+	15, // 16: order.PromoService.ValidatePromocode:input_type -> order.ValidatePromocodeRequest
+	17, // 17: order.PromoService.UsePromocode:input_type -> order.UsePromocodeRequest
+	5,  // 18: order.OrderService.CreateOrder:output_type -> order.CreateOrderResponse
+	7,  // 19: order.OrderService.GetOrders:output_type -> order.GetOrdersResponse
+	23, // 20: order.OrderService.UpdateOrderStatusByPaymentID:output_type -> google.protobuf.Empty
+	23, // 21: order.OrderService.PayForFriend:output_type -> google.protobuf.Empty
+	23, // 22: order.OrderService.CancelOrder:output_type -> google.protobuf.Empty
+	20, // 23: order.OrderService.GetUserPaidBrands:output_type -> order.BrandIDList
+	20, // 24: order.OrderService.GetTrendingBrands:output_type -> order.BrandIDList
+	11, // 25: order.PromoService.GetUserPromos:output_type -> order.PromocodeList
+	11, // 26: order.PromoService.GetRestaurantPromos:output_type -> order.PromocodeList
+	10, // 27: order.PromoService.BindPromocode:output_type -> order.Promocode
+	16, // 28: order.PromoService.ValidatePromocode:output_type -> order.ValidatePromocodeResponse
+	23, // 29: order.PromoService.UsePromocode:output_type -> google.protobuf.Empty
+	18, // [18:30] is the sub-list for method output_type
+	6,  // [6:18] is the sub-list for method input_type
 	6,  // [6:6] is the sub-list for extension type_name
 	6,  // [6:6] is the sub-list for extension extendee
 	0,  // [0:6] is the sub-list for field type_name
@@ -1461,7 +1618,7 @@ func file_order_order_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_order_order_proto_rawDesc), len(file_order_order_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   19,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

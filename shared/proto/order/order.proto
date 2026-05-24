@@ -19,6 +19,10 @@ service OrderService {
   rpc PayForFriend (PayForFriendRequest) returns (google.protobuf.Empty);
   // Метод для отмены заказа
   rpc CancelOrder (CancelOrderRequest) returns (google.protobuf.Empty);
+  // Возвращает бренды, у которых пользователь когда-либо оплачивал заказ.
+  rpc GetUserPaidBrands (GetUserPaidBrandsRequest) returns (BrandIDList);
+  // Возвращает бренды, набравшие больше всего оплат за последние window_days.
+  rpc GetTrendingBrands (GetTrendingBrandsRequest) returns (BrandIDList);
 }
 
 // Сервис промокодов. Промокоды хранятся в БД OrderService, поэтому
@@ -165,4 +169,17 @@ message UsePromocodeRequest {
   int64 user_id = 1;
   string code = 2;
   string order_public_id = 3;
+}
+
+message GetUserPaidBrandsRequest {
+  int64 user_id = 1;
+}
+
+message GetTrendingBrandsRequest {
+  int32 window_days = 1;
+  int32 limit = 2;
+}
+
+message BrandIDList {
+  repeated int64 brand_ids = 1;
 }

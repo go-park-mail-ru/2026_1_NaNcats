@@ -25,6 +25,8 @@ const (
 	OrderService_UpdateOrderStatusByPaymentID_FullMethodName = "/order.OrderService/UpdateOrderStatusByPaymentID"
 	OrderService_PayForFriend_FullMethodName                 = "/order.OrderService/PayForFriend"
 	OrderService_CancelOrder_FullMethodName                  = "/order.OrderService/CancelOrder"
+	OrderService_GetUserPaidBrands_FullMethodName            = "/order.OrderService/GetUserPaidBrands"
+	OrderService_GetTrendingBrands_FullMethodName            = "/order.OrderService/GetTrendingBrands"
 )
 
 // OrderServiceClient is the client API for OrderService service.
@@ -43,6 +45,10 @@ type OrderServiceClient interface {
 	PayForFriend(ctx context.Context, in *PayForFriendRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Метод для отмены заказа
 	CancelOrder(ctx context.Context, in *CancelOrderRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Возвращает бренды, у которых пользователь когда-либо оплачивал заказ.
+	GetUserPaidBrands(ctx context.Context, in *GetUserPaidBrandsRequest, opts ...grpc.CallOption) (*BrandIDList, error)
+	// Возвращает бренды, набравшие больше всего оплат за последние window_days.
+	GetTrendingBrands(ctx context.Context, in *GetTrendingBrandsRequest, opts ...grpc.CallOption) (*BrandIDList, error)
 }
 
 type orderServiceClient struct {
@@ -103,6 +109,26 @@ func (c *orderServiceClient) CancelOrder(ctx context.Context, in *CancelOrderReq
 	return out, nil
 }
 
+func (c *orderServiceClient) GetUserPaidBrands(ctx context.Context, in *GetUserPaidBrandsRequest, opts ...grpc.CallOption) (*BrandIDList, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrandIDList)
+	err := c.cc.Invoke(ctx, OrderService_GetUserPaidBrands_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderServiceClient) GetTrendingBrands(ctx context.Context, in *GetTrendingBrandsRequest, opts ...grpc.CallOption) (*BrandIDList, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrandIDList)
+	err := c.cc.Invoke(ctx, OrderService_GetTrendingBrands_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OrderServiceServer is the server API for OrderService service.
 // All implementations must embed UnimplementedOrderServiceServer
 // for forward compatibility.
@@ -119,6 +145,10 @@ type OrderServiceServer interface {
 	PayForFriend(context.Context, *PayForFriendRequest) (*emptypb.Empty, error)
 	// Метод для отмены заказа
 	CancelOrder(context.Context, *CancelOrderRequest) (*emptypb.Empty, error)
+	// Возвращает бренды, у которых пользователь когда-либо оплачивал заказ.
+	GetUserPaidBrands(context.Context, *GetUserPaidBrandsRequest) (*BrandIDList, error)
+	// Возвращает бренды, набравшие больше всего оплат за последние window_days.
+	GetTrendingBrands(context.Context, *GetTrendingBrandsRequest) (*BrandIDList, error)
 	mustEmbedUnimplementedOrderServiceServer()
 }
 
@@ -143,6 +173,12 @@ func (UnimplementedOrderServiceServer) PayForFriend(context.Context, *PayForFrie
 }
 func (UnimplementedOrderServiceServer) CancelOrder(context.Context, *CancelOrderRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method CancelOrder not implemented")
+}
+func (UnimplementedOrderServiceServer) GetUserPaidBrands(context.Context, *GetUserPaidBrandsRequest) (*BrandIDList, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserPaidBrands not implemented")
+}
+func (UnimplementedOrderServiceServer) GetTrendingBrands(context.Context, *GetTrendingBrandsRequest) (*BrandIDList, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTrendingBrands not implemented")
 }
 func (UnimplementedOrderServiceServer) mustEmbedUnimplementedOrderServiceServer() {}
 func (UnimplementedOrderServiceServer) testEmbeddedByValue()                      {}
@@ -255,6 +291,42 @@ func _OrderService_CancelOrder_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OrderService_GetUserPaidBrands_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserPaidBrandsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).GetUserPaidBrands(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_GetUserPaidBrands_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).GetUserPaidBrands(ctx, req.(*GetUserPaidBrandsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrderService_GetTrendingBrands_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTrendingBrandsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).GetTrendingBrands(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_GetTrendingBrands_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).GetTrendingBrands(ctx, req.(*GetTrendingBrandsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // OrderService_ServiceDesc is the grpc.ServiceDesc for OrderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -281,6 +353,14 @@ var OrderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CancelOrder",
 			Handler:    _OrderService_CancelOrder_Handler,
+		},
+		{
+			MethodName: "GetUserPaidBrands",
+			Handler:    _OrderService_GetUserPaidBrands_Handler,
+		},
+		{
+			MethodName: "GetTrendingBrands",
+			Handler:    _OrderService_GetTrendingBrands_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

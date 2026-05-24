@@ -159,6 +159,21 @@ func (mr *MockRestaurantClientMockRecorder) GetDishesByRestaurantBrandID(ctx, br
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDishesByRestaurantBrandID", reflect.TypeOf((*MockRestaurantClient)(nil).GetDishesByRestaurantBrandID), ctx, brandID, limit, offset)
 }
 
+// GetRecommendations mocks base method.
+func (m *MockRestaurantClient) GetRecommendations(ctx context.Context, userID int64, limit int32) ([]restaurantclient.RestaurantBrand, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRecommendations", ctx, userID, limit)
+	ret0, _ := ret[0].([]restaurantclient.RestaurantBrand)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRecommendations indicates an expected call of GetRecommendations.
+func (mr *MockRestaurantClientMockRecorder) GetRecommendations(ctx, userID, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRecommendations", reflect.TypeOf((*MockRestaurantClient)(nil).GetRecommendations), ctx, userID, limit)
+}
+
 // GetRestaurantBrandByID mocks base method.
 func (m *MockRestaurantClient) GetRestaurantBrandByID(ctx context.Context, id int64) (restaurantclient.RestaurantBrand, error) {
 	m.ctrl.T.Helper()

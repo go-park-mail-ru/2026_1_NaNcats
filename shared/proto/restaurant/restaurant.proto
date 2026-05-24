@@ -40,6 +40,14 @@ service RestaurantService {
   rpc CreateDish (CreateDishRequest) returns (Dish);
   rpc UpdateDish (UpdateDishRequest) returns (Dish);
   rpc DeleteDish (DeleteDishRequest) returns (google.protobuf.Empty);
+
+  // Подбор рекомендованных ресторанов под пользователя (или гостя при user_id=0).
+  rpc GetRecommendations (GetRecommendationsRequest) returns (GetRestaurantBrandsListResponse);
+}
+
+message GetRecommendationsRequest {
+  int64 user_id = 1;
+  int32 limit = 2;
 }
 
 message Category {

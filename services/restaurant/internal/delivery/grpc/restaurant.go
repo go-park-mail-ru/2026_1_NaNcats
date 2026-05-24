@@ -45,14 +45,33 @@ type RestaurantHandler struct {
 	categoryUC usecase.CategoryUseCase
 	brandUC    usecase.RestaurantBrandUseCase
 	dishUC     usecase.DishUseCase
+	recoUC     usecase.RecommendationsUseCase
 }
 
-func NewRestaurantHandler(cuc usecase.CategoryUseCase, buc usecase.RestaurantBrandUseCase, duc usecase.DishUseCase) *RestaurantHandler {
+func NewRestaurantHandler(
+	cuc usecase.CategoryUseCase,
+	buc usecase.RestaurantBrandUseCase,
+	duc usecase.DishUseCase,
+	ruc usecase.RecommendationsUseCase,
+) *RestaurantHandler {
 	return &RestaurantHandler{
 		categoryUC: cuc,
 		brandUC:    buc,
 		dishUC:     duc,
+		recoUC:     ruc,
 	}
+}
+
+func (h *RestaurantHandler) GetRecommendations(ctx context.Context, req *pb.GetRecommendationsRequest) (*pb.GetRestaurantBrandsListResponse, error) {
+	brands, err := h.recoUC.GetRecommendations(ctx, req.UserId, int(req.Limit))
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	pbBrands := make([]*pb.RestaurantBrand, 0, len(brands))
+	for _, b := range brands {
+		pbBrands = append(pbBrands, mapDomainToPBRestaurant(b))
+	}
+	return &pb.GetRestaurantBrandsListResponse{RestaurantBrands: pbBrands}, nil
 }
 
 func (h *RestaurantHandler) GetRestaurantBrandsList(ctx context.Context, req *pb.GetRestaurantBrandsListRequest) (*pb.GetRestaurantBrandsListResponse, error) {

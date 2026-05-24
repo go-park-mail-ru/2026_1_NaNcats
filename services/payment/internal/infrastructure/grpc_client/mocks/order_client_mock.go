@@ -103,6 +103,46 @@ func (mr *MockOrderServiceClientMockRecorder) GetOrders(ctx, in any, opts ...any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrders", reflect.TypeOf((*MockOrderServiceClient)(nil).GetOrders), varargs...)
 }
 
+// GetTrendingBrands mocks base method.
+func (m *MockOrderServiceClient) GetTrendingBrands(ctx context.Context, in *order.GetTrendingBrandsRequest, opts ...grpc.CallOption) (*order.BrandIDList, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetTrendingBrands", varargs...)
+	ret0, _ := ret[0].(*order.BrandIDList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTrendingBrands indicates an expected call of GetTrendingBrands.
+func (mr *MockOrderServiceClientMockRecorder) GetTrendingBrands(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTrendingBrands", reflect.TypeOf((*MockOrderServiceClient)(nil).GetTrendingBrands), varargs...)
+}
+
+// GetUserPaidBrands mocks base method.
+func (m *MockOrderServiceClient) GetUserPaidBrands(ctx context.Context, in *order.GetUserPaidBrandsRequest, opts ...grpc.CallOption) (*order.BrandIDList, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetUserPaidBrands", varargs...)
+	ret0, _ := ret[0].(*order.BrandIDList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserPaidBrands indicates an expected call of GetUserPaidBrands.
+func (mr *MockOrderServiceClientMockRecorder) GetUserPaidBrands(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserPaidBrands", reflect.TypeOf((*MockOrderServiceClient)(nil).GetUserPaidBrands), varargs...)
+}
+
 // PayForFriend mocks base method.
 func (m *MockOrderServiceClient) PayForFriend(ctx context.Context, in *order.PayForFriendRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()

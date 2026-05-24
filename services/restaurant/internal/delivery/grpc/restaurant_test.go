@@ -48,7 +48,7 @@ func TestRestaurantHandler_GetRestaurantBrandsList(t *testing.T) {
 			defer ctrl.Finish()
 
 			buc := ucMocks.NewMockRestaurantBrandUseCase(ctrl)
-			h := NewRestaurantHandler(nil, buc, nil)
+			h := NewRestaurantHandler(nil, buc, nil, nil)
 
 			tt.mockInit(buc)
 
@@ -100,7 +100,7 @@ func TestRestaurantHandler_GetRestaurantBrandsByCategory(t *testing.T) {
 			defer ctrl.Finish()
 
 			buc := ucMocks.NewMockRestaurantBrandUseCase(ctrl)
-			h := NewRestaurantHandler(nil, buc, nil)
+			h := NewRestaurantHandler(nil, buc, nil, nil)
 
 			tt.mockInit(buc)
 
@@ -151,7 +151,7 @@ func TestRestaurantHandler_SearchRestaurantBrands(t *testing.T) {
 			defer ctrl.Finish()
 
 			buc := ucMocks.NewMockRestaurantBrandUseCase(ctrl)
-			h := NewRestaurantHandler(nil, buc, nil)
+			h := NewRestaurantHandler(nil, buc, nil, nil)
 
 			tt.mockInit(buc)
 
@@ -210,7 +210,7 @@ func TestRestaurantHandler_GetRestaurantBrandByID(t *testing.T) {
 			defer ctrl.Finish()
 
 			buc := ucMocks.NewMockRestaurantBrandUseCase(ctrl)
-			h := NewRestaurantHandler(nil, buc, nil)
+			h := NewRestaurantHandler(nil, buc, nil, nil)
 
 			tt.mockInit(buc)
 
@@ -264,7 +264,7 @@ func TestRestaurantHandler_GetRestaurantBrandsByIDs(t *testing.T) {
 			defer ctrl.Finish()
 
 			buc := ucMocks.NewMockRestaurantBrandUseCase(ctrl)
-			h := NewRestaurantHandler(nil, buc, nil)
+			h := NewRestaurantHandler(nil, buc, nil, nil)
 
 			tt.mockInit(buc)
 
@@ -316,7 +316,7 @@ func TestRestaurantHandler_GetDishesByRestaurantBrandID(t *testing.T) {
 			defer ctrl.Finish()
 
 			duc := ucMocks.NewMockDishUseCase(ctrl)
-			h := NewRestaurantHandler(nil, nil, duc)
+			h := NewRestaurantHandler(nil, nil, duc, nil)
 
 			tt.mockInit(duc)
 
@@ -368,7 +368,7 @@ func TestRestaurantHandler_SearchDishesByBrand(t *testing.T) {
 			defer ctrl.Finish()
 
 			duc := ucMocks.NewMockDishUseCase(ctrl)
-			h := NewRestaurantHandler(nil, nil, duc)
+			h := NewRestaurantHandler(nil, nil, duc, nil)
 
 			tt.mockInit(duc)
 
@@ -420,7 +420,7 @@ func TestRestaurantHandler_GetDishesByIDs(t *testing.T) {
 			defer ctrl.Finish()
 
 			duc := ucMocks.NewMockDishUseCase(ctrl)
-			h := NewRestaurantHandler(nil, nil, duc)
+			h := NewRestaurantHandler(nil, nil, duc, nil)
 
 			tt.mockInit(duc)
 
@@ -472,7 +472,7 @@ func TestRestaurantHandler_SearchDishes(t *testing.T) {
 			defer ctrl.Finish()
 
 			duc := ucMocks.NewMockDishUseCase(ctrl)
-			h := NewRestaurantHandler(nil, nil, duc)
+			h := NewRestaurantHandler(nil, nil, duc, nil)
 
 			tt.mockInit(duc)
 
@@ -530,7 +530,7 @@ func TestRestaurantHandler_CreateRestaurantBrand(t *testing.T) {
 			defer ctrl.Finish()
 
 			buc := ucMocks.NewMockRestaurantBrandUseCase(ctrl)
-			h := NewRestaurantHandler(nil, buc, nil)
+			h := NewRestaurantHandler(nil, buc, nil, nil)
 
 			tt.mockInit(buc)
 
@@ -601,7 +601,7 @@ func TestRestaurantHandler_UpdateRestaurantBrand(t *testing.T) {
 			defer ctrl.Finish()
 
 			buc := ucMocks.NewMockRestaurantBrandUseCase(ctrl)
-			h := NewRestaurantHandler(nil, buc, nil)
+			h := NewRestaurantHandler(nil, buc, nil, nil)
 
 			tt.mockInit(buc)
 
@@ -659,7 +659,7 @@ func TestRestaurantHandler_DeleteRestaurantBrand(t *testing.T) {
 			defer ctrl.Finish()
 
 			buc := ucMocks.NewMockRestaurantBrandUseCase(ctrl)
-			h := NewRestaurantHandler(nil, buc, nil)
+			h := NewRestaurantHandler(nil, buc, nil, nil)
 
 			tt.mockInit(buc)
 
@@ -744,7 +744,7 @@ func TestRestaurantHandler_CreateDish(t *testing.T) {
 			defer ctrl.Finish()
 
 			duc := ucMocks.NewMockDishUseCase(ctrl)
-			h := NewRestaurantHandler(nil, nil, duc)
+			h := NewRestaurantHandler(nil, nil, duc, nil)
 
 			tt.mockInit(duc)
 
@@ -834,7 +834,7 @@ func TestRestaurantHandler_UpdateDish(t *testing.T) {
 			defer ctrl.Finish()
 
 			duc := ucMocks.NewMockDishUseCase(ctrl)
-			h := NewRestaurantHandler(nil, nil, duc)
+			h := NewRestaurantHandler(nil, nil, duc, nil)
 
 			tt.mockInit(duc)
 
@@ -893,7 +893,7 @@ func TestRestaurantHandler_DeleteDish(t *testing.T) {
 			defer ctrl.Finish()
 
 			duc := ucMocks.NewMockDishUseCase(ctrl)
-			h := NewRestaurantHandler(nil, nil, duc)
+			h := NewRestaurantHandler(nil, nil, duc, nil)
 
 			tt.mockInit(duc)
 
@@ -943,7 +943,7 @@ func TestRestaurantHandler_GetCategories(t *testing.T) {
 			defer ctrl.Finish()
 
 			cuc := ucMocks.NewMockCategoryUseCase(ctrl)
-			h := NewRestaurantHandler(cuc, nil, nil)
+			h := NewRestaurantHandler(cuc, nil, nil, nil)
 
 			tt.mockInit(cuc)
 

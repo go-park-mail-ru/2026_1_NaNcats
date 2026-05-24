@@ -87,6 +87,36 @@ func (mr *MockOrderUseCaseMockRecorder) GetOrders(ctx, userID, limit, offset any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrders", reflect.TypeOf((*MockOrderUseCase)(nil).GetOrders), ctx, userID, limit, offset)
 }
 
+// GetTrendingBrands mocks base method.
+func (m *MockOrderUseCase) GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTrendingBrands", ctx, windowDays, limit)
+	ret0, _ := ret[0].([]int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTrendingBrands indicates an expected call of GetTrendingBrands.
+func (mr *MockOrderUseCaseMockRecorder) GetTrendingBrands(ctx, windowDays, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTrendingBrands", reflect.TypeOf((*MockOrderUseCase)(nil).GetTrendingBrands), ctx, windowDays, limit)
+}
+
+// GetUserPaidBrands mocks base method.
+func (m *MockOrderUseCase) GetUserPaidBrands(ctx context.Context, userID int64) ([]int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserPaidBrands", ctx, userID)
+	ret0, _ := ret[0].([]int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserPaidBrands indicates an expected call of GetUserPaidBrands.
+func (mr *MockOrderUseCaseMockRecorder) GetUserPaidBrands(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserPaidBrands", reflect.TypeOf((*MockOrderUseCase)(nil).GetUserPaidBrands), ctx, userID)
+}
+
 // PayForFriend mocks base method.
 func (m *MockOrderUseCase) PayForFriend(ctx context.Context, splitID string, adminID int64, paymentMethodID, idempotencyKey string) error {
 	m.ctrl.T.Helper()

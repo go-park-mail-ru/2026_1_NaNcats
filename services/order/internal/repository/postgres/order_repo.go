@@ -570,3 +570,59 @@ func (r *orderRepo) RollbackPromocodeUsage(ctx context.Context, orderPublicID st
 		return nil
 	})
 }
+
+func (r *orderRepo) GetUserPaidBrands(ctx context.Context, userID int64) ([]int64, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT DISTINCT o.restaurant_brand_id
+		FROM "order" o
+		LEFT JOIN "order_split" os ON o.id = os.order_id
+		WHERE (o.admin_account_id = $1 OR os.user_id = $1)
+		  AND o.status IN ('paid', 'finished')
+	`, userID)
+	if err != nil {
+		return nil, fmt.Errorf("get user paid brands: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]int64, 0, 8)
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("scan brand id: %w", err)
+		}
+		out = append(out, id)
+	}
+	return out, rows.Err()
+}
+
+func (r *orderRepo) GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error) {
+	if windowDays <= 0 {
+		windowDays = 7
+	}
+	if limit <= 0 {
+		limit = 8
+	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT restaurant_brand_id
+		FROM "order"
+		WHERE status IN ('paid', 'finished')
+		  AND created_at >= NOW() - ($1::int * INTERVAL '1 day')
+		GROUP BY restaurant_brand_id
+		ORDER BY COUNT(*) DESC, restaurant_brand_id ASC
+		LIMIT $2
+	`, windowDays, limit)
+	if err != nil {
+		return nil, fmt.Errorf("get trending brands: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]int64, 0, limit)
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("scan trending brand id: %w", err)
+		}
+		out = append(out, id)
+	}
+	return out, rows.Err()
+}
