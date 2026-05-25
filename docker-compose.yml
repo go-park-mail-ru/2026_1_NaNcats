@@ -181,7 +181,8 @@ services:
     environment:
       <<: *shared-env
       CONFIG_PATH: ./services/user/config.yaml
-      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/user_db?sslmode=disable
+      DATABASE_URL: postgres://user_service_user:secure_password_1@db:5432/user_db?sslmode=disable
+      MIGRATION_DB_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-superpassword}@db:5432/user_db?sslmode=disable
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
     depends_on:
       db:
