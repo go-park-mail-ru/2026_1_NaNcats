@@ -351,3 +351,4 @@ volumes:
   prometheus_data:
   redis_data:
   rabbitmq_data:
+  pg_logs:
