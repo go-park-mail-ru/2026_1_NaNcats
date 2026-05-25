@@ -16,7 +16,7 @@ services:
     command: postgres -c config_file=/etc/postgresql/custom_postgresql.conf
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-superpassword}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
     ports:
       - "5432:5432"
     volumes:
@@ -26,9 +26,8 @@ services:
       - ./infrastructure/postgres/00-init-roles.sql:/docker-entrypoint-initdb.d/00-init-roles.sql:ro
       - ./infrastructure/postgres/init-dbs.sql:/docker-entrypoint-initdb.d/01-init-dbs.sql:ro
       - pg_logs:/var/lib/postgresql/data/pg_log
-    healthcheck: # Проверка готовности базы
-      # бэкенд не начнет пытаться подключиться к базе, пока она не будет готова принимать соединения
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-user}"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -65,7 +64,7 @@ services:
     image: prometheuscommunity/postgres-exporter
     container_name: postgres_exporter
     environment:
-      DATA_SOURCE_NAME: "postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-superpassword}@db:5432/postgres?sslmode=disable"
+      DATA_SOURCE_NAME: "postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@db:5432/postgres?sslmode=disable"
     ports:
       - "9187:9187"
     depends_on:
@@ -181,8 +180,8 @@ services:
     environment:
       <<: *shared-env
       CONFIG_PATH: ./services/user/config.yaml
-      DATABASE_URL: postgres://user_service_user:secure_password_1@db:5432/user_db?sslmode=disable
-      MIGRATION_DB_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-superpassword}@db:5432/user_db?sslmode=disable
+      DATABASE_URL: postgres://user_svc_user:user_pass_123@db:5432/user_db?sslmode=disable
+      MIGRATION_DB_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-password}@db:5432/user_db?sslmode=disable
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
     depends_on:
       db:
@@ -199,7 +198,8 @@ services:
     environment:
       <<: *shared-env
       CONFIG_PATH: ./services/restaurant/config.yaml
-      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/restaurant_db?sslmode=disable
+      DATABASE_URL: postgres://restaurant_svc_user:rest_pass_123@db:5432/restaurant_db?sslmode=disable
+      MIGRATION_DB_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-password}@db:5432/restaurant_db?sslmode=disable
     depends_on:
       db:
         condition: service_healthy
@@ -214,7 +214,8 @@ services:
       <<: *shared-env
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
       CONFIG_PATH: ./services/cart/config.yaml
-      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/cart_db?sslmode=disable
+      DATABASE_URL: postgres://cart_svc_user:cart_pass_123@db:5432/cart_db?sslmode=disable
+      MIGRATION_DB_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-password}@db:5432/cart_db?sslmode=disable
       RESTAURANT_SERVICE_ADDR: restaurant_service:50053
     depends_on:
       db:
@@ -231,7 +232,8 @@ services:
     environment:
       <<: *shared-env
       CONFIG_PATH: ./services/address/config.yaml
-      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/address_db?sslmode=disable
+      DATABASE_URL: postgres://address_svc_user:addr_pass_123@db:5432/address_db?sslmode=disable
+      MIGRATION_DB_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-password}@db:5432/address_db?sslmode=disable
     depends_on:
       db:
         condition: service_healthy
@@ -246,7 +248,8 @@ services:
       <<: *shared-env
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
       CONFIG_PATH: ./services/payment/config.yaml
-      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/payment_db?sslmode=disable
+      DATABASE_URL: postgres://payment_svc_user:pay_pass_123@db:5432/payment_db?sslmode=disable
+      MIGRATION_DB_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-password}@db:5432/payment_db?sslmode=disable
       REDIS_URL: redis://redis:6379/0
       ORDER_SERVICE_ADDR: order_service:50057
       YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID}
@@ -270,7 +273,8 @@ services:
       <<: *shared-env
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
       CONFIG_PATH: ./services/order/config.yaml
-      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/order_db?sslmode=disable
+      DATABASE_URL: postgres://order_svc_user:order_pass_123@db:5432/order_db?sslmode=disable
+      MIGRATION_DB_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-password}@db:5432/order_db?sslmode=disable
       ADDRESS_SERVICE_ADDR: address_service:50051
       CART_SERVICE_ADDR: cart_service:50055
       PAYMENT_SERVICE_ADDR: payment_service:50056
@@ -290,7 +294,8 @@ services:
     environment:
       <<: *shared-env
       CONFIG_PATH: ./services/support/config.yaml
-      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/support_db?sslmode=disable
+      DATABASE_URL: postgres://support_svc_user:supp_pass_123@db:5432/support_db?sslmode=disable
+      MIGRATION_DB_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-password}@db:5432/support_db?sslmode=disable
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
     depends_on:
       db:
