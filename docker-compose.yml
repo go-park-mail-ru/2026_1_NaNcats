@@ -13,15 +13,19 @@ services:
   db:
     image: postgis/postgis:18-3.6-alpine # Образ с Postgres + PostGIS
     container_name: postgres_db
+    command: postgres -c config_file=/etc/postgresql/custom_postgresql.conf
     environment:
-      POSTGRES_USER: ${DB_USER:-user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-superpassword}
     ports:
       - "5432:5432"
     volumes:
       # сохраняет таблицы и данные пользователей
       - postgres_data:/var/lib/postgresql/data
-      - ./infrastructure/postgres/init-dbs.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./infrastructure/postgres/custom_postgresql.conf:/etc/postgresql/custom_postgresql.conf:ro
+      - ./infrastructure/postgres/00-init-roles.sql:/docker-entrypoint-initdb.d/00-init-roles.sql:ro
+      - ./infrastructure/postgres/init-dbs.sql:/docker-entrypoint-initdb.d/01-init-dbs.sql:ro
+      - pg_logs:/var/lib/postgresql/data/pg_log
     healthcheck: # Проверка готовности базы
       # бэкенд не начнет пытаться подключиться к базе, пока она не будет готова принимать соединения
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-user}"]
@@ -51,10 +55,22 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 5s
       timeout: 5s
       retries: 5
+    restart: always
+  
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter
+    container_name: postgres_exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-superpassword}@db:5432/postgres?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      db:
+        condition: service_healthy
     restart: always
 
   otel-collector:
