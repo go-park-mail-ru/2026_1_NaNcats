@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -25,9 +24,13 @@ type clickhouseRepo struct {
 	conn      driver.Conn
 	logger    logger.Logger
 	eventChan chan bufferedEvent
-	stopChan  chan struct{} // Сигнальный канал для остановки воркера
-	wg        sync.WaitGroup
-	closed    atomic.Bool // Для безопасной проверки состояния
+	stopChan  chan struct{}
+	wg        sync.WaitGroup // Отслеживает старт/стоп самого воркера
+
+	// Поля для безопасного graceful shutdown
+	mu        sync.RWMutex   // Защищает флаг closed и канал eventChan
+	writersWg sync.WaitGroup // Отслеживает активные записи в метод InsertEvent
+	closed    bool           // Флаг закрытия репозитория
 }
 
 func NewAnalyticsRepository(conn driver.Conn, l logger.Logger, batchSize int, flushInterval time.Duration) repository.AnalyticsRepository {
@@ -45,25 +48,38 @@ func NewAnalyticsRepository(conn driver.Conn, l logger.Logger, batchSize int, fl
 }
 
 func (r *clickhouseRepo) Close() error {
-	// Атомарно меняем флаг. Если уже закрыт - выходим
-	if r.closed.Swap(true) {
+	r.mu.Lock()
+	if r.closed {
+		r.mu.Unlock()
 		return nil
 	}
+	r.closed = true
+	close(r.stopChan) // Разблокирует потоки, застрявшие в select на отправке
+	r.mu.Unlock()
 
-	// Закрываем сигнальный канал. Это разблокирует все горутины, слушающие r.stopChan в select
-	close(r.stopChan)
+	// Ждем, пока все активные вызовы InsertEvent завершат свою работу
+	r.writersWg.Wait()
 
-	// Ждем, пока воркер обработает остатки из eventChan и запишет их в CH
+	// Теперь больше никто не пишет и не попытается написать в eventChan, закрываем канал
+	close(r.eventChan)
+
+	// Ждем, пока воркер полностью вычитает все оставшиеся в буфере канала сообщения и завершится
 	r.wg.Wait()
 
 	return nil
 }
 
 func (r *clickhouseRepo) InsertEvent(ctx context.Context, event events.AnalyticsOrderEvent) error {
-	// Атомарная быстрая проверка
-	if r.closed.Load() {
+	r.mu.RLock()
+	if r.closed {
+		r.mu.RUnlock()
 		return fmt.Errorf("repository is closed, rejecting new events")
 	}
+
+	r.writersWg.Add(1)
+	r.mu.RUnlock()
+
+	defer r.writersWg.Done()
 
 	orderUUID, err := uuid.Parse(event.OrderPublicID)
 	if err != nil {
@@ -95,7 +111,15 @@ func (r *clickhouseRepo) startWorker(batchSize int, flushInterval time.Duration)
 
 	for {
 		select {
-		case be := <-r.eventChan:
+		// Читаем из канала и отслеживаем его закрытие
+		case be, ok := <-r.eventChan:
+			if !ok {
+				// Канал закрыт и полностью вычитан, сбрасываем остатки и выходим
+				if len(buffer) > 0 {
+					r.flush(buffer)
+				}
+				return
+			}
 			buffer = append(buffer, be)
 			if len(buffer) >= batchSize {
 				r.flush(buffer)
@@ -106,26 +130,6 @@ func (r *clickhouseRepo) startWorker(batchSize int, flushInterval time.Duration)
 			if len(buffer) > 0 {
 				r.flush(buffer)
 				buffer = buffer[:0]
-			}
-
-		case <-r.stopChan:
-			// Graceful Shutdown
-			// Неблокирующе читаем все сообщения которые успели накопиться в eventChan до закрытия приложения и сливаем их
-			for {
-				select {
-				case be := <-r.eventChan:
-					buffer = append(buffer, be)
-					if len(buffer) >= batchSize {
-						r.flush(buffer)
-						buffer = buffer[:0]
-					}
-				default:
-					// Канал пуст
-					if len(buffer) > 0 {
-						r.flush(buffer)
-					}
-					return
-				}
 			}
 		}
 	}
@@ -220,14 +224,14 @@ func (r *clickhouseRepo) GetOwnerStats(ctx context.Context, restaurantID int64, 
 	// Финансовые показатели
 	financialQuery := `
 		SELECT 
-			toInt64(count(DISTINCT order_public_id)) AS total_orders,
-			toInt64(count(DISTINCT order_public_id) FILTER (WHERE is_financial_impact = 1)) AS paid_orders,
-			COALESCE(sum(restaurant_revenue_raw) FILTER (WHERE is_financial_impact = 1), 0) AS net_revenue,
-			COALESCE(sum(discount_raw) FILTER (WHERE is_financial_impact = 1), 0) AS total_discounts
+			toInt64(uniqExact(order_public_id)) AS total_orders,
+			toInt64(uniqExactIf(order_public_id, is_financial_impact = 1)) AS paid_orders,
+			toInt64(sumIf(restaurant_revenue_raw, is_financial_impact = 1)) AS net_revenue,
+			toInt64(sumIf(discount_raw, is_financial_impact = 1)) AS total_discounts
 		FROM orders_report_log
-		WHERE restaurant_id = $1
-		  AND event_time >= $2
-		  AND event_time <= $3;
+		WHERE restaurant_id = ?
+		  AND event_time >= ?
+		  AND event_time <= ?;
 	`
 
 	var totalOrders int64
@@ -258,19 +262,18 @@ func (r *clickhouseRepo) GetOwnerStats(ctx context.Context, restaurantID int64, 
 				maxIf(toUnixTimestamp(event_time), status = 'waiting') AS waiting_time,
 				maxIf(toUnixTimestamp(event_time), status = 'in_progress') AS progress_time
 			FROM orders_report_log
-			WHERE restaurant_id = $1
-			  AND event_time >= $2
-			  AND event_time <= $3
+			WHERE restaurant_id = ?
+			  AND event_time >= ?
+			  AND event_time <= ?
 			GROUP BY order_public_id
 			HAVING waiting_time > 0 AND progress_time > 0
 		);
 	`
-	var avgCookingTimeFloat float64
+
 	err = r.conn.QueryRow(ctx, cookingTimeQuery, restaurantID, startTime, endTime).Scan(&stats.Operational.AvgCookingTimeSec)
 	if err != nil {
 		return stats, fmt.Errorf("query cooking time failed: %w", err)
 	}
-	stats.Operational.AvgCookingTimeSec = int64(avgCookingTimeFloat)
 
 	// Уникальное распределение текущих статусов заказов за период
 	statusFunnelQuery := `
@@ -280,9 +283,9 @@ func (r *clickhouseRepo) GetOwnerStats(ctx context.Context, restaurantID int64, 
 				order_public_id,
 				argMax(status, event_time) AS status
 			FROM orders_report_log
-			WHERE restaurant_id = $1
-			  AND event_time >= $2
-			  AND event_time <= $3
+			WHERE restaurant_id = ?
+			  AND event_time >= ?
+			  AND event_time <= ?
 			GROUP BY order_public_id
 		)
 		GROUP BY status;
@@ -311,9 +314,9 @@ func (r *clickhouseRepo) GetOwnerStats(ctx context.Context, restaurantID int64, 
 			toInt32(COALESCE(sum(quantity), 0)) AS units_sold,
 			toInt64(COALESCE(sum(row_total_raw), 0)) AS total_revenue
 		FROM order_items_report_log
-		WHERE restaurant_id = $1
-		  AND event_time >= $2
-		  AND event_time <= $3
+		WHERE restaurant_id = ?
+		  AND event_time >= ?
+		  AND event_time <= ?
 		GROUP BY dish_id
 		ORDER BY units_sold DESC
 		LIMIT 10;
@@ -341,9 +344,9 @@ func (r *clickhouseRepo) GetOwnerStats(ctx context.Context, restaurantID int64, 
 			toInt64(count(DISTINCT order_public_id)) AS orders_count,
 			if(isNaN(avg(members_count)), 1.0, avg(members_count)) AS avg_group_size
 		FROM orders_report_log
-		WHERE restaurant_id = $1
-		  AND event_time >= $2
-		  AND event_time <= $3
+		WHERE restaurant_id = ?
+		  AND event_time >= ?
+		  AND event_time <= ?
 		  AND status = 'cart_locked' 
 		GROUP BY order_type;
 	`
@@ -370,9 +373,9 @@ func (r *clickhouseRepo) GetOwnerStats(ctx context.Context, restaurantID int64, 
 			COALESCE(sum(restaurant_revenue_raw) FILTER (WHERE is_financial_impact = 1), 0) AS daily_revenue,
 			toInt64(count(DISTINCT order_public_id)) AS daily_orders
 		FROM orders_report_log
-		WHERE restaurant_id = $1
-		  AND event_time >= $2
-		  AND event_time <= $3
+		WHERE restaurant_id = ?
+		  AND event_time >= ?
+		  AND event_time <= ?
 		GROUP BY day
 		ORDER BY day ASC;
 	`
