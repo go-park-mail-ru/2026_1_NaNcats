@@ -22,6 +22,7 @@ import (
 	analyticsHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/analytics"
 	authHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/auth"
 	cartHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/cart"
+	gameHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/game"
 	orderHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/order"
 	paymentHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/payment"
 	promoHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/promo"
@@ -39,6 +40,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/analyticsclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/authclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/cartclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/gameclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/orderclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/paymentclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/restaurantclient"
@@ -163,6 +165,7 @@ func main() {
 
 	authClient := authclient.NewAuthClient(pbAuth.NewAuthServiceClient(authConn))
 	userClient := userclient.NewUserClient(pbUser.NewUserServiceClient(userConn))
+	gameClient := gameclient.NewGameClient(pbUser.NewWordleServiceClient(userConn))
 	restClient := restaurantclient.NewRestaurantClient(pbRestaurant.NewRestaurantServiceClient(restConn))
 	cartClient := cartclient.NewCartClient(pbCart.NewCartServiceClient(cartConn))
 	addrClient := addressclient.NewAddressClient(pbAddress.NewAddressServiceClient(addrConn))
@@ -182,6 +185,7 @@ func main() {
 
 	authHandler := authHttp.NewAuthHandler(authClient, userClient, appLogger, validate)
 	userProfileHandler := userHttp.NewUserProfileHandler(userClient, appLogger)
+	gameHandler := gameHttp.NewGameHandler(gameClient, appLogger)
 	restaurantHandler := restaurantHttp.NewRestaurantHandler(restClient, appLogger)
 	cartHandler := cartHttp.NewCartHandler(cartClient, userClient, wsManager, appLogger)
 	addressHandler := addressHttp.NewAddressHandler(addrClient, appLogger)
@@ -226,6 +230,10 @@ func main() {
 	// === LUCKY WHEEL ===
 	mux.Handle("POST /api/profile/wheel/spin", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(wheelHandler.Spin))))
 	mux.Handle("GET /api/profile/wheel/sectors", authMW.RequireAuth(http.HandlerFunc(wheelHandler.GetSectors)))
+
+	// === GAME (5 БУКВ) ===
+	mux.Handle("GET /api/game/wordle", authMW.RequireAuth(http.HandlerFunc(gameHandler.GetDailyWordleState)))
+	mux.Handle("POST /api/game/wordle/guess", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(gameHandler.MakeWordleGuess))))
 
 	// === OWNER ===
 	mux.Handle("POST /api/owner/restaurants",

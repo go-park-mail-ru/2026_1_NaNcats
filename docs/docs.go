@@ -1689,6 +1689,109 @@ const docTemplate = `{
                 }
             }
         },
+        "/game/wordle": {
+            "get": {
+                "description": "Возвращает текущий статус игры (PLAYING, WON, LOST), лимиты и историю попыток.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "game"
+                ],
+                "summary": "Получение статуса игры \"5 букв\" за сегодня",
+                "responses": {
+                    "200": {
+                        "description": "Успешное получение статуса",
+                        "schema": {
+                            "$ref": "#/definitions/game.DailyStateResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/game/wordle/guess": {
+            "post": {
+                "description": "Отправляет слово на проверку. Требует передачи заголовка Idempotency-Key.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "game"
+                ],
+                "summary": "Сделать попытку в игре \"5 букв\"",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Ключ идемпотентности",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Слово-попытка (строго 5 букв)",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/game.MakeWordleGuessRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Результат обработки попытки",
+                        "schema": {
+                            "$ref": "#/definitions/game.MakeGuessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса, нет заголовка или слова нет в словаре",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Игра уже завершена на сегодня или лимит исчерпан",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Конфликт идемпотентности (запрос уже обработан)",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_go-park-mail-ru_2026_1_NaNcats_shared_pkg_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/order/{id}/cancel": {
             "post": {
                 "description": "Пользователь отменяет свой заказ. Доступно только пока заказ не in_progress / not finished.",
@@ -2931,6 +3034,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "ivan@example.com"
                 },
+                "id": {
+                    "type": "integer",
+                    "example": 42
+                },
                 "name": {
                     "type": "string",
                     "example": "Иван"
@@ -3010,8 +3117,14 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "owner_user_id": {
-                    "type": "integer"
+                "owner_avatar": {
+                    "type": "string"
+                },
+                "owner_name": {
+                    "type": "string"
+                },
+                "owner_public_id": {
+                    "type": "string"
                 },
                 "price": {
                     "type": "integer"
@@ -3024,11 +3137,17 @@ const docTemplate = `{
         "api-gateway_internal_delivery_http_cart.CartMemberDTO": {
             "type": "object",
             "properties": {
+                "avatar_url": {
+                    "type": "string"
+                },
                 "joined_at": {
                     "type": "string"
                 },
-                "user_id": {
-                    "type": "integer"
+                "name": {
+                    "type": "string"
+                },
+                "public_id": {
+                    "type": "string"
                 }
             }
         },
@@ -3036,7 +3155,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "admin_id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "cart_id": {
                     "type": "string"
@@ -3093,8 +3212,8 @@ const docTemplate = `{
                 "cart_id": {
                     "type": "string"
                 },
-                "target_user_id": {
-                    "type": "integer"
+                "target_public_id": {
+                    "type": "string"
                 }
             }
         },
@@ -3107,8 +3226,8 @@ const docTemplate = `{
                 "dish_id": {
                     "type": "integer"
                 },
-                "new_owner_id": {
-                    "type": "integer"
+                "new_owner_public_id": {
+                    "type": "string"
                 }
             }
         },
@@ -3158,11 +3277,13 @@ const docTemplate = `{
                 "payer_mapping": {
                     "type": "object",
                     "additionalProperties": {
-                        "type": "integer",
-                        "format": "int64"
+                        "type": "string"
                     }
                 },
                 "payment_method_id": {
+                    "type": "string"
+                },
+                "promocode": {
                     "type": "string"
                 },
                 "service_fee": {
@@ -3190,8 +3311,14 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "owner_user_id": {
-                    "type": "integer"
+                "owner_avatar": {
+                    "type": "string"
+                },
+                "owner_name": {
+                    "type": "string"
+                },
+                "owner_public_id": {
+                    "type": "string"
                 },
                 "price": {
                     "type": "integer"
@@ -3204,8 +3331,14 @@ const docTemplate = `{
         "api-gateway_internal_delivery_http_order.OrderHistoryResponse": {
             "type": "object",
             "properties": {
+                "applied_promocode": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
+                },
+                "discount_amount": {
+                    "type": "integer"
                 },
                 "items": {
                     "type": "array",
@@ -3242,14 +3375,26 @@ const docTemplate = `{
                 "amount": {
                     "type": "integer"
                 },
+                "base_amount": {
+                    "type": "integer"
+                },
+                "discount_amount": {
+                    "type": "integer"
+                },
                 "split_id": {
                     "type": "string"
                 },
                 "status": {
                     "type": "string"
                 },
-                "user_id": {
-                    "type": "integer"
+                "user_avatar": {
+                    "type": "string"
+                },
+                "user_name": {
+                    "type": "string"
+                },
+                "user_public_id": {
+                    "type": "string"
                 }
             }
         },
@@ -3695,6 +3840,77 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "Андрей"
+                }
+            }
+        },
+        "game.DailyStateResponse": {
+            "type": "object",
+            "properties": {
+                "guesses": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/game.WordleGuessResultDTO"
+                    }
+                },
+                "max_attempts": {
+                    "type": "integer",
+                    "example": 6
+                },
+                "status": {
+                    "description": "PLAYING, WON, LOST",
+                    "type": "string",
+                    "example": "PLAYING"
+                },
+                "word_length": {
+                    "type": "integer",
+                    "example": 5
+                }
+            }
+        },
+        "game.MakeGuessResponse": {
+            "type": "object",
+            "properties": {
+                "bonus_awarded": {
+                    "type": "integer",
+                    "example": 500
+                },
+                "guess_result": {
+                    "$ref": "#/definitions/game.WordleGuessResultDTO"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "WON"
+                }
+            }
+        },
+        "game.MakeWordleGuessRequest": {
+            "type": "object",
+            "properties": {
+                "guess": {
+                    "type": "string",
+                    "example": "apple"
+                }
+            }
+        },
+        "game.WordleGuessResultDTO": {
+            "type": "object",
+            "properties": {
+                "letters": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "['CORRECT'",
+                        " 'PRESENT'",
+                        " 'ABSENT'",
+                        " 'ABSENT'",
+                        " 'ABSENT']"
+                    ]
+                },
+                "word": {
+                    "type": "string",
+                    "example": "apple"
                 }
             }
         },

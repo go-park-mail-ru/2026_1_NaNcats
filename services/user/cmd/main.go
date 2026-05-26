@@ -86,6 +86,7 @@ func main() {
 	userRepo := userPG.NewUserRepo(pool)
 	clientProfileRepo := userPG.NewClientProfileRepo(pool)
 	achievementRepo := userPG.NewAchievementRepo(pool)
+	wordleRepo := userPG.NewWordleRepo(pool)
 
 	rabbitClient, err := rabbitmq.NewRabbitClient(cfg.RabbitMQURL, appLogger)
 	if err != nil {
@@ -98,8 +99,10 @@ func main() {
 	clientProfileUC := userUsecase.NewClientProfileUseCase(clientProfileRepo)
 	tracedProfileUC := userUsecase.NewClientProfileUseCaseTracingMiddleware(clientProfileUC)
 	achievementUC := userUsecase.NewAchievementUseCase(achievementRepo, appLogger)
+	wordleUC := userUsecase.NewWordleUseCase(wordleRepo, appLogger)
 
 	userHandler := userDelivery.NewUserHandler(tracedUserUC, tracedProfileUC, achievementUC)
+	gameHandler := userDelivery.NewGameHandler(wordleUC)
 
 	// Контекст, который отменяется по сигналу ОС
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -126,6 +129,7 @@ func main() {
 	)
 
 	pb.RegisterUserServiceServer(grpcServer, userHandler)
+	pb.RegisterWordleServiceServer(grpcServer, gameHandler)
 	reflection.Register(grpcServer)
 
 	listener, err := net.Listen("tcp", ":"+cfg.GRPC.Port)
