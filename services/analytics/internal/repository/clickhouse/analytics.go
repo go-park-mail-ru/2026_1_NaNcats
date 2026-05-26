@@ -311,9 +311,9 @@ func (r *clickhouseRepo) GetOwnerStats(ctx context.Context, restaurantID int64, 
 		SELECT 
 			dish_id,
 			any(dish_name) AS name,
-			toInt32(COALESCE(sum(quantity), 0)) AS units_sold,
-			toInt64(COALESCE(sum(row_total_raw), 0)) AS total_revenue
-		FROM order_items_report_log
+			toInt32(sum(quantity)) AS units_sold,
+			toInt64(sum(row_total_raw)) AS total_revenue
+		FROM order_items_report_log FINAL
 		WHERE restaurant_id = ?
 		  AND event_time >= ?
 		  AND event_time <= ?
@@ -370,8 +370,8 @@ func (r *clickhouseRepo) GetOwnerStats(ctx context.Context, restaurantID int64, 
 	timelineQuery := `
 		SELECT 
 			toStartOfDay(event_time) AS day,
-			COALESCE(sum(restaurant_revenue_raw) FILTER (WHERE is_financial_impact = 1), 0) AS daily_revenue,
-			toInt64(count(DISTINCT order_public_id)) AS daily_orders
+			toInt64(sumIf(restaurant_revenue_raw, is_financial_impact = 1)) AS daily_revenue,
+			toInt64(uniqExact(order_public_id)) AS daily_orders
 		FROM orders_report_log
 		WHERE restaurant_id = ?
 		  AND event_time >= ?

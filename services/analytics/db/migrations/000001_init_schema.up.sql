@@ -46,6 +46,6 @@ CREATE TABLE IF NOT EXISTS order_items_report_log (
 
     user_id Int64
 ) 
-ENGINE = MergeTree()
+ENGINE = ReplacingMergeTree(event_time)
 PARTITION BY toYYYYMM(event_date)
-ORDER BY (restaurant_id, dish_id, event_time);
+ORDER BY (restaurant_id, order_public_id, dish_id);
