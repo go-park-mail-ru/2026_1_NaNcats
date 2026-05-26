@@ -11,6 +11,8 @@ spec:
     metadata:
       labels:
         app: {{ .Values.serviceName }}
+      annotations:
+        deployedAt: {{ .Values.deployedAt | default "init" | quote }}
     spec:
       imagePullSecrets:
         - name: ghcr-login-secret

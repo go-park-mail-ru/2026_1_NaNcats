@@ -215,4 +215,5 @@ jobs:
               -f /home/ubuntu/k8s_manifests/helm/values-${{ matrix.service }}.yaml \
               --set image.repository=ghcr.io/${REPO_OWNER}/2026_1_nancats/${{ matrix.service }} \
               --set image.tag=latest \
-              --set serviceName=${{ matrix.service }}-service
+              --set serviceName=${{ matrix.service }}-service \
+              --set deployedAt="${{ github.sha }}-$(date -u +%s)"
