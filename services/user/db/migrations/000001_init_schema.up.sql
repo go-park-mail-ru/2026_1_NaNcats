@@ -56,7 +56,7 @@ CREATE TABLE "client_profile" (
 
 	idempotency_key TEXT UNIQUE,
 
-	last_wheel_spin_at TIMESTAMP WITH TIME ZONE;
+	last_wheel_spin_at TIMESTAMP WITH TIME ZONE,
 	
 	CONSTRAINT fk_client_profile_user
 		FOREIGN KEY (account_id)
