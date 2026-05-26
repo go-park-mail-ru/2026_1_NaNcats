@@ -42,3 +42,6 @@ coverage.out
 coverage.html
 coverage_clean.out
 coverage*.out
+
+# Логи кликхауса
+infrastructure/clickhouse/logs/
