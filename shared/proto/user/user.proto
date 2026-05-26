@@ -40,6 +40,12 @@ service UserService {
   rpc ListAchievements (google.protobuf.Empty) returns (ListAchievementsResponse);
   // Возвращает ачивки текущего пользователя (только полученные).
   rpc GetUserAchievements (GetUserAchievementsRequest) returns (GetUserAchievementsResponse);
+  // Метод для активации заморозки серии заказов (streak freeze)
+  rpc ActivateStreakFreeze (ActivateStreakFreezeRequest) returns (google.protobuf.Empty);
+  // Метод для начисления стрик-буста (+1 неделя к серии)
+  rpc IncrementStreak (IncrementStreakRequest) returns (google.protobuf.Empty);
+  // Метод-хук, вызываемый при любой прокрутке колеса
+  rpc OnWheelSpin (OnWheelSpinRequest) returns (google.protobuf.Empty);
 }
 
 
@@ -188,4 +194,16 @@ message UserAchievement {
 
 message GetUserAchievementsResponse {
   repeated UserAchievement achievements = 1;
+}
+
+message ActivateStreakFreezeRequest {
+  int64 user_id = 1;
+}
+
+message IncrementStreakRequest {
+  int64 user_id = 1;
+}
+
+message OnWheelSpinRequest {
+  int64 user_id = 1;
 }

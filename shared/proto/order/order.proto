@@ -25,6 +25,8 @@ service OrderService {
   rpc GetTrendingBrands (GetTrendingBrandsRequest) returns (BrandIDList);
   // Возвращает топ-N блюд ресторана по сумме quantity за window_days, paid|finished.
   rpc GetTopDishesByBrand (GetTopDishesByBrandRequest) returns (DishIDList);
+  // Создание уникального промокода и привязка его к пользователю
+  rpc CreateAndBindWheelPromo (CreateAndBindWheelPromoRequest) returns (Promocode);
 }
 
 // Сервис промокодов. Промокоды хранятся в БД OrderService, поэтому
@@ -194,4 +196,11 @@ message GetTopDishesByBrandRequest {
 
 message DishIDList {
   repeated int64 dish_ids = 1;
+}
+
+message CreateAndBindWheelPromoRequest {
+  int64 user_id = 1;
+  optional int64 discount_amount = 2;
+  optional int32 discount_percent = 3;
+  optional int64 restaurant_brand_id = 4;
 }

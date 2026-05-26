@@ -51,7 +51,9 @@ INSERT INTO "achievement" (code, title, description, icon, sort_order) VALUES
     ('five_orders', 'Постоянный клиент', 'Оплатите 5 заказов', '🏅', 2),
     ('gourmand_three', 'Гурман', 'Попробуйте еду из 3 разных ресторанов', '🍽️', 3),
     ('first_spin', 'Испытатель удачи', 'Запустите Колесо Пиццули в первый раз', '🌀', 4);
-    ('lucky_wheel_winner', 'Любимчик Пиццули', 'Выиграйте эксклюзивную награду в Колесе Пиццули', '🎡', 5);
+    ('lucky_wheel_winner', 'Любимчик Пиццули', 'Выиграйте эксклюзивную награду в Колесе Пиццули', '🎡', 5),
+    ('streak_three', 'Постоянство', 'Поддерживайте серию заказов 6 недель подряд', '🔥', 6)
+ON CONFLICT (code) DO NOTHING;
 
 UPDATE "client_profile"
 SET streak_count = 3,
