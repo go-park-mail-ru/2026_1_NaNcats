@@ -52,6 +52,8 @@ CREATE TABLE "client_profile" (
 	last_order_date TIMESTAMP WITH TIME ZONE,
 	premium_expires_at TIMESTAMP WITH TIME ZONE,
 
+	streak_freeze_active BOOLEAN DEFAULT false NOT NULL,
+
 	idempotency_key TEXT UNIQUE,
 	
 	CONSTRAINT fk_client_profile_user

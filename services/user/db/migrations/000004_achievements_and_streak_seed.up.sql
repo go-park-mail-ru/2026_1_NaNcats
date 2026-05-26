@@ -49,7 +49,9 @@ CREATE TABLE "account_restaurant" (
 INSERT INTO "achievement" (code, title, description, icon, sort_order) VALUES
     ('first_order', 'Первый заказ', 'Оплатите первый заказ на FoodCourt', '🍔', 1),
     ('five_orders', 'Постоянный клиент', 'Оплатите 5 заказов', '🏅', 2),
-    ('gourmand_three', 'Гурман', 'Попробуйте еду из 3 разных ресторанов', '🍽️', 3);
+    ('gourmand_three', 'Гурман', 'Попробуйте еду из 3 разных ресторанов', '🍽️', 3),
+    ('first_spin', 'Испытатель удачи', 'Запустите Колесо Пиццули в первый раз', '🌀', 4);
+    ('lucky_wheel_winner', 'Любимчик Пиццули', 'Выиграйте эксклюзивную награду в Колесе Пиццули', '🎡', 5);
 
 UPDATE "client_profile"
 SET streak_count = 3,
