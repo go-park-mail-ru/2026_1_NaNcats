@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/domain"
@@ -190,14 +191,17 @@ func (u *promoUseCase) CreateAndBindWheelPromo(ctx context.Context, userID int64
 	return createdPromo, nil
 }
 
-// Вспомогательный генератор случайных строк-кодов
+// Вспомогательный генератор случайных строк-кодов.
+// Фронт нормализует ввод пользователя через toUpperCase(), поэтому hex
+// тоже отдаём в верхнем регистре — иначе ручной ввод выпавшего кода
+// сравнивался бы с регистрозависимым WHERE code = $1 и не находил.
 func generateWheelPromoCode() (string, error) {
 	b := make([]byte, 4) // 4 байта дадут 8 шестнадцатеричных символов
 	_, err := rand.Read(b)
 	if err != nil {
 		return "", err
 	}
-	return "WHL-" + hex.EncodeToString(b), nil
+	return "WHL-" + strings.ToUpper(hex.EncodeToString(b)), nil
 }
 
 // computeDiscount считает скидку промокода от стоимости блюд. Фиксированная
