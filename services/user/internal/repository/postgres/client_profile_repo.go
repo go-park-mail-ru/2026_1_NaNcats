@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/repository"
@@ -98,6 +99,62 @@ func (r *clientProfileRepo) ResetStreak(ctx context.Context, accountID int64) er
 	tag, err := r.pool.Exec(ctx, query, accountID)
 	if err != nil {
 		return fmt.Errorf("failed to reset streak in db: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return domain.ErrUserNotFound
+	}
+	return nil
+}
+
+func (r *clientProfileRepo) ClaimWheelSpin(ctx context.Context, accountID int64) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	var lastSpin *time.Time
+	err = tx.QueryRow(ctx, `
+		SELECT last_wheel_spin_at 
+		FROM "client_profile" 
+		WHERE account_id = $1 
+		FOR UPDATE
+	`, accountID).Scan(&lastSpin)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.ErrUserNotFound
+		}
+		return fmt.Errorf("failed to select last_wheel_spin_at: %w", err)
+	}
+
+	// Если время зафиксировано, проверяем 24-часовой кулдаун
+	if lastSpin != nil {
+		if time.Since(*lastSpin) < 24*time.Hour {
+			return domain.ErrWheelCooldownActive
+		}
+	}
+
+	_, err = tx.Exec(ctx, `
+		UPDATE "client_profile" 
+		SET last_wheel_spin_at = NOW() 
+		WHERE account_id = $1
+	`, accountID)
+	if err != nil {
+		return fmt.Errorf("failed to update last_wheel_spin_at: %w", err)
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (r *clientProfileRepo) ResetWheelSpinCooldown(ctx context.Context, accountID int64) error {
+	query := `
+		UPDATE "client_profile" 
+		SET last_wheel_spin_at = NULL 
+		WHERE account_id = $1
+	`
+	tag, err := r.pool.Exec(ctx, query, accountID)
+	if err != nil {
+		return fmt.Errorf("failed to reset wheel spin cooldown in db: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
 		return domain.ErrUserNotFound

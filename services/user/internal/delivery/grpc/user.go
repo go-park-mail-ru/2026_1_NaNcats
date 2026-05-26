@@ -267,7 +267,25 @@ func (h *UserHandler) IncrementStreak(ctx context.Context, req *pb.IncrementStre
 }
 
 func (h *UserHandler) OnWheelSpin(ctx context.Context, req *pb.OnWheelSpinRequest) (*emptypb.Empty, error) {
-	err := h.achievementUC.OnWheelSpin(ctx, req.UserId)
+	err := h.achievementUC.OnWheelSpin(ctx, req.UserId, req.GetWonAchievementCode())
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (h *UserHandler) ClaimWheelSpin(ctx context.Context, req *pb.ClaimWheelSpinRequest) (*emptypb.Empty, error) {
+	err := h.clientUC.ClaimWheelSpin(ctx, req.UserId)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (h *UserHandler) ResetWheelSpinCooldown(ctx context.Context, req *pb.ResetWheelSpinCooldownRequest) (*emptypb.Empty, error) {
+	err := h.clientUC.ResetWheelSpinCooldown(ctx, req.UserId)
 	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
 	}

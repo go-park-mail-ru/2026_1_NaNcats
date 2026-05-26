@@ -13,4 +13,7 @@ type ClientProfileRepository interface {
 	UpdateStreakFreeze(ctx context.Context, accountID int64, active bool) error
 	IncrementStreak(ctx context.Context, accountID int64) error
 	ResetStreak(ctx context.Context, accountID int64) error
+
+	ClaimWheelSpin(ctx context.Context, accountID int64) error
+	ResetWheelSpinCooldown(ctx context.Context, accountID int64) error
 }

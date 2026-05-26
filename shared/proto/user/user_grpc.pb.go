@@ -20,24 +20,26 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserService_CreateUser_FullMethodName           = "/user.UserService/CreateUser"
-	UserService_CreateClientProfile_FullMethodName  = "/user.UserService/CreateClientProfile"
-	UserService_UpdateProfile_FullMethodName        = "/user.UserService/UpdateProfile"
-	UserService_UpdateAvatar_FullMethodName         = "/user.UserService/UpdateAvatar"
-	UserService_DeleteAvatar_FullMethodName         = "/user.UserService/DeleteAvatar"
-	UserService_GetByID_FullMethodName              = "/user.UserService/GetByID"
-	UserService_GetByEmail_FullMethodName           = "/user.UserService/GetByEmail"
-	UserService_CheckUserExists_FullMethodName      = "/user.UserService/CheckUserExists"
-	UserService_GetUserProfile_FullMethodName       = "/user.UserService/GetUserProfile"
-	UserService_UpdateUserRole_FullMethodName       = "/user.UserService/UpdateUserRole"
-	UserService_GetUsersByIDs_FullMethodName        = "/user.UserService/GetUsersByIDs"
-	UserService_ResolvePublicID_FullMethodName      = "/user.UserService/ResolvePublicID"
-	UserService_OnOrderPaid_FullMethodName          = "/user.UserService/OnOrderPaid"
-	UserService_ListAchievements_FullMethodName     = "/user.UserService/ListAchievements"
-	UserService_GetUserAchievements_FullMethodName  = "/user.UserService/GetUserAchievements"
-	UserService_ActivateStreakFreeze_FullMethodName = "/user.UserService/ActivateStreakFreeze"
-	UserService_IncrementStreak_FullMethodName      = "/user.UserService/IncrementStreak"
-	UserService_OnWheelSpin_FullMethodName          = "/user.UserService/OnWheelSpin"
+	UserService_CreateUser_FullMethodName             = "/user.UserService/CreateUser"
+	UserService_CreateClientProfile_FullMethodName    = "/user.UserService/CreateClientProfile"
+	UserService_UpdateProfile_FullMethodName          = "/user.UserService/UpdateProfile"
+	UserService_UpdateAvatar_FullMethodName           = "/user.UserService/UpdateAvatar"
+	UserService_DeleteAvatar_FullMethodName           = "/user.UserService/DeleteAvatar"
+	UserService_GetByID_FullMethodName                = "/user.UserService/GetByID"
+	UserService_GetByEmail_FullMethodName             = "/user.UserService/GetByEmail"
+	UserService_CheckUserExists_FullMethodName        = "/user.UserService/CheckUserExists"
+	UserService_GetUserProfile_FullMethodName         = "/user.UserService/GetUserProfile"
+	UserService_UpdateUserRole_FullMethodName         = "/user.UserService/UpdateUserRole"
+	UserService_GetUsersByIDs_FullMethodName          = "/user.UserService/GetUsersByIDs"
+	UserService_ResolvePublicID_FullMethodName        = "/user.UserService/ResolvePublicID"
+	UserService_OnOrderPaid_FullMethodName            = "/user.UserService/OnOrderPaid"
+	UserService_ListAchievements_FullMethodName       = "/user.UserService/ListAchievements"
+	UserService_GetUserAchievements_FullMethodName    = "/user.UserService/GetUserAchievements"
+	UserService_ActivateStreakFreeze_FullMethodName   = "/user.UserService/ActivateStreakFreeze"
+	UserService_IncrementStreak_FullMethodName        = "/user.UserService/IncrementStreak"
+	UserService_OnWheelSpin_FullMethodName            = "/user.UserService/OnWheelSpin"
+	UserService_ClaimWheelSpin_FullMethodName         = "/user.UserService/ClaimWheelSpin"
+	UserService_ResetWheelSpinCooldown_FullMethodName = "/user.UserService/ResetWheelSpinCooldown"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -83,6 +85,10 @@ type UserServiceClient interface {
 	IncrementStreak(ctx context.Context, in *IncrementStreakRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Метод-хук, вызываемый при любой прокрутке колеса
 	OnWheelSpin(ctx context.Context, in *OnWheelSpinRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Метод проверки кулдауна и резервирования попытки прокрутки колеса
+	ClaimWheelSpin(ctx context.Context, in *ClaimWheelSpinRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Сброс кулдауна колеса (при выпадении реролла)
+	ResetWheelSpinCooldown(ctx context.Context, in *ResetWheelSpinCooldownRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type userServiceClient struct {
@@ -273,6 +279,26 @@ func (c *userServiceClient) OnWheelSpin(ctx context.Context, in *OnWheelSpinRequ
 	return out, nil
 }
 
+func (c *userServiceClient) ClaimWheelSpin(ctx context.Context, in *ClaimWheelSpinRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, UserService_ClaimWheelSpin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) ResetWheelSpinCooldown(ctx context.Context, in *ResetWheelSpinCooldownRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, UserService_ResetWheelSpinCooldown_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
@@ -316,6 +342,10 @@ type UserServiceServer interface {
 	IncrementStreak(context.Context, *IncrementStreakRequest) (*emptypb.Empty, error)
 	// Метод-хук, вызываемый при любой прокрутке колеса
 	OnWheelSpin(context.Context, *OnWheelSpinRequest) (*emptypb.Empty, error)
+	// Метод проверки кулдауна и резервирования попытки прокрутки колеса
+	ClaimWheelSpin(context.Context, *ClaimWheelSpinRequest) (*emptypb.Empty, error)
+	// Сброс кулдауна колеса (при выпадении реролла)
+	ResetWheelSpinCooldown(context.Context, *ResetWheelSpinCooldownRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -379,6 +409,12 @@ func (UnimplementedUserServiceServer) IncrementStreak(context.Context, *Incremen
 }
 func (UnimplementedUserServiceServer) OnWheelSpin(context.Context, *OnWheelSpinRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method OnWheelSpin not implemented")
+}
+func (UnimplementedUserServiceServer) ClaimWheelSpin(context.Context, *ClaimWheelSpinRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method ClaimWheelSpin not implemented")
+}
+func (UnimplementedUserServiceServer) ResetWheelSpinCooldown(context.Context, *ResetWheelSpinCooldownRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResetWheelSpinCooldown not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
@@ -725,6 +761,42 @@ func _UserService_OnWheelSpin_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_ClaimWheelSpin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClaimWheelSpinRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ClaimWheelSpin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ClaimWheelSpin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ClaimWheelSpin(ctx, req.(*ClaimWheelSpinRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_ResetWheelSpinCooldown_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResetWheelSpinCooldownRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ResetWheelSpinCooldown(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ResetWheelSpinCooldown_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ResetWheelSpinCooldown(ctx, req.(*ResetWheelSpinCooldownRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -803,6 +875,14 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "OnWheelSpin",
 			Handler:    _UserService_OnWheelSpin_Handler,
+		},
+		{
+			MethodName: "ClaimWheelSpin",
+			Handler:    _UserService_ClaimWheelSpin_Handler,
+		},
+		{
+			MethodName: "ResetWheelSpinCooldown",
+			Handler:    _UserService_ResetWheelSpinCooldown_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

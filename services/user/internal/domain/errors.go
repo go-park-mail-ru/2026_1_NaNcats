@@ -14,4 +14,5 @@ var (
 	ErrNoChangesProvided  = errutil.New("NO_CHANGES", "no changes provided", codes.InvalidArgument)
 
 	ErrAchievementNotFound = errutil.New("ACHIEVEMENT_NOT_FOUND", "achievement not found", codes.NotFound)
+	ErrWheelCooldownActive = errutil.New("WHEEL_COOLDOWN_ACTIVE", "wheel cooldown is still active, try again later", codes.FailedPrecondition)
 )

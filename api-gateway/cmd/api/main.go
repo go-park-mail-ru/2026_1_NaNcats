@@ -29,6 +29,7 @@ import (
 	reviewHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/review"
 	supportHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/support"
 	userHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/user"
+	wheelHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/wheel"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/rabbitmq"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/websocket"
 	rabbitclient "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq"
@@ -186,6 +187,7 @@ func main() {
 	addressHandler := addressHttp.NewAddressHandler(addrClient, appLogger)
 	paymentHandler := paymentHttp.NewPaymentHandler(payClient, appLogger)
 	orderHandler := orderHttp.NewOrderHandler(orderClient, payClient, restClient, userClient, wsManager, appLogger)
+	wheelHandler := wheelHttp.NewWheelHandler(userClient, orderClient, pbOrder.NewPromoServiceClient(orderConn), appLogger)
 
 	redisHub := supportHttp.NewRedisHub(redisPool, appLogger)
 	supportHandler := supportHttp.NewSupportHandler(supportClient, redisHub, appLogger)
@@ -220,6 +222,10 @@ func main() {
 	mux.Handle("POST /api/profile/avatar", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(userProfileHandler.UpdateAvatar))))
 	mux.Handle("DELETE /api/profile/avatar", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(userProfileHandler.DeleteAvatar))))
 	mux.Handle("GET /api/profile/achievements", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.GetAchievements)))
+
+	// === LUCKY WHEEL ===
+	mux.Handle("POST /api/profile/wheel/spin", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(wheelHandler.Spin))))
+	mux.Handle("GET /api/profile/wheel/sectors", authMW.RequireAuth(http.HandlerFunc(wheelHandler.GetSectors)))
 
 	// === OWNER ===
 	mux.Handle("POST /api/owner/restaurants",

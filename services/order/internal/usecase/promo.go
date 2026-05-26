@@ -58,6 +58,11 @@ func (u *promoUseCase) BindPromo(ctx context.Context, userID int64, code string)
 		return domain.Promocode{}, errutil.Internal("failed to fetch promocode", err)
 	}
 
+	// Защита от привязки чужого персонального промокода
+	if promo.UserID != nil && *promo.UserID != userID {
+		return domain.Promocode{}, errutil.New("PROMO_FORBIDDEN", "promocode is tied to another user", codes.PermissionDenied)
+	}
+
 	if time.Now().After(promo.ExpiresAt) {
 		return domain.Promocode{}, errutil.New("PROMO_EXPIRED", "promocode has expired", codes.FailedPrecondition)
 	}

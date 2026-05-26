@@ -12,10 +12,11 @@ import (
 )
 
 var (
-	ErrUserNotFound       = errors.New("user not found")
-	ErrEmailAlreadyExists = errors.New("email already exists")
-	ErrInvalidArgument    = errors.New("invalid argument or empty update data")
-	ErrInternal           = errors.New("internal server error")
+	ErrUserNotFound        = errors.New("user not found")
+	ErrEmailAlreadyExists  = errors.New("email already exists")
+	ErrInvalidArgument     = errors.New("invalid argument or empty update data")
+	ErrInternal            = errors.New("internal server error")
+	ErrWheelCooldownActive = errors.New("wheel cooldown active")
 )
 
 //go:generate mockgen -destination=mocks/user_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/userclient UserClient
@@ -46,6 +47,11 @@ type UserClient interface {
 	ResolvePublicID(ctx context.Context, publicID string) (int64, error)
 	ListAchievements(ctx context.Context) ([]Achievement, error)
 	GetUserAchievements(ctx context.Context, userID int64) ([]UserAchievement, error)
+	ClaimWheelSpin(ctx context.Context, userID int64) error
+	ResetWheelSpinCooldown(ctx context.Context, userID int64) error
+	OnWheelSpin(ctx context.Context, userID int64, wonCode string) error
+	ActivateStreakFreeze(ctx context.Context, userID int64) error
+	IncrementStreak(ctx context.Context, userID int64) error
 }
 
 type userClient struct {
@@ -233,4 +239,85 @@ func (c *userClient) ResolvePublicID(ctx context.Context, publicID string) (int6
 		return 0, ErrInternal
 	}
 	return resp.UserId, nil
+}
+
+func (c *userClient) ActivateStreakFreeze(ctx context.Context, userID int64) error {
+	_, err := c.client.ActivateStreakFreeze(ctx, &pbUser.ActivateStreakFreezeRequest{
+		UserId: userID,
+	})
+	if err != nil {
+		st, ok := status.FromError(err)
+		if ok && st.Code() == codes.NotFound {
+			return ErrUserNotFound
+		}
+		return ErrInternal
+	}
+	return nil
+}
+
+func (c *userClient) IncrementStreak(ctx context.Context, userID int64) error {
+	_, err := c.client.IncrementStreak(ctx, &pbUser.IncrementStreakRequest{
+		UserId: userID,
+	})
+	if err != nil {
+		st, ok := status.FromError(err)
+		if ok && st.Code() == codes.NotFound {
+			return ErrUserNotFound
+		}
+		return ErrInternal
+	}
+	return nil
+}
+
+func (c *userClient) OnWheelSpin(ctx context.Context, userID int64, wonCode string) error {
+	var wonCodePtr *string
+	if wonCode != "" {
+		wonCodePtr = &wonCode
+	}
+
+	_, err := c.client.OnWheelSpin(ctx, &pbUser.OnWheelSpinRequest{
+		UserId:             userID,
+		WonAchievementCode: wonCodePtr,
+	})
+	if err != nil {
+		st, ok := status.FromError(err)
+		if ok && st.Code() == codes.NotFound {
+			return ErrUserNotFound
+		}
+		return ErrInternal
+	}
+	return nil
+}
+
+func (c *userClient) ClaimWheelSpin(ctx context.Context, userID int64) error {
+	_, err := c.client.ClaimWheelSpin(ctx, &pbUser.ClaimWheelSpinRequest{
+		UserId: userID,
+	})
+	if err != nil {
+		st, ok := status.FromError(err)
+		if ok {
+			switch st.Code() {
+			case codes.FailedPrecondition:
+				return ErrWheelCooldownActive
+			case codes.NotFound:
+				return ErrUserNotFound
+			}
+		}
+		return ErrInternal
+	}
+	return nil
+}
+
+func (c *userClient) ResetWheelSpinCooldown(ctx context.Context, userID int64) error {
+	_, err := c.client.ResetWheelSpinCooldown(ctx, &pbUser.ResetWheelSpinCooldownRequest{
+		UserId: userID,
+	})
+	if err != nil {
+		st, ok := status.FromError(err)
+		if ok && st.Code() == codes.NotFound {
+			return ErrUserNotFound
+		}
+		return ErrInternal
+	}
+	return nil
 }

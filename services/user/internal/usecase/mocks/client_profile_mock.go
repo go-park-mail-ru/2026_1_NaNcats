@@ -55,6 +55,20 @@ func (mr *MockClientProfileUseCaseMockRecorder) ActivateStreakFreeze(ctx, accoun
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ActivateStreakFreeze", reflect.TypeOf((*MockClientProfileUseCase)(nil).ActivateStreakFreeze), ctx, accountID)
 }
 
+// ClaimWheelSpin mocks base method.
+func (m *MockClientProfileUseCase) ClaimWheelSpin(ctx context.Context, accountID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClaimWheelSpin", ctx, accountID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ClaimWheelSpin indicates an expected call of ClaimWheelSpin.
+func (mr *MockClientProfileUseCaseMockRecorder) ClaimWheelSpin(ctx, accountID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClaimWheelSpin", reflect.TypeOf((*MockClientProfileUseCase)(nil).ClaimWheelSpin), ctx, accountID)
+}
+
 // CreateProfile mocks base method.
 func (m *MockClientProfileUseCase) CreateProfile(ctx context.Context, accountID int64, idempotencyKey string) error {
 	m.ctrl.T.Helper()
@@ -96,4 +110,18 @@ func (m *MockClientProfileUseCase) IncrementStreak(ctx context.Context, accountI
 func (mr *MockClientProfileUseCaseMockRecorder) IncrementStreak(ctx, accountID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementStreak", reflect.TypeOf((*MockClientProfileUseCase)(nil).IncrementStreak), ctx, accountID)
+}
+
+// ResetWheelSpinCooldown mocks base method.
+func (m *MockClientProfileUseCase) ResetWheelSpinCooldown(ctx context.Context, accountID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResetWheelSpinCooldown", ctx, accountID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResetWheelSpinCooldown indicates an expected call of ResetWheelSpinCooldown.
+func (mr *MockClientProfileUseCaseMockRecorder) ResetWheelSpinCooldown(ctx, accountID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetWheelSpinCooldown", reflect.TypeOf((*MockClientProfileUseCase)(nil).ResetWheelSpinCooldown), ctx, accountID)
 }

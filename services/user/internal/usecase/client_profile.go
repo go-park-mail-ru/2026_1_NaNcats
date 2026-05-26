@@ -20,6 +20,9 @@ type ClientProfileUseCase interface {
 	GetByAccountID(ctx context.Context, accountID int64) (domain.ClientProfile, error)
 	ActivateStreakFreeze(ctx context.Context, accountID int64) error
 	IncrementStreak(ctx context.Context, accountID int64) error
+
+	ClaimWheelSpin(ctx context.Context, accountID int64) error
+	ResetWheelSpinCooldown(ctx context.Context, accountID int64) error
 }
 
 type clientProfileUseCase struct {
@@ -152,4 +155,28 @@ func startOfISOWeek(t time.Time) time.Time {
 	}
 	monday := t.AddDate(0, 0, -wd+1)
 	return time.Date(monday.Year(), monday.Month(), monday.Day(), 0, 0, 0, 0, t.Location())
+}
+
+func (u *clientProfileUseCase) ClaimWheelSpin(ctx context.Context, accountID int64) error {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(attribute.Int64("user.id", accountID))
+
+	err := u.repo.ClaimWheelSpin(ctx, accountID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (u *clientProfileUseCase) ResetWheelSpinCooldown(ctx context.Context, accountID int64) error {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(attribute.Int64("user.id", accountID))
+
+	err := u.repo.ResetWheelSpinCooldown(ctx, accountID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

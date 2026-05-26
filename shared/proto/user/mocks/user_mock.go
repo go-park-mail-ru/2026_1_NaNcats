@@ -83,6 +83,26 @@ func (mr *MockUserServiceClientMockRecorder) CheckUserExists(ctx, in any, opts .
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckUserExists", reflect.TypeOf((*MockUserServiceClient)(nil).CheckUserExists), varargs...)
 }
 
+// ClaimWheelSpin mocks base method.
+func (m *MockUserServiceClient) ClaimWheelSpin(ctx context.Context, in *user.ClaimWheelSpinRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ClaimWheelSpin", varargs...)
+	ret0, _ := ret[0].(*emptypb.Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ClaimWheelSpin indicates an expected call of ClaimWheelSpin.
+func (mr *MockUserServiceClientMockRecorder) ClaimWheelSpin(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClaimWheelSpin", reflect.TypeOf((*MockUserServiceClient)(nil).ClaimWheelSpin), varargs...)
+}
+
 // CreateClientProfile mocks base method.
 func (m *MockUserServiceClient) CreateClientProfile(ctx context.Context, in *user.CreateClientProfileRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
@@ -321,6 +341,26 @@ func (mr *MockUserServiceClientMockRecorder) OnWheelSpin(ctx, in any, opts ...an
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnWheelSpin", reflect.TypeOf((*MockUserServiceClient)(nil).OnWheelSpin), varargs...)
+}
+
+// ResetWheelSpinCooldown mocks base method.
+func (m *MockUserServiceClient) ResetWheelSpinCooldown(ctx context.Context, in *user.ResetWheelSpinCooldownRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ResetWheelSpinCooldown", varargs...)
+	ret0, _ := ret[0].(*emptypb.Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ResetWheelSpinCooldown indicates an expected call of ResetWheelSpinCooldown.
+func (mr *MockUserServiceClientMockRecorder) ResetWheelSpinCooldown(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetWheelSpinCooldown", reflect.TypeOf((*MockUserServiceClient)(nil).ResetWheelSpinCooldown), varargs...)
 }
 
 // ResolvePublicID mocks base method.

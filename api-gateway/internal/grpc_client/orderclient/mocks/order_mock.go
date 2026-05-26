@@ -85,6 +85,21 @@ func (mr *MockOrderClientMockRecorder) GetOrders(ctx, userID, limit, offset any)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrders", reflect.TypeOf((*MockOrderClient)(nil).GetOrders), ctx, userID, limit, offset)
 }
 
+// GetTrendingBrands mocks base method.
+func (m *MockOrderClient) GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTrendingBrands", ctx, windowDays, limit)
+	ret0, _ := ret[0].([]int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTrendingBrands indicates an expected call of GetTrendingBrands.
+func (mr *MockOrderClientMockRecorder) GetTrendingBrands(ctx, windowDays, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTrendingBrands", reflect.TypeOf((*MockOrderClient)(nil).GetTrendingBrands), ctx, windowDays, limit)
+}
+
 // PayForFriend mocks base method.
 func (m *MockOrderClient) PayForFriend(ctx context.Context, splitID string, payerID int64, paymentMethodID, idempotencyKey string) error {
 	m.ctrl.T.Helper()

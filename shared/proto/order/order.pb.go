@@ -1717,7 +1717,7 @@ const file_order_order_proto_rawDesc = "" +
 	"\x10_discount_amountB\x13\n" +
 	"\x11_discount_percentB\x16\n" +
 	"\x14_restaurant_brand_idB\x13\n" +
-	"\x11_min_order_amount2\xa3\x05\n" +
+	"\x11_min_order_amount2\xcf\x04\n" +
 	"\fOrderService\x12D\n" +
 	"\vCreateOrder\x12\x19.order.CreateOrderRequest\x1a\x1a.order.CreateOrderResponse\x12>\n" +
 	"\tGetOrders\x12\x17.order.GetOrdersRequest\x1a\x18.order.GetOrdersResponse\x12R\n" +
@@ -1726,14 +1726,14 @@ const file_order_order_proto_rawDesc = "" +
 	"\vCancelOrder\x12\x19.order.CancelOrderRequest\x1a\x16.google.protobuf.Empty\x12H\n" +
 	"\x11GetUserPaidBrands\x12\x1f.order.GetUserPaidBrandsRequest\x1a\x12.order.BrandIDList\x12H\n" +
 	"\x11GetTrendingBrands\x12\x1f.order.GetTrendingBrandsRequest\x1a\x12.order.BrandIDList\x12K\n" +
-	"\x13GetTopDishesByBrand\x12!.order.GetTopDishesByBrandRequest\x1a\x11.order.DishIDList\x12R\n" +
-	"\x17CreateAndBindWheelPromo\x12%.order.CreateAndBindWheelPromoRequest\x1a\x10.order.Promocode2\xfe\x02\n" +
+	"\x13GetTopDishesByBrand\x12!.order.GetTopDishesByBrandRequest\x1a\x11.order.DishIDList2\xd2\x03\n" +
 	"\fPromoService\x12B\n" +
 	"\rGetUserPromos\x12\x1b.order.GetUserPromosRequest\x1a\x14.order.PromocodeList\x12N\n" +
 	"\x13GetRestaurantPromos\x12!.order.GetRestaurantPromosRequest\x1a\x14.order.PromocodeList\x12>\n" +
 	"\rBindPromocode\x12\x1b.order.BindPromocodeRequest\x1a\x10.order.Promocode\x12V\n" +
 	"\x11ValidatePromocode\x12\x1f.order.ValidatePromocodeRequest\x1a .order.ValidatePromocodeResponse\x12B\n" +
-	"\fUsePromocode\x12\x1a.order.UsePromocodeRequest\x1a\x16.google.protobuf.EmptyB>Z<github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/orderb\x06proto3"
+	"\fUsePromocode\x12\x1a.order.UsePromocodeRequest\x1a\x16.google.protobuf.Empty\x12R\n" +
+	"\x17CreateAndBindWheelPromo\x12%.order.CreateAndBindWheelPromoRequest\x1a\x10.order.PromocodeB>Z<github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/orderb\x06proto3"
 
 var (
 	file_order_order_proto_rawDescOnce sync.Once
@@ -1792,12 +1792,12 @@ var file_order_order_proto_depIdxs = []int32{
 	18, // 11: order.OrderService.GetUserPaidBrands:input_type -> order.GetUserPaidBrandsRequest
 	19, // 12: order.OrderService.GetTrendingBrands:input_type -> order.GetTrendingBrandsRequest
 	21, // 13: order.OrderService.GetTopDishesByBrand:input_type -> order.GetTopDishesByBrandRequest
-	23, // 14: order.OrderService.CreateAndBindWheelPromo:input_type -> order.CreateAndBindWheelPromoRequest
-	12, // 15: order.PromoService.GetUserPromos:input_type -> order.GetUserPromosRequest
-	13, // 16: order.PromoService.GetRestaurantPromos:input_type -> order.GetRestaurantPromosRequest
-	14, // 17: order.PromoService.BindPromocode:input_type -> order.BindPromocodeRequest
-	15, // 18: order.PromoService.ValidatePromocode:input_type -> order.ValidatePromocodeRequest
-	17, // 19: order.PromoService.UsePromocode:input_type -> order.UsePromocodeRequest
+	12, // 14: order.PromoService.GetUserPromos:input_type -> order.GetUserPromosRequest
+	13, // 15: order.PromoService.GetRestaurantPromos:input_type -> order.GetRestaurantPromosRequest
+	14, // 16: order.PromoService.BindPromocode:input_type -> order.BindPromocodeRequest
+	15, // 17: order.PromoService.ValidatePromocode:input_type -> order.ValidatePromocodeRequest
+	17, // 18: order.PromoService.UsePromocode:input_type -> order.UsePromocodeRequest
+	23, // 19: order.PromoService.CreateAndBindWheelPromo:input_type -> order.CreateAndBindWheelPromoRequest
 	5,  // 20: order.OrderService.CreateOrder:output_type -> order.CreateOrderResponse
 	7,  // 21: order.OrderService.GetOrders:output_type -> order.GetOrdersResponse
 	26, // 22: order.OrderService.UpdateOrderStatusByPaymentID:output_type -> google.protobuf.Empty
@@ -1806,12 +1806,12 @@ var file_order_order_proto_depIdxs = []int32{
 	20, // 25: order.OrderService.GetUserPaidBrands:output_type -> order.BrandIDList
 	20, // 26: order.OrderService.GetTrendingBrands:output_type -> order.BrandIDList
 	22, // 27: order.OrderService.GetTopDishesByBrand:output_type -> order.DishIDList
-	10, // 28: order.OrderService.CreateAndBindWheelPromo:output_type -> order.Promocode
-	11, // 29: order.PromoService.GetUserPromos:output_type -> order.PromocodeList
-	11, // 30: order.PromoService.GetRestaurantPromos:output_type -> order.PromocodeList
-	10, // 31: order.PromoService.BindPromocode:output_type -> order.Promocode
-	16, // 32: order.PromoService.ValidatePromocode:output_type -> order.ValidatePromocodeResponse
-	26, // 33: order.PromoService.UsePromocode:output_type -> google.protobuf.Empty
+	11, // 28: order.PromoService.GetUserPromos:output_type -> order.PromocodeList
+	11, // 29: order.PromoService.GetRestaurantPromos:output_type -> order.PromocodeList
+	10, // 30: order.PromoService.BindPromocode:output_type -> order.Promocode
+	16, // 31: order.PromoService.ValidatePromocode:output_type -> order.ValidatePromocodeResponse
+	26, // 32: order.PromoService.UsePromocode:output_type -> google.protobuf.Empty
+	10, // 33: order.PromoService.CreateAndBindWheelPromo:output_type -> order.Promocode
 	20, // [20:34] is the sub-list for method output_type
 	6,  // [6:20] is the sub-list for method input_type
 	6,  // [6:6] is the sub-list for extension type_name

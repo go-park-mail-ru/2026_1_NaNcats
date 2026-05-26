@@ -28,7 +28,6 @@ const (
 	OrderService_GetUserPaidBrands_FullMethodName            = "/order.OrderService/GetUserPaidBrands"
 	OrderService_GetTrendingBrands_FullMethodName            = "/order.OrderService/GetTrendingBrands"
 	OrderService_GetTopDishesByBrand_FullMethodName          = "/order.OrderService/GetTopDishesByBrand"
-	OrderService_CreateAndBindWheelPromo_FullMethodName      = "/order.OrderService/CreateAndBindWheelPromo"
 )
 
 // OrderServiceClient is the client API for OrderService service.
@@ -53,8 +52,6 @@ type OrderServiceClient interface {
 	GetTrendingBrands(ctx context.Context, in *GetTrendingBrandsRequest, opts ...grpc.CallOption) (*BrandIDList, error)
 	// Возвращает топ-N блюд ресторана по сумме quantity за window_days, paid|finished.
 	GetTopDishesByBrand(ctx context.Context, in *GetTopDishesByBrandRequest, opts ...grpc.CallOption) (*DishIDList, error)
-	// Создание уникального промокода и привязка его к пользователю
-	CreateAndBindWheelPromo(ctx context.Context, in *CreateAndBindWheelPromoRequest, opts ...grpc.CallOption) (*Promocode, error)
 }
 
 type orderServiceClient struct {
@@ -145,16 +142,6 @@ func (c *orderServiceClient) GetTopDishesByBrand(ctx context.Context, in *GetTop
 	return out, nil
 }
 
-func (c *orderServiceClient) CreateAndBindWheelPromo(ctx context.Context, in *CreateAndBindWheelPromoRequest, opts ...grpc.CallOption) (*Promocode, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Promocode)
-	err := c.cc.Invoke(ctx, OrderService_CreateAndBindWheelPromo_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // OrderServiceServer is the server API for OrderService service.
 // All implementations must embed UnimplementedOrderServiceServer
 // for forward compatibility.
@@ -177,8 +164,6 @@ type OrderServiceServer interface {
 	GetTrendingBrands(context.Context, *GetTrendingBrandsRequest) (*BrandIDList, error)
 	// Возвращает топ-N блюд ресторана по сумме quantity за window_days, paid|finished.
 	GetTopDishesByBrand(context.Context, *GetTopDishesByBrandRequest) (*DishIDList, error)
-	// Создание уникального промокода и привязка его к пользователю
-	CreateAndBindWheelPromo(context.Context, *CreateAndBindWheelPromoRequest) (*Promocode, error)
 	mustEmbedUnimplementedOrderServiceServer()
 }
 
@@ -212,9 +197,6 @@ func (UnimplementedOrderServiceServer) GetTrendingBrands(context.Context, *GetTr
 }
 func (UnimplementedOrderServiceServer) GetTopDishesByBrand(context.Context, *GetTopDishesByBrandRequest) (*DishIDList, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetTopDishesByBrand not implemented")
-}
-func (UnimplementedOrderServiceServer) CreateAndBindWheelPromo(context.Context, *CreateAndBindWheelPromoRequest) (*Promocode, error) {
-	return nil, status.Error(codes.Unimplemented, "method CreateAndBindWheelPromo not implemented")
 }
 func (UnimplementedOrderServiceServer) mustEmbedUnimplementedOrderServiceServer() {}
 func (UnimplementedOrderServiceServer) testEmbeddedByValue()                      {}
@@ -381,24 +363,6 @@ func _OrderService_GetTopDishesByBrand_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _OrderService_CreateAndBindWheelPromo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateAndBindWheelPromoRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(OrderServiceServer).CreateAndBindWheelPromo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: OrderService_CreateAndBindWheelPromo_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(OrderServiceServer).CreateAndBindWheelPromo(ctx, req.(*CreateAndBindWheelPromoRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // OrderService_ServiceDesc is the grpc.ServiceDesc for OrderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -438,21 +402,18 @@ var OrderService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "GetTopDishesByBrand",
 			Handler:    _OrderService_GetTopDishesByBrand_Handler,
 		},
-		{
-			MethodName: "CreateAndBindWheelPromo",
-			Handler:    _OrderService_CreateAndBindWheelPromo_Handler,
-		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "order/order.proto",
 }
 
 const (
-	PromoService_GetUserPromos_FullMethodName       = "/order.PromoService/GetUserPromos"
-	PromoService_GetRestaurantPromos_FullMethodName = "/order.PromoService/GetRestaurantPromos"
-	PromoService_BindPromocode_FullMethodName       = "/order.PromoService/BindPromocode"
-	PromoService_ValidatePromocode_FullMethodName   = "/order.PromoService/ValidatePromocode"
-	PromoService_UsePromocode_FullMethodName        = "/order.PromoService/UsePromocode"
+	PromoService_GetUserPromos_FullMethodName           = "/order.PromoService/GetUserPromos"
+	PromoService_GetRestaurantPromos_FullMethodName     = "/order.PromoService/GetRestaurantPromos"
+	PromoService_BindPromocode_FullMethodName           = "/order.PromoService/BindPromocode"
+	PromoService_ValidatePromocode_FullMethodName       = "/order.PromoService/ValidatePromocode"
+	PromoService_UsePromocode_FullMethodName            = "/order.PromoService/UsePromocode"
+	PromoService_CreateAndBindWheelPromo_FullMethodName = "/order.PromoService/CreateAndBindWheelPromo"
 )
 
 // PromoServiceClient is the client API for PromoService service.
@@ -472,6 +433,8 @@ type PromoServiceClient interface {
 	ValidatePromocode(ctx context.Context, in *ValidatePromocodeRequest, opts ...grpc.CallOption) (*ValidatePromocodeResponse, error)
 	// Фиксация использования промокода после оформления заказа
 	UsePromocode(ctx context.Context, in *UsePromocodeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Создание уникального промокода и привязка его к пользователю
+	CreateAndBindWheelPromo(ctx context.Context, in *CreateAndBindWheelPromoRequest, opts ...grpc.CallOption) (*Promocode, error)
 }
 
 type promoServiceClient struct {
@@ -532,6 +495,16 @@ func (c *promoServiceClient) UsePromocode(ctx context.Context, in *UsePromocodeR
 	return out, nil
 }
 
+func (c *promoServiceClient) CreateAndBindWheelPromo(ctx context.Context, in *CreateAndBindWheelPromoRequest, opts ...grpc.CallOption) (*Promocode, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Promocode)
+	err := c.cc.Invoke(ctx, PromoService_CreateAndBindWheelPromo_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PromoServiceServer is the server API for PromoService service.
 // All implementations must embed UnimplementedPromoServiceServer
 // for forward compatibility.
@@ -549,6 +522,8 @@ type PromoServiceServer interface {
 	ValidatePromocode(context.Context, *ValidatePromocodeRequest) (*ValidatePromocodeResponse, error)
 	// Фиксация использования промокода после оформления заказа
 	UsePromocode(context.Context, *UsePromocodeRequest) (*emptypb.Empty, error)
+	// Создание уникального промокода и привязка его к пользователю
+	CreateAndBindWheelPromo(context.Context, *CreateAndBindWheelPromoRequest) (*Promocode, error)
 	mustEmbedUnimplementedPromoServiceServer()
 }
 
@@ -573,6 +548,9 @@ func (UnimplementedPromoServiceServer) ValidatePromocode(context.Context, *Valid
 }
 func (UnimplementedPromoServiceServer) UsePromocode(context.Context, *UsePromocodeRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method UsePromocode not implemented")
+}
+func (UnimplementedPromoServiceServer) CreateAndBindWheelPromo(context.Context, *CreateAndBindWheelPromoRequest) (*Promocode, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateAndBindWheelPromo not implemented")
 }
 func (UnimplementedPromoServiceServer) mustEmbedUnimplementedPromoServiceServer() {}
 func (UnimplementedPromoServiceServer) testEmbeddedByValue()                      {}
@@ -685,6 +663,24 @@ func _PromoService_UsePromocode_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PromoService_CreateAndBindWheelPromo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAndBindWheelPromoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PromoServiceServer).CreateAndBindWheelPromo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PromoService_CreateAndBindWheelPromo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PromoServiceServer).CreateAndBindWheelPromo(ctx, req.(*CreateAndBindWheelPromoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PromoService_ServiceDesc is the grpc.ServiceDesc for PromoService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -711,6 +707,10 @@ var PromoService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UsePromocode",
 			Handler:    _PromoService_UsePromocode_Handler,
+		},
+		{
+			MethodName: "CreateAndBindWheelPromo",
+			Handler:    _PromoService_CreateAndBindWheelPromo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

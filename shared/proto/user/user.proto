@@ -46,6 +46,10 @@ service UserService {
   rpc IncrementStreak (IncrementStreakRequest) returns (google.protobuf.Empty);
   // Метод-хук, вызываемый при любой прокрутке колеса
   rpc OnWheelSpin (OnWheelSpinRequest) returns (google.protobuf.Empty);
+  // Метод проверки кулдауна и резервирования попытки прокрутки колеса
+  rpc ClaimWheelSpin (ClaimWheelSpinRequest) returns (google.protobuf.Empty);
+  // Сброс кулдауна колеса (при выпадении реролла)
+  rpc ResetWheelSpinCooldown (ResetWheelSpinCooldownRequest) returns (google.protobuf.Empty);
 }
 
 
@@ -205,5 +209,14 @@ message IncrementStreakRequest {
 }
 
 message OnWheelSpinRequest {
+  int64 user_id = 1;
+  optional string won_achievement_code = 2;
+}
+
+message ClaimWheelSpinRequest {
+  int64 user_id = 1;
+}
+
+message ResetWheelSpinCooldownRequest {
   int64 user_id = 1;
 }

@@ -18,7 +18,7 @@ type AchievementUseCase interface {
 	ListAll(ctx context.Context) ([]domain.Achievement, error)
 	ListForUser(ctx context.Context, accountID int64) ([]domain.UserAchievement, error)
 	OnOrderPaid(ctx context.Context, accountID, restaurantID int64, paidAt time.Time) error
-	OnWheelSpin(ctx context.Context, accountID int64) error
+	OnWheelSpin(ctx context.Context, accountID int64, wonCode string) error
 }
 
 type achievementUseCase struct {
@@ -76,11 +76,19 @@ func (u *achievementUseCase) OnOrderPaid(ctx context.Context, accountID, restaur
 	return nil
 }
 
-func (u *achievementUseCase) OnWheelSpin(ctx context.Context, accountID int64) error {
+func (u *achievementUseCase) OnWheelSpin(ctx context.Context, accountID int64, wonCode string) error {
 	span := trace.SpanFromContext(ctx)
-	span.SetAttributes(attribute.Int64("user.id", accountID))
+	span.SetAttributes(
+		attribute.Int64("user.id", accountID),
+		attribute.String("wheel.won_achievement_code", wonCode),
+	)
 
-	u.maybeAward(ctx, accountID, "first_spin", true)
+	u.maybeAward(ctx, accountID, domain.AchievementFirstSpin, true)
+
+	if wonCode != "" {
+		u.maybeAward(ctx, accountID, wonCode, true)
+	}
+
 	return nil
 }
 

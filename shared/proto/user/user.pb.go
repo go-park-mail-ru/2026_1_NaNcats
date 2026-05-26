@@ -1624,10 +1624,11 @@ func (x *IncrementStreakRequest) GetUserId() int64 {
 }
 
 type OnWheelSpinRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	UserId             int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	WonAchievementCode *string                `protobuf:"bytes,2,opt,name=won_achievement_code,json=wonAchievementCode,proto3,oneof" json:"won_achievement_code,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *OnWheelSpinRequest) Reset() {
@@ -1661,6 +1662,101 @@ func (*OnWheelSpinRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *OnWheelSpinRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *OnWheelSpinRequest) GetWonAchievementCode() string {
+	if x != nil && x.WonAchievementCode != nil {
+		return *x.WonAchievementCode
+	}
+	return ""
+}
+
+type ClaimWheelSpinRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ClaimWheelSpinRequest) Reset() {
+	*x = ClaimWheelSpinRequest{}
+	mi := &file_user_user_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClaimWheelSpinRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClaimWheelSpinRequest) ProtoMessage() {}
+
+func (x *ClaimWheelSpinRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClaimWheelSpinRequest.ProtoReflect.Descriptor instead.
+func (*ClaimWheelSpinRequest) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *ClaimWheelSpinRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+type ResetWheelSpinCooldownRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResetWheelSpinCooldownRequest) Reset() {
+	*x = ResetWheelSpinCooldownRequest{}
+	mi := &file_user_user_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResetWheelSpinCooldownRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResetWheelSpinCooldownRequest) ProtoMessage() {}
+
+func (x *ResetWheelSpinCooldownRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResetWheelSpinCooldownRequest.ProtoReflect.Descriptor instead.
+func (*ResetWheelSpinCooldownRequest) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *ResetWheelSpinCooldownRequest) GetUserId() int64 {
 	if x != nil {
 		return x.UserId
 	}
@@ -1782,10 +1878,15 @@ const file_user_user_proto_rawDesc = "" +
 	"\x1bActivateStreakFreezeRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\"1\n" +
 	"\x16IncrementStreakRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\"-\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\"}\n" +
 	"\x12OnWheelSpinRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId2\xb4\n" +
-	"\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x125\n" +
+	"\x14won_achievement_code\x18\x02 \x01(\tH\x00R\x12wonAchievementCode\x88\x01\x01B\x17\n" +
+	"\x15_won_achievement_code\"0\n" +
+	"\x15ClaimWheelSpinRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\"8\n" +
+	"\x1dResetWheelSpinCooldownRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId2\xd2\v\n" +
 	"\vUserService\x12?\n" +
 	"\n" +
 	"CreateUser\x12\x17.user.CreateUserRequest\x1a\x18.user.CreateUserResponse\x12O\n" +
@@ -1806,7 +1907,9 @@ const file_user_user_proto_rawDesc = "" +
 	"\x13GetUserAchievements\x12 .user.GetUserAchievementsRequest\x1a!.user.GetUserAchievementsResponse\x12Q\n" +
 	"\x14ActivateStreakFreeze\x12!.user.ActivateStreakFreezeRequest\x1a\x16.google.protobuf.Empty\x12G\n" +
 	"\x0fIncrementStreak\x12\x1c.user.IncrementStreakRequest\x1a\x16.google.protobuf.Empty\x12?\n" +
-	"\vOnWheelSpin\x12\x18.user.OnWheelSpinRequest\x1a\x16.google.protobuf.EmptyB=Z;github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/userb\x06proto3"
+	"\vOnWheelSpin\x12\x18.user.OnWheelSpinRequest\x1a\x16.google.protobuf.Empty\x12E\n" +
+	"\x0eClaimWheelSpin\x12\x1b.user.ClaimWheelSpinRequest\x1a\x16.google.protobuf.Empty\x12U\n" +
+	"\x16ResetWheelSpinCooldown\x12#.user.ResetWheelSpinCooldownRequest\x1a\x16.google.protobuf.EmptyB=Z;github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/userb\x06proto3"
 
 var (
 	file_user_user_proto_rawDescOnce sync.Once
@@ -1820,55 +1923,57 @@ func file_user_user_proto_rawDescGZIP() []byte {
 	return file_user_user_proto_rawDescData
 }
 
-var file_user_user_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
+var file_user_user_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
 var file_user_user_proto_goTypes = []any{
-	(*User)(nil),                        // 0: user.User
-	(*ClientProfile)(nil),               // 1: user.ClientProfile
-	(*CreateUserRequest)(nil),           // 2: user.CreateUserRequest
-	(*CreateUserResponse)(nil),          // 3: user.CreateUserResponse
-	(*CreateClientProfileRequest)(nil),  // 4: user.CreateClientProfileRequest
-	(*UpdateProfileRequest)(nil),        // 5: user.UpdateProfileRequest
-	(*UpdateAvatarRequest)(nil),         // 6: user.UpdateAvatarRequest
-	(*UpdateAvatarResponse)(nil),        // 7: user.UpdateAvatarResponse
-	(*DeleteAvatarRequest)(nil),         // 8: user.DeleteAvatarRequest
-	(*DeleteAvatarResponse)(nil),        // 9: user.DeleteAvatarResponse
-	(*GetUserByIDRequest)(nil),          // 10: user.GetUserByIDRequest
-	(*GetUserByEmailRequest)(nil),       // 11: user.GetUserByEmailRequest
-	(*GetUserResponse)(nil),             // 12: user.GetUserResponse
-	(*CheckUserExistsRequest)(nil),      // 13: user.CheckUserExistsRequest
-	(*CheckUserExistsResponse)(nil),     // 14: user.CheckUserExistsResponse
-	(*GetUserProfileRequest)(nil),       // 15: user.GetUserProfileRequest
-	(*GetUserProfileResponse)(nil),      // 16: user.GetUserProfileResponse
-	(*UpdateUserRoleRequest)(nil),       // 17: user.UpdateUserRoleRequest
-	(*GetUsersByIDsRequest)(nil),        // 18: user.GetUsersByIDsRequest
-	(*GetUsersByIDsResponse)(nil),       // 19: user.GetUsersByIDsResponse
-	(*ResolvePublicIDRequest)(nil),      // 20: user.ResolvePublicIDRequest
-	(*ResolvePublicIDResponse)(nil),     // 21: user.ResolvePublicIDResponse
-	(*OnOrderPaidRequest)(nil),          // 22: user.OnOrderPaidRequest
-	(*Achievement)(nil),                 // 23: user.Achievement
-	(*ListAchievementsResponse)(nil),    // 24: user.ListAchievementsResponse
-	(*GetUserAchievementsRequest)(nil),  // 25: user.GetUserAchievementsRequest
-	(*UserAchievement)(nil),             // 26: user.UserAchievement
-	(*GetUserAchievementsResponse)(nil), // 27: user.GetUserAchievementsResponse
-	(*ActivateStreakFreezeRequest)(nil), // 28: user.ActivateStreakFreezeRequest
-	(*IncrementStreakRequest)(nil),      // 29: user.IncrementStreakRequest
-	(*OnWheelSpinRequest)(nil),          // 30: user.OnWheelSpinRequest
-	nil,                                 // 31: user.GetUsersByIDsResponse.UsersEntry
-	(*timestamppb.Timestamp)(nil),       // 32: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),               // 33: google.protobuf.Empty
+	(*User)(nil),                          // 0: user.User
+	(*ClientProfile)(nil),                 // 1: user.ClientProfile
+	(*CreateUserRequest)(nil),             // 2: user.CreateUserRequest
+	(*CreateUserResponse)(nil),            // 3: user.CreateUserResponse
+	(*CreateClientProfileRequest)(nil),    // 4: user.CreateClientProfileRequest
+	(*UpdateProfileRequest)(nil),          // 5: user.UpdateProfileRequest
+	(*UpdateAvatarRequest)(nil),           // 6: user.UpdateAvatarRequest
+	(*UpdateAvatarResponse)(nil),          // 7: user.UpdateAvatarResponse
+	(*DeleteAvatarRequest)(nil),           // 8: user.DeleteAvatarRequest
+	(*DeleteAvatarResponse)(nil),          // 9: user.DeleteAvatarResponse
+	(*GetUserByIDRequest)(nil),            // 10: user.GetUserByIDRequest
+	(*GetUserByEmailRequest)(nil),         // 11: user.GetUserByEmailRequest
+	(*GetUserResponse)(nil),               // 12: user.GetUserResponse
+	(*CheckUserExistsRequest)(nil),        // 13: user.CheckUserExistsRequest
+	(*CheckUserExistsResponse)(nil),       // 14: user.CheckUserExistsResponse
+	(*GetUserProfileRequest)(nil),         // 15: user.GetUserProfileRequest
+	(*GetUserProfileResponse)(nil),        // 16: user.GetUserProfileResponse
+	(*UpdateUserRoleRequest)(nil),         // 17: user.UpdateUserRoleRequest
+	(*GetUsersByIDsRequest)(nil),          // 18: user.GetUsersByIDsRequest
+	(*GetUsersByIDsResponse)(nil),         // 19: user.GetUsersByIDsResponse
+	(*ResolvePublicIDRequest)(nil),        // 20: user.ResolvePublicIDRequest
+	(*ResolvePublicIDResponse)(nil),       // 21: user.ResolvePublicIDResponse
+	(*OnOrderPaidRequest)(nil),            // 22: user.OnOrderPaidRequest
+	(*Achievement)(nil),                   // 23: user.Achievement
+	(*ListAchievementsResponse)(nil),      // 24: user.ListAchievementsResponse
+	(*GetUserAchievementsRequest)(nil),    // 25: user.GetUserAchievementsRequest
+	(*UserAchievement)(nil),               // 26: user.UserAchievement
+	(*GetUserAchievementsResponse)(nil),   // 27: user.GetUserAchievementsResponse
+	(*ActivateStreakFreezeRequest)(nil),   // 28: user.ActivateStreakFreezeRequest
+	(*IncrementStreakRequest)(nil),        // 29: user.IncrementStreakRequest
+	(*OnWheelSpinRequest)(nil),            // 30: user.OnWheelSpinRequest
+	(*ClaimWheelSpinRequest)(nil),         // 31: user.ClaimWheelSpinRequest
+	(*ResetWheelSpinCooldownRequest)(nil), // 32: user.ResetWheelSpinCooldownRequest
+	nil,                                   // 33: user.GetUsersByIDsResponse.UsersEntry
+	(*timestamppb.Timestamp)(nil),         // 34: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),                 // 35: google.protobuf.Empty
 }
 var file_user_user_proto_depIdxs = []int32{
-	32, // 0: user.ClientProfile.bonus_category_expires_at:type_name -> google.protobuf.Timestamp
-	32, // 1: user.ClientProfile.bonus_expires_at:type_name -> google.protobuf.Timestamp
-	32, // 2: user.ClientProfile.last_order_date:type_name -> google.protobuf.Timestamp
-	32, // 3: user.ClientProfile.premium_expires_at:type_name -> google.protobuf.Timestamp
+	34, // 0: user.ClientProfile.bonus_category_expires_at:type_name -> google.protobuf.Timestamp
+	34, // 1: user.ClientProfile.bonus_expires_at:type_name -> google.protobuf.Timestamp
+	34, // 2: user.ClientProfile.last_order_date:type_name -> google.protobuf.Timestamp
+	34, // 3: user.ClientProfile.premium_expires_at:type_name -> google.protobuf.Timestamp
 	0,  // 4: user.GetUserResponse.user:type_name -> user.User
 	0,  // 5: user.GetUserProfileResponse.user:type_name -> user.User
 	1,  // 6: user.GetUserProfileResponse.profile:type_name -> user.ClientProfile
-	31, // 7: user.GetUsersByIDsResponse.users:type_name -> user.GetUsersByIDsResponse.UsersEntry
-	32, // 8: user.OnOrderPaidRequest.paid_at:type_name -> google.protobuf.Timestamp
+	33, // 7: user.GetUsersByIDsResponse.users:type_name -> user.GetUsersByIDsResponse.UsersEntry
+	34, // 8: user.OnOrderPaidRequest.paid_at:type_name -> google.protobuf.Timestamp
 	23, // 9: user.ListAchievementsResponse.achievements:type_name -> user.Achievement
-	32, // 10: user.UserAchievement.awarded_at:type_name -> google.protobuf.Timestamp
+	34, // 10: user.UserAchievement.awarded_at:type_name -> google.protobuf.Timestamp
 	26, // 11: user.GetUserAchievementsResponse.achievements:type_name -> user.UserAchievement
 	0,  // 12: user.GetUsersByIDsResponse.UsersEntry.value:type_name -> user.User
 	2,  // 13: user.UserService.CreateUser:input_type -> user.CreateUserRequest
@@ -1884,31 +1989,35 @@ var file_user_user_proto_depIdxs = []int32{
 	18, // 23: user.UserService.GetUsersByIDs:input_type -> user.GetUsersByIDsRequest
 	20, // 24: user.UserService.ResolvePublicID:input_type -> user.ResolvePublicIDRequest
 	22, // 25: user.UserService.OnOrderPaid:input_type -> user.OnOrderPaidRequest
-	33, // 26: user.UserService.ListAchievements:input_type -> google.protobuf.Empty
+	35, // 26: user.UserService.ListAchievements:input_type -> google.protobuf.Empty
 	25, // 27: user.UserService.GetUserAchievements:input_type -> user.GetUserAchievementsRequest
 	28, // 28: user.UserService.ActivateStreakFreeze:input_type -> user.ActivateStreakFreezeRequest
 	29, // 29: user.UserService.IncrementStreak:input_type -> user.IncrementStreakRequest
 	30, // 30: user.UserService.OnWheelSpin:input_type -> user.OnWheelSpinRequest
-	3,  // 31: user.UserService.CreateUser:output_type -> user.CreateUserResponse
-	33, // 32: user.UserService.CreateClientProfile:output_type -> google.protobuf.Empty
-	33, // 33: user.UserService.UpdateProfile:output_type -> google.protobuf.Empty
-	7,  // 34: user.UserService.UpdateAvatar:output_type -> user.UpdateAvatarResponse
-	9,  // 35: user.UserService.DeleteAvatar:output_type -> user.DeleteAvatarResponse
-	12, // 36: user.UserService.GetByID:output_type -> user.GetUserResponse
-	12, // 37: user.UserService.GetByEmail:output_type -> user.GetUserResponse
-	14, // 38: user.UserService.CheckUserExists:output_type -> user.CheckUserExistsResponse
-	16, // 39: user.UserService.GetUserProfile:output_type -> user.GetUserProfileResponse
-	33, // 40: user.UserService.UpdateUserRole:output_type -> google.protobuf.Empty
-	19, // 41: user.UserService.GetUsersByIDs:output_type -> user.GetUsersByIDsResponse
-	21, // 42: user.UserService.ResolvePublicID:output_type -> user.ResolvePublicIDResponse
-	33, // 43: user.UserService.OnOrderPaid:output_type -> google.protobuf.Empty
-	24, // 44: user.UserService.ListAchievements:output_type -> user.ListAchievementsResponse
-	27, // 45: user.UserService.GetUserAchievements:output_type -> user.GetUserAchievementsResponse
-	33, // 46: user.UserService.ActivateStreakFreeze:output_type -> google.protobuf.Empty
-	33, // 47: user.UserService.IncrementStreak:output_type -> google.protobuf.Empty
-	33, // 48: user.UserService.OnWheelSpin:output_type -> google.protobuf.Empty
-	31, // [31:49] is the sub-list for method output_type
-	13, // [13:31] is the sub-list for method input_type
+	31, // 31: user.UserService.ClaimWheelSpin:input_type -> user.ClaimWheelSpinRequest
+	32, // 32: user.UserService.ResetWheelSpinCooldown:input_type -> user.ResetWheelSpinCooldownRequest
+	3,  // 33: user.UserService.CreateUser:output_type -> user.CreateUserResponse
+	35, // 34: user.UserService.CreateClientProfile:output_type -> google.protobuf.Empty
+	35, // 35: user.UserService.UpdateProfile:output_type -> google.protobuf.Empty
+	7,  // 36: user.UserService.UpdateAvatar:output_type -> user.UpdateAvatarResponse
+	9,  // 37: user.UserService.DeleteAvatar:output_type -> user.DeleteAvatarResponse
+	12, // 38: user.UserService.GetByID:output_type -> user.GetUserResponse
+	12, // 39: user.UserService.GetByEmail:output_type -> user.GetUserResponse
+	14, // 40: user.UserService.CheckUserExists:output_type -> user.CheckUserExistsResponse
+	16, // 41: user.UserService.GetUserProfile:output_type -> user.GetUserProfileResponse
+	35, // 42: user.UserService.UpdateUserRole:output_type -> google.protobuf.Empty
+	19, // 43: user.UserService.GetUsersByIDs:output_type -> user.GetUsersByIDsResponse
+	21, // 44: user.UserService.ResolvePublicID:output_type -> user.ResolvePublicIDResponse
+	35, // 45: user.UserService.OnOrderPaid:output_type -> google.protobuf.Empty
+	24, // 46: user.UserService.ListAchievements:output_type -> user.ListAchievementsResponse
+	27, // 47: user.UserService.GetUserAchievements:output_type -> user.GetUserAchievementsResponse
+	35, // 48: user.UserService.ActivateStreakFreeze:output_type -> google.protobuf.Empty
+	35, // 49: user.UserService.IncrementStreak:output_type -> google.protobuf.Empty
+	35, // 50: user.UserService.OnWheelSpin:output_type -> google.protobuf.Empty
+	35, // 51: user.UserService.ClaimWheelSpin:output_type -> google.protobuf.Empty
+	35, // 52: user.UserService.ResetWheelSpinCooldown:output_type -> google.protobuf.Empty
+	33, // [33:53] is the sub-list for method output_type
+	13, // [13:33] is the sub-list for method input_type
 	13, // [13:13] is the sub-list for extension type_name
 	13, // [13:13] is the sub-list for extension extendee
 	0,  // [0:13] is the sub-list for field type_name
@@ -1921,13 +2030,14 @@ func file_user_user_proto_init() {
 	}
 	file_user_user_proto_msgTypes[1].OneofWrappers = []any{}
 	file_user_user_proto_msgTypes[5].OneofWrappers = []any{}
+	file_user_user_proto_msgTypes[30].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_user_proto_rawDesc), len(file_user_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   32,
+			NumMessages:   34,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

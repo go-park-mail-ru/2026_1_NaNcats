@@ -7,6 +7,7 @@ const (
 	AchievementCodeFiveOrders    = "five_orders"
 	AchievementCodeGourmandThree = "gourmand_three"
 	AchievementCodeStreakSixth   = "streak_six"
+	AchievementFirstSpin         = "first_spin"
 )
 
 type Achievement struct {

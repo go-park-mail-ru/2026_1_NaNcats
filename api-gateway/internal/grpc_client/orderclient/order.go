@@ -67,6 +67,7 @@ type OrderClient interface {
 	GetOrders(ctx context.Context, userID int64, limit, offset int32) ([]Order, error)
 	PayForFriend(ctx context.Context, splitID string, payerID int64, paymentMethodID, idempotencyKey string) error
 	CancelOrder(ctx context.Context, orderPublicID string, userID int64) error
+	GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error)
 }
 
 type orderClient struct {
@@ -200,4 +201,15 @@ func (c *orderClient) CancelOrder(ctx context.Context, orderPublicID string, use
 		return fmt.Errorf("cancel order: %w", err)
 	}
 	return nil
+}
+
+func (c *orderClient) GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error) {
+	resp, err := c.client.GetTrendingBrands(ctx, &pbOrder.GetTrendingBrandsRequest{
+		WindowDays: windowDays,
+		Limit:      limit,
+	})
+	if err != nil {
+		return nil, ErrInternal
+	}
+	return resp.BrandIds, nil
 }
