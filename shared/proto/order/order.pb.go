@@ -1497,6 +1497,8 @@ type CreateAndBindWheelPromoRequest struct {
 	DiscountAmount    *int64                 `protobuf:"varint,2,opt,name=discount_amount,json=discountAmount,proto3,oneof" json:"discount_amount,omitempty"`
 	DiscountPercent   *int32                 `protobuf:"varint,3,opt,name=discount_percent,json=discountPercent,proto3,oneof" json:"discount_percent,omitempty"`
 	RestaurantBrandId *int64                 `protobuf:"varint,4,opt,name=restaurant_brand_id,json=restaurantBrandId,proto3,oneof" json:"restaurant_brand_id,omitempty"`
+	MinOrderAmount    *int64                 `protobuf:"varint,5,opt,name=min_order_amount,json=minOrderAmount,proto3,oneof" json:"min_order_amount,omitempty"`
+	Title             string                 `protobuf:"bytes,6,opt,name=title,proto3" json:"title,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -1557,6 +1559,20 @@ func (x *CreateAndBindWheelPromoRequest) GetRestaurantBrandId() int64 {
 		return *x.RestaurantBrandId
 	}
 	return 0
+}
+
+func (x *CreateAndBindWheelPromoRequest) GetMinOrderAmount() int64 {
+	if x != nil && x.MinOrderAmount != nil {
+		return *x.MinOrderAmount
+	}
+	return 0
+}
+
+func (x *CreateAndBindWheelPromoRequest) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
 }
 
 var File_order_order_proto protoreflect.FileDescriptor
@@ -1690,15 +1706,18 @@ const file_order_order_proto_rawDesc = "" +
 	"\x05limit\x18\x03 \x01(\x05R\x05limit\"'\n" +
 	"\n" +
 	"DishIDList\x12\x19\n" +
-	"\bdish_ids\x18\x01 \x03(\x03R\adishIds\"\x8d\x02\n" +
+	"\bdish_ids\x18\x01 \x03(\x03R\adishIds\"\xe7\x02\n" +
 	"\x1eCreateAndBindWheelPromoRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12,\n" +
 	"\x0fdiscount_amount\x18\x02 \x01(\x03H\x00R\x0ediscountAmount\x88\x01\x01\x12.\n" +
 	"\x10discount_percent\x18\x03 \x01(\x05H\x01R\x0fdiscountPercent\x88\x01\x01\x123\n" +
-	"\x13restaurant_brand_id\x18\x04 \x01(\x03H\x02R\x11restaurantBrandId\x88\x01\x01B\x12\n" +
+	"\x13restaurant_brand_id\x18\x04 \x01(\x03H\x02R\x11restaurantBrandId\x88\x01\x01\x12-\n" +
+	"\x10min_order_amount\x18\x05 \x01(\x03H\x03R\x0eminOrderAmount\x88\x01\x01\x12\x14\n" +
+	"\x05title\x18\x06 \x01(\tR\x05titleB\x12\n" +
 	"\x10_discount_amountB\x13\n" +
 	"\x11_discount_percentB\x16\n" +
-	"\x14_restaurant_brand_id2\xa3\x05\n" +
+	"\x14_restaurant_brand_idB\x13\n" +
+	"\x11_min_order_amount2\xa3\x05\n" +
 	"\fOrderService\x12D\n" +
 	"\vCreateOrder\x12\x19.order.CreateOrderRequest\x1a\x1a.order.CreateOrderResponse\x12>\n" +
 	"\tGetOrders\x12\x17.order.GetOrdersRequest\x1a\x18.order.GetOrdersResponse\x12R\n" +

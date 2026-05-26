@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"time"
 
@@ -13,13 +15,14 @@ import (
 
 //go:generate mockgen -destination=mocks/promo_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase PromoUseCase
 
-// PromoUseCase — операции с промокодами (хранятся в БД OrderService).
+// PromoUseCase - операции с промокодами (хранятся в БД OrderService)
 type PromoUseCase interface {
 	GetUserPromos(ctx context.Context, userID int64) ([]domain.Promocode, error)
 	GetRestaurantPromos(ctx context.Context, brandID int64) ([]domain.Promocode, error)
 	BindPromo(ctx context.Context, userID int64, code string) (domain.Promocode, error)
 	ValidatePromo(ctx context.Context, userID int64, code string, brandID, orderAmount, deliveryCost, serviceFee int64) (domain.PromoValidation, error)
 	UsePromo(ctx context.Context, userID int64, code, orderPublicID string) error
+	CreateAndBindWheelPromo(ctx context.Context, userID int64, title string, discountAmount *int64, discountPercent *int, brandID *int64, minOrderAmount *int64) (domain.Promocode, error)
 }
 
 type promoUseCase struct {
@@ -84,7 +87,7 @@ func (u *promoUseCase) ValidatePromo(ctx context.Context, userID int64, code str
 	}
 
 	// Минимальная сумма считается только по товарам (без доставки и сервисного сбора),
-	// чтобы поведение совпадало с проверкой в CreateOrder (cartTotalCost).
+	// чтобы поведение совпадало с проверкой в CreateOrder (cartTotalCost)
 	if promo.MinOrderAmount != nil && orderAmount < *promo.MinOrderAmount {
 		return domain.PromoValidation{Valid: false, Reason: "order amount is below minimum"}, nil
 	}
@@ -124,7 +127,7 @@ func (u *promoUseCase) UsePromo(ctx context.Context, userID int64, code, orderPu
 	if err != nil {
 		return errutil.Internal("failed to check promo usage", err)
 	}
-	// Уже зафиксировано этим пользователем — операция идемпотентна.
+	// Уже зафиксировано этим пользователем — операция идемпотентна
 	if usedByUser > 0 {
 		return nil
 	}
@@ -133,7 +136,7 @@ func (u *promoUseCase) UsePromo(ctx context.Context, userID int64, code, orderPu
 	}
 
 	// Резолвим внутренний id заказа по публичному. Если заказ не найден,
-	// фиксируем использование без привязки к заказу (order_id = NULL).
+	// фиксируем использование без привязки к заказу (order_id = NULL)
 	var orderID *int64
 	if orderPublicID != "" {
 		orderID, err = u.repo.ResolveOrderInternalID(ctx, orderPublicID)
@@ -146,6 +149,50 @@ func (u *promoUseCase) UsePromo(ctx context.Context, userID int64, code, orderPu
 		return errutil.Internal("failed to record promo usage", err)
 	}
 	return nil
+}
+
+func (u *promoUseCase) CreateAndBindWheelPromo(ctx context.Context, userID int64, title string, discountAmount *int64, discountPercent *int, brandID *int64, minOrderAmount *int64) (domain.Promocode, error) {
+	code, err := generateWheelPromoCode()
+	if err != nil {
+		return domain.Promocode{}, errutil.Internal("failed to generate wheel promo code", err)
+	}
+
+	maxUses := 1 // Одноразовый промокод
+
+	promo := domain.Promocode{
+		Code:              code,
+		Title:             title,
+		DiscountPercent:   discountPercent,
+		DiscountAmount:    discountAmount,
+		MaxUses:           &maxUses,
+		MinOrderAmount:    minOrderAmount,
+		UserID:            &userID,
+		RestaurantBrandID: brandID,
+		IsGlobal:          brandID == nil,
+		ExpiresAt:         time.Now().Add(24 * 3 * time.Hour), // Срок действия 3 дня
+	}
+
+	createdPromo, err := u.repo.CreatePromocode(ctx, promo)
+	if err != nil {
+		return domain.Promocode{}, errutil.Internal("failed to save wheel promocode", err)
+	}
+
+	_, err = u.repo.BindPromocodeToUser(ctx, userID, createdPromo.ID)
+	if err != nil {
+		return domain.Promocode{}, errutil.Internal("failed to bind wheel promocode to user", err)
+	}
+
+	return createdPromo, nil
+}
+
+// Вспомогательный генератор случайных строк-кодов
+func generateWheelPromoCode() (string, error) {
+	b := make([]byte, 4) // 4 байта дадут 8 шестнадцатеричных символов
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+	return "WHL-" + hex.EncodeToString(b), nil
 }
 
 // computeDiscount считает скидку промокода от стоимости блюд. Фиксированная

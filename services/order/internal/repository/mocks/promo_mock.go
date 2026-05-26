@@ -71,6 +71,21 @@ func (mr *MockPromoRepositoryMockRecorder) CountUserPromocodeUsage(ctx, promoID,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountUserPromocodeUsage", reflect.TypeOf((*MockPromoRepository)(nil).CountUserPromocodeUsage), ctx, promoID, userID)
 }
 
+// CreatePromocode mocks base method.
+func (m *MockPromoRepository) CreatePromocode(ctx context.Context, promo domain.Promocode) (domain.Promocode, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreatePromocode", ctx, promo)
+	ret0, _ := ret[0].(domain.Promocode)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreatePromocode indicates an expected call of CreatePromocode.
+func (mr *MockPromoRepositoryMockRecorder) CreatePromocode(ctx, promo any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePromocode", reflect.TypeOf((*MockPromoRepository)(nil).CreatePromocode), ctx, promo)
+}
+
 // GetPromocodeByCode mocks base method.
 func (m *MockPromoRepository) GetPromocodeByCode(ctx context.Context, code string) (domain.Promocode, error) {
 	m.ctrl.T.Helper()

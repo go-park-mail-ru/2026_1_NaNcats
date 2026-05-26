@@ -19,7 +19,7 @@ func NewPromoRepo(pool postgres.PgxPool) repository.PromoRepository {
 	return &promoRepo{pool: pool}
 }
 
-// promoViewColumns — набор колонок для карточки промокода (без служебных полей).
+// promoViewColumns - набор колонок для карточки промокода (без служебных полей).
 const promoViewColumns = `id, code, title, discount_percent, discount_amount,
 	min_order_amount, restaurant_brand_id, expires_at`
 
@@ -164,4 +164,22 @@ func (r *promoRepo) ResolveOrderInternalID(ctx context.Context, orderPublicID st
 		return nil, fmt.Errorf("resolve order internal id: %w", err)
 	}
 	return &id, nil
+}
+
+func (r *promoRepo) CreatePromocode(ctx context.Context, p domain.Promocode) (domain.Promocode, error) {
+	query := `
+		INSERT INTO "promocode" (
+			code, title, discount_percent, discount_amount, max_uses, 
+			min_order_amount, user_id, restaurant_brand_id, is_global, expires_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		RETURNING id, created_at;
+	`
+	err := r.pool.QueryRow(ctx, query,
+		p.Code, p.Title, p.DiscountPercent, p.DiscountAmount, p.MaxUses,
+		p.MinOrderAmount, p.UserID, p.RestaurantBrandID, p.IsGlobal, p.ExpiresAt,
+	).Scan(&p.ID, &p.CreatedAt)
+	if err != nil {
+		return domain.Promocode{}, fmt.Errorf("failed to insert promocode: %w", err)
+	}
+	return p, nil
 }

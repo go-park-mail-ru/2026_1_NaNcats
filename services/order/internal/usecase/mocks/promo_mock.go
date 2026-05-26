@@ -56,6 +56,21 @@ func (mr *MockPromoUseCaseMockRecorder) BindPromo(ctx, userID, code any) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BindPromo", reflect.TypeOf((*MockPromoUseCase)(nil).BindPromo), ctx, userID, code)
 }
 
+// CreateAndBindWheelPromo mocks base method.
+func (m *MockPromoUseCase) CreateAndBindWheelPromo(ctx context.Context, userID int64, title string, discountAmount *int64, discountPercent *int, brandID, minOrderAmount *int64) (domain.Promocode, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateAndBindWheelPromo", ctx, userID, title, discountAmount, discountPercent, brandID, minOrderAmount)
+	ret0, _ := ret[0].(domain.Promocode)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateAndBindWheelPromo indicates an expected call of CreateAndBindWheelPromo.
+func (mr *MockPromoUseCaseMockRecorder) CreateAndBindWheelPromo(ctx, userID, title, discountAmount, discountPercent, brandID, minOrderAmount any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAndBindWheelPromo", reflect.TypeOf((*MockPromoUseCase)(nil).CreateAndBindWheelPromo), ctx, userID, title, discountAmount, discountPercent, brandID, minOrderAmount)
+}
+
 // GetRestaurantPromos mocks base method.
 func (m *MockPromoUseCase) GetRestaurantPromos(ctx context.Context, brandID int64) ([]domain.Promocode, error) {
 	m.ctrl.T.Helper()

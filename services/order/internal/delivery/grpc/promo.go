@@ -96,3 +96,41 @@ func (h *PromoHandler) UsePromocode(ctx context.Context, req *pb.UsePromocodeReq
 	}
 	return &emptypb.Empty{}, nil
 }
+
+func (h *PromoHandler) CreateAndBindWheelPromo(ctx context.Context, req *pb.CreateAndBindWheelPromoRequest) (*pb.Promocode, error) {
+	var discountAmount *int64
+	if req.DiscountAmount != nil {
+		discountAmount = req.DiscountAmount
+	}
+
+	var discountPercent *int
+	if req.DiscountPercent != nil {
+		val := int(*req.DiscountPercent)
+		discountPercent = &val
+	}
+
+	var brandID *int64
+	if req.RestaurantBrandId != nil {
+		brandID = req.RestaurantBrandId
+	}
+
+	var minOrderAmount *int64
+	if req.MinOrderAmount != nil {
+		minOrderAmount = req.MinOrderAmount
+	}
+
+	promo, err := h.usecase.CreateAndBindWheelPromo(
+		ctx,
+		req.UserId,
+		req.Title,
+		discountAmount,
+		discountPercent,
+		brandID,
+		minOrderAmount,
+	)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	return mapDomainToPBPromocode(promo), nil
+}

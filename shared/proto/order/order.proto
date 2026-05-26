@@ -203,4 +203,6 @@ message CreateAndBindWheelPromoRequest {
   optional int64 discount_amount = 2;
   optional int32 discount_percent = 3;
   optional int64 restaurant_brand_id = 4;
+  optional int64 min_order_amount = 5;
+  string title = 6;
 }
