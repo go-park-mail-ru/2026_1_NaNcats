@@ -75,6 +75,7 @@ type OrderSplitDTO struct {
 //easyjson:json
 type OrderHistoryResponse struct {
 	OrderID            string          `json:"order_id"`
+	AdminPublicID      string          `json:"admin_public_id"`
 	RestaurantID       int64           `json:"restaurant_id"`
 	RestaurantName     string          `json:"restaurant_name"`
 	RestaurantImageURL string          `json:"restaurant_image_url"`
@@ -300,6 +301,9 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 
 	for _, o := range orders {
 		brandIDSet[o.RestaurantBrandID] = struct{}{}
+		if o.AdminID != 0 {
+			userIDSet[o.AdminID] = struct{}{}
+		}
 		for _, item := range o.Items {
 			dishIDSet[item.DishID] = struct{}{}
 			if item.OwnerUserID != nil {
@@ -429,8 +433,14 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 
 		brandLogo := logos[o.RestaurantBrandID]
 
+		var adminPublicID string
+		if u, exists := usersInfo[o.AdminID]; exists {
+			adminPublicID = u.PublicId
+		}
+
 		resp = append(resp, OrderHistoryResponse{
 			OrderID:            o.PublicID,
+			AdminPublicID:      adminPublicID,
 			RestaurantID:       o.RestaurantBrandID,
 			RestaurantName:     o.RestaurantName,
 			RestaurantImageURL: brandLogo,

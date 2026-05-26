@@ -248,6 +248,7 @@ type Order struct {
 	RestaurantBrandId int64                  `protobuf:"varint,9,opt,name=restaurant_brand_id,json=restaurantBrandId,proto3" json:"restaurant_brand_id,omitempty"`
 	AppliedPromocode  *string                `protobuf:"bytes,10,opt,name=applied_promocode,json=appliedPromocode,proto3,oneof" json:"applied_promocode,omitempty"`
 	DiscountAmount    int64                  `protobuf:"varint,11,opt,name=discount_amount,json=discountAmount,proto3" json:"discount_amount,omitempty"`
+	AdminAccountId    int64                  `protobuf:"varint,12,opt,name=admin_account_id,json=adminAccountId,proto3" json:"admin_account_id,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -355,6 +356,13 @@ func (x *Order) GetAppliedPromocode() string {
 func (x *Order) GetDiscountAmount() int64 {
 	if x != nil {
 		return x.DiscountAmount
+	}
+	return 0
+}
+
+func (x *Order) GetAdminAccountId() int64 {
+	if x != nil {
+		return x.AdminAccountId
 	}
 	return 0
 }
@@ -1514,7 +1522,7 @@ const file_order_order_proto_rawDesc = "" +
 	"\x06status\x18\x04 \x01(\tR\x06status\x12\x1f\n" +
 	"\vbase_amount\x18\x05 \x01(\x03R\n" +
 	"baseAmount\x12'\n" +
-	"\x0fdiscount_amount\x18\x06 \x01(\x03R\x0ediscountAmount\"\xe3\x03\n" +
+	"\x0fdiscount_amount\x18\x06 \x01(\x03R\x0ediscountAmount\"\x8d\x04\n" +
 	"\x05Order\x12\x1b\n" +
 	"\tpublic_id\x18\x01 \x01(\tR\bpublicId\x12'\n" +
 	"\x0frestaurant_name\x18\x02 \x01(\tR\x0erestaurantName\x12.\n" +
@@ -1529,7 +1537,8 @@ const file_order_order_proto_rawDesc = "" +
 	"\x13restaurant_brand_id\x18\t \x01(\x03R\x11restaurantBrandId\x120\n" +
 	"\x11applied_promocode\x18\n" +
 	" \x01(\tH\x00R\x10appliedPromocode\x88\x01\x01\x12'\n" +
-	"\x0fdiscount_amount\x18\v \x01(\x03R\x0ediscountAmountB\x14\n" +
+	"\x0fdiscount_amount\x18\v \x01(\x03R\x0ediscountAmount\x12(\n" +
+	"\x10admin_account_id\x18\f \x01(\x03R\x0eadminAccountIdB\x14\n" +
 	"\x12_applied_promocode\"\xba\x04\n" +
 	"\x12CreateOrderRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12*\n" +

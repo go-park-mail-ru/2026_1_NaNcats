@@ -407,6 +407,7 @@ func TestOrderUseCase_CancelOrder(t *testing.T) {
 				}, nil)
 				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusCancelled, StatusCreated, StatusCartLocked, StatusPaymentReady, StatusPaid).Return(nil)
 				d.repo.EXPECT().RollbackPromocodeUsage(gomock.Any(), "pub-123").Return(nil)
+				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueGatewayEvents, gomock.Any()).Return(nil)
 			},
 			expectedErr: false,
 		},

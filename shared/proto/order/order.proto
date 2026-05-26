@@ -76,6 +76,7 @@ message Order {
   int64 restaurant_brand_id = 9;
   optional string applied_promocode = 10;
   int64 discount_amount = 11;
+  int64 admin_account_id = 12;
 }
 
 message CreateOrderRequest {

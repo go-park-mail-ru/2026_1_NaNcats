@@ -49,6 +49,7 @@ func mapDomainToPBOrder(o domain.Order) *pb.Order {
 		Splits:            splits,
 		AppliedPromocode:  o.PromocodeString,
 		DiscountAmount:    o.DiscountAmount,
+		AdminAccountId:    o.AdminID,
 	}
 }
 
