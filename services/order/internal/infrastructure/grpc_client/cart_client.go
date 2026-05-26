@@ -30,6 +30,7 @@ func (c *cartClient) GetCart(ctx context.Context, userID int64) (domain.Cart, in
 	for _, item := range resp.Cart.Items {
 		items = append(items, domain.CartItem{
 			DishID:      item.DishId,
+			Name:        item.Name,
 			Quantity:    int(item.Quantity),
 			Price:       item.Price,
 			OwnerUserID: item.OwnerUserId,

@@ -163,6 +163,26 @@ func (mr *MockUserServiceClientMockRecorder) GetByID(ctx, in any, opts ...any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockUserServiceClient)(nil).GetByID), varargs...)
 }
 
+// GetUserAchievements mocks base method.
+func (m *MockUserServiceClient) GetUserAchievements(ctx context.Context, in *user.GetUserAchievementsRequest, opts ...grpc.CallOption) (*user.GetUserAchievementsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetUserAchievements", varargs...)
+	ret0, _ := ret[0].(*user.GetUserAchievementsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserAchievements indicates an expected call of GetUserAchievements.
+func (mr *MockUserServiceClientMockRecorder) GetUserAchievements(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserAchievements", reflect.TypeOf((*MockUserServiceClient)(nil).GetUserAchievements), varargs...)
+}
+
 // GetUserProfile mocks base method.
 func (m *MockUserServiceClient) GetUserProfile(ctx context.Context, in *user.GetUserProfileRequest, opts ...grpc.CallOption) (*user.GetUserProfileResponse, error) {
 	m.ctrl.T.Helper()
@@ -201,6 +221,46 @@ func (mr *MockUserServiceClientMockRecorder) GetUsersByIDs(ctx, in any, opts ...
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersByIDs", reflect.TypeOf((*MockUserServiceClient)(nil).GetUsersByIDs), varargs...)
+}
+
+// ListAchievements mocks base method.
+func (m *MockUserServiceClient) ListAchievements(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*user.ListAchievementsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListAchievements", varargs...)
+	ret0, _ := ret[0].(*user.ListAchievementsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAchievements indicates an expected call of ListAchievements.
+func (mr *MockUserServiceClientMockRecorder) ListAchievements(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAchievements", reflect.TypeOf((*MockUserServiceClient)(nil).ListAchievements), varargs...)
+}
+
+// OnOrderPaid mocks base method.
+func (m *MockUserServiceClient) OnOrderPaid(ctx context.Context, in *user.OnOrderPaidRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "OnOrderPaid", varargs...)
+	ret0, _ := ret[0].(*emptypb.Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// OnOrderPaid indicates an expected call of OnOrderPaid.
+func (mr *MockUserServiceClientMockRecorder) OnOrderPaid(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnOrderPaid", reflect.TypeOf((*MockUserServiceClient)(nil).OnOrderPaid), varargs...)
 }
 
 // ResolvePublicID mocks base method.

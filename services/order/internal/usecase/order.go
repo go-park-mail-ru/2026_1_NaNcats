@@ -40,7 +40,7 @@ const (
 	StatusSplitPaid = "split_paid"
 )
 
-//go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase OrderUseCase,CartClient,AddressClient,RestaurantClient,MessagePublisher
+//go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase OrderUseCase,CartClient,AddressClient,RestaurantClient,UserClient,MessagePublisher
 //go:generate gowrap gen -i OrderUseCase -t ../../../../shared/templates/tracing.tmpl -o order_tracing_mw.go -v TracerName=order-service
 
 type CartClient interface {
@@ -57,6 +57,10 @@ type RestaurantClient interface {
 	GetRestaurantName(ctx context.Context, branchID int64) (string, error)
 }
 
+type UserClient interface {
+	OnOrderPaid(ctx context.Context, userID, restaurantID int64, orderPublicID string, paidAt time.Time) error
+}
+
 type MessagePublisher interface {
 	PublishJSON(ctx context.Context, queueName string, data any) error
 }
@@ -69,6 +73,9 @@ type OrderUseCase interface {
 	PayForFriend(ctx context.Context, splitID string, adminID int64, paymentMethodID, idempotencyKey string) error
 	CancelOrder(ctx context.Context, orderPublicID string, userID int64) error
 	AdvanceOrderStatus(ctx context.Context, publicID string, newStatus string, expectedStatus string) error
+	GetUserPaidBrands(ctx context.Context, userID int64) ([]int64, error)
+	GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error)
+	GetTopDishesByBrand(ctx context.Context, brandID int64, windowDays, limit int32) ([]int64, error)
 }
 
 type orderUseCase struct {
@@ -76,6 +83,7 @@ type orderUseCase struct {
 	addressClient            AddressClient
 	cartClient               CartClient
 	restaurantClient         RestaurantClient
+	userClient               UserClient
 	rabbitPublisher          MessagePublisher
 	defaultRestaurantLogoURL string
 	logger                   logger.Logger
@@ -86,6 +94,7 @@ func NewOrderUseCase(
 	ac AddressClient,
 	cc CartClient,
 	rc RestaurantClient,
+	uc UserClient,
 	rp MessagePublisher,
 	drlurl string,
 	l logger.Logger,
@@ -95,6 +104,7 @@ func NewOrderUseCase(
 		addressClient:            ac,
 		cartClient:               cc,
 		restaurantClient:         rc,
+		userClient:               uc,
 		rabbitPublisher:          rp,
 		defaultRestaurantLogoURL: drlurl,
 		logger:                   l,
@@ -507,6 +517,9 @@ func (o *orderUseCase) UpdateOrderStatusByPaymentID(ctx context.Context, payment
 
 	splitID, orderPublicID, err := o.orderRepo.UpdateSplitStatusByPaymentID(ctx, paymentID, SplitStatusPaid)
 	if err != nil {
+		if errors.Is(err, repository.ErrSplitNotFound) {
+			return errutil.Wrap("SPLIT_NOT_FOUND", "split not found by payment ID", err, codes.NotFound)
+		}
 		return err
 	}
 	span.SetAttributes(
@@ -545,6 +558,17 @@ func (o *orderUseCase) UpdateOrderStatusByPaymentID(ctx context.Context, payment
 			Status:  StatusPaid,
 		}
 		_ = o.rabbitPublisher.PublishJSON(ctx, events.QueueGatewayEvents, gatewayEvent)
+
+		paidOrder, getErr := o.orderRepo.GetOrderByPublicID(ctx, orderPublicID)
+		if getErr != nil {
+			o.logger.WithContext(ctx).Warn("failed to load order for OnOrderPaid hook",
+				logger.String("order_id", orderPublicID), logger.Err(getErr))
+		} else if o.userClient != nil {
+			if hookErr := o.userClient.OnOrderPaid(ctx, paidOrder.AdminID, paidOrder.RestaurantBranchID, orderPublicID, time.Now()); hookErr != nil {
+				o.logger.WithContext(ctx).Warn("user-service OnOrderPaid hook failed",
+					logger.String("order_id", orderPublicID), logger.Err(hookErr))
+			}
+		}
 	}
 
 	return nil
@@ -598,6 +622,11 @@ func (o *orderUseCase) ProcessSagaReply(ctx context.Context, reply events.SagaRe
 
 	if reply.Status == events.StatusError {
 		span.SetAttributes(attribute.String("saga.error_details", reply.ErrorMessage))
+		o.logger.Error("saga step failed", fmt.Errorf("%s", reply.ErrorMessage),
+			logger.String("order_id", reply.OrderID),
+			logger.String("step", reply.Step),
+			logger.String("split_id", reply.SplitID),
+		)
 
 		_ = o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusFailed, StatusCreated, StatusCartLocked, StatusPaymentReady)
 
@@ -612,10 +641,28 @@ func (o *orderUseCase) ProcessSagaReply(ctx context.Context, reply events.SagaRe
 		}
 
 		if reply.Step == "PAYMENT" {
-			span.AddEvent("compensating_cart_unlock")
-			_ = o.rabbitPublisher.PublishJSON(ctx, events.QueueCartCommands, events.SagaCommand{
-				OrderID: reply.OrderID, Action: events.CommandUnlockCart, IdempotencyKey: reply.OrderID + "_compensate",
-			})
+			// Платёж не создался, но сам заказ валиден: переводим в
+			// payment_ready и шлём событие с ошибкой, чтобы фронт предложил
+			// повторить оплату или сменить карту, а не убивал заказ.
+			_ = o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusPaymentReady)
+			if reply.SplitID != "" {
+				_ = o.orderRepo.UpdateSplitStatus(ctx, reply.SplitID, SplitStatusFailed)
+			}
+
+			gatewayEvent := events.GatewayEvent{
+				OrderID: reply.OrderID,
+				SplitID: reply.SplitID,
+				UserID:  reply.UserID,
+				Status:  StatusPaymentReady,
+				Error:   reply.ErrorMessage,
+			}
+			_ = o.rabbitPublisher.PublishJSON(ctx, events.QueueGatewayEvents, gatewayEvent)
+		} else {
+			// Сбой не на шаге оплаты — заказ помечаем проваленным.
+			_ = o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusFailed)
+			if reply.SplitID != "" {
+				_ = o.orderRepo.UpdateSplitStatus(ctx, reply.SplitID, SplitStatusFailed)
+			}
 		}
 		return nil
 	}
@@ -640,4 +687,47 @@ func (o *orderUseCase) ProcessSagaReply(ctx context.Context, reply events.SagaRe
 	}
 
 	return nil
+}
+
+func (o *orderUseCase) GetUserPaidBrands(ctx context.Context, userID int64) ([]int64, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(attribute.Int64("user.id", userID))
+
+	brands, err := o.orderRepo.GetUserPaidBrands(ctx, userID)
+	if err != nil {
+		return nil, errutil.Internal("failed to fetch user paid brands", err)
+	}
+	span.SetAttributes(attribute.Int("user.paid_brands.count", len(brands)))
+	return brands, nil
+}
+
+func (o *orderUseCase) GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.Int("trending.window_days", int(windowDays)),
+		attribute.Int("trending.limit", int(limit)),
+	)
+
+	brands, err := o.orderRepo.GetTrendingBrands(ctx, windowDays, limit)
+	if err != nil {
+		return nil, errutil.Internal("failed to fetch trending brands", err)
+	}
+	span.SetAttributes(attribute.Int("trending.brands.count", len(brands)))
+	return brands, nil
+}
+
+func (o *orderUseCase) GetTopDishesByBrand(ctx context.Context, brandID int64, windowDays, limit int32) ([]int64, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.Int64("brand.id", brandID),
+		attribute.Int("top_dishes.window_days", int(windowDays)),
+		attribute.Int("top_dishes.limit", int(limit)),
+	)
+
+	ids, err := o.orderRepo.GetTopDishesByBrand(ctx, brandID, windowDays, limit)
+	if err != nil {
+		return nil, errutil.Internal("failed to fetch top dishes by brand", err)
+	}
+	span.SetAttributes(attribute.Int("top_dishes.count", len(ids)))
+	return ids, nil
 }

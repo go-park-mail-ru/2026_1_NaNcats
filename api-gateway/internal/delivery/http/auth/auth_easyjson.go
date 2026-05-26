@@ -218,11 +218,11 @@ func easyjson4a0f95aaDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		key := in.UnsafeFieldName(false)
 		in.WantColon()
 		switch key {
-		case "id":
+		case "public_id":
 			if in.IsNull() {
 				in.Skip()
 			} else {
-				out.ID = int64(in.Int64())
+				out.PublicID = string(in.String())
 			}
 		case "name":
 			if in.IsNull() {
@@ -248,6 +248,12 @@ func easyjson4a0f95aaDecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			} else {
 				out.CSRFToken = string(in.String())
 			}
+		case "streak_weeks":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.StreakWeeks = int32(in.Int32())
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -263,9 +269,9 @@ func easyjson4a0f95aaEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 	first := true
 	_ = first
 	{
-		const prefix string = ",\"id\":"
+		const prefix string = ",\"public_id\":"
 		out.RawString(prefix[1:])
-		out.Int64(int64(in.ID))
+		out.String(string(in.PublicID))
 	}
 	{
 		const prefix string = ",\"name\":"
@@ -282,10 +288,15 @@ func easyjson4a0f95aaEncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		out.RawString(prefix)
 		out.String(string(in.AvatarURL))
 	}
-	{
+	if in.CSRFToken != "" {
 		const prefix string = ",\"csrf_token\":"
 		out.RawString(prefix)
 		out.String(string(in.CSRFToken))
+	}
+	if in.StreakWeeks != 0 {
+		const prefix string = ",\"streak_weeks\":"
+		out.RawString(prefix)
+		out.Int32(int32(in.StreakWeeks))
 	}
 	out.RawByte('}')
 }

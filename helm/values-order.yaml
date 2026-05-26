@@ -5,12 +5,13 @@ service:
   port: 50057
 env:
   CONFIG_PATH: "./services/order/config.yaml"
-  RABBITMQ_URL: "amqp://guest:guest@rabbitmq-service-rabbitmq:5672/"
+  RABBITMQ_URL: "amqp://guest:guest@rabbitmq-service:5672/"
   ADDRESS_SERVICE_ADDR: "address-service:50051"
   CART_SERVICE_ADDR: "cart-service:50055"
   PAYMENT_SERVICE_ADDR: "payment-service:50056"
   RESTAURANT_SERVICE_ADDR: "restaurant-service:50053"
-  DATABASE_URL: "postgres://db_user:$(DB_PASSWORD)@postgres-service-postgresql:5432/order_db?sslmode=disable"
+  USER_SERVICE_ADDR: "user-service:50052"
+  DATABASE_URL: "postgres://nancat_admin:$(DB_PASSWORD)@postgres-service-postgresql:5432/order_db?sslmode=disable"
 secrets:
   DB_PASSWORD:
     secretName: nancats-prod-secrets

@@ -183,6 +183,46 @@ func (mr *MockRestaurantServiceClientMockRecorder) GetDishesByRestaurantBrandID(
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDishesByRestaurantBrandID", reflect.TypeOf((*MockRestaurantServiceClient)(nil).GetDishesByRestaurantBrandID), varargs...)
 }
 
+// GetRecommendations mocks base method.
+func (m *MockRestaurantServiceClient) GetRecommendations(ctx context.Context, in *restaurant.GetRecommendationsRequest, opts ...grpc.CallOption) (*restaurant.GetRestaurantBrandsListResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetRecommendations", varargs...)
+	ret0, _ := ret[0].(*restaurant.GetRestaurantBrandsListResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRecommendations indicates an expected call of GetRecommendations.
+func (mr *MockRestaurantServiceClientMockRecorder) GetRecommendations(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRecommendations", reflect.TypeOf((*MockRestaurantServiceClient)(nil).GetRecommendations), varargs...)
+}
+
+// GetRecommendedDishes mocks base method.
+func (m *MockRestaurantServiceClient) GetRecommendedDishes(ctx context.Context, in *restaurant.GetRecommendedDishesRequest, opts ...grpc.CallOption) (*restaurant.GetDishesByRestaurantBrandIDResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetRecommendedDishes", varargs...)
+	ret0, _ := ret[0].(*restaurant.GetDishesByRestaurantBrandIDResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRecommendedDishes indicates an expected call of GetRecommendedDishes.
+func (mr *MockRestaurantServiceClientMockRecorder) GetRecommendedDishes(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRecommendedDishes", reflect.TypeOf((*MockRestaurantServiceClient)(nil).GetRecommendedDishes), varargs...)
+}
+
 // GetRestaurantBrandByID mocks base method.
 func (m *MockRestaurantServiceClient) GetRestaurantBrandByID(ctx context.Context, in *restaurant.GetRestaurantBrandByIDRequest, opts ...grpc.CallOption) (*restaurant.GetRestaurantBrandByIDResponse, error) {
 	m.ctrl.T.Helper()

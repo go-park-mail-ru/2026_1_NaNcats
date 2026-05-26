@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	userclient "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/userclient"
 	user "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/user"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -86,6 +87,21 @@ func (mr *MockUserClientMockRecorder) GetByID(ctx, userID any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockUserClient)(nil).GetByID), ctx, userID)
 }
 
+// GetUserAchievements mocks base method.
+func (m *MockUserClient) GetUserAchievements(ctx context.Context, userID int64) ([]userclient.UserAchievement, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserAchievements", ctx, userID)
+	ret0, _ := ret[0].([]userclient.UserAchievement)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserAchievements indicates an expected call of GetUserAchievements.
+func (mr *MockUserClientMockRecorder) GetUserAchievements(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserAchievements", reflect.TypeOf((*MockUserClient)(nil).GetUserAchievements), ctx, userID)
+}
+
 // GetUserProfile mocks base method.
 func (m *MockUserClient) GetUserProfile(ctx context.Context, userID int64) (*user.User, *user.ClientProfile, error) {
 	m.ctrl.T.Helper()
@@ -115,6 +131,21 @@ func (m *MockUserClient) GetUsersByIDs(ctx context.Context, userIDs []int64) (ma
 func (mr *MockUserClientMockRecorder) GetUsersByIDs(ctx, userIDs any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersByIDs", reflect.TypeOf((*MockUserClient)(nil).GetUsersByIDs), ctx, userIDs)
+}
+
+// ListAchievements mocks base method.
+func (m *MockUserClient) ListAchievements(ctx context.Context) ([]userclient.Achievement, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAchievements", ctx)
+	ret0, _ := ret[0].([]userclient.Achievement)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAchievements indicates an expected call of ListAchievements.
+func (mr *MockUserClientMockRecorder) ListAchievements(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAchievements", reflect.TypeOf((*MockUserClient)(nil).ListAchievements), ctx)
 }
 
 // ResolvePublicID mocks base method.

@@ -283,3 +283,63 @@ func (r *restaurantBrandRepo) GetAllCategories(ctx context.Context) ([]domain.Ca
 	}
 	return cats, nil
 }
+
+// RecommendByCategorySimilarity ранжирует бренды по числу общих категорий
+// с seedBrandIDs. При пустом seed выбирает топ по promotion_tier как
+// «холодный старт». excludeBrandIDs всегда фильтруются.
+func (r *restaurantBrandRepo) RecommendByCategorySimilarity(ctx context.Context, seedBrandIDs, excludeBrandIDs []int64, limit int) ([]domain.RestaurantBrand, error) {
+	if limit <= 0 {
+		limit = 8
+	}
+	if excludeBrandIDs == nil {
+		excludeBrandIDs = []int64{}
+	}
+
+	if len(seedBrandIDs) == 0 {
+		rows, err := r.pool.Query(ctx, `
+			SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at
+			FROM "restaurant_brand"
+			WHERE NOT (id = ANY($1))
+			ORDER BY promotion_tier DESC, id ASC
+			LIMIT $2
+		`, excludeBrandIDs, limit)
+		if err != nil {
+			return nil, fmt.Errorf("recommend cold-start: %w", err)
+		}
+		defer rows.Close()
+		return scanRecommendedBrands(rows)
+	}
+
+	rows, err := r.pool.Query(ctx, `
+		WITH seed_categories AS (
+			SELECT DISTINCT category_id
+			FROM "restaurant_brand_category"
+			WHERE restaurant_brand_id = ANY($1)
+		)
+		SELECT b.id, b.owner_profile_id, b.name, b.description, b.promotion_tier, b.logo_url, b.created_at, b.updated_at
+		FROM "restaurant_brand" b
+		JOIN "restaurant_brand_category" rbc ON rbc.restaurant_brand_id = b.id
+		WHERE rbc.category_id IN (SELECT category_id FROM seed_categories)
+		  AND NOT (b.id = ANY($2))
+		GROUP BY b.id, b.owner_profile_id, b.name, b.description, b.promotion_tier, b.logo_url, b.created_at, b.updated_at
+		ORDER BY COUNT(rbc.category_id) DESC, b.promotion_tier DESC, b.id ASC
+		LIMIT $3
+	`, seedBrandIDs, excludeBrandIDs, limit)
+	if err != nil {
+		return nil, fmt.Errorf("recommend by category: %w", err)
+	}
+	defer rows.Close()
+	return scanRecommendedBrands(rows)
+}
+
+func scanRecommendedBrands(rows pgx.Rows) ([]domain.RestaurantBrand, error) {
+	out := make([]domain.RestaurantBrand, 0, 8)
+	for rows.Next() {
+		var d restaurantBrandDB
+		if err := rows.Scan(&d.ID, &d.OwnerProfileID, &d.Name, &d.Description, &d.PromotionTier, &d.LogoURL, &d.CreatedAt, &d.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("scan brand: %w", err)
+		}
+		out = append(out, d.toDomain())
+	}
+	return out, rows.Err()
+}

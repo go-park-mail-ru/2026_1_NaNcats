@@ -68,7 +68,13 @@ func (c *PaymentConsumer) Start(ctx context.Context) error {
 			return nil
 		}
 
-		c.logger.Info("Received payment command", logger.String("order_id", cmd.OrderID), logger.String("split_id", cmd.SplitID))
+		c.logger.Info("Received payment command",
+			logger.String("order_id", cmd.OrderID),
+			logger.String("split_id", cmd.SplitID),
+			logger.Int64("amount", cmd.Amount),
+			logger.String("payment_method_id", cmd.PaymentMethodID),
+			logger.String("action", cmd.Action),
+		)
 
 		reply := events.SagaReply{
 			OrderID: cmd.OrderID,
@@ -83,7 +89,12 @@ func (c *PaymentConsumer) Start(ctx context.Context) error {
 			if err != nil {
 				reply.Status = events.StatusError
 				reply.ErrorMessage = err.Error()
-				c.logger.Error("Payment creation failed", err)
+				c.logger.Error("Payment creation failed", err,
+					logger.String("order_id", cmd.OrderID),
+					logger.String("split_id", cmd.SplitID),
+					logger.Int64("amount", cmd.Amount),
+					logger.String("payment_method_id", cmd.PaymentMethodID),
+				)
 			} else {
 				reply.Status = events.StatusSuccess
 				reply.PaymentID = paymentID

@@ -85,6 +85,7 @@ func main() {
 
 	userRepo := userPG.NewUserRepo(pool)
 	clientProfileRepo := userPG.NewClientProfileRepo(pool)
+	achievementRepo := userPG.NewAchievementRepo(pool)
 
 	rabbitClient, err := rabbitmq.NewRabbitClient(cfg.RabbitMQURL, appLogger)
 	if err != nil {
@@ -96,8 +97,9 @@ func main() {
 	tracedUserUC := userUsecase.NewUserUseCaseTracingMiddleware(userUC)
 	clientProfileUC := userUsecase.NewClientProfileUseCase(clientProfileRepo)
 	tracedProfileUC := userUsecase.NewClientProfileUseCaseTracingMiddleware(clientProfileUC)
+	achievementUC := userUsecase.NewAchievementUseCase(achievementRepo, appLogger)
 
-	userHandler := userDelivery.NewUserHandler(tracedUserUC, tracedProfileUC)
+	userHandler := userDelivery.NewUserHandler(tracedUserUC, tracedProfileUC, achievementUC)
 
 	// Контекст, который отменяется по сигналу ОС
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

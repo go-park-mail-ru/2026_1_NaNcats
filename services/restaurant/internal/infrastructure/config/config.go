@@ -20,6 +20,8 @@ type Config struct {
 
 	DefaultRestaurantLogoURL string `yaml:"default_restaurant_logo_url" env:"DEFAULT_RESTAURANT_LOGO_URL" env-required:"true"`
 	DefaultFoodLogoURL       string `yaml:"default_food_logo_url" env:"DEFAULT_FOOD_LOGO_URL" env-required:"true"`
+
+	OrderServiceAddr string `yaml:"order_service_addr" env:"ORDER_SERVICE_ADDR" env-default:"localhost:50057"`
 }
 
 func Load() *Config {

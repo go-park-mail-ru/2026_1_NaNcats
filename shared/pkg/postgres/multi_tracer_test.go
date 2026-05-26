@@ -60,7 +60,7 @@ func TestMultiTracer_TraceQueryStart(t *testing.T) {
 			newCtx := multiTracer.TraceQueryStart(ctx, nil, tt.data)
 
 			assert.NotNil(t, newCtx)
-			assert.Equal(t, true, newCtx.Value("tracer_2"))
+			assert.Equal(t, true, newCtx.Value(tracer2Key))
 		})
 	}
 }

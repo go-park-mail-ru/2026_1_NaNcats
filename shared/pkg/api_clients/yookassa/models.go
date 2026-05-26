@@ -24,6 +24,12 @@ type CreatePaymentRequest struct {
 	SavePaymentMethod bool                              `json:"save_payment_method"`
 	Description       string                            `json:"description,omitempty"`
 	PaymentMethodID   string                            `json:"payment_method_id,omitempty"`
+	PaymentMethodData *PaymentMethodData                `json:"payment_method_data,omitempty"`
+}
+
+//easyjson:json
+type PaymentMethodData struct {
+	Type string `json:"type"`
 }
 
 //easyjson:json
@@ -86,10 +92,11 @@ type PaymentResponseRecipient struct {
 
 //easyjson:json
 type PaymentResponsePaymentMethod struct {
-	ID     string `json:"id"`
-	Type   string `json:"type"`
-	Saved  bool   `json:"saved"`
-	Status string `json:"status"`
+	ID     string                     `json:"id"`
+	Type   string                     `json:"type"`
+	Saved  bool                       `json:"saved"`
+	Status string                     `json:"status"`
+	Card   *PaymentMethodResponseCard `json:"card,omitempty"`
 }
 
 //easyjson:json

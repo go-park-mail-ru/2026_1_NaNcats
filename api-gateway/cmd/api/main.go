@@ -24,6 +24,7 @@ import (
 	cartHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/cart"
 	orderHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/order"
 	paymentHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/payment"
+	promoHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/promo"
 	restaurantHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/restaurant"
 	reviewHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/review"
 	supportHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/support"
@@ -189,6 +190,7 @@ func main() {
 	redisHub := supportHttp.NewRedisHub(redisPool, appLogger)
 	supportHandler := supportHttp.NewSupportHandler(supportClient, redisHub, appLogger)
 	reviewHandler := reviewHttp.NewReviewHandler(appLogger)
+	promoHandler := promoHttp.NewPromoHandler(pbOrder.NewPromoServiceClient(orderConn), appLogger)
 
 	reqIDMW := middleware.NewRequestIDMiddleware()
 	loggingMW := middleware.NewLoggingMiddleware(appLogger)
@@ -217,6 +219,7 @@ func main() {
 	mux.Handle("PATCH /api/profile", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(userProfileHandler.UpdateProfile))))
 	mux.Handle("POST /api/profile/avatar", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(userProfileHandler.UpdateAvatar))))
 	mux.Handle("DELETE /api/profile/avatar", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(userProfileHandler.DeleteAvatar))))
+	mux.Handle("GET /api/profile/achievements", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.GetAchievements)))
 
 	// === OWNER ===
 	mux.Handle("POST /api/owner/restaurants",
@@ -279,6 +282,8 @@ func main() {
 
 	// === RESTAURANTS & DISHES ===
 	mux.HandleFunc("GET /api/restaurants/brands", restaurantHandler.GetRestaurantBrandsList)
+	mux.Handle("GET /api/restaurants/recommendations", authMW.OptionalAuth(http.HandlerFunc(restaurantHandler.GetRecommendations)))
+	mux.Handle("GET /api/restaurants/brands/{id}/recommended-dishes", authMW.OptionalAuth(http.HandlerFunc(restaurantHandler.GetRecommendedDishes)))
 	mux.HandleFunc("GET /api/restaurants/brands/{id}", restaurantHandler.GetRestaurantBrandByID)
 	mux.HandleFunc("GET /api/restaurants/brands/{id}/dishes", restaurantHandler.GetDishesByRestaurantBrandID)
 	mux.HandleFunc("GET /api/restaurants/categories", restaurantHandler.GetCategories)
@@ -321,6 +326,13 @@ func main() {
 	mux.Handle("GET /api/ws/orders/{id}", authMW.RequireAuth(http.HandlerFunc(orderHandler.TrackOrderWS)))
 	mux.Handle("POST /api/orders/splits/{id}/pay", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.PayForFriend))))
 	mux.Handle("POST /api/orders/{id}/cancel", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.CancelOrder))))
+
+	// === PROMOS ===
+	mux.Handle("GET /api/promos", authMW.RequireAuth(http.HandlerFunc(promoHandler.GetUserPromos)))
+	mux.HandleFunc("GET /api/promos/restaurant", promoHandler.GetRestaurantPromos)
+	mux.Handle("POST /api/promos/bind", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(promoHandler.BindPromo))))
+	mux.Handle("POST /api/promos/validate", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(promoHandler.ValidatePromo))))
+	mux.Handle("POST /api/promos/use", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(promoHandler.UsePromo))))
 
 	// === SUPPORT ===
 	mux.HandleFunc("GET /api/support/categories", supportHandler.GetCategories)

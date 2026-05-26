@@ -7,7 +7,10 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/domain"
 )
 
-var ErrStateChanged = errors.New("order state has changed or order not found")
+var (
+	ErrStateChanged  = errors.New("order state has changed or order not found")
+	ErrSplitNotFound = errors.New("split not found by payment ID")
+)
 
 //go:generate mockgen -destination=mocks/order_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository OrderRepository
 
@@ -28,6 +31,13 @@ type OrderRepository interface {
 
 	// Возвращает заказы, статусы которых нужно продвигать в фоне
 	GetOrdersByStatuses(ctx context.Context, statuses []string) ([]domain.Order, error)
+
+	// Бренды, у которых пользователь когда-либо оплачивал заказ (paid|finished).
+	GetUserPaidBrands(ctx context.Context, userID int64) ([]int64, error)
+	// Топ-N брендов по количеству оплат за окно windowDays.
+	GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error)
+	// Топ-N блюд ресторана по SUM(quantity) за окно windowDays, paid|finished.
+	GetTopDishesByBrand(ctx context.Context, brandID int64, windowDays, limit int32) ([]int64, error)
 
 	GetPromocodeByCodeWithLock(ctx context.Context, code string) (domain.Promocode, error)
 	CheckPromocodeUsage(ctx context.Context, promoID, userID int64) (bool, error)

@@ -51,8 +51,8 @@ type OrderSplit struct {
 
 type Order struct {
 	PublicID          string
-	RestaurantName    string
 	RestaurantBrandID int64
+	RestaurantName    string
 	TotalCost         int64
 	Promocode         *string
 	DiscountAmount    int64
@@ -152,6 +152,8 @@ func (c *orderClient) GetOrders(ctx context.Context, userID int64, limit, offset
 			RestaurantBrandID: pbO.RestaurantBrandId,
 			RestaurantName:    pbO.RestaurantName,
 			TotalCost:         pbO.TotalCost,
+			Promocode:         pbO.AppliedPromocode,
+			DiscountAmount:    pbO.DiscountAmount,
 			Status:            pbO.Status,
 			CreatedAt:         pbO.CreatedAt.AsTime(),
 			Items:             items,

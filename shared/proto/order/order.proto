@@ -19,6 +19,27 @@ service OrderService {
   rpc PayForFriend (PayForFriendRequest) returns (google.protobuf.Empty);
   // Метод для отмены заказа
   rpc CancelOrder (CancelOrderRequest) returns (google.protobuf.Empty);
+  // Возвращает бренды, у которых пользователь когда-либо оплачивал заказ.
+  rpc GetUserPaidBrands (GetUserPaidBrandsRequest) returns (BrandIDList);
+  // Возвращает бренды, набравшие больше всего оплат за последние window_days.
+  rpc GetTrendingBrands (GetTrendingBrandsRequest) returns (BrandIDList);
+  // Возвращает топ-N блюд ресторана по сумме quantity за window_days, paid|finished.
+  rpc GetTopDishesByBrand (GetTopDishesByBrandRequest) returns (DishIDList);
+}
+
+// Сервис промокодов. Промокоды хранятся в БД OrderService, поэтому
+// вся работа с ними реализована здесь, а api-gateway ходит сюда по gRPC.
+service PromoService {
+  // Промокоды, привязанные к пользователю
+  rpc GetUserPromos (GetUserPromosRequest) returns (PromocodeList);
+  // Действующие промокоды ресторана
+  rpc GetRestaurantPromos (GetRestaurantPromosRequest) returns (PromocodeList);
+  // Привязка промокода к пользователю по коду
+  rpc BindPromocode (BindPromocodeRequest) returns (Promocode);
+  // Проверка промокода для заказа и расчёт скидки
+  rpc ValidatePromocode (ValidatePromocodeRequest) returns (ValidatePromocodeResponse);
+  // Фиксация использования промокода после оформления заказа
+  rpc UsePromocode (UsePromocodeRequest) returns (google.protobuf.Empty);
 }
 
 message CancelOrderRequest {
@@ -46,14 +67,15 @@ message OrderSplit {
 message Order {
   string public_id = 1;
   string restaurant_name = 2;
-  int64 total_cost = 3;
-  string status = 4;
-  google.protobuf.Timestamp created_at = 5;
-  repeated OrderDish items = 6;
-  repeated OrderSplit splits = 7;
-  optional string applied_promocode = 8;
-  optional int64 discount_amount = 9;
-  int64 restaurant_brand_id = 10;
+  string restaurant_logo_url = 3;
+  int64 total_cost = 4;
+  string status = 5;
+  google.protobuf.Timestamp created_at = 6;
+  repeated OrderDish items = 7;
+  repeated OrderSplit splits = 8;
+  int64 restaurant_brand_id = 9;
+  optional string applied_promocode = 10;
+  int64 discount_amount = 11;
 }
 
 message CreateOrderRequest {
@@ -98,4 +120,78 @@ message PayForFriendRequest {
   int64 payer_user_id = 2;
   string payment_method_id = 3;
   string idempotency_key = 4;
+}
+
+// --- Промокоды ---
+
+message Promocode {
+  int64 id = 1;
+  string code = 2;
+  string title = 3;
+  optional int32 discount_percent = 4;
+  optional int64 discount_amount = 5;
+  int64 min_order_amount = 6;
+  optional string expires_at = 7;
+  repeated int64 restaurant_brand_ids = 8;
+}
+
+message PromocodeList {
+  repeated Promocode promocodes = 1;
+}
+
+message GetUserPromosRequest {
+  int64 user_id = 1;
+}
+
+message GetRestaurantPromosRequest {
+  int64 restaurant_brand_id = 1;
+}
+
+message BindPromocodeRequest {
+  int64 user_id = 1;
+  string code = 2;
+}
+
+message ValidatePromocodeRequest {
+  int64 user_id = 1;
+  string code = 2;
+  int64 restaurant_brand_id = 3;
+  int64 order_amount = 4;
+  int64 delivery_cost = 5;
+  int64 service_fee = 6;
+}
+
+message ValidatePromocodeResponse {
+  bool valid = 1;
+  int64 discount = 2;
+  string reason = 3;
+}
+
+message UsePromocodeRequest {
+  int64 user_id = 1;
+  string code = 2;
+  string order_public_id = 3;
+}
+
+message GetUserPaidBrandsRequest {
+  int64 user_id = 1;
+}
+
+message GetTrendingBrandsRequest {
+  int32 window_days = 1;
+  int32 limit = 2;
+}
+
+message BrandIDList {
+  repeated int64 brand_ids = 1;
+}
+
+message GetTopDishesByBrandRequest {
+  int64 brand_id = 1;
+  int32 window_days = 2;
+  int32 limit = 3;
+}
+
+message DishIDList {
+  repeated int64 dish_ids = 1;
 }

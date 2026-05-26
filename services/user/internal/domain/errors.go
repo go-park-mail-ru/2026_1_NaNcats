@@ -12,4 +12,6 @@ var (
 	ErrInvalidImageExt    = errutil.New("INVALID_EXTENSION", "invalid image extension", codes.InvalidArgument)
 	ErrImageNotFound      = errutil.New("IMAGE_NOT_FOUND", "image not found", codes.NotFound)
 	ErrNoChangesProvided  = errutil.New("NO_CHANGES", "no changes provided", codes.InvalidArgument)
+
+	ErrAchievementNotFound = errutil.New("ACHIEVEMENT_NOT_FOUND", "achievement not found", codes.NotFound)
 )
