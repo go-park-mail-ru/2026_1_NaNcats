@@ -77,7 +77,7 @@ func TestClientProfileRepo_Create(t *testing.T) {
 func TestClientProfileRepo_GetByAccountID(t *testing.T) {
 	ctx := context.Background()
 	var accountID int64 = 42
-	columns := []string{"account_id", "bonus_balance", "streak_count"}
+	columns := []string{"account_id", "bonus_balance", "streak_count", "last_order_date", "streak_freeze_active"}
 
 	type mockInit func(m pgxmock.PgxPoolIface)
 	tests := []struct {
@@ -89,9 +89,9 @@ func TestClientProfileRepo_GetByAccountID(t *testing.T) {
 		{
 			name: "Успешное получение профиля",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`SELECT account_id, bonus_balance, streak_count FROM "client_profile" WHERE account_id = $1`)).
+				m.ExpectQuery(regexp.QuoteMeta(`SELECT account_id, bonus_balance, streak_count, last_order_date, streak_freeze_active FROM "client_profile" WHERE account_id = $1`)).
 					WithArgs(accountID).
-					WillReturnRows(pgxmock.NewRows(columns).AddRow(accountID, int64(1000), 5))
+					WillReturnRows(pgxmock.NewRows(columns).AddRow(accountID, int64(1000), 5, nil, false))
 			},
 			expectedRes: domain.ClientProfile{
 				AccountID:    accountID,

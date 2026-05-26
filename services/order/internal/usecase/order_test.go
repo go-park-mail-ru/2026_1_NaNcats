@@ -82,6 +82,8 @@ func TestOrderUseCase_CreateOrder(t *testing.T) {
 
 				d.repo.EXPECT().WithTransaction(gomock.Any(), gomock.Any()).DoAndReturn(runTx)
 				d.repo.EXPECT().CreateOrder(gomock.Any(), gomock.Any(), idemKey).Return(int64(1), "pub-uuid", nil)
+				d.repo.EXPECT().GetOrderByPublicID(gomock.Any(), "pub-uuid").Return(domain.Order{PublicID: "pub-uuid"}, nil)
+				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueAnalytics, gomock.Any()).Return(nil)
 				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueuePaymentCommands, gomock.Any()).Return(nil)
 			},
 			expectedID:  "pub-uuid",
@@ -111,6 +113,8 @@ func TestOrderUseCase_CreateOrder(t *testing.T) {
 
 				d.repo.EXPECT().WithTransaction(gomock.Any(), gomock.Any()).DoAndReturn(runTx)
 				d.repo.EXPECT().CreateOrder(gomock.Any(), gomock.Any(), idemKey).Return(int64(2), "pub-uuid-2", nil)
+				d.repo.EXPECT().GetOrderByPublicID(gomock.Any(), "pub-uuid-2").Return(domain.Order{PublicID: "pub-uuid-2"}, nil)
+				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueAnalytics, gomock.Any()).Return(nil)
 				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueuePaymentCommands, gomock.Any()).Return(nil).Times(1)
 			},
 			expectedID:  "pub-uuid-2",
@@ -149,7 +153,8 @@ func TestOrderUseCase_CreateOrder(t *testing.T) {
 				d.repo.EXPECT().CreateOrder(gomock.Any(), gomock.Any(), idemKey).Return(int64(3), "pub-uuid-promo", nil)
 				d.repo.EXPECT().IncrementPromocodeUses(gomock.Any(), int64(1)).Return(nil)
 				d.repo.EXPECT().CreatePromocodeUsage(gomock.Any(), int64(1), int64(3), int64(1)).Return(nil)
-
+				d.repo.EXPECT().GetOrderByPublicID(gomock.Any(), "pub-uuid-promo").Return(domain.Order{PublicID: "pub-uuid-promo"}, nil)
+				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueAnalytics, gomock.Any()).Return(nil)
 				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueuePaymentCommands, gomock.Any()).Return(nil)
 			},
 			expectedID:  "pub-uuid-promo",
@@ -404,8 +409,9 @@ func TestOrderUseCase_CancelOrder(t *testing.T) {
 			mockInit: func(d useCaseDeps) {
 				d.repo.EXPECT().GetOrderByPublicID(gomock.Any(), "pub-123").Return(domain.Order{
 					AdminID: 1, Status: StatusCreated,
-				}, nil)
+				}, nil).Times(2)
 				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusCancelled, StatusCreated, StatusCartLocked, StatusPaymentReady, StatusPaid).Return(nil)
+				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueAnalytics, gomock.Any()).Return(nil)
 				d.repo.EXPECT().RollbackPromocodeUsage(gomock.Any(), "pub-123").Return(nil)
 				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueGatewayEvents, gomock.Any()).Return(nil)
 			},
@@ -440,7 +446,7 @@ func TestOrderUseCase_CancelOrder(t *testing.T) {
 			mockInit: func(d useCaseDeps) {
 				d.repo.EXPECT().GetOrderByPublicID(gomock.Any(), "pub-123").Return(domain.Order{
 					AdminID: 1, Status: StatusFinished,
-				}, nil)
+				}, nil).Times(2)
 				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusCancelled, StatusCreated, StatusCartLocked, StatusPaymentReady, StatusPaid).Return(repository.ErrStateChanged)
 			},
 			expectedErr: true,
@@ -453,7 +459,7 @@ func TestOrderUseCase_CancelOrder(t *testing.T) {
 			mockInit: func(d useCaseDeps) {
 				d.repo.EXPECT().GetOrderByPublicID(gomock.Any(), "pub-123").Return(domain.Order{
 					AdminID: 1, Status: StatusCreated,
-				}, nil)
+				}, nil).Times(2)
 				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusCancelled, StatusCreated, StatusCartLocked, StatusPaymentReady, StatusPaid).Return(errors.New("db error"))
 			},
 			expectedErr: true,
@@ -466,8 +472,9 @@ func TestOrderUseCase_CancelOrder(t *testing.T) {
 			mockInit: func(d useCaseDeps) {
 				d.repo.EXPECT().GetOrderByPublicID(gomock.Any(), "pub-123").Return(domain.Order{
 					AdminID: 1, Status: StatusCreated,
-				}, nil)
+				}, nil).Times(2)
 				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-123", StatusCancelled, StatusCreated, StatusCartLocked, StatusPaymentReady, StatusPaid).Return(nil)
+				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueAnalytics, gomock.Any()).Return(nil)
 				d.repo.EXPECT().RollbackPromocodeUsage(gomock.Any(), "pub-123").Return(errors.New("db error"))
 			},
 			expectedErr: true,
@@ -545,6 +552,7 @@ func TestOrderUseCase_UpdateOrderStatusByPaymentID(t *testing.T) {
 				d.repo.EXPECT().UpdateSplitStatusByPaymentID(gomock.Any(), "pay-2", SplitStatusPaid).Return("split-2", "pub-order", nil)
 				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueGatewayEvents, gomock.Any()).Return(nil)
 				d.repo.EXPECT().AreAllSplitsPaid(gomock.Any(), "pub-order").Return(true, nil)
+				d.repo.EXPECT().GetOrderByPublicID(gomock.Any(), "pub-order").Return(domain.Order{PublicID: "pub-order", Status: StatusCartLocked}, nil)
 				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-order", StatusPaid, StatusCreated, StatusCartLocked, StatusPaymentReady).Return(repository.ErrStateChanged)
 			},
 			expectedErr: false,
@@ -557,6 +565,7 @@ func TestOrderUseCase_UpdateOrderStatusByPaymentID(t *testing.T) {
 				d.repo.EXPECT().UpdateSplitStatusByPaymentID(gomock.Any(), "pay-2", SplitStatusPaid).Return("split-2", "pub-order", nil)
 				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueGatewayEvents, gomock.Any()).Return(nil)
 				d.repo.EXPECT().AreAllSplitsPaid(gomock.Any(), "pub-order").Return(true, nil)
+				d.repo.EXPECT().GetOrderByPublicID(gomock.Any(), "pub-order").Return(domain.Order{PublicID: "pub-order", Status: StatusCartLocked}, nil)
 				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-order", StatusPaid, StatusCreated, StatusCartLocked, StatusPaymentReady).Return(errors.New("db error"))
 			},
 			expectedErr: true,
@@ -580,7 +589,9 @@ func TestOrderUseCase_UpdateOrderStatusByPaymentID(t *testing.T) {
 				d.repo.EXPECT().UpdateSplitStatusByPaymentID(gomock.Any(), "pay-3", SplitStatusPaid).Return("split-3", "pub-order", nil)
 				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueGatewayEvents, gomock.Any()).Return(nil)
 				d.repo.EXPECT().AreAllSplitsPaid(gomock.Any(), "pub-order").Return(true, nil)
+				d.repo.EXPECT().GetOrderByPublicID(gomock.Any(), "pub-order").Return(domain.Order{PublicID: "pub-order", AdminID: 1, RestaurantBranchID: 42, Status: StatusCartLocked}, nil)
 				d.repo.EXPECT().UpdateOrderStatus(gomock.Any(), "pub-order", StatusPaid, StatusCreated, StatusCartLocked, StatusPaymentReady).Return(nil)
+				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueAnalytics, gomock.Any()).Return(nil)
 				d.pub.EXPECT().PublishJSON(gomock.Any(), events.QueueGatewayEvents, gomock.Any()).Return(nil)
 				d.repo.EXPECT().GetOrderByPublicID(gomock.Any(), "pub-order").Return(domain.Order{PublicID: "pub-order", AdminID: 1, RestaurantBranchID: 42}, nil)
 			},

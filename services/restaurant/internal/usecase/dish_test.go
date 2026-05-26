@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/repository/mocks"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/common"
 	s3Mocks "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/s3/mocks"
 
 	"github.com/stretchr/testify/assert"
@@ -326,9 +327,10 @@ func createTestImage() []byte {
 }
 
 func TestDishUseCase_CreateDish(t *testing.T) {
-	type mockInit func(dr *mocks.MockDishRepository, fs *s3Mocks.MockFileStorage)
+	type mockInit func(dr *mocks.MockDishRepository, br *mocks.MockRestaurantBrandRepository, fs *s3Mocks.MockFileStorage)
 
-	ctx := context.Background()
+	ownerID := int64(1)
+	ctx := context.WithValue(context.Background(), common.UserIDKey, ownerID)
 	defaultLogo := "http://s3.ru/default-food.png"
 	newFoodURL := "http://s3.ru/foods/new-food.webp"
 	validImage := createTestImage()
@@ -349,7 +351,8 @@ func TestDishUseCase_CreateDish(t *testing.T) {
 		{
 			name:  "Успешное создание без фото (дефолтное)",
 			image: nil,
-			mockInit: func(dr *mocks.MockDishRepository, fs *s3Mocks.MockFileStorage) {
+			mockInit: func(dr *mocks.MockDishRepository, br *mocks.MockRestaurantBrandRepository, fs *s3Mocks.MockFileStorage) {
+				br.EXPECT().GetByID(gomock.Any(), int64(1)).Return(domain.RestaurantBrand{ID: 1, OwnerProfileID: ownerID}, nil)
 				expectedDish := dishInput
 				expectedDish.ImageURL = defaultLogo
 				dr.EXPECT().Create(gomock.Any(), expectedDish, idemKey).Return(expectedDish, nil)
@@ -358,7 +361,8 @@ func TestDishUseCase_CreateDish(t *testing.T) {
 		{
 			name:  "Успешное создание с фото",
 			image: validImage,
-			mockInit: func(dr *mocks.MockDishRepository, fs *s3Mocks.MockFileStorage) {
+			mockInit: func(dr *mocks.MockDishRepository, br *mocks.MockRestaurantBrandRepository, fs *s3Mocks.MockFileStorage) {
+				br.EXPECT().GetByID(gomock.Any(), int64(1)).Return(domain.RestaurantBrand{ID: 1, OwnerProfileID: ownerID}, nil)
 				fs.EXPECT().UploadFile(gomock.Any(), gomock.Any(), gomock.Any(), "image/webp").Return(newFoodURL, nil)
 				expectedDish := dishInput
 				expectedDish.ImageURL = newFoodURL
@@ -368,7 +372,8 @@ func TestDishUseCase_CreateDish(t *testing.T) {
 		{
 			name:  "Ошибка: невалидный формат изображения",
 			image: []byte("not-an-image"),
-			mockInit: func(dr *mocks.MockDishRepository, fs *s3Mocks.MockFileStorage) {
+			mockInit: func(dr *mocks.MockDishRepository, br *mocks.MockRestaurantBrandRepository, fs *s3Mocks.MockFileStorage) {
+				br.EXPECT().GetByID(gomock.Any(), int64(1)).Return(domain.RestaurantBrand{ID: 1, OwnerProfileID: ownerID}, nil)
 				// Упадет на imageutil.ConvertToWebp
 			},
 			expectedError: domain.ErrInvalidImageExt.Error(),
@@ -376,7 +381,8 @@ func TestDishUseCase_CreateDish(t *testing.T) {
 		{
 			name:  "Ошибка S3 при загрузке",
 			image: validImage,
-			mockInit: func(dr *mocks.MockDishRepository, fs *s3Mocks.MockFileStorage) {
+			mockInit: func(dr *mocks.MockDishRepository, br *mocks.MockRestaurantBrandRepository, fs *s3Mocks.MockFileStorage) {
+				br.EXPECT().GetByID(gomock.Any(), int64(1)).Return(domain.RestaurantBrand{ID: 1, OwnerProfileID: ownerID}, nil)
 				fs.EXPECT().UploadFile(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", errors.New("s3 fail"))
 			},
 			expectedError: "failed to upload food image",
@@ -391,7 +397,7 @@ func TestDishUseCase_CreateDish(t *testing.T) {
 			dr := mocks.NewMockDishRepository(ctrl)
 			repoBrand := mocks.NewMockRestaurantBrandRepository(ctrl)
 			fs := s3Mocks.NewMockFileStorage(ctrl)
-			tt.mockInit(dr, fs)
+			tt.mockInit(dr, repoBrand, fs)
 
 			uc := NewDishUseCase(dr, repoBrand, defaultLogo, fs, nil)
 			_, err := uc.CreateDish(ctx, dishInput, tt.image, idemKey)
@@ -407,9 +413,11 @@ func TestDishUseCase_CreateDish(t *testing.T) {
 }
 
 func TestDishUseCase_UpdateDish(t *testing.T) {
-	type mockInit func(dr *mocks.MockDishRepository, fs *s3Mocks.MockFileStorage)
+	type mockInit func(dr *mocks.MockDishRepository, br *mocks.MockRestaurantBrandRepository, fs *s3Mocks.MockFileStorage)
 
-	ctx := context.Background()
+	ownerID := int64(1)
+	brandID := int64(5)
+	ctx := context.WithValue(context.Background(), common.UserIDKey, ownerID)
 	defaultLogo := "http://s3.ru/default-food.png"
 	oldURL := "http://s3.ru/foods/old.webp"
 	newURL := "http://s3.ru/foods/new.webp"
@@ -417,11 +425,13 @@ func TestDishUseCase_UpdateDish(t *testing.T) {
 	dishID := int64(10)
 
 	existingDish := domain.Dish{
-		ID:       dishID,
-		Name:     "Old Name",
-		ImageURL: oldURL,
-		Price:    100,
+		ID:                dishID,
+		RestaurantBrandID: brandID,
+		Name:              "Old Name",
+		ImageURL:          oldURL,
+		Price:             100,
 	}
+	ownedBrand := domain.RestaurantBrand{ID: brandID, OwnerProfileID: ownerID}
 
 	tests := []struct {
 		name          string
@@ -437,8 +447,9 @@ func TestDishUseCase_UpdateDish(t *testing.T) {
 				Price: 200,
 			},
 			newImage: nil,
-			mockInit: func(dr *mocks.MockDishRepository, fs *s3Mocks.MockFileStorage) {
+			mockInit: func(dr *mocks.MockDishRepository, br *mocks.MockRestaurantBrandRepository, fs *s3Mocks.MockFileStorage) {
 				dr.EXPECT().GetDishByID(gomock.Any(), dishID).Return(existingDish, nil)
+				br.EXPECT().GetByID(gomock.Any(), brandID).Return(ownedBrand, nil)
 				expected := existingDish
 				expected.Price = 200
 				dr.EXPECT().Update(gomock.Any(), expected).Return(expected, nil)
@@ -451,8 +462,9 @@ func TestDishUseCase_UpdateDish(t *testing.T) {
 				Name: "New Name",
 			},
 			newImage: validImage,
-			mockInit: func(dr *mocks.MockDishRepository, fs *s3Mocks.MockFileStorage) {
+			mockInit: func(dr *mocks.MockDishRepository, br *mocks.MockRestaurantBrandRepository, fs *s3Mocks.MockFileStorage) {
 				dr.EXPECT().GetDishByID(gomock.Any(), dishID).Return(existingDish, nil)
+				br.EXPECT().GetByID(gomock.Any(), brandID).Return(ownedBrand, nil)
 				fs.EXPECT().UploadFile(gomock.Any(), gomock.Any(), gomock.Any(), "image/webp").Return(newURL, nil)
 				fs.EXPECT().DeleteFile(gomock.Any(), oldURL).Return(nil)
 
@@ -465,7 +477,7 @@ func TestDishUseCase_UpdateDish(t *testing.T) {
 		{
 			name:  "Ошибка: блюдо не найдено",
 			input: domain.Dish{ID: 404},
-			mockInit: func(dr *mocks.MockDishRepository, fs *s3Mocks.MockFileStorage) {
+			mockInit: func(dr *mocks.MockDishRepository, br *mocks.MockRestaurantBrandRepository, fs *s3Mocks.MockFileStorage) {
 				dr.EXPECT().GetDishByID(gomock.Any(), int64(404)).Return(domain.Dish{}, domain.ErrDishNotFound)
 			},
 			expectedError: domain.ErrDishNotFound.Error(),
@@ -480,7 +492,7 @@ func TestDishUseCase_UpdateDish(t *testing.T) {
 			dr := mocks.NewMockDishRepository(ctrl)
 			repoBrand := mocks.NewMockRestaurantBrandRepository(ctrl)
 			fs := s3Mocks.NewMockFileStorage(ctrl)
-			tt.mockInit(dr, fs)
+			tt.mockInit(dr, repoBrand, fs)
 
 			uc := NewDishUseCase(dr, repoBrand, defaultLogo, fs, nil)
 			_, err := uc.UpdateDish(ctx, tt.input, tt.newImage, "idem")
@@ -497,9 +509,11 @@ func TestDishUseCase_UpdateDish(t *testing.T) {
 }
 
 func TestDishUseCase_DeleteDish(t *testing.T) {
-	type mockInit func(dr *mocks.MockDishRepository)
+	type mockInit func(dr *mocks.MockDishRepository, br *mocks.MockRestaurantBrandRepository)
 
-	ctx := context.Background()
+	ownerID := int64(1)
+	brandID := int64(5)
+	ctx := context.WithValue(context.Background(), common.UserIDKey, ownerID)
 	dishID := int64(1)
 
 	tests := []struct {
@@ -509,13 +523,17 @@ func TestDishUseCase_DeleteDish(t *testing.T) {
 	}{
 		{
 			name: "Успешное удаление",
-			mockInit: func(dr *mocks.MockDishRepository) {
+			mockInit: func(dr *mocks.MockDishRepository, br *mocks.MockRestaurantBrandRepository) {
+				dr.EXPECT().GetDishByID(gomock.Any(), dishID).Return(domain.Dish{ID: dishID, RestaurantBrandID: brandID}, nil)
+				br.EXPECT().GetByID(gomock.Any(), brandID).Return(domain.RestaurantBrand{ID: brandID, OwnerProfileID: ownerID}, nil)
 				dr.EXPECT().Delete(gomock.Any(), dishID).Return(nil)
 			},
 		},
 		{
 			name: "Ошибка репозитория",
-			mockInit: func(dr *mocks.MockDishRepository) {
+			mockInit: func(dr *mocks.MockDishRepository, br *mocks.MockRestaurantBrandRepository) {
+				dr.EXPECT().GetDishByID(gomock.Any(), dishID).Return(domain.Dish{ID: dishID, RestaurantBrandID: brandID}, nil)
+				br.EXPECT().GetByID(gomock.Any(), brandID).Return(domain.RestaurantBrand{ID: brandID, OwnerProfileID: ownerID}, nil)
 				dr.EXPECT().Delete(gomock.Any(), dishID).Return(errors.New("db error"))
 			},
 			wantErr: true,
@@ -529,7 +547,7 @@ func TestDishUseCase_DeleteDish(t *testing.T) {
 
 			dr := mocks.NewMockDishRepository(ctrl)
 			repoBrand := mocks.NewMockRestaurantBrandRepository(ctrl)
-			tt.mockInit(dr)
+			tt.mockInit(dr, repoBrand)
 
 			uc := NewDishUseCase(dr, repoBrand, "", nil, nil)
 			err := uc.DeleteDish(ctx, dishID)

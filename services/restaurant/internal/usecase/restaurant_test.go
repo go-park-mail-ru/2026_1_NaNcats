@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/repository/mocks"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/common"
 	s3Mocks "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/s3/mocks"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -337,14 +338,15 @@ func createValidImageBytes() []byte {
 func TestRestaurantBrandUseCase_CreateRestaurantBrand(t *testing.T) {
 	type mockInit func(r *mocks.MockRestaurantBrandRepository, fs *s3Mocks.MockFileStorage)
 
-	ctx := context.Background()
+	ownerID := int64(42)
+	ctx := context.WithValue(context.Background(), common.UserIDKey, ownerID)
 	defaultLogo := "http://s3.ru/default-logo.png"
 	newLogoURL := "http://s3.ru/restaurants/new-logo.webp"
 	validImage := createValidImageBytes()
 	idemKey := "idem-create"
 
 	brandInput := domain.RestaurantBrand{
-		OwnerProfileID: 42,
+		OwnerProfileID: ownerID,
 		Name:           "Burger Heroes",
 		Description:    "Tasty",
 	}
@@ -415,7 +417,8 @@ func TestRestaurantBrandUseCase_CreateRestaurantBrand(t *testing.T) {
 func TestRestaurantBrandUseCase_UpdateRestaurantBrand(t *testing.T) {
 	type mockInit func(r *mocks.MockRestaurantBrandRepository, fs *s3Mocks.MockFileStorage)
 
-	ctx := context.Background()
+	ownerID := int64(42)
+	ctx := context.WithValue(context.Background(), common.UserIDKey, ownerID)
 	defaultLogo := "http://s3.ru/default-logo.png"
 	oldLogoURL := "http://s3.ru/restaurants/old.webp"
 	newLogoURL := "http://s3.ru/restaurants/new.webp"
@@ -423,11 +426,12 @@ func TestRestaurantBrandUseCase_UpdateRestaurantBrand(t *testing.T) {
 	validImage := createValidImageBytes()
 
 	existingBrand := domain.RestaurantBrand{
-		ID:            brandID,
-		Name:          "Old Name",
-		Description:   "Old Desc",
-		LogoURL:       oldLogoURL,
-		PromotionTier: 1,
+		ID:             brandID,
+		OwnerProfileID: ownerID,
+		Name:           "Old Name",
+		Description:    "Old Desc",
+		LogoURL:        oldLogoURL,
+		PromotionTier:  1,
 	}
 
 	tests := []struct {
@@ -503,8 +507,10 @@ func TestRestaurantBrandUseCase_UpdateRestaurantBrand(t *testing.T) {
 func TestRestaurantBrandUseCase_DeleteRestaurantBrand(t *testing.T) {
 	type mockInit func(r *mocks.MockRestaurantBrandRepository)
 
-	ctx := context.Background()
+	ownerID := int64(42)
+	ctx := context.WithValue(context.Background(), common.UserIDKey, ownerID)
 	brandID := int64(1)
+	ownedBrand := domain.RestaurantBrand{ID: brandID, OwnerProfileID: ownerID}
 
 	tests := []struct {
 		name     string
@@ -514,12 +520,14 @@ func TestRestaurantBrandUseCase_DeleteRestaurantBrand(t *testing.T) {
 		{
 			name: "Успешное удаление",
 			mockInit: func(r *mocks.MockRestaurantBrandRepository) {
+				r.EXPECT().GetByID(gomock.Any(), brandID).Return(ownedBrand, nil)
 				r.EXPECT().Delete(gomock.Any(), brandID).Return(nil)
 			},
 		},
 		{
 			name: "Ошибка репозитория",
 			mockInit: func(r *mocks.MockRestaurantBrandRepository) {
+				r.EXPECT().GetByID(gomock.Any(), brandID).Return(ownedBrand, nil)
 				r.EXPECT().Delete(gomock.Any(), brandID).Return(errors.New("db error"))
 			},
 			wantErr: true,
