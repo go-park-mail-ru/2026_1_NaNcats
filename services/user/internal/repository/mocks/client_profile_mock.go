@@ -69,3 +69,45 @@ func (mr *MockClientProfileRepositoryMockRecorder) GetByAccountID(ctx, accountID
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByAccountID", reflect.TypeOf((*MockClientProfileRepository)(nil).GetByAccountID), ctx, accountID)
 }
+
+// IncrementStreak mocks base method.
+func (m *MockClientProfileRepository) IncrementStreak(ctx context.Context, accountID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IncrementStreak", ctx, accountID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// IncrementStreak indicates an expected call of IncrementStreak.
+func (mr *MockClientProfileRepositoryMockRecorder) IncrementStreak(ctx, accountID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementStreak", reflect.TypeOf((*MockClientProfileRepository)(nil).IncrementStreak), ctx, accountID)
+}
+
+// ResetStreak mocks base method.
+func (m *MockClientProfileRepository) ResetStreak(ctx context.Context, accountID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResetStreak", ctx, accountID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResetStreak indicates an expected call of ResetStreak.
+func (mr *MockClientProfileRepositoryMockRecorder) ResetStreak(ctx, accountID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetStreak", reflect.TypeOf((*MockClientProfileRepository)(nil).ResetStreak), ctx, accountID)
+}
+
+// UpdateStreakFreeze mocks base method.
+func (m *MockClientProfileRepository) UpdateStreakFreeze(ctx context.Context, accountID int64, active bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateStreakFreeze", ctx, accountID, active)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateStreakFreeze indicates an expected call of UpdateStreakFreeze.
+func (mr *MockClientProfileRepositoryMockRecorder) UpdateStreakFreeze(ctx, accountID, active any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStreakFreeze", reflect.TypeOf((*MockClientProfileRepository)(nil).UpdateStreakFreeze), ctx, accountID, active)
+}

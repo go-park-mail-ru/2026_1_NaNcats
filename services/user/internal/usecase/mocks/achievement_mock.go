@@ -85,3 +85,17 @@ func (mr *MockAchievementUseCaseMockRecorder) OnOrderPaid(ctx, accountID, restau
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnOrderPaid", reflect.TypeOf((*MockAchievementUseCase)(nil).OnOrderPaid), ctx, accountID, restaurantID, paidAt)
 }
+
+// OnWheelSpin mocks base method.
+func (m *MockAchievementUseCase) OnWheelSpin(ctx context.Context, accountID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OnWheelSpin", ctx, accountID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// OnWheelSpin indicates an expected call of OnWheelSpin.
+func (mr *MockAchievementUseCaseMockRecorder) OnWheelSpin(ctx, accountID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnWheelSpin", reflect.TypeOf((*MockAchievementUseCase)(nil).OnWheelSpin), ctx, accountID)
+}

@@ -11,4 +11,5 @@ type ClientProfile struct {
 	StreakCount            int
 	LastOrderDate          *time.Time
 	PremiumExpiresAt       *time.Time
+	StreakFreezeActive     bool
 }

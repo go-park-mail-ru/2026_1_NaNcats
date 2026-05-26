@@ -100,7 +100,7 @@ func (r *achievementRepo) Award(ctx context.Context, accountID, achievementID in
 func (r *achievementRepo) IncrementPaidOrders(ctx context.Context, accountID int64, paidAt time.Time) (repository.IncrementPaidOrderResult, error) {
 	query := `
 		WITH cur AS (
-			SELECT streak_count, last_order_date
+			SELECT streak_count, last_order_date, streak_freeze_active
 			FROM "client_profile"
 			WHERE account_id = $1
 			FOR UPDATE
@@ -111,6 +111,7 @@ func (r *achievementRepo) IncrementPaidOrders(ctx context.Context, accountID int
 					WHEN last_order_date IS NULL THEN 1
 					WHEN date_trunc('week', $2::timestamptz) = date_trunc('week', last_order_date) THEN streak_count
 					WHEN date_trunc('week', $2::timestamptz) = date_trunc('week', last_order_date) + INTERVAL '1 week' THEN streak_count + 1
+					WHEN streak_freeze_active = true THEN streak_count + 1
 					ELSE 1
 				END AS new_streak
 			FROM cur
@@ -118,7 +119,11 @@ func (r *achievementRepo) IncrementPaidOrders(ctx context.Context, accountID int
 		UPDATE "client_profile" AS cp
 		SET paid_orders_count = cp.paid_orders_count + 1,
 			streak_count = calc.new_streak,
-			last_order_date = $2
+			last_order_date = $2,
+			streak_freeze_active = CASE 
+				WHEN cp.last_order_date IS NOT NULL AND date_trunc('week', $2::timestamptz) > date_trunc('week', cp.last_order_date) + INTERVAL '1 week' THEN false 
+				ELSE cp.streak_freeze_active 
+			END
 		FROM calc
 		WHERE cp.account_id = $1
 		RETURNING cp.paid_orders_count, cp.streak_count

@@ -41,6 +41,20 @@ func (m *MockClientProfileUseCase) EXPECT() *MockClientProfileUseCaseMockRecorde
 	return m.recorder
 }
 
+// ActivateStreakFreeze mocks base method.
+func (m *MockClientProfileUseCase) ActivateStreakFreeze(ctx context.Context, accountID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ActivateStreakFreeze", ctx, accountID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ActivateStreakFreeze indicates an expected call of ActivateStreakFreeze.
+func (mr *MockClientProfileUseCaseMockRecorder) ActivateStreakFreeze(ctx, accountID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ActivateStreakFreeze", reflect.TypeOf((*MockClientProfileUseCase)(nil).ActivateStreakFreeze), ctx, accountID)
+}
+
 // CreateProfile mocks base method.
 func (m *MockClientProfileUseCase) CreateProfile(ctx context.Context, accountID int64, idempotencyKey string) error {
 	m.ctrl.T.Helper()
@@ -68,4 +82,18 @@ func (m *MockClientProfileUseCase) GetByAccountID(ctx context.Context, accountID
 func (mr *MockClientProfileUseCaseMockRecorder) GetByAccountID(ctx, accountID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByAccountID", reflect.TypeOf((*MockClientProfileUseCase)(nil).GetByAccountID), ctx, accountID)
+}
+
+// IncrementStreak mocks base method.
+func (m *MockClientProfileUseCase) IncrementStreak(ctx context.Context, accountID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IncrementStreak", ctx, accountID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// IncrementStreak indicates an expected call of IncrementStreak.
+func (mr *MockClientProfileUseCaseMockRecorder) IncrementStreak(ctx, accountID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementStreak", reflect.TypeOf((*MockClientProfileUseCase)(nil).IncrementStreak), ctx, accountID)
 }

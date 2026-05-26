@@ -29,6 +29,23 @@ func NewClientProfileUseCaseTracingMiddleware(next ClientProfileUseCase) ClientP
 	}
 }
 
+// ActivateStreakFreeze трассирует выполнение метода ActivateStreakFreeze
+func (m ClientProfileUseCaseTracingMiddleware) ActivateStreakFreeze(ctx context.Context, accountID int64) (err error) {
+
+	ctx, span := m.tracer.Start(ctx, "ClientProfileUseCase.ActivateStreakFreeze")
+
+	defer span.End()
+
+	err = m.next.ActivateStreakFreeze(ctx, accountID)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
 // CreateProfile трассирует выполнение метода CreateProfile
 func (m ClientProfileUseCaseTracingMiddleware) CreateProfile(ctx context.Context, accountID int64, idempotencyKey string) (err error) {
 
@@ -54,6 +71,23 @@ func (m ClientProfileUseCaseTracingMiddleware) GetByAccountID(ctx context.Contex
 	defer span.End()
 
 	c2, err = m.next.GetByAccountID(ctx, accountID)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
+// IncrementStreak трассирует выполнение метода IncrementStreak
+func (m ClientProfileUseCaseTracingMiddleware) IncrementStreak(ctx context.Context, accountID int64) (err error) {
+
+	ctx, span := m.tracer.Start(ctx, "ClientProfileUseCase.IncrementStreak")
+
+	defer span.End()
+
+	err = m.next.IncrementStreak(ctx, accountID)
 
 	if err != nil {
 		span.RecordError(err)

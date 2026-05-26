@@ -247,3 +247,30 @@ func (h *UserHandler) ResolvePublicID(ctx context.Context, req *pb.ResolvePublic
 
 	return &pb.ResolvePublicIDResponse{UserId: user.ID}, nil
 }
+
+func (h *UserHandler) ActivateStreakFreeze(ctx context.Context, req *pb.ActivateStreakFreezeRequest) (*emptypb.Empty, error) {
+	err := h.clientUC.ActivateStreakFreeze(ctx, req.UserId)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (h *UserHandler) IncrementStreak(ctx context.Context, req *pb.IncrementStreakRequest) (*emptypb.Empty, error) {
+	err := h.clientUC.IncrementStreak(ctx, req.UserId)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (h *UserHandler) OnWheelSpin(ctx context.Context, req *pb.OnWheelSpinRequest) (*emptypb.Empty, error) {
+	err := h.achievementUC.OnWheelSpin(ctx, req.UserId)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	return &emptypb.Empty{}, nil
+}

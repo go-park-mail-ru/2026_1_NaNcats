@@ -63,6 +63,26 @@ func (mr *MockOrderServiceClientMockRecorder) CancelOrder(ctx, in any, opts ...a
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelOrder", reflect.TypeOf((*MockOrderServiceClient)(nil).CancelOrder), varargs...)
 }
 
+// CreateAndBindWheelPromo mocks base method.
+func (m *MockOrderServiceClient) CreateAndBindWheelPromo(ctx context.Context, in *order.CreateAndBindWheelPromoRequest, opts ...grpc.CallOption) (*order.Promocode, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CreateAndBindWheelPromo", varargs...)
+	ret0, _ := ret[0].(*order.Promocode)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateAndBindWheelPromo indicates an expected call of CreateAndBindWheelPromo.
+func (mr *MockOrderServiceClientMockRecorder) CreateAndBindWheelPromo(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAndBindWheelPromo", reflect.TypeOf((*MockOrderServiceClient)(nil).CreateAndBindWheelPromo), varargs...)
+}
+
 // CreateOrder mocks base method.
 func (m *MockOrderServiceClient) CreateOrder(ctx context.Context, in *order.CreateOrderRequest, opts ...grpc.CallOption) (*order.CreateOrderResponse, error) {
 	m.ctrl.T.Helper()
