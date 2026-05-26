@@ -1,14 +1,9 @@
--- Seed test client users with rich profile data.
--- Password hash = "Passw0rd!" (same argon2id params as owner seed).
--- After seed_users (owner=1, admin=2), first client gets id=3.
-
 INSERT INTO "user" (name, email, password_hash, user_role) VALUES
 ('Анна Петрова', 'anna@foodcourt.fun',
  '$argon2id$v=19$m=65536,t=3,p=2$AHkE4ETIk466SP0Zn75HMQ$1sddMdeT8DiQglJz6iZgVzDMU/zdlsi8GJMOojMokbY',
  'client')
 ON CONFLICT (email) DO NOTHING;
 
--- Client profile: bonus balance, streak, premium
 INSERT INTO "client_profile" (account_id, bonus_balance, streak_count, last_order_date,
                               bonus_expires_at, premium_expires_at)
 SELECT id, 67000000, 4,

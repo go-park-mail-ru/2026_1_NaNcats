@@ -15,7 +15,8 @@ DB_PORT ?= 5432
 RABBITMQ_URL ?= amqp://guest:guest@localhost:5672/
 REDIS_URL ?= redis://localhost:6379/0
 
-MICROSERVICES = auth user restaurant cart address payment order support analytics
+POSTGRES_SERVICES = auth user restaurant cart address payment order support
+MICROSERVICES = $(POSTGRES_SERVICES) analytics
 ALL_SERVICES = $(MICROSERVICES) api-gateway
 
 $(shell mkdir -p .tmp_pids)
@@ -194,7 +195,7 @@ migrate-create:
 # Накатить миграции для всех сервисов
 migrate-up-all:
 	@echo "Накатываем миграции для всех сервисов..."
-	@for service in $(MICROSERVICES); do \
+	@for service in $(POSTGRES_SERVICES); do \
 		$(MAKE) migrate-up s=$$service; \
 	done
 	@echo "Накатываем миграции для ClickHouse..."
@@ -209,7 +210,7 @@ migrate-up:
 # Откатить миграции для всех сервисов
 migrate-down-all:
 	@echo "Откатываем миграции для всех сервисов..."
-	@for service in $(MICROSERVICES); do \
+	@for service in $(POSTGRES_SERVICES); do \
 		$(MAKE) migrate-down s=$$service; \
 	done
 
