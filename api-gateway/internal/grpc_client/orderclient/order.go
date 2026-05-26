@@ -51,6 +51,7 @@ type OrderSplit struct {
 
 type Order struct {
 	PublicID          string
+	AdminID           int64
 	RestaurantBrandID int64
 	RestaurantName    string
 	TotalCost         int64
@@ -150,6 +151,7 @@ func (c *orderClient) GetOrders(ctx context.Context, userID int64, limit, offset
 
 		orders = append(orders, Order{
 			PublicID:          pbO.PublicId,
+			AdminID:           pbO.AdminAccountId,
 			RestaurantBrandID: pbO.RestaurantBrandId,
 			RestaurantName:    pbO.RestaurantName,
 			TotalCost:         pbO.TotalCost,

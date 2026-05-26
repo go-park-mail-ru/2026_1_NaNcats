@@ -354,12 +354,13 @@ func (r *orderRepo) GetOrderByPublicID(ctx context.Context, publicID string) (do
 
 func (r *orderRepo) GetOrdersByUserID(ctx context.Context, userID int64, limit, offset int32) ([]domain.Order, error) {
 	query := `
-		SELECT DISTINCT o.id, o.public_id, o.admin_account_id, o.restaurant_branch_id, 
-		o.restaurant_brand_id, o.restaurant_name, o.total_cost, o.discount_amount, 
+		SELECT DISTINCT o.id, o.public_id, o.admin_account_id, o.restaurant_branch_id,
+		o.restaurant_brand_id, o.restaurant_name, o.total_cost, o.discount_amount,
 		o.promocode_code, o.status, o.created_at
 		FROM "order" o
 		LEFT JOIN "order_split" os ON o.id = os.order_id
-		WHERE o.admin_account_id = $1 OR os.user_id = $1
+		LEFT JOIN "order_dish" od ON o.id = od.order_id
+		WHERE o.admin_account_id = $1 OR os.user_id = $1 OR od.owner_user_id = $1
 		ORDER BY o.created_at DESC
 		LIMIT $2 OFFSET $3
 	`

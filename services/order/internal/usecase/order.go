@@ -480,6 +480,11 @@ func (o *orderUseCase) CancelOrder(ctx context.Context, orderPublicID string, us
 		return errutil.Internal("order cancelled, but failed to rollback promocode", err)
 	}
 
+	_ = o.rabbitPublisher.PublishJSON(ctx, events.QueueGatewayEvents, events.GatewayEvent{
+		OrderID: orderPublicID,
+		Status:  StatusCancelled,
+	})
+
 	span.AddEvent("order_cancelled_and_promocode_rolled_back")
 	return nil
 }
