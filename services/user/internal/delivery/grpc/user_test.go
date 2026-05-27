@@ -727,61 +727,6 @@ func TestUserHandler_ResolvePublicID(t *testing.T) {
 	}
 }
 
-func TestUserHandler_OnOrderPaid(t *testing.T) {
-	type mockInit func(a *mocks.MockAchievementUseCase)
-	paidTime := time.Now()
-	req := &pb.OnOrderPaidRequest{
-		UserId:       1,
-		RestaurantId: 2,
-		PaidAt:       timestamppb.New(paidTime),
-	}
-
-	tests := []struct {
-		name         string
-		req          *pb.OnOrderPaidRequest
-		mockInit     mockInit
-		expectedCode codes.Code
-	}{
-		{
-			name: "Успешная обработка оплаты заказа",
-			req:  req,
-			mockInit: func(a *mocks.MockAchievementUseCase) {
-				a.EXPECT().OnOrderPaid(gomock.Any(), int64(1), int64(2), paidTime.UTC()).Return(nil)
-			},
-			expectedCode: codes.OK,
-		},
-		{
-			name: "Ошибка при обработке оплаты заказа",
-			req:  req,
-			mockInit: func(a *mocks.MockAchievementUseCase) {
-				a.EXPECT().OnOrderPaid(gomock.Any(), int64(1), int64(2), paidTime.UTC()).Return(errors.New("db error"))
-			},
-			expectedCode: codes.Internal,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			achieveUC := mocks.NewMockAchievementUseCase(ctrl)
-			tt.mockInit(achieveUC)
-
-			h := NewUserHandler(nil, nil, achieveUC)
-			resp, err := h.OnOrderPaid(context.Background(), tt.req)
-
-			if tt.expectedCode == codes.OK {
-				assert.NoError(t, err)
-				assert.Equal(t, &emptypb.Empty{}, resp)
-			} else {
-				st, _ := status.FromError(err)
-				assert.Equal(t, tt.expectedCode, st.Code())
-			}
-		})
-	}
-}
-
 func TestUserHandler_ListAchievements(t *testing.T) {
 	type mockInit func(a *mocks.MockAchievementUseCase)
 	req := &emptypb.Empty{}

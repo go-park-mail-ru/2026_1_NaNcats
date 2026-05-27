@@ -13,3 +13,19 @@ type ClientProfile struct {
 	PremiumExpiresAt       *time.Time
 	StreakFreezeActive     bool
 }
+
+type WheelSpinResult struct {
+	SectorID   int
+	SectorName string
+	Emoji      string
+	PromoCode  *string
+	ExpiresAt  *string
+	Message    string
+}
+
+type WheelSector struct {
+	ID     int
+	Name   string
+	Emoji  string
+	Weight int
+}

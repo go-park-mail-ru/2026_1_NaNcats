@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-//go:generate mockgen -destination=mocks/client_profile_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/usecase ClientProfileUseCase
+//go:generate mockgen -source=client_profile.go -destination=mocks/client_profile_mock.go -package=mocks
 //go:generate gowrap gen -i ClientProfileUseCase -t ../../../../shared/templates/tracing.tmpl -o client_profile_tracing_mw.go -v TracerName=user-service
 type ClientProfileUseCase interface {
 	CreateProfile(ctx context.Context, accountID int64, idempotencyKey string) error
@@ -24,8 +24,8 @@ type ClientProfileUseCase interface {
 
 	ClaimWheelSpin(ctx context.Context, accountID int64) error
 	ResetWheelSpinCooldown(ctx context.Context, accountID int64) error
-	GetWheelSectors(ctx context.Context) ([]WheelSector, error)
-	SpinWheel(ctx context.Context, userID int64) (WheelSpinResult, error)
+	GetWheelSectors(ctx context.Context) ([]domain.WheelSector, error)
+	SpinWheel(ctx context.Context, userID int64) (domain.WheelSpinResult, error)
 }
 
 type OrderClient interface {
@@ -42,24 +42,7 @@ type OrderClient interface {
 	GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error)
 }
 
-// Описывает результат прокрутки колеса
-type WheelSpinResult struct {
-	SectorID   int
-	SectorName string
-	Emoji      string
-	PromoCode  *string
-	ExpiresAt  *string
-	Message    string
-}
-
-type WheelSector struct {
-	ID     int
-	Name   string
-	Emoji  string
-	Weight int
-}
-
-var sectors = []WheelSector{
+var sectors = []domain.WheelSector{
 	{ID: 1, Name: "Попробуй в следующий раз", Emoji: "🍂", Weight: 300},
 	{ID: 2, Name: "Персональная скидка", Emoji: "💸", Weight: 150},
 	{ID: 3, Name: "Скидка на популярный бренд", Emoji: "🔥", Weight: 150},
@@ -89,10 +72,10 @@ func NewClientProfileUseCase(
 	}
 }
 
-func (u *clientProfileUseCase) SpinWheel(ctx context.Context, userID int64) (WheelSpinResult, error) {
+func (u *clientProfileUseCase) SpinWheel(ctx context.Context, userID int64) (domain.WheelSpinResult, error) {
 	err := u.repo.ClaimWheelSpin(ctx, userID)
 	if err != nil {
-		return WheelSpinResult{}, err
+		return domain.WheelSpinResult{}, err
 	}
 
 	// Разыгрываем случайный сектор
@@ -102,7 +85,7 @@ func (u *clientProfileUseCase) SpinWheel(ctx context.Context, userID int64) (Whe
 	}
 
 	randVal := rand.Intn(totalWeight)
-	var wonSector WheelSector
+	var wonSector domain.WheelSector
 	currentSum := 0
 
 	for _, s := range sectors {
@@ -113,7 +96,7 @@ func (u *clientProfileUseCase) SpinWheel(ctx context.Context, userID int64) (Whe
 		}
 	}
 
-	res := WheelSpinResult{
+	res := domain.WheelSpinResult{
 		SectorID:   wonSector.ID,
 		SectorName: wonSector.Name,
 		Emoji:      wonSector.Emoji,
@@ -127,7 +110,7 @@ func (u *clientProfileUseCase) SpinWheel(ctx context.Context, userID int64) (Whe
 		discountAmount := int64(150_000_000)
 		code, expiresAt, err := u.orderClient.CreateAndBindWheelPromo(ctx, userID, "Персональная скидка 150 рублей", &discountAmount, nil, nil, nil)
 		if err != nil {
-			return WheelSpinResult{}, err
+			return domain.WheelSpinResult{}, err
 		}
 		res.PromoCode = &code
 		res.ExpiresAt = expiresAt
@@ -146,7 +129,7 @@ func (u *clientProfileUseCase) SpinWheel(ctx context.Context, userID int64) (Whe
 		discountPercent := 15
 		code, expiresAt, err := u.orderClient.CreateAndBindWheelPromo(ctx, userID, "Скидка 15% на популярный бренд", nil, &discountPercent, &selectedBrandID, nil)
 		if err != nil {
-			return WheelSpinResult{}, err
+			return domain.WheelSpinResult{}, err
 		}
 		res.PromoCode = &code
 		res.ExpiresAt = expiresAt
@@ -155,21 +138,21 @@ func (u *clientProfileUseCase) SpinWheel(ctx context.Context, userID int64) (Whe
 	case 4: // Заморозка стрика
 		err := u.repo.UpdateStreakFreeze(ctx, userID, true)
 		if err != nil {
-			return WheelSpinResult{}, err
+			return domain.WheelSpinResult{}, err
 		}
 		res.Message = "Заморозка серии активна! Теперь ваша серия заказов защищена, если вы пропустите неделю."
 
 	case 5: // Стрик-буст
 		err := u.repo.IncrementStreak(ctx, userID)
 		if err != nil {
-			return WheelSpinResult{}, err
+			return domain.WheelSpinResult{}, err
 		}
 		res.Message = "Ура! Ваша серия заказов увеличена на +1 неделю!"
 
 	case 6: // Эксклюзивная ачивка
 		err := u.achievementUC.OnWheelSpin(ctx, userID, "lucky_wheel_winner")
 		if err != nil {
-			return WheelSpinResult{}, err
+			return domain.WheelSpinResult{}, err
 		}
 		res.Message = "Невероятное везение! Вы получили редкую коллекционную ачивку «Любимчик Пиццули»!"
 
@@ -178,7 +161,7 @@ func (u *clientProfileUseCase) SpinWheel(ctx context.Context, userID int64) (Whe
 		minOrderAmount := int64(1_500_000_000)
 		code, expiresAt, err := u.orderClient.CreateAndBindWheelPromo(ctx, userID, "Супер-приз: скидка 500 рублей", &discountAmount, nil, nil, &minOrderAmount)
 		if err != nil {
-			return WheelSpinResult{}, err
+			return domain.WheelSpinResult{}, err
 		}
 		res.PromoCode = &code
 		res.ExpiresAt = expiresAt
@@ -187,7 +170,7 @@ func (u *clientProfileUseCase) SpinWheel(ctx context.Context, userID int64) (Whe
 	case 8: // Реролл
 		err := u.repo.ResetWheelSpinCooldown(ctx, userID)
 		if err != nil {
-			return WheelSpinResult{}, err
+			return domain.WheelSpinResult{}, err
 		}
 		res.Message = "Вам выпала еще одна попытка! Вращайте колесо прямо сейчас!"
 
@@ -195,7 +178,7 @@ func (u *clientProfileUseCase) SpinWheel(ctx context.Context, userID int64) (Whe
 		discountAmount := int64(360_000_000)
 		code, expiresAt, err := u.orderClient.CreateAndBindWheelPromo(ctx, userID, "Бесплатная доставка (скидка 360 рублей)", &discountAmount, nil, nil, nil)
 		if err != nil {
-			return WheelSpinResult{}, err
+			return domain.WheelSpinResult{}, err
 		}
 		res.PromoCode = &code
 		res.ExpiresAt = expiresAt
@@ -209,7 +192,7 @@ func (u *clientProfileUseCase) SpinWheel(ctx context.Context, userID int64) (Whe
 	return res, nil
 }
 
-func (u *clientProfileUseCase) GetWheelSectors(ctx context.Context) ([]WheelSector, error) {
+func (u *clientProfileUseCase) GetWheelSectors(ctx context.Context) ([]domain.WheelSector, error) {
 	return sectors, nil
 }
 

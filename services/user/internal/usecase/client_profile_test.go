@@ -50,7 +50,7 @@ func TestClientProfileUseCase_CreateProfile(t *testing.T) {
 			repo := mocks.NewMockClientProfileRepository(ctrl)
 			tt.mockInit(repo)
 
-			uc := NewClientProfileUseCase(repo)
+			uc := NewClientProfileUseCase(repo, nil, nil)
 			err := uc.CreateProfile(ctx, accountID, idemKey)
 
 			if tt.expectedError != nil {
@@ -164,7 +164,7 @@ func TestClientProfileUseCase_GetByAccountID(t *testing.T) {
 			repo := mocks.NewMockClientProfileRepository(ctrl)
 			tt.mockBehavior(repo)
 
-			uc := NewClientProfileUseCase(repo)
+			uc := NewClientProfileUseCase(repo, nil, nil)
 			profile, err := uc.GetByAccountID(ctx, accountID)
 
 			if tt.wantErr != nil {
@@ -244,7 +244,7 @@ func TestClientProfileUseCase_ActivateStreakFreeze(t *testing.T) {
 			repo := mocks.NewMockClientProfileRepository(ctrl)
 			tt.mockBehavior(repo)
 
-			uc := NewClientProfileUseCase(repo)
+			uc := NewClientProfileUseCase(repo, nil, nil)
 			err := uc.ActivateStreakFreeze(ctx, accountID)
 
 			if tt.wantErr != nil {
@@ -312,7 +312,7 @@ func TestClientProfileUseCase_IncrementStreak(t *testing.T) {
 			repo := mocks.NewMockClientProfileRepository(ctrl)
 			tt.mockBehavior(repo)
 
-			uc := NewClientProfileUseCase(repo)
+			uc := NewClientProfileUseCase(repo, nil, nil)
 			err := uc.IncrementStreak(ctx, accountID)
 
 			if tt.wantErr != nil {
@@ -358,7 +358,7 @@ func TestClientProfileUseCase_ClaimWheelSpin(t *testing.T) {
 			repo := mocks.NewMockClientProfileRepository(ctrl)
 			tt.mockBehavior(repo)
 
-			uc := NewClientProfileUseCase(repo)
+			uc := NewClientProfileUseCase(repo, nil, nil)
 			err := uc.ClaimWheelSpin(ctx, accountID)
 
 			if tt.wantErr != nil {
@@ -404,7 +404,7 @@ func TestClientProfileUseCase_ResetWheelSpinCooldown(t *testing.T) {
 			repo := mocks.NewMockClientProfileRepository(ctrl)
 			tt.mockBehavior(repo)
 
-			uc := NewClientProfileUseCase(repo)
+			uc := NewClientProfileUseCase(repo, nil, nil)
 			err := uc.ResetWheelSpinCooldown(ctx, accountID)
 
 			if tt.wantErr != nil {

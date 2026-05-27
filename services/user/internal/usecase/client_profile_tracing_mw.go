@@ -98,7 +98,7 @@ func (m ClientProfileUseCaseTracingMiddleware) GetByAccountID(ctx context.Contex
 }
 
 // GetWheelSectors трассирует выполнение метода GetWheelSectors
-func (m ClientProfileUseCaseTracingMiddleware) GetWheelSectors(ctx context.Context) (wa1 []WheelSector, err error) {
+func (m ClientProfileUseCaseTracingMiddleware) GetWheelSectors(ctx context.Context) (wa1 []domain.WheelSector, err error) {
 
 	ctx, span := m.tracer.Start(ctx, "ClientProfileUseCase.GetWheelSectors")
 
@@ -149,7 +149,7 @@ func (m ClientProfileUseCaseTracingMiddleware) ResetWheelSpinCooldown(ctx contex
 }
 
 // SpinWheel трассирует выполнение метода SpinWheel
-func (m ClientProfileUseCaseTracingMiddleware) SpinWheel(ctx context.Context, userID int64) (w1 WheelSpinResult, err error) {
+func (m ClientProfileUseCaseTracingMiddleware) SpinWheel(ctx context.Context, userID int64) (w1 domain.WheelSpinResult, err error) {
 
 	ctx, span := m.tracer.Start(ctx, "ClientProfileUseCase.SpinWheel")
 
