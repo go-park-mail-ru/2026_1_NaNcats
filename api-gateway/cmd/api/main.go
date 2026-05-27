@@ -222,6 +222,13 @@ func main() {
 	mux.Handle("GET /api/profile/achievements", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.GetAchievements)))
 
 	// === OWNER ===
+	mux.Handle("GET /api/owner/restaurants",
+		authMW.RequireAuth(
+			authMW.RequireRole("owner")(
+				http.HandlerFunc(restaurantHandler.GetOwnerBrands),
+			),
+		),
+	)
 	mux.Handle("POST /api/owner/restaurants",
 		authMW.RequireAuth(
 			authMW.RequireRole("owner")(

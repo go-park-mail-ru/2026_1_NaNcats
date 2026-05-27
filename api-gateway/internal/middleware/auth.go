@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/authclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/common"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
 )
@@ -54,6 +55,9 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 		}
 
 		ctxWithUser := context.WithValue(ctx, UserIDKey, userID)
+		// Дублируем под common.UserIDKey, чтобы gRPC-интерцептор UnaryClientUserID
+		// (читающий common.UserIDKey) мог прокинуть userID в метаданные микросервисов.
+		ctxWithUser = context.WithValue(ctxWithUser, common.UserIDKey, userID)
 		ctxWithUser = context.WithValue(ctxWithUser, RoleKey, role)
 
 		// Отдаем обработать запрос дальше
@@ -81,6 +85,7 @@ func (m *AuthMiddleware) OptionalAuth(next http.Handler) http.Handler {
 		}
 
 		ctxWithUser := context.WithValue(ctx, UserIDKey, userID)
+		ctxWithUser = context.WithValue(ctxWithUser, common.UserIDKey, userID)
 		ctxWithUser = context.WithValue(ctxWithUser, RoleKey, role)
 		next.ServeHTTP(w, r.WithContext(ctxWithUser))
 	})
