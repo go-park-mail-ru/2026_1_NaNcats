@@ -363,6 +363,7 @@ func TestRestaurantBrandUseCase_CreateRestaurantBrand(t *testing.T) {
 			mockInit: func(r *mocks.MockRestaurantBrandRepository, fs *s3Mocks.MockFileStorage) {
 				expected := brandInput
 				expected.LogoURL = defaultLogo
+				expected.PromotionTier = 1
 				r.EXPECT().Create(gomock.Any(), expected, idemKey).Return(expected, nil)
 			},
 		},
@@ -373,6 +374,7 @@ func TestRestaurantBrandUseCase_CreateRestaurantBrand(t *testing.T) {
 				fs.EXPECT().UploadFile(gomock.Any(), gomock.Any(), gomock.Any(), "image/webp").Return(newLogoURL, nil)
 				expected := brandInput
 				expected.LogoURL = newLogoURL
+				expected.PromotionTier = 1
 				r.EXPECT().Create(gomock.Any(), expected, idemKey).Return(expected, nil)
 			},
 		},
