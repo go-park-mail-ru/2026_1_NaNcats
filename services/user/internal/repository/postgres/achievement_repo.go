@@ -93,10 +93,6 @@ func (r *achievementRepo) Award(ctx context.Context, accountID, achievementID in
 	return nil
 }
 
-// IncrementPaidOrders инкрементит счётчик paid-заказов и обновляет стрик по
-// правилу «календарная неделя пн–вс»: если paidAt в той же ISO-неделе, что и
-// last_order_date — стрик не меняется. Если ровно на одну ISO-неделю позже —
-// +1. Иначе — сбрасывается в 1.
 func (r *achievementRepo) IncrementPaidOrders(ctx context.Context, accountID int64, paidAt time.Time) (repository.IncrementPaidOrderResult, error) {
 	query := `
 		WITH cur AS (
