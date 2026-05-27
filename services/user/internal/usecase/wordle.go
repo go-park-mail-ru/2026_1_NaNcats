@@ -99,6 +99,15 @@ func (u *wordleUseCase) GetDailyState(ctx context.Context, userID int64) (domain
 		})
 	}
 
+	if streak, err := u.repo.GetCurrentStreak(ctx, userID); err == nil {
+		state.CurrentStreak = streak
+	}
+	// Слово дня раскрываем только когда партия окончена, чтобы клиент при
+	// просмотре истории завершённой игры мог его показать.
+	if state.Status == domain.GameStatusWon || state.Status == domain.GameStatusLost {
+		state.TargetWord = targetWord
+	}
+
 	return state, nil
 }
 
@@ -146,11 +155,6 @@ func (u *wordleUseCase) MakeGuess(ctx context.Context, userID int64, guess strin
 	game.Attempt++
 	isLoss := !isWin && game.Attempt >= domain.WordleMaxAttempts
 
-	var bonusAwarded int64 = 0
-	if isWin {
-		bonusAwarded = domain.WordleWinBonus
-	}
-
 	guessRecord := domain.WordleGuess{
 		UserID:         userID,
 		GuessDate:      now,
@@ -159,7 +163,7 @@ func (u *wordleUseCase) MakeGuess(ctx context.Context, userID int64, guess strin
 		IdempotencyKey: idempotencyKey,
 	}
 
-	err = u.repo.SaveGuessWithTransaction(ctx, guessRecord, isWin, isLoss, bonusAwarded)
+	err = u.repo.SaveGuessWithTransaction(ctx, guessRecord, isWin, isLoss)
 	if err != nil {
 		if errors.Is(err, domain.ErrIdempotencyConflict) {
 			return domain.MakeWordleGuessResult{}, err
@@ -174,12 +178,26 @@ func (u *wordleUseCase) MakeGuess(ctx context.Context, userID int64, guess strin
 		status = domain.GameStatusLost
 	}
 
-	return domain.MakeWordleGuessResult{
+	// Стрик/тотал читаем уже после транзакции — она их и обновила.
+	var currentStreak, totalWins int32
+	if v, err := u.repo.GetCurrentStreak(ctx, userID); err == nil {
+		currentStreak = v
+	}
+	if v, err := u.repo.CountWins(ctx, userID); err == nil {
+		totalWins = v
+	}
+
+	result := domain.MakeWordleGuessResult{
 		Status: status,
 		GuessResult: domain.WordleGuessResult{
 			Word:    guess,
 			Letters: evaluatedStates,
 		},
-		BonusAwarded: bonusAwarded,
-	}, nil
+		CurrentStreak: currentStreak,
+		TotalWins:     totalWins,
+	}
+	if status == domain.GameStatusWon || status == domain.GameStatusLost {
+		result.TargetWord = targetWord
+	}
+	return result, nil
 }

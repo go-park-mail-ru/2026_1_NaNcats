@@ -5,7 +5,15 @@ import "time"
 const (
 	WordleWordLength  = 5
 	WordleMaxAttempts = 6
-	WordleWinBonus    = 500
+)
+
+// Коды wordle-ачивок: должны совпадать с миграцией.
+const (
+	AchievementWordleFirstWin  = "wordle_first_win"
+	AchievementWordleWinner10  = "wordle_winner_10"
+	AchievementWordleStreak30  = "wordle_streak_30"
+	WordleStreakHardcoreTarget = 30
+	WordleTotalWinsTarget      = 10
 )
 
 type GameStatus string
@@ -49,12 +57,19 @@ type WordleGuessResult struct {
 }
 
 type DailyGameState struct {
-	Status  GameStatus
-	Guesses []WordleGuessResult
+	Status        GameStatus
+	Guesses       []WordleGuessResult
+	CurrentStreak int32
+	// Заполнено только при Status=Won/Lost: само слово дня.
+	TargetWord string
 }
 
 type MakeWordleGuessResult struct {
-	Status       GameStatus
-	GuessResult  WordleGuessResult
-	BonusAwarded int64
+	Status        GameStatus
+	GuessResult   WordleGuessResult
+	CurrentStreak int32
+	// Заполнено только при Status=Won/Lost.
+	TargetWord string
+	// Сколько всего раз пользователь выиграл (включая текущую игру).
+	TotalWins int32
 }

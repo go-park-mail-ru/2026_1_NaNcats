@@ -99,3 +99,17 @@ func (mr *MockAchievementUseCaseMockRecorder) OnWheelSpin(ctx, accountID, wonCod
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnWheelSpin", reflect.TypeOf((*MockAchievementUseCase)(nil).OnWheelSpin), ctx, accountID, wonCode)
 }
+
+// OnWordleResult mocks base method.
+func (m *MockAchievementUseCase) OnWordleResult(ctx context.Context, accountID int64, isWin bool, totalWins, currentStreak int32) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OnWordleResult", ctx, accountID, isWin, totalWins, currentStreak)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// OnWordleResult indicates an expected call of OnWordleResult.
+func (mr *MockAchievementUseCaseMockRecorder) OnWordleResult(ctx, accountID, isWin, totalWins, currentStreak any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnWordleResult", reflect.TypeOf((*MockAchievementUseCase)(nil).OnWordleResult), ctx, accountID, isWin, totalWins, currentStreak)
+}

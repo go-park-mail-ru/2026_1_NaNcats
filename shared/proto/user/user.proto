@@ -50,6 +50,8 @@ service UserService {
   rpc ClaimWheelSpin (ClaimWheelSpinRequest) returns (google.protobuf.Empty);
   // Сброс кулдауна колеса (при выпадении реролла)
   rpc ResetWheelSpinCooldown (ResetWheelSpinCooldownRequest) returns (google.protobuf.Empty);
+  // Метод-хук после партии 5 букв: выдаёт wordle-ачивки по тоталу и стрику.
+  rpc OnWordleResult (OnWordleResultRequest) returns (google.protobuf.Empty);
 }
 
 
@@ -211,6 +213,13 @@ message IncrementStreakRequest {
 message OnWheelSpinRequest {
   int64 user_id = 1;
   optional string won_achievement_code = 2;
+}
+
+message OnWordleResultRequest {
+  int64 user_id = 1;
+  bool is_win = 2;
+  int32 total_wins = 3;
+  int32 current_streak = 4;
 }
 
 message ClaimWheelSpinRequest {

@@ -204,6 +204,20 @@ func (mr *MockUserClientMockRecorder) OnWheelSpin(ctx, userID, wonCode any) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnWheelSpin", reflect.TypeOf((*MockUserClient)(nil).OnWheelSpin), ctx, userID, wonCode)
 }
 
+// OnWordleResult mocks base method.
+func (m *MockUserClient) OnWordleResult(ctx context.Context, userID int64, isWin bool, totalWins, currentStreak int32) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OnWordleResult", ctx, userID, isWin, totalWins, currentStreak)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// OnWordleResult indicates an expected call of OnWordleResult.
+func (mr *MockUserClientMockRecorder) OnWordleResult(ctx, userID, isWin, totalWins, currentStreak any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnWordleResult", reflect.TypeOf((*MockUserClient)(nil).OnWordleResult), ctx, userID, isWin, totalWins, currentStreak)
+}
+
 // ResetWheelSpinCooldown mocks base method.
 func (m *MockUserClient) ResetWheelSpinCooldown(ctx context.Context, userID int64) error {
 	m.ctrl.T.Helper()

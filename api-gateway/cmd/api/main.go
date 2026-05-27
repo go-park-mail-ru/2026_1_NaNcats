@@ -185,7 +185,7 @@ func main() {
 
 	authHandler := authHttp.NewAuthHandler(authClient, userClient, appLogger, validate)
 	userProfileHandler := userHttp.NewUserProfileHandler(userClient, appLogger)
-	gameHandler := gameHttp.NewGameHandler(gameClient, appLogger)
+	gameHandler := gameHttp.NewGameHandler(gameClient, userClient, pbOrder.NewPromoServiceClient(orderConn), appLogger)
 	restaurantHandler := restaurantHttp.NewRestaurantHandler(restClient, appLogger)
 	cartHandler := cartHttp.NewCartHandler(cartClient, userClient, wsManager, appLogger)
 	addressHandler := addressHttp.NewAddressHandler(addrClient, appLogger)

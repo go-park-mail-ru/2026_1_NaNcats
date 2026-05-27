@@ -65,10 +65,12 @@ func (h *GameHandler) GetDailyWordleState(ctx context.Context, req *pb.GetDailyW
 	}
 
 	return &pb.GetDailyWordleStateResponse{
-		WordLength:  domain.WordleWordLength,
-		MaxAttempts: domain.WordleMaxAttempts,
-		Status:      mapDomainStatusToPB(state.Status),
-		Guesses:     pbGuesses,
+		WordLength:    domain.WordleWordLength,
+		MaxAttempts:   domain.WordleMaxAttempts,
+		Status:        mapDomainStatusToPB(state.Status),
+		Guesses:       pbGuesses,
+		CurrentStreak: state.CurrentStreak,
+		TargetWord:    state.TargetWord,
 	}, nil
 }
 
@@ -84,6 +86,8 @@ func (h *GameHandler) MakeWordleGuess(ctx context.Context, req *pb.MakeWordleGue
 			Word:    result.GuessResult.Word,
 			Letters: mapDomainLettersToPB(result.GuessResult.Letters),
 		},
-		BonusAwarded: result.BonusAwarded,
+		CurrentStreak: result.CurrentStreak,
+		TargetWord:    result.TargetWord,
+		TotalWins:     result.TotalWins,
 	}, nil
 }

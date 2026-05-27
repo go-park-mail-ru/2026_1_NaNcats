@@ -19,6 +19,7 @@ type AchievementUseCase interface {
 	ListForUser(ctx context.Context, accountID int64) ([]domain.UserAchievement, error)
 	OnOrderPaid(ctx context.Context, accountID, restaurantID int64, paidAt time.Time) error
 	OnWheelSpin(ctx context.Context, accountID int64, wonCode string) error
+	OnWordleResult(ctx context.Context, accountID int64, isWin bool, totalWins, currentStreak int32) error
 }
 
 type achievementUseCase struct {
@@ -88,6 +89,26 @@ func (u *achievementUseCase) OnWheelSpin(ctx context.Context, accountID int64, w
 	if wonCode != "" {
 		u.maybeAward(ctx, accountID, wonCode, true)
 	}
+
+	return nil
+}
+
+func (u *achievementUseCase) OnWordleResult(ctx context.Context, accountID int64, isWin bool, totalWins, currentStreak int32) error {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(
+		attribute.Int64("user.id", accountID),
+		attribute.Bool("wordle.is_win", isWin),
+		attribute.Int("wordle.total_wins", int(totalWins)),
+		attribute.Int("wordle.current_streak", int(currentStreak)),
+	)
+
+	if !isWin {
+		return nil
+	}
+
+	u.maybeAward(ctx, accountID, domain.AchievementWordleFirstWin, totalWins >= 1)
+	u.maybeAward(ctx, accountID, domain.AchievementWordleWinner10, totalWins >= domain.WordleTotalWinsTarget)
+	u.maybeAward(ctx, accountID, domain.AchievementWordleStreak30, currentStreak >= domain.WordleStreakHardcoreTarget)
 
 	return nil
 }

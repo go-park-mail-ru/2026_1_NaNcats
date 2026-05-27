@@ -107,7 +107,34 @@ func (r *wordleRepo) GetGameState(ctx context.Context, userID int64, date time.T
 	return game, guesses, rows.Err()
 }
 
-func (r *wordleRepo) SaveGuessWithTransaction(ctx context.Context, guess domain.WordleGuess, isWin, isLoss bool, bonusAmount int64) error {
+func (r *wordleRepo) GetCurrentStreak(ctx context.Context, userID int64) (int32, error) {
+	var streak int32
+	err := r.pool.QueryRow(ctx,
+		`SELECT current_streak FROM "wordle_streak" WHERE user_id = $1`,
+		userID,
+	).Scan(&streak)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, nil
+		}
+		return 0, err
+	}
+	return streak, nil
+}
+
+func (r *wordleRepo) CountWins(ctx context.Context, userID int64) (int32, error) {
+	var count int32
+	err := r.pool.QueryRow(ctx,
+		`SELECT COUNT(*) FROM "wordle_game" WHERE user_id = $1 AND solved = true`,
+		userID,
+	).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (r *wordleRepo) SaveGuessWithTransaction(ctx context.Context, guess domain.WordleGuess, isWin, isLoss bool) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -163,16 +190,6 @@ func (r *wordleRepo) SaveGuessWithTransaction(ctx context.Context, guess domain.
 			    updated_at = NOW()
 		`
 		_, err = tx.Exec(ctx, updateStreakQuery, guess.UserID, dateStr)
-		if err != nil {
-			return err
-		}
-
-		updateBonusQuery := `
-			UPDATE "client_profile"
-			SET bonus_balance = bonus_balance + $1
-			WHERE account_id = $2
-		`
-		_, err = tx.Exec(ctx, updateBonusQuery, bonusAmount, guess.UserID)
 		if err != nil {
 			return err
 		}

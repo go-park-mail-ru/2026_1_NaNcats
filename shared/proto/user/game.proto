@@ -40,6 +40,9 @@ message GetDailyWordleStateResponse {
   int32 max_attempts = 2;
   GameStatus status = 3;
   repeated WordleGuessResult guesses = 4;
+  int32 current_streak = 5;
+  // Заполнено только при status=WON или LOST.
+  string target_word = 6;
 }
 
 message MakeWordleGuessRequest {
@@ -51,5 +54,9 @@ message MakeWordleGuessRequest {
 message MakeWordleGuessResponse {
   GameStatus status = 1;
   WordleGuessResult guess_result = 2;
-  int64 bonus_awarded = 3;
+  int32 current_streak = 4;
+  // Заполнено только при status=WON или LOST.
+  string target_word = 5;
+  // Сколько всего раз пользователь выиграл (включая текущую игру).
+  int32 total_wins = 6;
 }

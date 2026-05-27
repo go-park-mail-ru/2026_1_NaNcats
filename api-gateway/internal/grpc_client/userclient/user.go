@@ -50,6 +50,7 @@ type UserClient interface {
 	ClaimWheelSpin(ctx context.Context, userID int64) error
 	ResetWheelSpinCooldown(ctx context.Context, userID int64) error
 	OnWheelSpin(ctx context.Context, userID int64, wonCode string) error
+	OnWordleResult(ctx context.Context, userID int64, isWin bool, totalWins, currentStreak int32) error
 	ActivateStreakFreeze(ctx context.Context, userID int64) error
 	IncrementStreak(ctx context.Context, userID int64) error
 }
@@ -284,6 +285,19 @@ func (c *userClient) OnWheelSpin(ctx context.Context, userID int64, wonCode stri
 		if ok && st.Code() == codes.NotFound {
 			return ErrUserNotFound
 		}
+		return ErrInternal
+	}
+	return nil
+}
+
+func (c *userClient) OnWordleResult(ctx context.Context, userID int64, isWin bool, totalWins, currentStreak int32) error {
+	_, err := c.client.OnWordleResult(ctx, &pbUser.OnWordleResultRequest{
+		UserId:        userID,
+		IsWin:         isWin,
+		TotalWins:     totalWins,
+		CurrentStreak: currentStreak,
+	})
+	if err != nil {
 		return ErrInternal
 	}
 	return nil

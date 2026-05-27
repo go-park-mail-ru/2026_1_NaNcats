@@ -5,13 +5,18 @@ import (
 	"net/http"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/gameclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/userclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
+	pbOrder "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/order"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/user"
 	"github.com/microcosm-cc/bluemonday"
 )
+
+// WordleWinPromoDiscount — фиксированный размер промо за победу (в микрорублях).
+const WordleWinPromoDiscount = int64(100_000_000)
 
 //go:generate easyjson $GOFILE
 
@@ -32,17 +37,23 @@ type WordleGuessResultDTO struct {
 
 //easyjson:json
 type DailyStateResponse struct {
-	WordLength  int32                  `json:"word_length" example:"5"`
-	MaxAttempts int32                  `json:"max_attempts" example:"6"`
-	Status      string                 `json:"status" example:"PLAYING"` // PLAYING, WON, LOST
-	Guesses     []WordleGuessResultDTO `json:"guesses"`
+	WordLength    int32                  `json:"word_length" example:"5"`
+	MaxAttempts   int32                  `json:"max_attempts" example:"6"`
+	Status        string                 `json:"status" example:"PLAYING"` // PLAYING, WON, LOST
+	Guesses       []WordleGuessResultDTO `json:"guesses"`
+	CurrentStreak int32                  `json:"current_streak" example:"3"`
+	TargetWord    string                 `json:"target_word,omitempty" example:"пицца"`
 }
 
 //easyjson:json
 type MakeGuessResponse struct {
-	Status       string               `json:"status" example:"WON"`
-	GuessResult  WordleGuessResultDTO `json:"guess_result"`
-	BonusAwarded int64                `json:"bonus_awarded,omitempty" example:"500"`
+	Status        string               `json:"status" example:"WON"`
+	GuessResult   WordleGuessResultDTO `json:"guess_result"`
+	CurrentStreak int32                `json:"current_streak" example:"3"`
+	TargetWord    string               `json:"target_word,omitempty" example:"пицца"`
+	PromoCode     string               `json:"promo_code,omitempty" example:"WRD-1A2B3C4D"`
+	PromoExpires  string               `json:"promo_expires_at,omitempty" example:"2026-06-03T00:00:00Z"`
+	PromoDiscount int64                `json:"promo_discount_amount,omitempty" example:"100000000"`
 }
 
 func mapPBStatus(s pb.GameStatus) string {
@@ -76,16 +87,20 @@ func mapPBLetters(letters []pb.LetterState) []string {
 }
 
 type GameHandler struct {
-	gameClient gameclient.GameClient
-	logger     logger.Logger
-	sanitizer  *bluemonday.Policy
+	gameClient  gameclient.GameClient
+	userClient  userclient.UserClient
+	promoClient pbOrder.PromoServiceClient
+	logger      logger.Logger
+	sanitizer   *bluemonday.Policy
 }
 
-func NewGameHandler(gc gameclient.GameClient, l logger.Logger) *GameHandler {
+func NewGameHandler(gc gameclient.GameClient, uc userclient.UserClient, pc pbOrder.PromoServiceClient, l logger.Logger) *GameHandler {
 	return &GameHandler{
-		gameClient: gc,
-		logger:     l,
-		sanitizer:  bluemonday.UGCPolicy(),
+		gameClient:  gc,
+		userClient:  uc,
+		promoClient: pc,
+		logger:      l,
+		sanitizer:   bluemonday.UGCPolicy(),
 	}
 }
 
@@ -116,10 +131,12 @@ func (h *GameHandler) GetDailyWordleState(w http.ResponseWriter, r *http.Request
 	}
 
 	respDTO := DailyStateResponse{
-		WordLength:  state.WordLength,
-		MaxAttempts: state.MaxAttempts,
-		Status:      mapPBStatus(state.Status),
-		Guesses:     make([]WordleGuessResultDTO, 0, len(state.Guesses)),
+		WordLength:    state.WordLength,
+		MaxAttempts:   state.MaxAttempts,
+		Status:        mapPBStatus(state.Status),
+		Guesses:       make([]WordleGuessResultDTO, 0, len(state.Guesses)),
+		CurrentStreak: state.CurrentStreak,
+		TargetWord:    state.TargetWord,
 	}
 
 	for _, g := range state.Guesses {
@@ -190,14 +207,42 @@ func (h *GameHandler) MakeWordleGuess(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respDTO := MakeGuessResponse{
-		Status:       mapPBStatus(res.Status),
-		BonusAwarded: res.BonusAwarded,
+		Status:        mapPBStatus(res.Status),
+		CurrentStreak: res.CurrentStreak,
+		TargetWord:    res.TargetWord,
 	}
 
 	if res.GuessResult != nil {
 		respDTO.GuessResult = WordleGuessResultDTO{
 			Word:    res.GuessResult.Word,
 			Letters: mapPBLetters(res.GuessResult.Letters),
+		}
+	}
+
+	// За победу выпускаем единичный промокод (как и Колесо). При проигрыше —
+	// никакого подарка. В обоих случаях триггерим ачивки.
+	if res.Status == pb.GameStatus_GAME_STATUS_WON {
+		discount := WordleWinPromoDiscount
+		promo, perr := h.promoClient.CreateAndBindWheelPromo(ctx, &pbOrder.CreateAndBindWheelPromoRequest{
+			UserId:         userID,
+			DiscountAmount: &discount,
+			Title:          "Скидка 100 ₽ за «5 букв»",
+		})
+		if perr != nil {
+			l.Error("failed to issue wordle win promo", perr)
+		} else {
+			respDTO.PromoCode = promo.Code
+			if promo.ExpiresAt != nil {
+				respDTO.PromoExpires = *promo.ExpiresAt
+			}
+			respDTO.PromoDiscount = discount
+		}
+	}
+
+	isWin := res.Status == pb.GameStatus_GAME_STATUS_WON
+	if res.Status == pb.GameStatus_GAME_STATUS_WON || res.Status == pb.GameStatus_GAME_STATUS_LOST {
+		if hookErr := h.userClient.OnWordleResult(ctx, userID, isWin, res.TotalWins, res.CurrentStreak); hookErr != nil {
+			l.Warn("OnWordleResult hook failed", logger.Err(hookErr))
 		}
 	}
 
