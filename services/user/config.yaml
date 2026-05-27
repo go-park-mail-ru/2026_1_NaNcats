@@ -17,3 +17,5 @@ otel:
   collector_addr: "otel-collector:4317"
 
 default_avatar_url: "https://nancats-bucket.storage.yandexcloud.net/avatars/default-avatar.webp"
+
+order_service_addr: "localhost:50057"

@@ -161,6 +161,21 @@ func (mr *MockUserClientMockRecorder) GetUsersByIDs(ctx, userIDs any) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersByIDs", reflect.TypeOf((*MockUserClient)(nil).GetUsersByIDs), ctx, userIDs)
 }
 
+// GetWheelSectors mocks base method.
+func (m *MockUserClient) GetWheelSectors(ctx context.Context) ([]userclient.Sector, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWheelSectors", ctx)
+	ret0, _ := ret[0].([]userclient.Sector)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWheelSectors indicates an expected call of GetWheelSectors.
+func (mr *MockUserClientMockRecorder) GetWheelSectors(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWheelSectors", reflect.TypeOf((*MockUserClient)(nil).GetWheelSectors), ctx)
+}
+
 // IncrementStreak mocks base method.
 func (m *MockUserClient) IncrementStreak(ctx context.Context, userID int64) error {
 	m.ctrl.T.Helper()
@@ -245,6 +260,21 @@ func (m *MockUserClient) ResolvePublicID(ctx context.Context, publicID string) (
 func (mr *MockUserClientMockRecorder) ResolvePublicID(ctx, publicID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResolvePublicID", reflect.TypeOf((*MockUserClient)(nil).ResolvePublicID), ctx, publicID)
+}
+
+// SpinWheel mocks base method.
+func (m *MockUserClient) SpinWheel(ctx context.Context, userID int64) (*user.SpinWheelResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SpinWheel", ctx, userID)
+	ret0, _ := ret[0].(*user.SpinWheelResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SpinWheel indicates an expected call of SpinWheel.
+func (mr *MockUserClientMockRecorder) SpinWheel(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SpinWheel", reflect.TypeOf((*MockUserClient)(nil).SpinWheel), ctx, userID)
 }
 
 // UpdateAvatar mocks base method.

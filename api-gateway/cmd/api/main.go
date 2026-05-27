@@ -184,7 +184,7 @@ func main() {
 	addressHandler := addressHttp.NewAddressHandler(addrClient, appLogger)
 	paymentHandler := paymentHttp.NewPaymentHandler(payClient, appLogger)
 	orderHandler := orderHttp.NewOrderHandler(orderClient, payClient, restClient, userClient, wsManager, appLogger)
-	wheelHandler := wheelHttp.NewWheelHandler(userClient, orderClient, pbOrder.NewPromoServiceClient(orderConn), appLogger)
+	wheelHandler := wheelHttp.NewWheelHandler(userClient, appLogger)
 
 	reviewHandler := reviewHttp.NewReviewHandler(appLogger)
 	promoHandler := promoHttp.NewPromoHandler(pbOrder.NewPromoServiceClient(orderConn), appLogger)

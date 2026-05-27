@@ -71,11 +71,45 @@ func NewUserHandler(uuc usecase.UserUseCase, cpuc usecase.ClientProfileUseCase, 
 	}
 }
 
-func (h *UserHandler) OnOrderPaid(ctx context.Context, req *pb.OnOrderPaidRequest) (*emptypb.Empty, error) {
-	if err := h.achievementUC.OnOrderPaid(ctx, req.UserId, req.RestaurantId, req.PaidAt.AsTime()); err != nil {
+func (h *UserHandler) SpinWheel(ctx context.Context, req *pb.SpinWheelRequest) (*pb.SpinWheelResponse, error) {
+	res, err := h.clientUC.SpinWheel(ctx, req.UserId)
+	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
 	}
-	return &emptypb.Empty{}, nil
+
+	resp := &pb.SpinWheelResponse{
+		SectorId:   int32(res.SectorID),
+		SectorName: res.SectorName,
+		Emoji:      res.Emoji,
+		Message:    res.Message,
+	}
+
+	if res.PromoCode != nil {
+		resp.PromoCode = res.PromoCode
+	}
+	if res.ExpiresAt != nil {
+		resp.ExpiresAt = res.ExpiresAt
+	}
+
+	return resp, nil
+}
+
+func (h *UserHandler) GetWheelSectors(ctx context.Context, _ *emptypb.Empty) (*pb.GetWheelSectorsResponse, error) {
+	sectors, err := h.clientUC.GetWheelSectors(ctx)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	pbSectors := make([]*pb.WheelSector, 0, len(sectors))
+	for _, s := range sectors {
+		pbSectors = append(pbSectors, &pb.WheelSector{
+			Id:    int32(s.ID),
+			Name:  s.Name,
+			Emoji: s.Emoji,
+		})
+	}
+
+	return &pb.GetWheelSectorsResponse{Sectors: pbSectors}, nil
 }
 
 func (h *UserHandler) ListAchievements(ctx context.Context, _ *emptypb.Empty) (*pb.ListAchievementsResponse, error) {

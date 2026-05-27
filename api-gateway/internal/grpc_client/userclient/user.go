@@ -53,6 +53,14 @@ type UserClient interface {
 	OnWordleResult(ctx context.Context, userID int64, isWin bool, totalWins, currentStreak int32) error
 	ActivateStreakFreeze(ctx context.Context, userID int64) error
 	IncrementStreak(ctx context.Context, userID int64) error
+	SpinWheel(ctx context.Context, userID int64) (*pbUser.SpinWheelResponse, error)
+	GetWheelSectors(ctx context.Context) ([]Sector, error)
+}
+
+type Sector struct {
+	ID    int
+	Name  string
+	Emoji string
 }
 
 type userClient struct {
@@ -334,4 +342,31 @@ func (c *userClient) ResetWheelSpinCooldown(ctx context.Context, userID int64) e
 		return ErrInternal
 	}
 	return nil
+}
+
+func (c *userClient) SpinWheel(ctx context.Context, userID int64) (*pbUser.SpinWheelResponse, error) {
+	resp, err := c.client.SpinWheel(ctx, &pbUser.SpinWheelRequest{
+		UserId: userID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (c *userClient) GetWheelSectors(ctx context.Context) ([]Sector, error) {
+	resp, err := c.client.GetWheelSectors(ctx, &emptypb.Empty{})
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]Sector, 0, len(resp.Sectors))
+	for _, s := range resp.Sectors {
+		res = append(res, Sector{
+			ID:    int(s.Id),
+			Name:  s.Name,
+			Emoji: s.Emoji,
+		})
+	}
+	return res, nil
 }

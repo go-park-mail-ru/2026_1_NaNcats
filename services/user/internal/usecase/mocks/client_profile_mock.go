@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	domain "github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/domain"
+	usecase "github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/usecase"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -98,6 +99,21 @@ func (mr *MockClientProfileUseCaseMockRecorder) GetByAccountID(ctx, accountID an
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByAccountID", reflect.TypeOf((*MockClientProfileUseCase)(nil).GetByAccountID), ctx, accountID)
 }
 
+// GetWheelSectors mocks base method.
+func (m *MockClientProfileUseCase) GetWheelSectors(ctx context.Context) ([]usecase.WheelSector, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWheelSectors", ctx)
+	ret0, _ := ret[0].([]usecase.WheelSector)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWheelSectors indicates an expected call of GetWheelSectors.
+func (mr *MockClientProfileUseCaseMockRecorder) GetWheelSectors(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWheelSectors", reflect.TypeOf((*MockClientProfileUseCase)(nil).GetWheelSectors), ctx)
+}
+
 // IncrementStreak mocks base method.
 func (m *MockClientProfileUseCase) IncrementStreak(ctx context.Context, accountID int64) error {
 	m.ctrl.T.Helper()
@@ -124,4 +140,19 @@ func (m *MockClientProfileUseCase) ResetWheelSpinCooldown(ctx context.Context, a
 func (mr *MockClientProfileUseCaseMockRecorder) ResetWheelSpinCooldown(ctx, accountID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetWheelSpinCooldown", reflect.TypeOf((*MockClientProfileUseCase)(nil).ResetWheelSpinCooldown), ctx, accountID)
+}
+
+// SpinWheel mocks base method.
+func (m *MockClientProfileUseCase) SpinWheel(ctx context.Context, userID int64) (usecase.WheelSpinResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SpinWheel", ctx, userID)
+	ret0, _ := ret[0].(usecase.WheelSpinResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SpinWheel indicates an expected call of SpinWheel.
+func (mr *MockClientProfileUseCaseMockRecorder) SpinWheel(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SpinWheel", reflect.TypeOf((*MockClientProfileUseCase)(nil).SpinWheel), ctx, userID)
 }

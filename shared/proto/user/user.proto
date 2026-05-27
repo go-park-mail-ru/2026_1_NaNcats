@@ -33,9 +33,6 @@ service UserService {
   rpc GetUsersByIDs (GetUsersByIDsRequest) returns (GetUsersByIDsResponse);
   // Обратный поиск внутреннего ID по публичному
   rpc ResolvePublicID (ResolvePublicIDRequest) returns (ResolvePublicIDResponse);
-  // Хук, который order-service дёргает при переходе заказа в paid.
-  // Обновляет стрик и прогресс ачивок пользователя.
-  rpc OnOrderPaid (OnOrderPaidRequest) returns (google.protobuf.Empty);
   // Возвращает все ачивки системы.
   rpc ListAchievements (google.protobuf.Empty) returns (ListAchievementsResponse);
   // Возвращает ачивки текущего пользователя (только полученные).
@@ -52,6 +49,10 @@ service UserService {
   rpc ResetWheelSpinCooldown (ResetWheelSpinCooldownRequest) returns (google.protobuf.Empty);
   // Метод-хук после партии 5 букв: выдаёт wordle-ачивки по тоталу и стрику.
   rpc OnWordleResult (OnWordleResultRequest) returns (google.protobuf.Empty);
+  // Метод для запуска Колеса Пиццули
+  rpc SpinWheel (SpinWheelRequest) returns (SpinWheelResponse);
+  // Метод для получения секторов Колеса Пиццули
+  rpc GetWheelSectors (google.protobuf.Empty) returns (GetWheelSectorsResponse);
 }
 
 
@@ -228,4 +229,27 @@ message ClaimWheelSpinRequest {
 
 message ResetWheelSpinCooldownRequest {
   int64 user_id = 1;
+}
+
+message SpinWheelRequest {
+  int64 user_id = 1;
+}
+
+message SpinWheelResponse {
+  int32 sector_id = 1;
+  string sector_name = 2;
+  string emoji = 3;
+  optional string promo_code = 4;
+  optional string expires_at = 5;
+  string message = 6;
+}
+
+message WheelSector {
+  int32 id = 1;
+  string name = 2;
+  string emoji = 3;
+}
+
+message GetWheelSectorsResponse {
+  repeated WheelSector sectors = 1;
 }

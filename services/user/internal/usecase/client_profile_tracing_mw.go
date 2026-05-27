@@ -97,6 +97,23 @@ func (m ClientProfileUseCaseTracingMiddleware) GetByAccountID(ctx context.Contex
 	return
 }
 
+// GetWheelSectors трассирует выполнение метода GetWheelSectors
+func (m ClientProfileUseCaseTracingMiddleware) GetWheelSectors(ctx context.Context) (wa1 []WheelSector, err error) {
+
+	ctx, span := m.tracer.Start(ctx, "ClientProfileUseCase.GetWheelSectors")
+
+	defer span.End()
+
+	wa1, err = m.next.GetWheelSectors(ctx)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
 // IncrementStreak трассирует выполнение метода IncrementStreak
 func (m ClientProfileUseCaseTracingMiddleware) IncrementStreak(ctx context.Context, accountID int64) (err error) {
 
@@ -122,6 +139,23 @@ func (m ClientProfileUseCaseTracingMiddleware) ResetWheelSpinCooldown(ctx contex
 	defer span.End()
 
 	err = m.next.ResetWheelSpinCooldown(ctx, accountID)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
+// SpinWheel трассирует выполнение метода SpinWheel
+func (m ClientProfileUseCaseTracingMiddleware) SpinWheel(ctx context.Context, userID int64) (w1 WheelSpinResult, err error) {
+
+	ctx, span := m.tracer.Start(ctx, "ClientProfileUseCase.SpinWheel")
+
+	defer span.End()
+
+	w1, err = m.next.SpinWheel(ctx, userID)
 
 	if err != nil {
 		span.RecordError(err)

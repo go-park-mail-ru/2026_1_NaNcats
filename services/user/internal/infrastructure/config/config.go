@@ -20,6 +20,8 @@ type Config struct {
 
 	DefaultAvatarURL string `yaml:"default_avatar_url" env:"DEFAULT_AVATAR_URL" env-required:"true"`
 	RabbitMQURL      string `yaml:"rabbit_mq_url" env:"RABBITMQ_URL" env-required:"true"`
+
+	OrderServiceAddr string `yaml:"order_service_addr" env:"ORDER_SERVICE_ADDR" env-default:"localhost:50057"`
 }
 
 func Load() *Config {

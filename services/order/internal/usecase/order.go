@@ -81,7 +81,6 @@ type orderUseCase struct {
 	addressClient            AddressClient
 	cartClient               CartClient
 	restaurantClient         RestaurantClient
-	userClient               UserClient
 	rabbitPublisher          MessagePublisher
 	defaultRestaurantLogoURL string
 	logger                   logger.Logger
@@ -92,7 +91,6 @@ func NewOrderUseCase(
 	ac AddressClient,
 	cc CartClient,
 	rc RestaurantClient,
-	uc UserClient,
 	rp MessagePublisher,
 	drlurl string,
 	l logger.Logger,
@@ -102,7 +100,6 @@ func NewOrderUseCase(
 		addressClient:            ac,
 		cartClient:               cc,
 		restaurantClient:         rc,
-		userClient:               uc,
 		rabbitPublisher:          rp,
 		defaultRestaurantLogoURL: drlurl,
 		logger:                   l,
@@ -576,12 +573,21 @@ func (o *orderUseCase) UpdateOrderStatusByPaymentID(ctx context.Context, payment
 
 		paidOrder, getErr := o.orderRepo.GetOrderByPublicID(ctx, orderPublicID)
 		if getErr != nil {
-			o.logger.WithContext(ctx).Warn("failed to load order for OnOrderPaid hook",
+			o.logger.WithContext(ctx).Warn("failed to load order for publishing OrderPaidEvent",
 				logger.String("order_id", orderPublicID), logger.Err(getErr))
-		} else if o.userClient != nil {
-			if hookErr := o.userClient.OnOrderPaid(ctx, paidOrder.AdminID, paidOrder.RestaurantBranchID, orderPublicID, time.Now()); hookErr != nil {
-				o.logger.WithContext(ctx).Warn("user-service OnOrderPaid hook failed",
-					logger.String("order_id", orderPublicID), logger.Err(hookErr))
+		} else {
+			paidEvent := events.OrderPaidEvent{
+				UserID:        paidOrder.AdminID,
+				RestaurantID:  paidOrder.RestaurantBranchID,
+				OrderPublicID: orderPublicID,
+				PaidAt:        time.Now(),
+			}
+
+			err = o.rabbitPublisher.PublishJSON(ctx, events.QueueUserEvents, paidEvent)
+			if err != nil {
+				o.logger.WithContext(ctx).Error("failed to publish OrderPaidEvent to RabbitMQ", err,
+					logger.String("order_id", orderPublicID),
+				)
 			}
 		}
 	}
