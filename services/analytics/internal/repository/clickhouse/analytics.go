@@ -255,7 +255,7 @@ func (r *clickhouseRepo) GetOwnerStats(ctx context.Context, restaurantID int64, 
 	// Среднее время готовки
 	cookingTimeQuery := `
 		SELECT 
-			toInt64(nanToZero(avg(waiting_time - progress_time))) AS avg_cooking_time_sec
+			toInt64(if(isNaN(avg(waiting_time - progress_time)), 0, avg(waiting_time - progress_time))) AS avg_cooking_time_sec
 		FROM (
 			SELECT 
 				order_public_id,
