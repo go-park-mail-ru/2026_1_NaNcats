@@ -7,6 +7,7 @@ env:
   CONFIG_PATH: "./services/user/config.yaml"
   RABBITMQ_URL: "amqp://guest:guest@rabbitmq-service:5672/"
   DATABASE_URL: "postgres://nancat_admin:$(DB_PASSWORD)@postgres-service-postgresql:5432/user_db?sslmode=disable"
+  ORDER_SERVICE_ADDR: "order-service:50057" 
 secrets:
   DB_PASSWORD:
     secretName: nancats-prod-secrets
