@@ -65,6 +65,9 @@ func (h *AnalyticsHandler) GetOwnerAnalytics(w http.ResponseWriter, r *http.Requ
 		response.Error(w, http.StatusBadRequest, "invalid end_time format (expected YYYY-MM-DD)")
 		return
 	}
+	// Сдвигаем endTime на конец дня, иначе ClickHouse-фильтр event_time <= '2026-05-27 00:00:00'
+	// отрезает все сегодняшние заказы.
+	endTime = endTime.Add(24*time.Hour - time.Nanosecond)
 
 	stats, err := h.analyticsClient.GetOwnerStats(ctx, restaurantID, startTime, endTime)
 	if err != nil {
