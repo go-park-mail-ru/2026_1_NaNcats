@@ -27,26 +27,29 @@ func NewAnalyticsConsumer(r *rabbitmq.RabbitClient, uc usecase.AnalyticsUseCase,
 }
 
 func (c *AnalyticsConsumer) Start(ctx context.Context) error {
-	handler := func(ctx context.Context, body []byte) error {
-		var event events.AnalyticsOrderEvent
-		if err := easyjson.Unmarshal(body, &event); err != nil {
-			c.logger.Error("failed to unmarshal analytics event, message dropped", err)
-			return rabbitmqErrors.NewPermanentError(fmt.Errorf("unmarshal payload failed: %w", err))
-		}
+	// Запускаем прослушивание очереди аналитики
+	return c.rabbit.ConsumeJSON(ctx, events.QueueAnalytics, c.handleMessage)
+}
 
-		c.logger.Debug("received analytics event",
-			logger.String("order_id", event.OrderPublicID),
-			logger.String("status", event.Status),
-		)
-
-		// Если ClickHouse недоступен, вернется ошибка, и RabbitMQ вернет обратно в очередь
-		if err := c.uc.ProcessEvent(ctx, event); err != nil {
-			return err
-		}
-
-		return nil
+// handleMessage обрабатывает одно сообщение из очереди аналитики.
+// Невалидный JSON отбрасывается как permanent error — RabbitMQ не вернёт
+// такое сообщение в очередь. Ошибка от usecase (например, ClickHouse недоступен)
+// пробрасывается наверх, чтобы брокер сделал retry.
+func (c *AnalyticsConsumer) handleMessage(ctx context.Context, body []byte) error {
+	var event events.AnalyticsOrderEvent
+	if err := easyjson.Unmarshal(body, &event); err != nil {
+		c.logger.Error("failed to unmarshal analytics event, message dropped", err)
+		return rabbitmqErrors.NewPermanentError(fmt.Errorf("unmarshal payload failed: %w", err))
 	}
 
-	// Запускаем прослушивание очереди аналитики
-	return c.rabbit.ConsumeJSON(ctx, events.QueueAnalytics, handler)
+	c.logger.Debug("received analytics event",
+		logger.String("order_id", event.OrderPublicID),
+		logger.String("status", event.Status),
+	)
+
+	if err := c.uc.ProcessEvent(ctx, event); err != nil {
+		return err
+	}
+
+	return nil
 }

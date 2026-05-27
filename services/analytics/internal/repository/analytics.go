@@ -1,5 +1,7 @@
 package repository
 
+//go:generate mockgen -destination=mocks/analytics_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/analytics/internal/repository AnalyticsRepository
+
 import (
 	"context"
 	"time"
