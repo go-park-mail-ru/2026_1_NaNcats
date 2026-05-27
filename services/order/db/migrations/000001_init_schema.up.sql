@@ -25,10 +25,12 @@ CREATE TABLE "order" (
 	total_cost BIGINT
 		CHECK (total_cost >= 1000000), -- 1 рубль
 	promocode_id BIGINT,
+	discount_amount BIGINT DEFAULT 0 NOT NULL,
+	promocode_code TEXT,
+
 	restaurant_name TEXT NOT NULL,
 
 	status order_status NOT NULL,
-	idempotency_key TEXT UNIQUE,
 		
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
@@ -45,8 +47,6 @@ CREATE TABLE "order_review" (
 		CHECK (char_length(client_comment) <= 255),
 	
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-
-	idempotency_key TEXT UNIQUE,
 	
 	CONSTRAINT fk_order_review_order
 		FOREIGN KEY (order_id)
@@ -57,15 +57,17 @@ CREATE TABLE "order_review" (
 CREATE TABLE "order_dish" (
 	order_id BIGINT,
 	dish_id BIGINT,
-	PRIMARY KEY (order_id, dish_id),
-	
+	-- owner_user_id входит в первичный ключ: одно блюдо у разных участников
+	-- совместного заказа хранится отдельными строками. 0 = позиция ничья.
+	owner_user_id BIGINT NOT NULL DEFAULT 0,
+	PRIMARY KEY (order_id, dish_id, owner_user_id),
+
+	dish_name TEXT NOT NULL,
+
 	quantity INT NOT NULL CHECK (quantity > 0),
 	price BIGINT NOT NULL CHECK (price >= 1000000),
-	
-	owner_user_id BIGINT, 
-	
+
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-	idempotency_key TEXT UNIQUE,
 	
 	CONSTRAINT fk_order_dish_order
 		FOREIGN KEY (order_id)
@@ -78,6 +80,8 @@ CREATE TABLE "order_split" (
 	order_id BIGINT NOT NULL,
 	user_id BIGINT NOT NULL, -- Плательщик
 	
+	base_amount BIGINT DEFAULT 0 NOT NULL,
+	discount_amount BIGINT DEFAULT 0 NOT NULL,
 	amount BIGINT NOT NULL CHECK (amount > 0),
 	status split_status DEFAULT 'pending' NOT NULL,
 	
@@ -91,4 +95,82 @@ CREATE TABLE "order_split" (
 		FOREIGN KEY (order_id)
 		REFERENCES "order"(id)
 		ON DELETE CASCADE
+);
+
+CREATE TABLE "idempotency_records" (
+    user_id BIGINT NOT NULL,
+    idempotency_key TEXT NOT NULL,
+    grpc_method TEXT NOT NULL,
+    response_payload JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+
+    PRIMARY KEY (user_id, idempotency_key)
+);
+
+CREATE TABLE "promocode" (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    code TEXT NOT NULL UNIQUE
+        CHECK (char_length(code) >= 2 AND char_length(code) <= 50),
+    title TEXT NOT NULL DEFAULT '',
+
+    discount_percent INT
+        CHECK (discount_percent > 0 AND discount_percent <= 100),
+    discount_amount BIGINT
+        CHECK (discount_amount > 0), 
+
+    max_uses INT,
+    current_uses INT DEFAULT 0 NOT NULL,
+    min_order_amount BIGINT
+        CHECK (min_order_amount > 0), 
+    
+    user_id BIGINT,
+    restaurant_brand_id BIGINT,
+    
+    is_global BOOL DEFAULT FALSE NOT NULL,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    
+    CONSTRAINT check_discount_type
+        CHECK (
+            (discount_percent IS NOT NULL AND discount_amount IS NULL)
+            OR
+            (discount_percent IS NULL AND discount_amount IS NOT NULL)
+        )
+);
+
+CREATE TABLE "promocode_usage" (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    promocode_id BIGINT NOT NULL,
+    -- order_id может быть NULL: использование промокода фиксируется и тогда,
+    -- когда заказ ещё не сопоставлен, а при удалении заказа просто обнуляется.
+    order_id BIGINT,
+    user_id BIGINT NOT NULL,
+
+    UNIQUE (promocode_id, user_id),
+
+    used_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+
+    CONSTRAINT fk_promocode_usage_promocode
+        FOREIGN KEY (promocode_id)
+        REFERENCES "promocode"(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_promocode_usage_order
+        FOREIGN KEY (order_id)
+        REFERENCES "order"(id)
+        ON DELETE SET NULL
+);
+
+-- Промокоды, "сохранённые" пользователем в профиль.
+CREATE TABLE "user_promocode" (
+    user_id BIGINT NOT NULL,
+    promocode_id BIGINT NOT NULL,
+    added_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    PRIMARY KEY (user_id, promocode_id),
+
+    CONSTRAINT fk_user_promocode_promocode
+        FOREIGN KEY (promocode_id)
+        REFERENCES "promocode"(id)
+        ON DELETE CASCADE
 );

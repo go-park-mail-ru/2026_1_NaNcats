@@ -56,19 +56,49 @@ func (mr *MockOrderRepositoryMockRecorder) AreAllSplitsPaid(ctx, orderPublicID a
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AreAllSplitsPaid", reflect.TypeOf((*MockOrderRepository)(nil).AreAllSplitsPaid), ctx, orderPublicID)
 }
 
-// CreateOrder mocks base method.
-func (m *MockOrderRepository) CreateOrder(ctx context.Context, order domain.Order, idempotencyKey string) (string, error) {
+// CheckPromocodeUsage mocks base method.
+func (m *MockOrderRepository) CheckPromocodeUsage(ctx context.Context, promoID, userID int64) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrder", ctx, order, idempotencyKey)
-	ret0, _ := ret[0].(string)
+	ret := m.ctrl.Call(m, "CheckPromocodeUsage", ctx, promoID, userID)
+	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
+}
+
+// CheckPromocodeUsage indicates an expected call of CheckPromocodeUsage.
+func (mr *MockOrderRepositoryMockRecorder) CheckPromocodeUsage(ctx, promoID, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckPromocodeUsage", reflect.TypeOf((*MockOrderRepository)(nil).CheckPromocodeUsage), ctx, promoID, userID)
+}
+
+// CreateOrder mocks base method.
+func (m *MockOrderRepository) CreateOrder(ctx context.Context, order domain.Order, idempotencyKey string) (int64, string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrder", ctx, order, idempotencyKey)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // CreateOrder indicates an expected call of CreateOrder.
 func (mr *MockOrderRepositoryMockRecorder) CreateOrder(ctx, order, idempotencyKey any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrder", reflect.TypeOf((*MockOrderRepository)(nil).CreateOrder), ctx, order, idempotencyKey)
+}
+
+// CreatePromocodeUsage mocks base method.
+func (m *MockOrderRepository) CreatePromocodeUsage(ctx context.Context, promoID, orderID, userID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreatePromocodeUsage", ctx, promoID, orderID, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreatePromocodeUsage indicates an expected call of CreatePromocodeUsage.
+func (mr *MockOrderRepositoryMockRecorder) CreatePromocodeUsage(ctx, promoID, orderID, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePromocodeUsage", reflect.TypeOf((*MockOrderRepository)(nil).CreatePromocodeUsage), ctx, promoID, orderID, userID)
 }
 
 // GetOrderByPublicID mocks base method.
@@ -102,18 +132,33 @@ func (mr *MockOrderRepositoryMockRecorder) GetOrdersByStatuses(ctx, statuses any
 }
 
 // GetOrdersByUserID mocks base method.
-func (m *MockOrderRepository) GetOrdersByUserID(ctx context.Context, userID int64) ([]domain.Order, error) {
+func (m *MockOrderRepository) GetOrdersByUserID(ctx context.Context, userID int64, limit, offset int32) ([]domain.Order, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOrdersByUserID", ctx, userID)
+	ret := m.ctrl.Call(m, "GetOrdersByUserID", ctx, userID, limit, offset)
 	ret0, _ := ret[0].([]domain.Order)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetOrdersByUserID indicates an expected call of GetOrdersByUserID.
-func (mr *MockOrderRepositoryMockRecorder) GetOrdersByUserID(ctx, userID any) *gomock.Call {
+func (mr *MockOrderRepositoryMockRecorder) GetOrdersByUserID(ctx, userID, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrdersByUserID", reflect.TypeOf((*MockOrderRepository)(nil).GetOrdersByUserID), ctx, userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrdersByUserID", reflect.TypeOf((*MockOrderRepository)(nil).GetOrdersByUserID), ctx, userID, limit, offset)
+}
+
+// GetPromocodeByCodeWithLock mocks base method.
+func (m *MockOrderRepository) GetPromocodeByCodeWithLock(ctx context.Context, code string) (domain.Promocode, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPromocodeByCodeWithLock", ctx, code)
+	ret0, _ := ret[0].(domain.Promocode)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPromocodeByCodeWithLock indicates an expected call of GetPromocodeByCodeWithLock.
+func (mr *MockOrderRepositoryMockRecorder) GetPromocodeByCodeWithLock(ctx, code any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPromocodeByCodeWithLock", reflect.TypeOf((*MockOrderRepository)(nil).GetPromocodeByCodeWithLock), ctx, code)
 }
 
 // GetSplitByID mocks base method.
@@ -131,6 +176,79 @@ func (mr *MockOrderRepositoryMockRecorder) GetSplitByID(ctx, splitID any) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSplitByID", reflect.TypeOf((*MockOrderRepository)(nil).GetSplitByID), ctx, splitID)
 }
 
+// GetTopDishesByBrand mocks base method.
+func (m *MockOrderRepository) GetTopDishesByBrand(ctx context.Context, brandID int64, windowDays, limit int32) ([]int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTopDishesByBrand", ctx, brandID, windowDays, limit)
+	ret0, _ := ret[0].([]int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTopDishesByBrand indicates an expected call of GetTopDishesByBrand.
+func (mr *MockOrderRepositoryMockRecorder) GetTopDishesByBrand(ctx, brandID, windowDays, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTopDishesByBrand", reflect.TypeOf((*MockOrderRepository)(nil).GetTopDishesByBrand), ctx, brandID, windowDays, limit)
+}
+
+// GetTrendingBrands mocks base method.
+func (m *MockOrderRepository) GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTrendingBrands", ctx, windowDays, limit)
+	ret0, _ := ret[0].([]int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTrendingBrands indicates an expected call of GetTrendingBrands.
+func (mr *MockOrderRepositoryMockRecorder) GetTrendingBrands(ctx, windowDays, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTrendingBrands", reflect.TypeOf((*MockOrderRepository)(nil).GetTrendingBrands), ctx, windowDays, limit)
+}
+
+// GetUserPaidBrands mocks base method.
+func (m *MockOrderRepository) GetUserPaidBrands(ctx context.Context, userID int64) ([]int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserPaidBrands", ctx, userID)
+	ret0, _ := ret[0].([]int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserPaidBrands indicates an expected call of GetUserPaidBrands.
+func (mr *MockOrderRepositoryMockRecorder) GetUserPaidBrands(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserPaidBrands", reflect.TypeOf((*MockOrderRepository)(nil).GetUserPaidBrands), ctx, userID)
+}
+
+// IncrementPromocodeUses mocks base method.
+func (m *MockOrderRepository) IncrementPromocodeUses(ctx context.Context, promoID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IncrementPromocodeUses", ctx, promoID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// IncrementPromocodeUses indicates an expected call of IncrementPromocodeUses.
+func (mr *MockOrderRepositoryMockRecorder) IncrementPromocodeUses(ctx, promoID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementPromocodeUses", reflect.TypeOf((*MockOrderRepository)(nil).IncrementPromocodeUses), ctx, promoID)
+}
+
+// RollbackPromocodeUsage mocks base method.
+func (m *MockOrderRepository) RollbackPromocodeUsage(ctx context.Context, orderPublicID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RollbackPromocodeUsage", ctx, orderPublicID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RollbackPromocodeUsage indicates an expected call of RollbackPromocodeUsage.
+func (mr *MockOrderRepositoryMockRecorder) RollbackPromocodeUsage(ctx, orderPublicID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RollbackPromocodeUsage", reflect.TypeOf((*MockOrderRepository)(nil).RollbackPromocodeUsage), ctx, orderPublicID)
+}
+
 // SetSplitYookassaID mocks base method.
 func (m *MockOrderRepository) SetSplitYookassaID(ctx context.Context, splitID, yookassaID string) error {
 	m.ctrl.T.Helper()
@@ -146,17 +264,22 @@ func (mr *MockOrderRepositoryMockRecorder) SetSplitYookassaID(ctx, splitID, yook
 }
 
 // UpdateOrderStatus mocks base method.
-func (m *MockOrderRepository) UpdateOrderStatus(ctx context.Context, publicID, newStatus string) error {
+func (m *MockOrderRepository) UpdateOrderStatus(ctx context.Context, publicID, newStatus string, expectedStatuses ...string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateOrderStatus", ctx, publicID, newStatus)
+	varargs := []any{ctx, publicID, newStatus}
+	for _, a := range expectedStatuses {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateOrderStatus", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateOrderStatus indicates an expected call of UpdateOrderStatus.
-func (mr *MockOrderRepositoryMockRecorder) UpdateOrderStatus(ctx, publicID, newStatus any) *gomock.Call {
+func (mr *MockOrderRepositoryMockRecorder) UpdateOrderStatus(ctx, publicID, newStatus any, expectedStatuses ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrderStatus", reflect.TypeOf((*MockOrderRepository)(nil).UpdateOrderStatus), ctx, publicID, newStatus)
+	varargs := append([]any{ctx, publicID, newStatus}, expectedStatuses...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrderStatus", reflect.TypeOf((*MockOrderRepository)(nil).UpdateOrderStatus), varargs...)
 }
 
 // UpdateSplitPayer mocks base method.
@@ -188,16 +311,31 @@ func (mr *MockOrderRepositoryMockRecorder) UpdateSplitStatus(ctx, splitID, newSt
 }
 
 // UpdateSplitStatusByPaymentID mocks base method.
-func (m *MockOrderRepository) UpdateSplitStatusByPaymentID(ctx context.Context, yookassaPaymentID, newStatus string) (string, error) {
+func (m *MockOrderRepository) UpdateSplitStatusByPaymentID(ctx context.Context, yookassaPaymentID, newStatus string) (string, string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateSplitStatusByPaymentID", ctx, yookassaPaymentID, newStatus)
 	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // UpdateSplitStatusByPaymentID indicates an expected call of UpdateSplitStatusByPaymentID.
 func (mr *MockOrderRepositoryMockRecorder) UpdateSplitStatusByPaymentID(ctx, yookassaPaymentID, newStatus any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSplitStatusByPaymentID", reflect.TypeOf((*MockOrderRepository)(nil).UpdateSplitStatusByPaymentID), ctx, yookassaPaymentID, newStatus)
+}
+
+// WithTransaction mocks base method.
+func (m *MockOrderRepository) WithTransaction(ctx context.Context, fn func(context.Context) error) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithTransaction", ctx, fn)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// WithTransaction indicates an expected call of WithTransaction.
+func (mr *MockOrderRepositoryMockRecorder) WithTransaction(ctx, fn any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithTransaction", reflect.TypeOf((*MockOrderRepository)(nil).WithTransaction), ctx, fn)
 }

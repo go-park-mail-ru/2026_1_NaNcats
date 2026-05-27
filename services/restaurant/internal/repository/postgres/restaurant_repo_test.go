@@ -206,6 +206,7 @@ func TestRestaurantBrandRepo_Create(t *testing.T) {
 		OwnerProfileID: 10,
 		Name:           "Burger Heroes",
 		Description:    "Best in town",
+		PromotionTier:  1,
 		LogoURL:        "logo.png",
 	}
 
@@ -220,16 +221,16 @@ func TestRestaurantBrandRepo_Create(t *testing.T) {
 			name: "Успешное создание бренда",
 			mockInit: func(m pgxmock.PgxPoolIface) {
 				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "restaurant_brand"`)).
-					WithArgs(brand.OwnerProfileID, brand.Name, brand.Description, brand.LogoURL, idemKey).
+					WithArgs(brand.OwnerProfileID, brand.Name, brand.Description, brand.PromotionTier, brand.LogoURL, idemKey).
 					WillReturnRows(pgxmock.NewRows([]string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "created_at", "updated_at"}).
-						AddRow(int64(1), brand.OwnerProfileID, brand.Name, ptrString(brand.Description), 0, ptrString(brand.LogoURL), now, now))
+						AddRow(int64(1), brand.OwnerProfileID, brand.Name, ptrString(brand.Description), brand.PromotionTier, ptrString(brand.LogoURL), now, now))
 			},
 			expectedRes: domain.RestaurantBrand{
 				ID:             1,
 				OwnerProfileID: brand.OwnerProfileID,
 				Name:           brand.Name,
 				Description:    brand.Description,
-				PromotionTier:  0,
+				PromotionTier:  brand.PromotionTier,
 				LogoURL:        brand.LogoURL,
 				CreatedAt:      now,
 				UpdatedAt:      now,
@@ -239,7 +240,7 @@ func TestRestaurantBrandRepo_Create(t *testing.T) {
 			name: "Ошибка базы данных",
 			mockInit: func(m pgxmock.PgxPoolIface) {
 				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "restaurant_brand"`)).
-					WithArgs(brand.OwnerProfileID, brand.Name, brand.Description, brand.LogoURL, idemKey).
+					WithArgs(brand.OwnerProfileID, brand.Name, brand.Description, brand.PromotionTier, brand.LogoURL, idemKey).
 					WillReturnError(errors.New("db fail"))
 			},
 			expectedError: errors.New("db fail"),
@@ -315,6 +316,7 @@ func TestRestaurantBrandRepo_Delete(t *testing.T) {
 
 func TestRestaurantBrandRepo_Update(t *testing.T) {
 	ctx := context.Background()
+	now := time.Now()
 	brand := domain.RestaurantBrand{
 		ID:            1,
 		Name:          "New Name",
@@ -332,15 +334,25 @@ func TestRestaurantBrandRepo_Update(t *testing.T) {
 		{
 			name: "Успешное обновление",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectExec(regexp.QuoteMeta(`UPDATE "restaurant_brand" SET name = $1, description = $2, logo_url = $3, promotion_tier = $4, updated_at = NOW() WHERE id = $5`)).
+				m.ExpectQuery(regexp.QuoteMeta(`UPDATE "restaurant_brand" SET name = $1, description = $2, logo_url = $3, promotion_tier = $4, updated_at = NOW() WHERE id = $5 RETURNING`)).
 					WithArgs(brand.Name, brand.Description, brand.LogoURL, brand.PromotionTier, brand.ID).
-					WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+					WillReturnRows(pgxmock.NewRows([]string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "created_at", "updated_at"}).
+						AddRow(brand.ID, int64(10), brand.Name, ptrString(brand.Description), brand.PromotionTier, ptrString(brand.LogoURL), now, now))
 			},
 		},
 		{
-			name: "Ошибка выполнения UPDATE",
+			name: "Ресторан не найден",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectExec(regexp.QuoteMeta(`UPDATE "restaurant_brand" SET name = $1, description = $2, logo_url = $3, promotion_tier = $4, updated_at = NOW() WHERE id = $5`)).
+				m.ExpectQuery(regexp.QuoteMeta(`UPDATE "restaurant_brand"`)).
+					WithArgs(brand.Name, brand.Description, brand.LogoURL, brand.PromotionTier, brand.ID).
+					WillReturnError(pgx.ErrNoRows)
+			},
+			expectedError: domain.ErrRestaurantNotFound,
+		},
+		{
+			name: "Ошибка базы данных",
+			mockInit: func(m pgxmock.PgxPoolIface) {
+				m.ExpectQuery(regexp.QuoteMeta(`UPDATE "restaurant_brand"`)).
 					WithArgs(brand.Name, brand.Description, brand.LogoURL, brand.PromotionTier, brand.ID).
 					WillReturnError(errors.New("db connection error"))
 			},
@@ -363,7 +375,8 @@ func TestRestaurantBrandRepo_Update(t *testing.T) {
 				assert.Contains(t, err.Error(), tt.expectedError.Error())
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, brand, res)
+				assert.Equal(t, brand.ID, res.ID)
+				assert.Equal(t, brand.Name, res.Name)
 			}
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
@@ -542,7 +555,8 @@ func TestRestaurantBrandRepo_SearchRestaurantBrands(t *testing.T) {
 
 func TestRestaurantBrandRepo_GetAllCategories(t *testing.T) {
 	ctx := context.Background()
-	columns := []string{"id", "name", "emoji"}
+	now := time.Now()
+	columns := []string{"id", "name", "emoji", "created_at", "updated_at"}
 
 	type mockInit func(m pgxmock.PgxPoolIface)
 	tests := []struct {
@@ -554,10 +568,10 @@ func TestRestaurantBrandRepo_GetAllCategories(t *testing.T) {
 		{
 			name: "Успешное получение всех категорий",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`SELECT id, name, COALESCE(emoji, '') as emoji FROM "category" ORDER BY id ASC;`)).
+				m.ExpectQuery(regexp.QuoteMeta(`SELECT id, name, COALESCE(emoji, '') as emoji, created_at, updated_at FROM "category"`)).
 					WillReturnRows(pgxmock.NewRows(columns).
-						AddRow(int64(1), "Бургеры", "🍔").
-						AddRow(int64(2), "Пицца", "🍕"))
+						AddRow(int64(1), "Бургеры", "🍔", now, now).
+						AddRow(int64(2), "Пицца", "🍕", now, now))
 			},
 			expectedLen: 2,
 		},
@@ -582,7 +596,7 @@ func TestRestaurantBrandRepo_GetAllCategories(t *testing.T) {
 			mockInit: func(m pgxmock.PgxPoolIface) {
 				m.ExpectQuery(regexp.QuoteMeta(`SELECT`)).
 					WillReturnRows(pgxmock.NewRows(columns).
-						AddRow("not-an-int", "name", "emoji"))
+						AddRow("not-an-int", "name", "emoji", now, now))
 			},
 			expectedError: "scan categories",
 		},

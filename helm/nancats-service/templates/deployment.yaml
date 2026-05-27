@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.serviceName }}
+spec:
+  replicas: {{ .Values.replicaCount | default 1 | int }}
+  selector:
+    matchLabels:
+      app: {{ .Values.serviceName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.serviceName }}
+      annotations:
+        deployedAt: {{ .Values.deployedAt | default "init" | quote }}
+    spec:
+      imagePullSecrets:
+        - name: ghcr-login-secret
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "Always" }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          {{- $hasEnv := or .Values.sharedEnv .Values.env .Values.sharedSecrets .Values.secrets }}
+          {{- if $hasEnv }}
+          env:
+            {{- range $key, $val := .Values.sharedSecrets }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $val.secretName }}
+                  key: {{ $val.secretKey }}
+            {{- end }}
+            {{- range $key, $val := .Values.secrets }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $val.secretName }}
+                  key: {{ $val.secretKey }}
+            {{- end }}
+
+            {{- range $key, $value := .Values.sharedEnv }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          {{- end }}

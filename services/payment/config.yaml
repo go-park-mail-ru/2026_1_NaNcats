@@ -20,4 +20,4 @@ otel:
   collector_addr: "otel-collector:4317"
 
 yookassa:
-  return_url: "http://localhost:3000/profile/wallet"
+  return_url: "http://localhost:2033/profile/wallet"

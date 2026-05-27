@@ -31,6 +31,7 @@ type User struct {
 	Role          string                 `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
 	AvatarUrl     string                 `protobuf:"bytes,5,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
 	PasswordHash  string                 `protobuf:"bytes,6,opt,name=password_hash,json=passwordHash,proto3" json:"password_hash,omitempty"`
+	PublicId      string                 `protobuf:"bytes,7,opt,name=public_id,json=publicId,proto3" json:"public_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -103,6 +104,13 @@ func (x *User) GetAvatarUrl() string {
 func (x *User) GetPasswordHash() string {
 	if x != nil {
 		return x.PasswordHash
+	}
+	return ""
+}
+
+func (x *User) GetPublicId() string {
+	if x != nil {
+		return x.PublicId
 	}
 	return ""
 }
@@ -1015,11 +1023,1051 @@ func (x *UpdateUserRoleRequest) GetIdempotencyKey() string {
 	return ""
 }
 
+type GetUsersByIDsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserIds       []int64                `protobuf:"varint,1,rep,packed,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUsersByIDsRequest) Reset() {
+	*x = GetUsersByIDsRequest{}
+	mi := &file_user_user_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUsersByIDsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUsersByIDsRequest) ProtoMessage() {}
+
+func (x *GetUsersByIDsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUsersByIDsRequest.ProtoReflect.Descriptor instead.
+func (*GetUsersByIDsRequest) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *GetUsersByIDsRequest) GetUserIds() []int64 {
+	if x != nil {
+		return x.UserIds
+	}
+	return nil
+}
+
+type GetUsersByIDsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Users         map[int64]*User        `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUsersByIDsResponse) Reset() {
+	*x = GetUsersByIDsResponse{}
+	mi := &file_user_user_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUsersByIDsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUsersByIDsResponse) ProtoMessage() {}
+
+func (x *GetUsersByIDsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUsersByIDsResponse.ProtoReflect.Descriptor instead.
+func (*GetUsersByIDsResponse) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *GetUsersByIDsResponse) GetUsers() map[int64]*User {
+	if x != nil {
+		return x.Users
+	}
+	return nil
+}
+
+type ResolvePublicIDRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PublicId      string                 `protobuf:"bytes,1,opt,name=public_id,json=publicId,proto3" json:"public_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResolvePublicIDRequest) Reset() {
+	*x = ResolvePublicIDRequest{}
+	mi := &file_user_user_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResolvePublicIDRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResolvePublicIDRequest) ProtoMessage() {}
+
+func (x *ResolvePublicIDRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResolvePublicIDRequest.ProtoReflect.Descriptor instead.
+func (*ResolvePublicIDRequest) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *ResolvePublicIDRequest) GetPublicId() string {
+	if x != nil {
+		return x.PublicId
+	}
+	return ""
+}
+
+type ResolvePublicIDResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResolvePublicIDResponse) Reset() {
+	*x = ResolvePublicIDResponse{}
+	mi := &file_user_user_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResolvePublicIDResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResolvePublicIDResponse) ProtoMessage() {}
+
+func (x *ResolvePublicIDResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResolvePublicIDResponse.ProtoReflect.Descriptor instead.
+func (*ResolvePublicIDResponse) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *ResolvePublicIDResponse) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+type OnOrderPaidRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	OrderPublicId string                 `protobuf:"bytes,2,opt,name=order_public_id,json=orderPublicId,proto3" json:"order_public_id,omitempty"`
+	RestaurantId  int64                  `protobuf:"varint,3,opt,name=restaurant_id,json=restaurantId,proto3" json:"restaurant_id,omitempty"`
+	PaidAt        *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=paid_at,json=paidAt,proto3" json:"paid_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OnOrderPaidRequest) Reset() {
+	*x = OnOrderPaidRequest{}
+	mi := &file_user_user_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OnOrderPaidRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OnOrderPaidRequest) ProtoMessage() {}
+
+func (x *OnOrderPaidRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OnOrderPaidRequest.ProtoReflect.Descriptor instead.
+func (*OnOrderPaidRequest) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *OnOrderPaidRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *OnOrderPaidRequest) GetOrderPublicId() string {
+	if x != nil {
+		return x.OrderPublicId
+	}
+	return ""
+}
+
+func (x *OnOrderPaidRequest) GetRestaurantId() int64 {
+	if x != nil {
+		return x.RestaurantId
+	}
+	return 0
+}
+
+func (x *OnOrderPaidRequest) GetPaidAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.PaidAt
+	}
+	return nil
+}
+
+type Achievement struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Code          string                 `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
+	Title         string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	Icon          string                 `protobuf:"bytes,5,opt,name=icon,proto3" json:"icon,omitempty"`
+	SortOrder     int32                  `protobuf:"varint,6,opt,name=sort_order,json=sortOrder,proto3" json:"sort_order,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Achievement) Reset() {
+	*x = Achievement{}
+	mi := &file_user_user_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Achievement) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Achievement) ProtoMessage() {}
+
+func (x *Achievement) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Achievement.ProtoReflect.Descriptor instead.
+func (*Achievement) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *Achievement) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *Achievement) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+func (x *Achievement) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *Achievement) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *Achievement) GetIcon() string {
+	if x != nil {
+		return x.Icon
+	}
+	return ""
+}
+
+func (x *Achievement) GetSortOrder() int32 {
+	if x != nil {
+		return x.SortOrder
+	}
+	return 0
+}
+
+type ListAchievementsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Achievements  []*Achievement         `protobuf:"bytes,1,rep,name=achievements,proto3" json:"achievements,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAchievementsResponse) Reset() {
+	*x = ListAchievementsResponse{}
+	mi := &file_user_user_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAchievementsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAchievementsResponse) ProtoMessage() {}
+
+func (x *ListAchievementsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAchievementsResponse.ProtoReflect.Descriptor instead.
+func (*ListAchievementsResponse) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *ListAchievementsResponse) GetAchievements() []*Achievement {
+	if x != nil {
+		return x.Achievements
+	}
+	return nil
+}
+
+type GetUserAchievementsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserAchievementsRequest) Reset() {
+	*x = GetUserAchievementsRequest{}
+	mi := &file_user_user_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserAchievementsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserAchievementsRequest) ProtoMessage() {}
+
+func (x *GetUserAchievementsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserAchievementsRequest.ProtoReflect.Descriptor instead.
+func (*GetUserAchievementsRequest) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *GetUserAchievementsRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+type UserAchievement struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AchievementId int64                  `protobuf:"varint,1,opt,name=achievement_id,json=achievementId,proto3" json:"achievement_id,omitempty"`
+	AwardedAt     *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=awarded_at,json=awardedAt,proto3" json:"awarded_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UserAchievement) Reset() {
+	*x = UserAchievement{}
+	mi := &file_user_user_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UserAchievement) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserAchievement) ProtoMessage() {}
+
+func (x *UserAchievement) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserAchievement.ProtoReflect.Descriptor instead.
+func (*UserAchievement) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *UserAchievement) GetAchievementId() int64 {
+	if x != nil {
+		return x.AchievementId
+	}
+	return 0
+}
+
+func (x *UserAchievement) GetAwardedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.AwardedAt
+	}
+	return nil
+}
+
+type GetUserAchievementsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Achievements  []*UserAchievement     `protobuf:"bytes,1,rep,name=achievements,proto3" json:"achievements,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserAchievementsResponse) Reset() {
+	*x = GetUserAchievementsResponse{}
+	mi := &file_user_user_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserAchievementsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserAchievementsResponse) ProtoMessage() {}
+
+func (x *GetUserAchievementsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserAchievementsResponse.ProtoReflect.Descriptor instead.
+func (*GetUserAchievementsResponse) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *GetUserAchievementsResponse) GetAchievements() []*UserAchievement {
+	if x != nil {
+		return x.Achievements
+	}
+	return nil
+}
+
+type ActivateStreakFreezeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ActivateStreakFreezeRequest) Reset() {
+	*x = ActivateStreakFreezeRequest{}
+	mi := &file_user_user_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ActivateStreakFreezeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ActivateStreakFreezeRequest) ProtoMessage() {}
+
+func (x *ActivateStreakFreezeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ActivateStreakFreezeRequest.ProtoReflect.Descriptor instead.
+func (*ActivateStreakFreezeRequest) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *ActivateStreakFreezeRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+type IncrementStreakRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IncrementStreakRequest) Reset() {
+	*x = IncrementStreakRequest{}
+	mi := &file_user_user_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IncrementStreakRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IncrementStreakRequest) ProtoMessage() {}
+
+func (x *IncrementStreakRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IncrementStreakRequest.ProtoReflect.Descriptor instead.
+func (*IncrementStreakRequest) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *IncrementStreakRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+type OnWheelSpinRequest struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	UserId             int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	WonAchievementCode *string                `protobuf:"bytes,2,opt,name=won_achievement_code,json=wonAchievementCode,proto3,oneof" json:"won_achievement_code,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *OnWheelSpinRequest) Reset() {
+	*x = OnWheelSpinRequest{}
+	mi := &file_user_user_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OnWheelSpinRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OnWheelSpinRequest) ProtoMessage() {}
+
+func (x *OnWheelSpinRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OnWheelSpinRequest.ProtoReflect.Descriptor instead.
+func (*OnWheelSpinRequest) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *OnWheelSpinRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *OnWheelSpinRequest) GetWonAchievementCode() string {
+	if x != nil && x.WonAchievementCode != nil {
+		return *x.WonAchievementCode
+	}
+	return ""
+}
+
+type OnWordleResultRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	IsWin         bool                   `protobuf:"varint,2,opt,name=is_win,json=isWin,proto3" json:"is_win,omitempty"`
+	TotalWins     int32                  `protobuf:"varint,3,opt,name=total_wins,json=totalWins,proto3" json:"total_wins,omitempty"`
+	CurrentStreak int32                  `protobuf:"varint,4,opt,name=current_streak,json=currentStreak,proto3" json:"current_streak,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OnWordleResultRequest) Reset() {
+	*x = OnWordleResultRequest{}
+	mi := &file_user_user_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OnWordleResultRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OnWordleResultRequest) ProtoMessage() {}
+
+func (x *OnWordleResultRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OnWordleResultRequest.ProtoReflect.Descriptor instead.
+func (*OnWordleResultRequest) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *OnWordleResultRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *OnWordleResultRequest) GetIsWin() bool {
+	if x != nil {
+		return x.IsWin
+	}
+	return false
+}
+
+func (x *OnWordleResultRequest) GetTotalWins() int32 {
+	if x != nil {
+		return x.TotalWins
+	}
+	return 0
+}
+
+func (x *OnWordleResultRequest) GetCurrentStreak() int32 {
+	if x != nil {
+		return x.CurrentStreak
+	}
+	return 0
+}
+
+type ClaimWheelSpinRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ClaimWheelSpinRequest) Reset() {
+	*x = ClaimWheelSpinRequest{}
+	mi := &file_user_user_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClaimWheelSpinRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClaimWheelSpinRequest) ProtoMessage() {}
+
+func (x *ClaimWheelSpinRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClaimWheelSpinRequest.ProtoReflect.Descriptor instead.
+func (*ClaimWheelSpinRequest) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *ClaimWheelSpinRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+type ResetWheelSpinCooldownRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResetWheelSpinCooldownRequest) Reset() {
+	*x = ResetWheelSpinCooldownRequest{}
+	mi := &file_user_user_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResetWheelSpinCooldownRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResetWheelSpinCooldownRequest) ProtoMessage() {}
+
+func (x *ResetWheelSpinCooldownRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResetWheelSpinCooldownRequest.ProtoReflect.Descriptor instead.
+func (*ResetWheelSpinCooldownRequest) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *ResetWheelSpinCooldownRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+type SpinWheelRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SpinWheelRequest) Reset() {
+	*x = SpinWheelRequest{}
+	mi := &file_user_user_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SpinWheelRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SpinWheelRequest) ProtoMessage() {}
+
+func (x *SpinWheelRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SpinWheelRequest.ProtoReflect.Descriptor instead.
+func (*SpinWheelRequest) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *SpinWheelRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+type SpinWheelResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SectorId      int32                  `protobuf:"varint,1,opt,name=sector_id,json=sectorId,proto3" json:"sector_id,omitempty"`
+	SectorName    string                 `protobuf:"bytes,2,opt,name=sector_name,json=sectorName,proto3" json:"sector_name,omitempty"`
+	Emoji         string                 `protobuf:"bytes,3,opt,name=emoji,proto3" json:"emoji,omitempty"`
+	PromoCode     *string                `protobuf:"bytes,4,opt,name=promo_code,json=promoCode,proto3,oneof" json:"promo_code,omitempty"`
+	ExpiresAt     *string                `protobuf:"bytes,5,opt,name=expires_at,json=expiresAt,proto3,oneof" json:"expires_at,omitempty"`
+	Message       string                 `protobuf:"bytes,6,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SpinWheelResponse) Reset() {
+	*x = SpinWheelResponse{}
+	mi := &file_user_user_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SpinWheelResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SpinWheelResponse) ProtoMessage() {}
+
+func (x *SpinWheelResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SpinWheelResponse.ProtoReflect.Descriptor instead.
+func (*SpinWheelResponse) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *SpinWheelResponse) GetSectorId() int32 {
+	if x != nil {
+		return x.SectorId
+	}
+	return 0
+}
+
+func (x *SpinWheelResponse) GetSectorName() string {
+	if x != nil {
+		return x.SectorName
+	}
+	return ""
+}
+
+func (x *SpinWheelResponse) GetEmoji() string {
+	if x != nil {
+		return x.Emoji
+	}
+	return ""
+}
+
+func (x *SpinWheelResponse) GetPromoCode() string {
+	if x != nil && x.PromoCode != nil {
+		return *x.PromoCode
+	}
+	return ""
+}
+
+func (x *SpinWheelResponse) GetExpiresAt() string {
+	if x != nil && x.ExpiresAt != nil {
+		return *x.ExpiresAt
+	}
+	return ""
+}
+
+func (x *SpinWheelResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type WheelSector struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Emoji         string                 `protobuf:"bytes,3,opt,name=emoji,proto3" json:"emoji,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WheelSector) Reset() {
+	*x = WheelSector{}
+	mi := &file_user_user_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WheelSector) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WheelSector) ProtoMessage() {}
+
+func (x *WheelSector) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WheelSector.ProtoReflect.Descriptor instead.
+func (*WheelSector) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *WheelSector) GetId() int32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *WheelSector) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *WheelSector) GetEmoji() string {
+	if x != nil {
+		return x.Emoji
+	}
+	return ""
+}
+
+type GetWheelSectorsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Sectors       []*WheelSector         `protobuf:"bytes,1,rep,name=sectors,proto3" json:"sectors,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetWheelSectorsResponse) Reset() {
+	*x = GetWheelSectorsResponse{}
+	mi := &file_user_user_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetWheelSectorsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetWheelSectorsResponse) ProtoMessage() {}
+
+func (x *GetWheelSectorsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetWheelSectorsResponse.ProtoReflect.Descriptor instead.
+func (*GetWheelSectorsResponse) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *GetWheelSectorsResponse) GetSectors() []*WheelSector {
+	if x != nil {
+		return x.Sectors
+	}
+	return nil
+}
+
 var File_user_user_proto protoreflect.FileDescriptor
 
 const file_user_user_proto_rawDesc = "" +
 	"\n" +
-	"\x0fuser/user.proto\x12\x04user\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x98\x01\n" +
+	"\x0fuser/user.proto\x12\x04user\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb5\x01\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
@@ -1027,7 +2075,8 @@ const file_user_user_proto_rawDesc = "" +
 	"\x04role\x18\x04 \x01(\tR\x04role\x12\x1d\n" +
 	"\n" +
 	"avatar_url\x18\x05 \x01(\tR\tavatarUrl\x12#\n" +
-	"\rpassword_hash\x18\x06 \x01(\tR\fpasswordHash\"\xe8\x03\n" +
+	"\rpassword_hash\x18\x06 \x01(\tR\fpasswordHash\x12\x1b\n" +
+	"\tpublic_id\x18\a \x01(\tR\bpublicId\"\xe8\x03\n" +
 	"\rClientProfile\x12\x1d\n" +
 	"\n" +
 	"account_id\x18\x01 \x01(\x03R\taccountId\x12#\n" +
@@ -1089,7 +2138,81 @@ const file_user_user_proto_rawDesc = "" +
 	"\x15UpdateUserRoleRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x19\n" +
 	"\bnew_role\x18\x02 \x01(\tR\anewRole\x12'\n" +
-	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey2\xd4\x05\n" +
+	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey\"1\n" +
+	"\x14GetUsersByIDsRequest\x12\x19\n" +
+	"\buser_ids\x18\x01 \x03(\x03R\auserIds\"\x9b\x01\n" +
+	"\x15GetUsersByIDsResponse\x12<\n" +
+	"\x05users\x18\x01 \x03(\v2&.user.GetUsersByIDsResponse.UsersEntryR\x05users\x1aD\n" +
+	"\n" +
+	"UsersEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\x03R\x03key\x12 \n" +
+	"\x05value\x18\x02 \x01(\v2\n" +
+	".user.UserR\x05value:\x028\x01\"5\n" +
+	"\x16ResolvePublicIDRequest\x12\x1b\n" +
+	"\tpublic_id\x18\x01 \x01(\tR\bpublicId\"2\n" +
+	"\x17ResolvePublicIDResponse\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\"\xaf\x01\n" +
+	"\x12OnOrderPaidRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12&\n" +
+	"\x0forder_public_id\x18\x02 \x01(\tR\rorderPublicId\x12#\n" +
+	"\rrestaurant_id\x18\x03 \x01(\x03R\frestaurantId\x123\n" +
+	"\apaid_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x06paidAt\"\x9c\x01\n" +
+	"\vAchievement\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x12\n" +
+	"\x04code\x18\x02 \x01(\tR\x04code\x12\x14\n" +
+	"\x05title\x18\x03 \x01(\tR\x05title\x12 \n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\x12\x12\n" +
+	"\x04icon\x18\x05 \x01(\tR\x04icon\x12\x1d\n" +
+	"\n" +
+	"sort_order\x18\x06 \x01(\x05R\tsortOrder\"Q\n" +
+	"\x18ListAchievementsResponse\x125\n" +
+	"\fachievements\x18\x01 \x03(\v2\x11.user.AchievementR\fachievements\"5\n" +
+	"\x1aGetUserAchievementsRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\"s\n" +
+	"\x0fUserAchievement\x12%\n" +
+	"\x0eachievement_id\x18\x01 \x01(\x03R\rachievementId\x129\n" +
+	"\n" +
+	"awarded_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tawardedAt\"X\n" +
+	"\x1bGetUserAchievementsResponse\x129\n" +
+	"\fachievements\x18\x01 \x03(\v2\x15.user.UserAchievementR\fachievements\"6\n" +
+	"\x1bActivateStreakFreezeRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\"1\n" +
+	"\x16IncrementStreakRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\"}\n" +
+	"\x12OnWheelSpinRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x125\n" +
+	"\x14won_achievement_code\x18\x02 \x01(\tH\x00R\x12wonAchievementCode\x88\x01\x01B\x17\n" +
+	"\x15_won_achievement_code\"\x8d\x01\n" +
+	"\x15OnWordleResultRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x15\n" +
+	"\x06is_win\x18\x02 \x01(\bR\x05isWin\x12\x1d\n" +
+	"\n" +
+	"total_wins\x18\x03 \x01(\x05R\ttotalWins\x12%\n" +
+	"\x0ecurrent_streak\x18\x04 \x01(\x05R\rcurrentStreak\"0\n" +
+	"\x15ClaimWheelSpinRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\"8\n" +
+	"\x1dResetWheelSpinCooldownRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\"+\n" +
+	"\x10SpinWheelRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\"\xe7\x01\n" +
+	"\x11SpinWheelResponse\x12\x1b\n" +
+	"\tsector_id\x18\x01 \x01(\x05R\bsectorId\x12\x1f\n" +
+	"\vsector_name\x18\x02 \x01(\tR\n" +
+	"sectorName\x12\x14\n" +
+	"\x05emoji\x18\x03 \x01(\tR\x05emoji\x12\"\n" +
+	"\n" +
+	"promo_code\x18\x04 \x01(\tH\x00R\tpromoCode\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"expires_at\x18\x05 \x01(\tH\x01R\texpiresAt\x88\x01\x01\x12\x18\n" +
+	"\amessage\x18\x06 \x01(\tR\amessageB\r\n" +
+	"\v_promo_codeB\r\n" +
+	"\v_expires_at\"G\n" +
+	"\vWheelSector\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
+	"\x05emoji\x18\x03 \x01(\tR\x05emoji\"F\n" +
+	"\x17GetWheelSectorsResponse\x12+\n" +
+	"\asectors\x18\x01 \x03(\v2\x11.user.WheelSectorR\asectors2\xe0\f\n" +
 	"\vUserService\x12?\n" +
 	"\n" +
 	"CreateUser\x12\x17.user.CreateUserRequest\x1a\x18.user.CreateUserResponse\x12O\n" +
@@ -1102,7 +2225,19 @@ const file_user_user_proto_rawDesc = "" +
 	"GetByEmail\x12\x1b.user.GetUserByEmailRequest\x1a\x15.user.GetUserResponse\x12N\n" +
 	"\x0fCheckUserExists\x12\x1c.user.CheckUserExistsRequest\x1a\x1d.user.CheckUserExistsResponse\x12K\n" +
 	"\x0eGetUserProfile\x12\x1b.user.GetUserProfileRequest\x1a\x1c.user.GetUserProfileResponse\x12E\n" +
-	"\x0eUpdateUserRole\x12\x1b.user.UpdateUserRoleRequest\x1a\x16.google.protobuf.EmptyB=Z;github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/userb\x06proto3"
+	"\x0eUpdateUserRole\x12\x1b.user.UpdateUserRoleRequest\x1a\x16.google.protobuf.Empty\x12H\n" +
+	"\rGetUsersByIDs\x12\x1a.user.GetUsersByIDsRequest\x1a\x1b.user.GetUsersByIDsResponse\x12N\n" +
+	"\x0fResolvePublicID\x12\x1c.user.ResolvePublicIDRequest\x1a\x1d.user.ResolvePublicIDResponse\x12J\n" +
+	"\x10ListAchievements\x12\x16.google.protobuf.Empty\x1a\x1e.user.ListAchievementsResponse\x12Z\n" +
+	"\x13GetUserAchievements\x12 .user.GetUserAchievementsRequest\x1a!.user.GetUserAchievementsResponse\x12Q\n" +
+	"\x14ActivateStreakFreeze\x12!.user.ActivateStreakFreezeRequest\x1a\x16.google.protobuf.Empty\x12G\n" +
+	"\x0fIncrementStreak\x12\x1c.user.IncrementStreakRequest\x1a\x16.google.protobuf.Empty\x12?\n" +
+	"\vOnWheelSpin\x12\x18.user.OnWheelSpinRequest\x1a\x16.google.protobuf.Empty\x12E\n" +
+	"\x0eClaimWheelSpin\x12\x1b.user.ClaimWheelSpinRequest\x1a\x16.google.protobuf.Empty\x12U\n" +
+	"\x16ResetWheelSpinCooldown\x12#.user.ResetWheelSpinCooldownRequest\x1a\x16.google.protobuf.Empty\x12E\n" +
+	"\x0eOnWordleResult\x12\x1b.user.OnWordleResultRequest\x1a\x16.google.protobuf.Empty\x12<\n" +
+	"\tSpinWheel\x12\x16.user.SpinWheelRequest\x1a\x17.user.SpinWheelResponse\x12H\n" +
+	"\x0fGetWheelSectors\x12\x16.google.protobuf.Empty\x1a\x1d.user.GetWheelSectorsResponseB=Z;github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/userb\x06proto3"
 
 var (
 	file_user_user_proto_rawDescOnce sync.Once
@@ -1116,62 +2251,114 @@ func file_user_user_proto_rawDescGZIP() []byte {
 	return file_user_user_proto_rawDescData
 }
 
-var file_user_user_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_user_user_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
 var file_user_user_proto_goTypes = []any{
-	(*User)(nil),                       // 0: user.User
-	(*ClientProfile)(nil),              // 1: user.ClientProfile
-	(*CreateUserRequest)(nil),          // 2: user.CreateUserRequest
-	(*CreateUserResponse)(nil),         // 3: user.CreateUserResponse
-	(*CreateClientProfileRequest)(nil), // 4: user.CreateClientProfileRequest
-	(*UpdateProfileRequest)(nil),       // 5: user.UpdateProfileRequest
-	(*UpdateAvatarRequest)(nil),        // 6: user.UpdateAvatarRequest
-	(*UpdateAvatarResponse)(nil),       // 7: user.UpdateAvatarResponse
-	(*DeleteAvatarRequest)(nil),        // 8: user.DeleteAvatarRequest
-	(*DeleteAvatarResponse)(nil),       // 9: user.DeleteAvatarResponse
-	(*GetUserByIDRequest)(nil),         // 10: user.GetUserByIDRequest
-	(*GetUserByEmailRequest)(nil),      // 11: user.GetUserByEmailRequest
-	(*GetUserResponse)(nil),            // 12: user.GetUserResponse
-	(*CheckUserExistsRequest)(nil),     // 13: user.CheckUserExistsRequest
-	(*CheckUserExistsResponse)(nil),    // 14: user.CheckUserExistsResponse
-	(*GetUserProfileRequest)(nil),      // 15: user.GetUserProfileRequest
-	(*GetUserProfileResponse)(nil),     // 16: user.GetUserProfileResponse
-	(*UpdateUserRoleRequest)(nil),      // 17: user.UpdateUserRoleRequest
-	(*timestamppb.Timestamp)(nil),      // 18: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),              // 19: google.protobuf.Empty
+	(*User)(nil),                          // 0: user.User
+	(*ClientProfile)(nil),                 // 1: user.ClientProfile
+	(*CreateUserRequest)(nil),             // 2: user.CreateUserRequest
+	(*CreateUserResponse)(nil),            // 3: user.CreateUserResponse
+	(*CreateClientProfileRequest)(nil),    // 4: user.CreateClientProfileRequest
+	(*UpdateProfileRequest)(nil),          // 5: user.UpdateProfileRequest
+	(*UpdateAvatarRequest)(nil),           // 6: user.UpdateAvatarRequest
+	(*UpdateAvatarResponse)(nil),          // 7: user.UpdateAvatarResponse
+	(*DeleteAvatarRequest)(nil),           // 8: user.DeleteAvatarRequest
+	(*DeleteAvatarResponse)(nil),          // 9: user.DeleteAvatarResponse
+	(*GetUserByIDRequest)(nil),            // 10: user.GetUserByIDRequest
+	(*GetUserByEmailRequest)(nil),         // 11: user.GetUserByEmailRequest
+	(*GetUserResponse)(nil),               // 12: user.GetUserResponse
+	(*CheckUserExistsRequest)(nil),        // 13: user.CheckUserExistsRequest
+	(*CheckUserExistsResponse)(nil),       // 14: user.CheckUserExistsResponse
+	(*GetUserProfileRequest)(nil),         // 15: user.GetUserProfileRequest
+	(*GetUserProfileResponse)(nil),        // 16: user.GetUserProfileResponse
+	(*UpdateUserRoleRequest)(nil),         // 17: user.UpdateUserRoleRequest
+	(*GetUsersByIDsRequest)(nil),          // 18: user.GetUsersByIDsRequest
+	(*GetUsersByIDsResponse)(nil),         // 19: user.GetUsersByIDsResponse
+	(*ResolvePublicIDRequest)(nil),        // 20: user.ResolvePublicIDRequest
+	(*ResolvePublicIDResponse)(nil),       // 21: user.ResolvePublicIDResponse
+	(*OnOrderPaidRequest)(nil),            // 22: user.OnOrderPaidRequest
+	(*Achievement)(nil),                   // 23: user.Achievement
+	(*ListAchievementsResponse)(nil),      // 24: user.ListAchievementsResponse
+	(*GetUserAchievementsRequest)(nil),    // 25: user.GetUserAchievementsRequest
+	(*UserAchievement)(nil),               // 26: user.UserAchievement
+	(*GetUserAchievementsResponse)(nil),   // 27: user.GetUserAchievementsResponse
+	(*ActivateStreakFreezeRequest)(nil),   // 28: user.ActivateStreakFreezeRequest
+	(*IncrementStreakRequest)(nil),        // 29: user.IncrementStreakRequest
+	(*OnWheelSpinRequest)(nil),            // 30: user.OnWheelSpinRequest
+	(*OnWordleResultRequest)(nil),         // 31: user.OnWordleResultRequest
+	(*ClaimWheelSpinRequest)(nil),         // 32: user.ClaimWheelSpinRequest
+	(*ResetWheelSpinCooldownRequest)(nil), // 33: user.ResetWheelSpinCooldownRequest
+	(*SpinWheelRequest)(nil),              // 34: user.SpinWheelRequest
+	(*SpinWheelResponse)(nil),             // 35: user.SpinWheelResponse
+	(*WheelSector)(nil),                   // 36: user.WheelSector
+	(*GetWheelSectorsResponse)(nil),       // 37: user.GetWheelSectorsResponse
+	nil,                                   // 38: user.GetUsersByIDsResponse.UsersEntry
+	(*timestamppb.Timestamp)(nil),         // 39: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),                 // 40: google.protobuf.Empty
 }
 var file_user_user_proto_depIdxs = []int32{
-	18, // 0: user.ClientProfile.bonus_category_expires_at:type_name -> google.protobuf.Timestamp
-	18, // 1: user.ClientProfile.bonus_expires_at:type_name -> google.protobuf.Timestamp
-	18, // 2: user.ClientProfile.last_order_date:type_name -> google.protobuf.Timestamp
-	18, // 3: user.ClientProfile.premium_expires_at:type_name -> google.protobuf.Timestamp
+	39, // 0: user.ClientProfile.bonus_category_expires_at:type_name -> google.protobuf.Timestamp
+	39, // 1: user.ClientProfile.bonus_expires_at:type_name -> google.protobuf.Timestamp
+	39, // 2: user.ClientProfile.last_order_date:type_name -> google.protobuf.Timestamp
+	39, // 3: user.ClientProfile.premium_expires_at:type_name -> google.protobuf.Timestamp
 	0,  // 4: user.GetUserResponse.user:type_name -> user.User
 	0,  // 5: user.GetUserProfileResponse.user:type_name -> user.User
 	1,  // 6: user.GetUserProfileResponse.profile:type_name -> user.ClientProfile
-	2,  // 7: user.UserService.CreateUser:input_type -> user.CreateUserRequest
-	4,  // 8: user.UserService.CreateClientProfile:input_type -> user.CreateClientProfileRequest
-	5,  // 9: user.UserService.UpdateProfile:input_type -> user.UpdateProfileRequest
-	6,  // 10: user.UserService.UpdateAvatar:input_type -> user.UpdateAvatarRequest
-	8,  // 11: user.UserService.DeleteAvatar:input_type -> user.DeleteAvatarRequest
-	10, // 12: user.UserService.GetByID:input_type -> user.GetUserByIDRequest
-	11, // 13: user.UserService.GetByEmail:input_type -> user.GetUserByEmailRequest
-	13, // 14: user.UserService.CheckUserExists:input_type -> user.CheckUserExistsRequest
-	15, // 15: user.UserService.GetUserProfile:input_type -> user.GetUserProfileRequest
-	17, // 16: user.UserService.UpdateUserRole:input_type -> user.UpdateUserRoleRequest
-	3,  // 17: user.UserService.CreateUser:output_type -> user.CreateUserResponse
-	19, // 18: user.UserService.CreateClientProfile:output_type -> google.protobuf.Empty
-	19, // 19: user.UserService.UpdateProfile:output_type -> google.protobuf.Empty
-	7,  // 20: user.UserService.UpdateAvatar:output_type -> user.UpdateAvatarResponse
-	9,  // 21: user.UserService.DeleteAvatar:output_type -> user.DeleteAvatarResponse
-	12, // 22: user.UserService.GetByID:output_type -> user.GetUserResponse
-	12, // 23: user.UserService.GetByEmail:output_type -> user.GetUserResponse
-	14, // 24: user.UserService.CheckUserExists:output_type -> user.CheckUserExistsResponse
-	16, // 25: user.UserService.GetUserProfile:output_type -> user.GetUserProfileResponse
-	19, // 26: user.UserService.UpdateUserRole:output_type -> google.protobuf.Empty
-	17, // [17:27] is the sub-list for method output_type
-	7,  // [7:17] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	38, // 7: user.GetUsersByIDsResponse.users:type_name -> user.GetUsersByIDsResponse.UsersEntry
+	39, // 8: user.OnOrderPaidRequest.paid_at:type_name -> google.protobuf.Timestamp
+	23, // 9: user.ListAchievementsResponse.achievements:type_name -> user.Achievement
+	39, // 10: user.UserAchievement.awarded_at:type_name -> google.protobuf.Timestamp
+	26, // 11: user.GetUserAchievementsResponse.achievements:type_name -> user.UserAchievement
+	36, // 12: user.GetWheelSectorsResponse.sectors:type_name -> user.WheelSector
+	0,  // 13: user.GetUsersByIDsResponse.UsersEntry.value:type_name -> user.User
+	2,  // 14: user.UserService.CreateUser:input_type -> user.CreateUserRequest
+	4,  // 15: user.UserService.CreateClientProfile:input_type -> user.CreateClientProfileRequest
+	5,  // 16: user.UserService.UpdateProfile:input_type -> user.UpdateProfileRequest
+	6,  // 17: user.UserService.UpdateAvatar:input_type -> user.UpdateAvatarRequest
+	8,  // 18: user.UserService.DeleteAvatar:input_type -> user.DeleteAvatarRequest
+	10, // 19: user.UserService.GetByID:input_type -> user.GetUserByIDRequest
+	11, // 20: user.UserService.GetByEmail:input_type -> user.GetUserByEmailRequest
+	13, // 21: user.UserService.CheckUserExists:input_type -> user.CheckUserExistsRequest
+	15, // 22: user.UserService.GetUserProfile:input_type -> user.GetUserProfileRequest
+	17, // 23: user.UserService.UpdateUserRole:input_type -> user.UpdateUserRoleRequest
+	18, // 24: user.UserService.GetUsersByIDs:input_type -> user.GetUsersByIDsRequest
+	20, // 25: user.UserService.ResolvePublicID:input_type -> user.ResolvePublicIDRequest
+	40, // 26: user.UserService.ListAchievements:input_type -> google.protobuf.Empty
+	25, // 27: user.UserService.GetUserAchievements:input_type -> user.GetUserAchievementsRequest
+	28, // 28: user.UserService.ActivateStreakFreeze:input_type -> user.ActivateStreakFreezeRequest
+	29, // 29: user.UserService.IncrementStreak:input_type -> user.IncrementStreakRequest
+	30, // 30: user.UserService.OnWheelSpin:input_type -> user.OnWheelSpinRequest
+	32, // 31: user.UserService.ClaimWheelSpin:input_type -> user.ClaimWheelSpinRequest
+	33, // 32: user.UserService.ResetWheelSpinCooldown:input_type -> user.ResetWheelSpinCooldownRequest
+	31, // 33: user.UserService.OnWordleResult:input_type -> user.OnWordleResultRequest
+	34, // 34: user.UserService.SpinWheel:input_type -> user.SpinWheelRequest
+	40, // 35: user.UserService.GetWheelSectors:input_type -> google.protobuf.Empty
+	3,  // 36: user.UserService.CreateUser:output_type -> user.CreateUserResponse
+	40, // 37: user.UserService.CreateClientProfile:output_type -> google.protobuf.Empty
+	40, // 38: user.UserService.UpdateProfile:output_type -> google.protobuf.Empty
+	7,  // 39: user.UserService.UpdateAvatar:output_type -> user.UpdateAvatarResponse
+	9,  // 40: user.UserService.DeleteAvatar:output_type -> user.DeleteAvatarResponse
+	12, // 41: user.UserService.GetByID:output_type -> user.GetUserResponse
+	12, // 42: user.UserService.GetByEmail:output_type -> user.GetUserResponse
+	14, // 43: user.UserService.CheckUserExists:output_type -> user.CheckUserExistsResponse
+	16, // 44: user.UserService.GetUserProfile:output_type -> user.GetUserProfileResponse
+	40, // 45: user.UserService.UpdateUserRole:output_type -> google.protobuf.Empty
+	19, // 46: user.UserService.GetUsersByIDs:output_type -> user.GetUsersByIDsResponse
+	21, // 47: user.UserService.ResolvePublicID:output_type -> user.ResolvePublicIDResponse
+	24, // 48: user.UserService.ListAchievements:output_type -> user.ListAchievementsResponse
+	27, // 49: user.UserService.GetUserAchievements:output_type -> user.GetUserAchievementsResponse
+	40, // 50: user.UserService.ActivateStreakFreeze:output_type -> google.protobuf.Empty
+	40, // 51: user.UserService.IncrementStreak:output_type -> google.protobuf.Empty
+	40, // 52: user.UserService.OnWheelSpin:output_type -> google.protobuf.Empty
+	40, // 53: user.UserService.ClaimWheelSpin:output_type -> google.protobuf.Empty
+	40, // 54: user.UserService.ResetWheelSpinCooldown:output_type -> google.protobuf.Empty
+	40, // 55: user.UserService.OnWordleResult:output_type -> google.protobuf.Empty
+	35, // 56: user.UserService.SpinWheel:output_type -> user.SpinWheelResponse
+	37, // 57: user.UserService.GetWheelSectors:output_type -> user.GetWheelSectorsResponse
+	36, // [36:58] is the sub-list for method output_type
+	14, // [14:36] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_user_user_proto_init() }
@@ -1181,13 +2368,15 @@ func file_user_user_proto_init() {
 	}
 	file_user_user_proto_msgTypes[1].OneofWrappers = []any{}
 	file_user_user_proto_msgTypes[5].OneofWrappers = []any{}
+	file_user_user_proto_msgTypes[30].OneofWrappers = []any{}
+	file_user_user_proto_msgTypes[35].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_user_proto_rawDesc), len(file_user_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   18,
+			NumMessages:   39,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

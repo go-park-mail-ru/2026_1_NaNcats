@@ -35,6 +35,8 @@ services:
     container_name: redis_db
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
     restart: always
 
   rabbitmq:
@@ -46,6 +48,8 @@ services:
     ports:
       - "5672:5672" # порт для микросервисов
       - "8081:15672" # порт для веб-админки
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
@@ -104,7 +108,7 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
-      - "127.0.0.1:8000:3000"
+      - "127.0.0.1:8000:2033"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin} # Пароль для входа
       - GF_AUTH_ANONYMOUS_ENABLED=false # Чтобы нельзя было смотреть без логина
@@ -134,6 +138,28 @@ services:
     command: -config.file=/etc/promtail/config.yaml
     restart: always
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.1-alpine
+    container_name: clickhouse_db
+    environment:
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-admin}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-password}
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-analytics}
+      # Возможность создавать пользователей через SQL запросы
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ports:
+      - "127.0.0.1:8123:8123" # HTTP интерфейс (для Grafana и Play UI)
+      - "127.0.0.1:9000:9000" # для Go сервиса
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./infrastructure/clickhouse/logs:/var/log/clickhouse-server
+      - ./infrastructure/clickhouse/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
     
   auth_service:
     build:
@@ -260,23 +286,26 @@ services:
       rabbitmq:
         condition: service_healthy
   
-  support_service:
+  analytics_service:
     build:
       context: .
       args:
-        BUILD_PATH: ./services/support/cmd/main.go
-    container_name: support_service
+        BUILD_PATH: ./services/analytics/cmd/main.go
+    container_name: analytics_service
     environment:
       <<: *shared-env
-      CONFIG_PATH: ./services/support/config.yaml
-      DATABASE_URL: postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/support_db?sslmode=disable
+      CONFIG_PATH: ./services/analytics/config.yaml
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-admin}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-password}
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-analytics}
     depends_on:
-      db:
+      clickhouse:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-  
+
   api_gateway:
     build:
       context: .
@@ -299,7 +328,6 @@ services:
       ADDRESS_SERVICE_ADDR: address_service:50051
       PAYMENT_SERVICE_ADDR: payment_service:50056
       ORDER_SERVICE_ADDR: order_service:50057
-      SUPPORT_SERVICE_ADDR: support_service:50058
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -317,8 +345,6 @@ services:
         condition: service_started
       order_service:
         condition: service_started
-      support_service:
-        condition: service_started
       redis:
         condition: service_started
     restart: always
@@ -328,3 +354,6 @@ volumes:
   postgres_data:
   grafana_data:
   prometheus_data:
+  redis_data:
+  rabbitmq_data:
+  clickhouse_data:

@@ -3,80 +3,39 @@ package grpc
 import (
 	"context"
 	"errors"
-	"net/url"
 	"testing"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/domain"
-	repoMocks "github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/repository/mocks"
 	ucMocks "github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/usecase/mocks"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func TestRestaurantHandler_GetRestaurantBrandsList(t *testing.T) {
-	type mockInit func(buc *ucMocks.MockRestaurantBrandUseCase, duc *ucMocks.MockDishUseCase, er *repoMocks.MockExtendedRestaurantRepository)
+	type mockInit func(buc *ucMocks.MockRestaurantBrandUseCase)
 
 	tests := []struct {
 		name           string
-		ctx            context.Context
 		req            *pb.GetRestaurantBrandsListRequest
 		mockInit       mockInit
 		expectedStatus codes.Code
 	}{
 		{
 			name: "Успешное получение списка по умолчанию",
-			ctx:  context.Background(),
 			req:  &pb.GetRestaurantBrandsListRequest{Limit: 10, Offset: 0},
-			mockInit: func(buc *ucMocks.MockRestaurantBrandUseCase, duc *ucMocks.MockDishUseCase, er *repoMocks.MockExtendedRestaurantRepository) {
+			mockInit: func(buc *ucMocks.MockRestaurantBrandUseCase) {
 				buc.EXPECT().GetRestaurantBrandsList(gomock.Any(), 10, 0).Return([]domain.RestaurantBrand{{ID: 1, Name: "Rest"}}, nil)
 			},
 			expectedStatus: codes.OK,
 		},
 		{
-			name: "Успешный поиск через метаданные",
-			ctx:  metadata.NewIncomingContext(context.Background(), metadata.Pairs("x-search-query", url.QueryEscape("бургер"))),
-			req:  &pb.GetRestaurantBrandsListRequest{Limit: 10, Offset: 0},
-			mockInit: func(buc *ucMocks.MockRestaurantBrandUseCase, duc *ucMocks.MockDishUseCase, er *repoMocks.MockExtendedRestaurantRepository) {
-				er.EXPECT().SearchRestaurantBrands(gomock.Any(), "бургер", 10, 0).Return([]domain.RestaurantBrand{{ID: 1, Name: "Burger"}}, nil)
-			},
-			expectedStatus: codes.OK,
-		},
-		{
-			name: "Успешная фильтрация по имени категории",
-			ctx:  metadata.NewIncomingContext(context.Background(), metadata.Pairs("x-category-name", url.QueryEscape("Пицца"))),
-			req:  &pb.GetRestaurantBrandsListRequest{Limit: 5, Offset: 0},
-			mockInit: func(buc *ucMocks.MockRestaurantBrandUseCase, duc *ucMocks.MockDishUseCase, er *repoMocks.MockExtendedRestaurantRepository) {
-				er.EXPECT().GetRestaurantBrandsByCategoryName(gomock.Any(), "Пицца", 5, 0).Return([]domain.RestaurantBrand{{ID: 2, Name: "Pizzeria"}}, nil)
-			},
-			expectedStatus: codes.OK,
-		},
-		{
-			name: "Успешная фильтрация по ID категории (legacy)",
-			ctx:  metadata.NewIncomingContext(context.Background(), metadata.Pairs("x-category-id", "42")),
-			req:  &pb.GetRestaurantBrandsListRequest{Limit: 10, Offset: 5},
-			mockInit: func(buc *ucMocks.MockRestaurantBrandUseCase, duc *ucMocks.MockDishUseCase, er *repoMocks.MockExtendedRestaurantRepository) {
-				er.EXPECT().GetRestaurantBrandsByCategory(gomock.Any(), int64(42), 10, 5).Return([]domain.RestaurantBrand{{ID: 3}}, nil)
-			},
-			expectedStatus: codes.OK,
-		},
-		{
-			name: "Ошибка во внутреннем репозитории при поиске",
-			ctx:  metadata.NewIncomingContext(context.Background(), metadata.Pairs("x-search-query", "test")),
-			req:  &pb.GetRestaurantBrandsListRequest{Limit: 10},
-			mockInit: func(buc *ucMocks.MockRestaurantBrandUseCase, duc *ucMocks.MockDishUseCase, er *repoMocks.MockExtendedRestaurantRepository) {
-				er.EXPECT().SearchRestaurantBrands(gomock.Any(), "test", 10, 0).Return(nil, errors.New("db error"))
-			},
-			expectedStatus: codes.Internal,
-		},
-		{
 			name: "Ошибка в UseCase при получении списка",
-			ctx:  context.Background(),
-			req:  &pb.GetRestaurantBrandsListRequest{Limit: 10},
-			mockInit: func(buc *ucMocks.MockRestaurantBrandUseCase, duc *ucMocks.MockDishUseCase, er *repoMocks.MockExtendedRestaurantRepository) {
+			req:  &pb.GetRestaurantBrandsListRequest{Limit: 10, Offset: 0},
+			mockInit: func(buc *ucMocks.MockRestaurantBrandUseCase) {
 				buc.EXPECT().GetRestaurantBrandsList(gomock.Any(), 10, 0).Return(nil, errors.New("failed"))
 			},
 			expectedStatus: codes.Internal,
@@ -89,14 +48,114 @@ func TestRestaurantHandler_GetRestaurantBrandsList(t *testing.T) {
 			defer ctrl.Finish()
 
 			buc := ucMocks.NewMockRestaurantBrandUseCase(ctrl)
-			duc := ucMocks.NewMockDishUseCase(ctrl)
-			er := repoMocks.NewMockExtendedRestaurantRepository(ctrl)
+			h := NewRestaurantHandler(nil, buc, nil, nil)
 
-			h := NewRestaurantHandler(buc, duc, er, nil)
+			tt.mockInit(buc)
 
-			tt.mockInit(buc, duc, er)
+			resp, err := h.GetRestaurantBrandsList(context.Background(), tt.req)
 
-			resp, err := h.GetRestaurantBrandsList(tt.ctx, tt.req)
+			if tt.expectedStatus == codes.OK {
+				assert.NoError(t, err)
+				assert.NotNil(t, resp)
+				assert.Len(t, resp.RestaurantBrands, 1)
+			} else {
+				st, ok := status.FromError(err)
+				assert.True(t, ok)
+				assert.Equal(t, tt.expectedStatus, st.Code())
+			}
+		})
+	}
+}
+
+func TestRestaurantHandler_GetRestaurantBrandsByCategory(t *testing.T) {
+	type mockInit func(buc *ucMocks.MockRestaurantBrandUseCase)
+
+	tests := []struct {
+		name           string
+		req            *pb.GetRestaurantBrandsByCategoryRequest
+		mockInit       mockInit
+		expectedStatus codes.Code
+	}{
+		{
+			name: "Успешная фильтрация по категории",
+			req:  &pb.GetRestaurantBrandsByCategoryRequest{CategoryName: "Пицца", Limit: 5, Offset: 0},
+			mockInit: func(buc *ucMocks.MockRestaurantBrandUseCase) {
+				buc.EXPECT().GetRestaurantBrandsByCategoryName(gomock.Any(), "Пицца", 5, 0).Return([]domain.RestaurantBrand{{ID: 2, Name: "Pizzeria"}}, nil)
+			},
+			expectedStatus: codes.OK,
+		},
+		{
+			name: "Ошибка UseCase при получении по категории",
+			req:  &pb.GetRestaurantBrandsByCategoryRequest{CategoryName: "Бургеры", Limit: 10, Offset: 0},
+			mockInit: func(buc *ucMocks.MockRestaurantBrandUseCase) {
+				buc.EXPECT().GetRestaurantBrandsByCategoryName(gomock.Any(), "Бургеры", 10, 0).Return(nil, errors.New("internal"))
+			},
+			expectedStatus: codes.Internal,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			buc := ucMocks.NewMockRestaurantBrandUseCase(ctrl)
+			h := NewRestaurantHandler(nil, buc, nil, nil)
+
+			tt.mockInit(buc)
+
+			resp, err := h.GetRestaurantBrandsByCategory(context.Background(), tt.req)
+
+			if tt.expectedStatus == codes.OK {
+				assert.NoError(t, err)
+				assert.NotNil(t, resp)
+			} else {
+				st, ok := status.FromError(err)
+				assert.True(t, ok)
+				assert.Equal(t, tt.expectedStatus, st.Code())
+			}
+		})
+	}
+}
+
+func TestRestaurantHandler_SearchRestaurantBrands(t *testing.T) {
+	type mockInit func(buc *ucMocks.MockRestaurantBrandUseCase)
+
+	tests := []struct {
+		name           string
+		req            *pb.SearchRestaurantBrandsRequest
+		mockInit       mockInit
+		expectedStatus codes.Code
+	}{
+		{
+			name: "Успешный поиск ресторанов",
+			req:  &pb.SearchRestaurantBrandsRequest{Query: "бургер", Limit: 10, Offset: 0},
+			mockInit: func(buc *ucMocks.MockRestaurantBrandUseCase) {
+				buc.EXPECT().SearchRestaurantBrands(gomock.Any(), "бургер", 10, 0).Return([]domain.RestaurantBrand{{ID: 1, Name: "Burger"}}, nil)
+			},
+			expectedStatus: codes.OK,
+		},
+		{
+			name: "Ошибка во время поиска",
+			req:  &pb.SearchRestaurantBrandsRequest{Query: "test", Limit: 10, Offset: 0},
+			mockInit: func(buc *ucMocks.MockRestaurantBrandUseCase) {
+				buc.EXPECT().SearchRestaurantBrands(gomock.Any(), "test", 10, 0).Return(nil, errors.New("db error"))
+			},
+			expectedStatus: codes.Internal,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			buc := ucMocks.NewMockRestaurantBrandUseCase(ctrl)
+			h := NewRestaurantHandler(nil, buc, nil, nil)
+
+			tt.mockInit(buc)
+
+			resp, err := h.SearchRestaurantBrands(context.Background(), tt.req)
 
 			if tt.expectedStatus == codes.OK {
 				assert.NoError(t, err)
@@ -151,7 +210,7 @@ func TestRestaurantHandler_GetRestaurantBrandByID(t *testing.T) {
 			defer ctrl.Finish()
 
 			buc := ucMocks.NewMockRestaurantBrandUseCase(ctrl)
-			h := NewRestaurantHandler(buc, nil, nil, nil)
+			h := NewRestaurantHandler(nil, buc, nil, nil)
 
 			tt.mockInit(buc)
 
@@ -205,7 +264,7 @@ func TestRestaurantHandler_GetRestaurantBrandsByIDs(t *testing.T) {
 			defer ctrl.Finish()
 
 			buc := ucMocks.NewMockRestaurantBrandUseCase(ctrl)
-			h := NewRestaurantHandler(buc, nil, nil, nil)
+			h := NewRestaurantHandler(nil, buc, nil, nil)
 
 			tt.mockInit(buc)
 
@@ -223,50 +282,27 @@ func TestRestaurantHandler_GetRestaurantBrandsByIDs(t *testing.T) {
 }
 
 func TestRestaurantHandler_GetDishesByRestaurantBrandID(t *testing.T) {
-	type mockInit func(duc *ucMocks.MockDishUseCase, edr *repoMocks.MockExtendedDishRepository)
+	type mockInit func(duc *ucMocks.MockDishUseCase)
 
 	tests := []struct {
 		name           string
-		ctx            context.Context
 		req            *pb.GetDishesByRestaurantBrandIDRequest
 		mockInit       mockInit
 		expectedStatus codes.Code
 	}{
 		{
-			name: "Успешное получение блюд без поиска",
-			ctx:  context.Background(),
+			name: "Успешное получение блюд",
 			req:  &pb.GetDishesByRestaurantBrandIDRequest{RestaurantBrandId: 1, Limit: 10, Offset: 0},
-			mockInit: func(duc *ucMocks.MockDishUseCase, edr *repoMocks.MockExtendedDishRepository) {
+			mockInit: func(duc *ucMocks.MockDishUseCase) {
 				duc.EXPECT().GetDishesByRestaurantBrandID(gomock.Any(), int64(1), 10, 0).
 					Return([]domain.Dish{{ID: 101, Name: "Pasta"}}, nil)
 			},
 			expectedStatus: codes.OK,
 		},
 		{
-			name: "Успешный поиск блюд через метаданные",
-			ctx:  metadata.NewIncomingContext(context.Background(), metadata.Pairs("x-dish-search", url.QueryEscape("пицца"))),
-			req:  &pb.GetDishesByRestaurantBrandIDRequest{RestaurantBrandId: 1, Limit: 5},
-			mockInit: func(duc *ucMocks.MockDishUseCase, edr *repoMocks.MockExtendedDishRepository) {
-				edr.EXPECT().SearchDishesByBrand(gomock.Any(), int64(1), "пицца", 5).
-					Return([]domain.Dish{{ID: 202, Name: "Pizza Pepperoni"}}, nil)
-			},
-			expectedStatus: codes.OK,
-		},
-		{
-			name: "Ошибка репозитория при поиске блюд",
-			ctx:  metadata.NewIncomingContext(context.Background(), metadata.Pairs("x-dish-search", "test")),
-			req:  &pb.GetDishesByRestaurantBrandIDRequest{RestaurantBrandId: 1, Limit: 10},
-			mockInit: func(duc *ucMocks.MockDishUseCase, edr *repoMocks.MockExtendedDishRepository) {
-				edr.EXPECT().SearchDishesByBrand(gomock.Any(), int64(1), "test", 10).
-					Return(nil, errors.New("search fail"))
-			},
-			expectedStatus: codes.Internal,
-		},
-		{
-			name: "Ошибка UseCase при обычном получении блюд",
-			ctx:  context.Background(),
+			name: "Ошибка UseCase при получении блюд",
 			req:  &pb.GetDishesByRestaurantBrandIDRequest{RestaurantBrandId: 1},
-			mockInit: func(duc *ucMocks.MockDishUseCase, edr *repoMocks.MockExtendedDishRepository) {
+			mockInit: func(duc *ucMocks.MockDishUseCase) {
 				duc.EXPECT().GetDishesByRestaurantBrandID(gomock.Any(), int64(1), 0, 0).
 					Return(nil, domain.ErrDishNotFound)
 			},
@@ -280,12 +316,63 @@ func TestRestaurantHandler_GetDishesByRestaurantBrandID(t *testing.T) {
 			defer ctrl.Finish()
 
 			duc := ucMocks.NewMockDishUseCase(ctrl)
-			edr := repoMocks.NewMockExtendedDishRepository(ctrl)
-			h := NewRestaurantHandler(nil, duc, nil, edr)
+			h := NewRestaurantHandler(nil, nil, duc, nil)
 
-			tt.mockInit(duc, edr)
+			tt.mockInit(duc)
 
-			resp, err := h.GetDishesByRestaurantBrandID(tt.ctx, tt.req)
+			resp, err := h.GetDishesByRestaurantBrandID(context.Background(), tt.req)
+
+			if tt.expectedStatus == codes.OK {
+				assert.NoError(t, err)
+				assert.NotNil(t, resp)
+			} else {
+				st, _ := status.FromError(err)
+				assert.Equal(t, tt.expectedStatus, st.Code())
+			}
+		})
+	}
+}
+
+func TestRestaurantHandler_SearchDishesByBrand(t *testing.T) {
+	type mockInit func(duc *ucMocks.MockDishUseCase)
+
+	tests := []struct {
+		name           string
+		req            *pb.SearchDishesByBrandRequest
+		mockInit       mockInit
+		expectedStatus codes.Code
+	}{
+		{
+			name: "Успешный поиск блюд в ресторане",
+			req:  &pb.SearchDishesByBrandRequest{RestaurantBrandId: 1, Query: "пицца", Limit: 5},
+			mockInit: func(duc *ucMocks.MockDishUseCase) {
+				duc.EXPECT().SearchDishesByBrand(gomock.Any(), int64(1), "пицца", 5).
+					Return([]domain.Dish{{ID: 202, Name: "Pizza Pepperoni"}}, nil)
+			},
+			expectedStatus: codes.OK,
+		},
+		{
+			name: "Ошибка UseCase при поиске блюд в ресторане",
+			req:  &pb.SearchDishesByBrandRequest{RestaurantBrandId: 1, Query: "test", Limit: 10},
+			mockInit: func(duc *ucMocks.MockDishUseCase) {
+				duc.EXPECT().SearchDishesByBrand(gomock.Any(), int64(1), "test", 10).
+					Return(nil, errors.New("search fail"))
+			},
+			expectedStatus: codes.Internal,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			duc := ucMocks.NewMockDishUseCase(ctrl)
+			h := NewRestaurantHandler(nil, nil, duc, nil)
+
+			tt.mockInit(duc)
+
+			resp, err := h.SearchDishesByBrand(context.Background(), tt.req)
 
 			if tt.expectedStatus == codes.OK {
 				assert.NoError(t, err)
@@ -299,64 +386,80 @@ func TestRestaurantHandler_GetDishesByRestaurantBrandID(t *testing.T) {
 }
 
 func TestRestaurantHandler_GetDishesByIDs(t *testing.T) {
-	type mockInit func(duc *ucMocks.MockDishUseCase, edr *repoMocks.MockExtendedDishRepository)
+	type mockInit func(duc *ucMocks.MockDishUseCase)
 
 	tests := []struct {
 		name           string
-		ctx            context.Context
 		req            *pb.GetDishesByIDsRequest
 		mockInit       mockInit
 		expectedStatus codes.Code
 	}{
 		{
 			name: "Успешное получение блюд по списку ID",
-			ctx:  context.Background(),
 			req:  &pb.GetDishesByIDsRequest{DishIds: []int64{1, 2}},
-			mockInit: func(duc *ucMocks.MockDishUseCase, edr *repoMocks.MockExtendedDishRepository) {
+			mockInit: func(duc *ucMocks.MockDishUseCase) {
 				duc.EXPECT().GetDishesByIDs(gomock.Any(), []int64{1, 2}).
 					Return([]domain.Dish{{ID: 1, Name: "Dish 1"}, {ID: 2, Name: "Dish 2"}}, nil)
 			},
 			expectedStatus: codes.OK,
 		},
 		{
-			name: "Успешный глобальный поиск блюд через метаданные",
-			ctx:  metadata.NewIncomingContext(context.Background(), metadata.Pairs("x-dish-search", url.QueryEscape("суп"))),
-			req:  &pb.GetDishesByIDsRequest{},
-			mockInit: func(duc *ucMocks.MockDishUseCase, edr *repoMocks.MockExtendedDishRepository) {
-				edr.EXPECT().SearchDishes(gomock.Any(), "суп", 20).
-					Return([]domain.Dish{{ID: 10, Name: "Том ям"}}, nil)
-			},
-			expectedStatus: codes.OK,
-		},
-		{
-			name: "Успешный поиск блюд с кастомным лимитом",
-			ctx: metadata.NewIncomingContext(context.Background(), metadata.Pairs(
-				"x-dish-search", "salad",
-				"x-dish-search-limit", "5",
-			)),
-			req: &pb.GetDishesByIDsRequest{},
-			mockInit: func(duc *ucMocks.MockDishUseCase, edr *repoMocks.MockExtendedDishRepository) {
-				edr.EXPECT().SearchDishes(gomock.Any(), "salad", 5).
-					Return([]domain.Dish{{ID: 5}}, nil)
-			},
-			expectedStatus: codes.OK,
-		},
-		{
 			name: "Ошибка UseCase при получении по ID",
-			ctx:  context.Background(),
 			req:  &pb.GetDishesByIDsRequest{DishIds: []int64{1}},
-			mockInit: func(duc *ucMocks.MockDishUseCase, edr *repoMocks.MockExtendedDishRepository) {
+			mockInit: func(duc *ucMocks.MockDishUseCase) {
 				duc.EXPECT().GetDishesByIDs(gomock.Any(), []int64{1}).
 					Return(nil, errors.New("grpc error"))
 			},
 			expectedStatus: codes.Internal,
 		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			duc := ucMocks.NewMockDishUseCase(ctrl)
+			h := NewRestaurantHandler(nil, nil, duc, nil)
+
+			tt.mockInit(duc)
+
+			resp, err := h.GetDishesByIDs(context.Background(), tt.req)
+
+			if tt.expectedStatus == codes.OK {
+				assert.NoError(t, err)
+				assert.NotNil(t, resp)
+			} else {
+				st, _ := status.FromError(err)
+				assert.Equal(t, tt.expectedStatus, st.Code())
+			}
+		})
+	}
+}
+
+func TestRestaurantHandler_SearchDishes(t *testing.T) {
+	type mockInit func(duc *ucMocks.MockDishUseCase)
+
+	tests := []struct {
+		name           string
+		req            *pb.SearchDishesRequest
+		mockInit       mockInit
+		expectedStatus codes.Code
+	}{
 		{
-			name: "Ошибка репозитория при глобальном поиске",
-			ctx:  metadata.NewIncomingContext(context.Background(), metadata.Pairs("x-dish-search", "query")),
-			req:  &pb.GetDishesByIDsRequest{},
-			mockInit: func(duc *ucMocks.MockDishUseCase, edr *repoMocks.MockExtendedDishRepository) {
-				edr.EXPECT().SearchDishes(gomock.Any(), "query", 20).
+			name: "Успешный глобальный поиск блюд",
+			req:  &pb.SearchDishesRequest{Query: "суп", Limit: 20},
+			mockInit: func(duc *ucMocks.MockDishUseCase) {
+				duc.EXPECT().SearchDishes(gomock.Any(), "суп", 20).
+					Return([]domain.Dish{{ID: 10, Name: "Том ям"}}, nil)
+			},
+			expectedStatus: codes.OK,
+		},
+		{
+			name: "Ошибка UseCase при глобальном поиске",
+			req:  &pb.SearchDishesRequest{Query: "query", Limit: 20},
+			mockInit: func(duc *ucMocks.MockDishUseCase) {
+				duc.EXPECT().SearchDishes(gomock.Any(), "query", 20).
 					Return(nil, errors.New("db fail"))
 			},
 			expectedStatus: codes.Internal,
@@ -369,12 +472,11 @@ func TestRestaurantHandler_GetDishesByIDs(t *testing.T) {
 			defer ctrl.Finish()
 
 			duc := ucMocks.NewMockDishUseCase(ctrl)
-			edr := repoMocks.NewMockExtendedDishRepository(ctrl)
-			h := NewRestaurantHandler(nil, duc, nil, edr)
+			h := NewRestaurantHandler(nil, nil, duc, nil)
 
-			tt.mockInit(duc, edr)
+			tt.mockInit(duc)
 
-			resp, err := h.GetDishesByIDs(tt.ctx, tt.req)
+			resp, err := h.SearchDishes(context.Background(), tt.req)
 
 			if tt.expectedStatus == codes.OK {
 				assert.NoError(t, err)
@@ -405,7 +507,8 @@ func TestRestaurantHandler_CreateRestaurantBrand(t *testing.T) {
 				IdempotencyKey: "key-1",
 			},
 			mockInit: func(buc *ucMocks.MockRestaurantBrandUseCase) {
-				buc.EXPECT().CreateRestaurantBrand(gomock.Any(), gomock.Any(), gomock.Nil(), "key-1").
+				expectedDomain := domain.RestaurantBrand{OwnerProfileID: 1, Name: "New Rest", Description: "Desc"}
+				buc.EXPECT().CreateRestaurantBrand(gomock.Any(), expectedDomain, gomock.Any(), "key-1").
 					Return(domain.RestaurantBrand{ID: 10, Name: "New Rest"}, nil)
 			},
 			expectedStatus: codes.OK,
@@ -427,7 +530,7 @@ func TestRestaurantHandler_CreateRestaurantBrand(t *testing.T) {
 			defer ctrl.Finish()
 
 			buc := ucMocks.NewMockRestaurantBrandUseCase(ctrl)
-			h := NewRestaurantHandler(buc, nil, nil, nil)
+			h := NewRestaurantHandler(nil, buc, nil, nil)
 
 			tt.mockInit(buc)
 
@@ -459,14 +562,15 @@ func TestRestaurantHandler_UpdateRestaurantBrand(t *testing.T) {
 		{
 			name: "Успешное обновление всех полей",
 			req: &pb.UpdateBrandRequest{
-				Id:            1,
-				Name:          &name,
-				PromotionTier: &tier,
+				Id:             1,
+				Name:           &name,
+				PromotionTier:  &tier,
+				IdempotencyKey: "idem-1",
 			},
 			mockInit: func(buc *ucMocks.MockRestaurantBrandUseCase) {
 				buc.EXPECT().UpdateRestaurantBrand(gomock.Any(), domain.RestaurantBrand{
 					ID: 1, Name: name, PromotionTier: 2,
-				}, gomock.Nil(), gomock.Any()).
+				}, gomock.Any(), "idem-1").
 					Return(domain.RestaurantBrand{ID: 1, Name: name, PromotionTier: 2}, nil)
 			},
 			expectedStatus: codes.OK,
@@ -475,7 +579,7 @@ func TestRestaurantHandler_UpdateRestaurantBrand(t *testing.T) {
 			name: "Успешное частичное обновление (только ID)",
 			req:  &pb.UpdateBrandRequest{Id: 5},
 			mockInit: func(buc *ucMocks.MockRestaurantBrandUseCase) {
-				buc.EXPECT().UpdateRestaurantBrand(gomock.Any(), domain.RestaurantBrand{ID: 5}, gomock.Nil(), gomock.Any()).
+				buc.EXPECT().UpdateRestaurantBrand(gomock.Any(), domain.RestaurantBrand{ID: 5}, gomock.Any(), gomock.Any()).
 					Return(domain.RestaurantBrand{ID: 5}, nil)
 			},
 			expectedStatus: codes.OK,
@@ -497,7 +601,7 @@ func TestRestaurantHandler_UpdateRestaurantBrand(t *testing.T) {
 			defer ctrl.Finish()
 
 			buc := ucMocks.NewMockRestaurantBrandUseCase(ctrl)
-			h := NewRestaurantHandler(buc, nil, nil, nil)
+			h := NewRestaurantHandler(nil, buc, nil, nil)
 
 			tt.mockInit(buc)
 
@@ -555,7 +659,7 @@ func TestRestaurantHandler_DeleteRestaurantBrand(t *testing.T) {
 			defer ctrl.Finish()
 
 			buc := ucMocks.NewMockRestaurantBrandUseCase(ctrl)
-			h := NewRestaurantHandler(buc, nil, nil, nil)
+			h := NewRestaurantHandler(nil, buc, nil, nil)
 
 			tt.mockInit(buc)
 
@@ -640,7 +744,7 @@ func TestRestaurantHandler_CreateDish(t *testing.T) {
 			defer ctrl.Finish()
 
 			duc := ucMocks.NewMockDishUseCase(ctrl)
-			h := NewRestaurantHandler(nil, duc, nil, nil)
+			h := NewRestaurantHandler(nil, nil, duc, nil)
 
 			tt.mockInit(duc)
 
@@ -699,7 +803,7 @@ func TestRestaurantHandler_UpdateDish(t *testing.T) {
 				Id: 1,
 			},
 			mockInit: func(duc *ucMocks.MockDishUseCase) {
-				duc.EXPECT().UpdateDish(gomock.Any(), domain.Dish{ID: 1}, gomock.Nil(), "").
+				duc.EXPECT().UpdateDish(gomock.Any(), domain.Dish{ID: 1}, gomock.Any(), gomock.Any()).
 					Return(domain.Dish{ID: 1, Name: "Old Name"}, nil)
 			},
 			expectedStatus: codes.OK,
@@ -730,7 +834,7 @@ func TestRestaurantHandler_UpdateDish(t *testing.T) {
 			defer ctrl.Finish()
 
 			duc := ucMocks.NewMockDishUseCase(ctrl)
-			h := NewRestaurantHandler(nil, duc, nil, nil)
+			h := NewRestaurantHandler(nil, nil, duc, nil)
 
 			tt.mockInit(duc)
 
@@ -789,7 +893,7 @@ func TestRestaurantHandler_DeleteDish(t *testing.T) {
 			defer ctrl.Finish()
 
 			duc := ucMocks.NewMockDishUseCase(ctrl)
-			h := NewRestaurantHandler(nil, duc, nil, nil)
+			h := NewRestaurantHandler(nil, nil, duc, nil)
 
 			tt.mockInit(duc)
 
@@ -801,6 +905,56 @@ func TestRestaurantHandler_DeleteDish(t *testing.T) {
 			} else {
 				st, ok := status.FromError(err)
 				assert.True(t, ok)
+				assert.Equal(t, tt.expectedStatus, st.Code())
+			}
+		})
+	}
+}
+
+func TestRestaurantHandler_GetCategories(t *testing.T) {
+	type mockInit func(cuc *ucMocks.MockCategoryUseCase)
+
+	tests := []struct {
+		name           string
+		mockInit       mockInit
+		expectedStatus codes.Code
+	}{
+		{
+			name: "Успешное получение списка категорий",
+			mockInit: func(cuc *ucMocks.MockCategoryUseCase) {
+				cuc.EXPECT().GetAllCategories(gomock.Any()).
+					Return([]domain.Category{{ID: 1, Name: "Бургеры", Emoji: "🍔"}}, nil)
+			},
+			expectedStatus: codes.OK,
+		},
+		{
+			name: "Ошибка UseCase при получении категорий",
+			mockInit: func(cuc *ucMocks.MockCategoryUseCase) {
+				cuc.EXPECT().GetAllCategories(gomock.Any()).
+					Return(nil, errors.New("db fail"))
+			},
+			expectedStatus: codes.Internal,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			cuc := ucMocks.NewMockCategoryUseCase(ctrl)
+			h := NewRestaurantHandler(cuc, nil, nil, nil)
+
+			tt.mockInit(cuc)
+
+			resp, err := h.GetCategories(context.Background(), &emptypb.Empty{})
+
+			if tt.expectedStatus == codes.OK {
+				assert.NoError(t, err)
+				assert.NotNil(t, resp)
+				assert.Len(t, resp.Categories, 1)
+			} else {
+				st, _ := status.FromError(err)
 				assert.Equal(t, tt.expectedStatus, st.Code())
 			}
 		})

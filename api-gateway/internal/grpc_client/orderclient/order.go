@@ -29,27 +29,34 @@ type CreateOrderInput struct {
 	PaymentMethodID string
 	PayForAll       bool
 	PayerMapping    map[int64]int64
+	Promocode       *string
 }
 
 type OrderDish struct {
 	DishID      int64
+	DishName    string
 	Quantity    int32
 	Price       int64
 	OwnerUserID *int64
 }
 
 type OrderSplit struct {
-	SplitID string
-	UserID  int64
-	Amount  int64
-	Status  string
+	SplitID        string
+	UserID         int64
+	BaseAmount     int64
+	DiscountAmount int64
+	Amount         int64
+	Status         string
 }
 
 type Order struct {
 	PublicID          string
+	AdminID           int64
+	RestaurantBrandID int64
 	RestaurantName    string
-	RestaurantLogoURL string
 	TotalCost         int64
+	Promocode         *string
+	DiscountAmount    int64
 	Status            string
 	CreatedAt         time.Time
 	Items             []OrderDish
@@ -58,10 +65,10 @@ type Order struct {
 
 type OrderClient interface {
 	CreateOrder(ctx context.Context, userID int64, input CreateOrderInput, idempotencyKey string) (string, error)
-	GetOrders(ctx context.Context, userID int64) ([]Order, error)
+	GetOrders(ctx context.Context, userID int64, limit, offset int32) ([]Order, error)
 	PayForFriend(ctx context.Context, splitID string, payerID int64, paymentMethodID, idempotencyKey string) error
-	GetOrderPaymentID(ctx context.Context, orderPublicID string, userID int64) (string, error)
 	CancelOrder(ctx context.Context, orderPublicID string, userID int64) error
+	GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error)
 }
 
 type orderClient struct {
@@ -84,6 +91,7 @@ func (c *orderClient) CreateOrder(ctx context.Context, userID int64, input Creat
 		DeliveryCost:       input.DeliveryCost,
 		ServiceFee:         input.ServiceFee,
 		IdempotencyKey:     idempotencyKey,
+		Promocode:          input.Promocode,
 	}
 
 	resp, err := c.client.CreateOrder(ctx, req)
@@ -106,9 +114,11 @@ func (c *orderClient) CreateOrder(ctx context.Context, userID int64, input Creat
 	return resp.OrderPublicId, nil
 }
 
-func (c *orderClient) GetOrders(ctx context.Context, userID int64) ([]Order, error) {
+func (c *orderClient) GetOrders(ctx context.Context, userID int64, limit, offset int32) ([]Order, error) {
 	resp, err := c.client.GetOrders(ctx, &pbOrder.GetOrdersRequest{
 		UserId: userID,
+		Limit:  limit,
+		Offset: offset,
 	})
 	if err != nil {
 		return nil, ErrInternal
@@ -120,6 +130,7 @@ func (c *orderClient) GetOrders(ctx context.Context, userID int64) ([]Order, err
 		for _, pbItem := range pbO.Items {
 			items = append(items, OrderDish{
 				DishID:      pbItem.DishId,
+				DishName:    pbItem.DishName,
 				Quantity:    pbItem.Quantity,
 				Price:       pbItem.Price,
 				OwnerUserID: pbItem.OwnerUserId,
@@ -129,18 +140,23 @@ func (c *orderClient) GetOrders(ctx context.Context, userID int64) ([]Order, err
 		splits := make([]OrderSplit, 0, len(pbO.Splits))
 		for _, pbSplit := range pbO.Splits {
 			splits = append(splits, OrderSplit{
-				SplitID: pbSplit.SplitId,
-				UserID:  pbSplit.UserId,
-				Amount:  pbSplit.Amount,
-				Status:  pbSplit.Status,
+				SplitID:        pbSplit.SplitId,
+				UserID:         pbSplit.UserId,
+				BaseAmount:     pbSplit.BaseAmount,
+				DiscountAmount: pbSplit.DiscountAmount,
+				Amount:         pbSplit.Amount,
+				Status:         pbSplit.Status,
 			})
 		}
 
 		orders = append(orders, Order{
 			PublicID:          pbO.PublicId,
+			AdminID:           pbO.AdminAccountId,
+			RestaurantBrandID: pbO.RestaurantBrandId,
 			RestaurantName:    pbO.RestaurantName,
-			RestaurantLogoURL: pbO.RestaurantLogoUrl,
 			TotalCost:         pbO.TotalCost,
+			Promocode:         pbO.AppliedPromocode,
+			DiscountAmount:    pbO.DiscountAmount,
 			Status:            pbO.Status,
 			CreatedAt:         pbO.CreatedAt.AsTime(),
 			Items:             items,
@@ -167,28 +183,6 @@ func (c *orderClient) PayForFriend(ctx context.Context, splitID string, payerID 
 	return nil
 }
 
-func (c *orderClient) GetOrderPaymentID(ctx context.Context, orderPublicID string, userID int64) (string, error) {
-	resp, err := c.client.GetOrderPaymentID(ctx, &pbOrder.GetOrderPaymentIDRequest{
-		OrderPublicId: orderPublicID,
-		UserId:        userID,
-	})
-	if err != nil {
-		st, ok := status.FromError(err)
-		if ok {
-			switch st.Code() {
-			case codes.NotFound:
-				return "", ErrAddressNotFound
-			case codes.PermissionDenied:
-				return "", ErrInternal
-			case codes.FailedPrecondition:
-				return "", fmt.Errorf("payment not ready: %s", st.Message())
-			}
-		}
-		return "", fmt.Errorf("get order payment id: %w", err)
-	}
-	return resp.YookassaPaymentId, nil
-}
-
 func (c *orderClient) CancelOrder(ctx context.Context, orderPublicID string, userID int64) error {
 	_, err := c.client.CancelOrder(ctx, &pbOrder.CancelOrderRequest{
 		OrderPublicId: orderPublicID,
@@ -209,4 +203,15 @@ func (c *orderClient) CancelOrder(ctx context.Context, orderPublicID string, use
 		return fmt.Errorf("cancel order: %w", err)
 	}
 	return nil
+}
+
+func (c *orderClient) GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error) {
+	resp, err := c.client.GetTrendingBrands(ctx, &pbOrder.GetTrendingBrandsRequest{
+		WindowDays: windowDays,
+		Limit:      limit,
+	})
+	if err != nil {
+		return nil, ErrInternal
+	}
+	return resp.BrandIds, nil
 }

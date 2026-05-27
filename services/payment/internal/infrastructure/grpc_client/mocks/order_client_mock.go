@@ -83,26 +83,6 @@ func (mr *MockOrderServiceClientMockRecorder) CreateOrder(ctx, in any, opts ...a
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrder", reflect.TypeOf((*MockOrderServiceClient)(nil).CreateOrder), varargs...)
 }
 
-// GetOrderPaymentID mocks base method.
-func (m *MockOrderServiceClient) GetOrderPaymentID(ctx context.Context, in *order.GetOrderPaymentIDRequest, opts ...grpc.CallOption) (*order.GetOrderPaymentIDResponse, error) {
-	m.ctrl.T.Helper()
-	varargs := []any{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetOrderPaymentID", varargs...)
-	ret0, _ := ret[0].(*order.GetOrderPaymentIDResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOrderPaymentID indicates an expected call of GetOrderPaymentID.
-func (mr *MockOrderServiceClientMockRecorder) GetOrderPaymentID(ctx, in any, opts ...any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrderPaymentID", reflect.TypeOf((*MockOrderServiceClient)(nil).GetOrderPaymentID), varargs...)
-}
-
 // GetOrders mocks base method.
 func (m *MockOrderServiceClient) GetOrders(ctx context.Context, in *order.GetOrdersRequest, opts ...grpc.CallOption) (*order.GetOrdersResponse, error) {
 	m.ctrl.T.Helper()
@@ -123,15 +103,75 @@ func (mr *MockOrderServiceClientMockRecorder) GetOrders(ctx, in any, opts ...any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrders", reflect.TypeOf((*MockOrderServiceClient)(nil).GetOrders), varargs...)
 }
 
+// GetTopDishesByBrand mocks base method.
+func (m *MockOrderServiceClient) GetTopDishesByBrand(ctx context.Context, in *order.GetTopDishesByBrandRequest, opts ...grpc.CallOption) (*order.DishIDList, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetTopDishesByBrand", varargs...)
+	ret0, _ := ret[0].(*order.DishIDList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTopDishesByBrand indicates an expected call of GetTopDishesByBrand.
+func (mr *MockOrderServiceClientMockRecorder) GetTopDishesByBrand(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTopDishesByBrand", reflect.TypeOf((*MockOrderServiceClient)(nil).GetTopDishesByBrand), varargs...)
+}
+
+// GetTrendingBrands mocks base method.
+func (m *MockOrderServiceClient) GetTrendingBrands(ctx context.Context, in *order.GetTrendingBrandsRequest, opts ...grpc.CallOption) (*order.BrandIDList, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetTrendingBrands", varargs...)
+	ret0, _ := ret[0].(*order.BrandIDList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTrendingBrands indicates an expected call of GetTrendingBrands.
+func (mr *MockOrderServiceClientMockRecorder) GetTrendingBrands(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTrendingBrands", reflect.TypeOf((*MockOrderServiceClient)(nil).GetTrendingBrands), varargs...)
+}
+
+// GetUserPaidBrands mocks base method.
+func (m *MockOrderServiceClient) GetUserPaidBrands(ctx context.Context, in *order.GetUserPaidBrandsRequest, opts ...grpc.CallOption) (*order.BrandIDList, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetUserPaidBrands", varargs...)
+	ret0, _ := ret[0].(*order.BrandIDList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserPaidBrands indicates an expected call of GetUserPaidBrands.
+func (mr *MockOrderServiceClientMockRecorder) GetUserPaidBrands(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserPaidBrands", reflect.TypeOf((*MockOrderServiceClient)(nil).GetUserPaidBrands), varargs...)
+}
+
 // PayForFriend mocks base method.
-func (m *MockOrderServiceClient) PayForFriend(ctx context.Context, in *order.PayForFriendRequest, opts ...grpc.CallOption) (*order.PayForFriendResponse, error) {
+func (m *MockOrderServiceClient) PayForFriend(ctx context.Context, in *order.PayForFriendRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "PayForFriend", varargs...)
-	ret0, _ := ret[0].(*order.PayForFriendResponse)
+	ret0, _ := ret[0].(*emptypb.Empty)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

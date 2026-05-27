@@ -21,13 +21,15 @@ import (
 
 	restaurantDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/delivery/grpc"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/infrastructure/config"
+	restaurantGrpcClient "github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/infrastructure/grpc_client"
 	restaurantPG "github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/repository/postgres"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/usecase"
 	restaurantUseCase "github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/usecase"
+	orderPb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/order"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -85,12 +87,29 @@ func main() {
 	brandRepo := restaurantPG.NewRestaurantBrandRepo(pool)
 	dishRepo := restaurantPG.NewDishRepo(pool)
 
-	brandUC := restaurantUseCase.NewRestaurantBrandUseCase(brandRepo, cfg.DefaultRestaurantLogoURL, s3Repo)
-	tracedBrandUC := usecase.NewRestaurantBrandUseCaseTracingMiddleware(brandUC)
-	dishUC := restaurantUseCase.NewDishUseCase(dishRepo, cfg.DefaultFoodLogoURL, s3Repo)
-	tracedDishUC := usecase.NewDishUseCaseTracingMiddleware(dishUC)
+	categoryUC := restaurantUseCase.NewCategoryUseCase(brandRepo)
 
-	restaurantHandler := restaurantDelivery.NewRestaurantHandler(tracedBrandUC, tracedDishUC, brandRepo, dishRepo)
+	brandUC := restaurantUseCase.NewRestaurantBrandUseCase(brandRepo, cfg.DefaultRestaurantLogoURL, s3Repo, appLogger)
+	tracedBrandUC := restaurantUseCase.NewRestaurantBrandUseCaseTracingMiddleware(brandUC)
+
+	dishUC := restaurantUseCase.NewDishUseCase(dishRepo, brandRepo, cfg.DefaultFoodLogoURL, s3Repo, appLogger)
+	tracedDishUC := restaurantUseCase.NewDishUseCaseTracingMiddleware(dishUC)
+
+	orderConn, err := grpc.NewClient(
+		cfg.OrderServiceAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+	)
+	if err != nil {
+		appLogger.Fatal("Failed to dial order-service", err)
+	}
+	defer orderConn.Close()
+	appLogger.Info("Connected to Order Service", logger.String("addr", cfg.OrderServiceAddr))
+	orderHistoryClient := restaurantGrpcClient.NewOrderClient(orderPb.NewOrderServiceClient(orderConn))
+
+	recoUC := restaurantUseCase.NewRecommendationsUseCase(brandRepo, dishRepo, orderHistoryClient, cfg.DefaultRestaurantLogoURL, cfg.DefaultFoodLogoURL, appLogger)
+
+	restaurantHandler := restaurantDelivery.NewRestaurantHandler(categoryUC, tracedBrandUC, tracedDishUC, recoUC)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -112,6 +131,7 @@ func main() {
 		grpc.ChainUnaryInterceptor(
 			interceptors.UnaryServerRecovery(appLogger),
 			interceptors.UnaryServerLogging(appLogger),
+			interceptors.UnaryServerUserIDKey(), // читает x-user-id из gRPC-метаданных и кладёт в контекст
 		),
 	)
 

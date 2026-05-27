@@ -24,8 +24,10 @@ const (
 	OrderService_GetOrders_FullMethodName                    = "/order.OrderService/GetOrders"
 	OrderService_UpdateOrderStatusByPaymentID_FullMethodName = "/order.OrderService/UpdateOrderStatusByPaymentID"
 	OrderService_PayForFriend_FullMethodName                 = "/order.OrderService/PayForFriend"
-	OrderService_GetOrderPaymentID_FullMethodName            = "/order.OrderService/GetOrderPaymentID"
 	OrderService_CancelOrder_FullMethodName                  = "/order.OrderService/CancelOrder"
+	OrderService_GetUserPaidBrands_FullMethodName            = "/order.OrderService/GetUserPaidBrands"
+	OrderService_GetTrendingBrands_FullMethodName            = "/order.OrderService/GetTrendingBrands"
+	OrderService_GetTopDishesByBrand_FullMethodName          = "/order.OrderService/GetTopDishesByBrand"
 )
 
 // OrderServiceClient is the client API for OrderService service.
@@ -41,13 +43,15 @@ type OrderServiceClient interface {
 	// Метод смены статус заказа
 	UpdateOrderStatusByPaymentID(ctx context.Context, in *UpdateStatusRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Метод для оплаты счета за друга
-	PayForFriend(ctx context.Context, in *PayForFriendRequest, opts ...grpc.CallOption) (*PayForFriendResponse, error)
-	// Возвращает yookassa payment_id для конкретного заказа (нужен фронту/гейтвею
-	// чтобы вручную опросить YooKassa без полагания на её webhook).
-	GetOrderPaymentID(ctx context.Context, in *GetOrderPaymentIDRequest, opts ...grpc.CallOption) (*GetOrderPaymentIDResponse, error)
-	// Помечает заказ как cancelled. Доступно только владельцу и только пока
-	// заказ ещё не payed/in_progress.
+	PayForFriend(ctx context.Context, in *PayForFriendRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Метод для отмены заказа
 	CancelOrder(ctx context.Context, in *CancelOrderRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Возвращает бренды, у которых пользователь когда-либо оплачивал заказ.
+	GetUserPaidBrands(ctx context.Context, in *GetUserPaidBrandsRequest, opts ...grpc.CallOption) (*BrandIDList, error)
+	// Возвращает бренды, набравшие больше всего оплат за последние window_days.
+	GetTrendingBrands(ctx context.Context, in *GetTrendingBrandsRequest, opts ...grpc.CallOption) (*BrandIDList, error)
+	// Возвращает топ-N блюд ресторана по сумме quantity за window_days, paid|finished.
+	GetTopDishesByBrand(ctx context.Context, in *GetTopDishesByBrandRequest, opts ...grpc.CallOption) (*DishIDList, error)
 }
 
 type orderServiceClient struct {
@@ -88,20 +92,10 @@ func (c *orderServiceClient) UpdateOrderStatusByPaymentID(ctx context.Context, i
 	return out, nil
 }
 
-func (c *orderServiceClient) PayForFriend(ctx context.Context, in *PayForFriendRequest, opts ...grpc.CallOption) (*PayForFriendResponse, error) {
+func (c *orderServiceClient) PayForFriend(ctx context.Context, in *PayForFriendRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PayForFriendResponse)
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, OrderService_PayForFriend_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *orderServiceClient) GetOrderPaymentID(ctx context.Context, in *GetOrderPaymentIDRequest, opts ...grpc.CallOption) (*GetOrderPaymentIDResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetOrderPaymentIDResponse)
-	err := c.cc.Invoke(ctx, OrderService_GetOrderPaymentID_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -112,6 +106,36 @@ func (c *orderServiceClient) CancelOrder(ctx context.Context, in *CancelOrderReq
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, OrderService_CancelOrder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderServiceClient) GetUserPaidBrands(ctx context.Context, in *GetUserPaidBrandsRequest, opts ...grpc.CallOption) (*BrandIDList, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrandIDList)
+	err := c.cc.Invoke(ctx, OrderService_GetUserPaidBrands_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderServiceClient) GetTrendingBrands(ctx context.Context, in *GetTrendingBrandsRequest, opts ...grpc.CallOption) (*BrandIDList, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrandIDList)
+	err := c.cc.Invoke(ctx, OrderService_GetTrendingBrands_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderServiceClient) GetTopDishesByBrand(ctx context.Context, in *GetTopDishesByBrandRequest, opts ...grpc.CallOption) (*DishIDList, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DishIDList)
+	err := c.cc.Invoke(ctx, OrderService_GetTopDishesByBrand_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -131,13 +155,15 @@ type OrderServiceServer interface {
 	// Метод смены статус заказа
 	UpdateOrderStatusByPaymentID(context.Context, *UpdateStatusRequest) (*emptypb.Empty, error)
 	// Метод для оплаты счета за друга
-	PayForFriend(context.Context, *PayForFriendRequest) (*PayForFriendResponse, error)
-	// Возвращает yookassa payment_id для конкретного заказа (нужен фронту/гейтвею
-	// чтобы вручную опросить YooKassa без полагания на её webhook).
-	GetOrderPaymentID(context.Context, *GetOrderPaymentIDRequest) (*GetOrderPaymentIDResponse, error)
-	// Помечает заказ как cancelled. Доступно только владельцу и только пока
-	// заказ ещё не payed/in_progress.
+	PayForFriend(context.Context, *PayForFriendRequest) (*emptypb.Empty, error)
+	// Метод для отмены заказа
 	CancelOrder(context.Context, *CancelOrderRequest) (*emptypb.Empty, error)
+	// Возвращает бренды, у которых пользователь когда-либо оплачивал заказ.
+	GetUserPaidBrands(context.Context, *GetUserPaidBrandsRequest) (*BrandIDList, error)
+	// Возвращает бренды, набравшие больше всего оплат за последние window_days.
+	GetTrendingBrands(context.Context, *GetTrendingBrandsRequest) (*BrandIDList, error)
+	// Возвращает топ-N блюд ресторана по сумме quantity за window_days, paid|finished.
+	GetTopDishesByBrand(context.Context, *GetTopDishesByBrandRequest) (*DishIDList, error)
 	mustEmbedUnimplementedOrderServiceServer()
 }
 
@@ -157,14 +183,20 @@ func (UnimplementedOrderServiceServer) GetOrders(context.Context, *GetOrdersRequ
 func (UnimplementedOrderServiceServer) UpdateOrderStatusByPaymentID(context.Context, *UpdateStatusRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateOrderStatusByPaymentID not implemented")
 }
-func (UnimplementedOrderServiceServer) PayForFriend(context.Context, *PayForFriendRequest) (*PayForFriendResponse, error) {
+func (UnimplementedOrderServiceServer) PayForFriend(context.Context, *PayForFriendRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method PayForFriend not implemented")
-}
-func (UnimplementedOrderServiceServer) GetOrderPaymentID(context.Context, *GetOrderPaymentIDRequest) (*GetOrderPaymentIDResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetOrderPaymentID not implemented")
 }
 func (UnimplementedOrderServiceServer) CancelOrder(context.Context, *CancelOrderRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method CancelOrder not implemented")
+}
+func (UnimplementedOrderServiceServer) GetUserPaidBrands(context.Context, *GetUserPaidBrandsRequest) (*BrandIDList, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserPaidBrands not implemented")
+}
+func (UnimplementedOrderServiceServer) GetTrendingBrands(context.Context, *GetTrendingBrandsRequest) (*BrandIDList, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTrendingBrands not implemented")
+}
+func (UnimplementedOrderServiceServer) GetTopDishesByBrand(context.Context, *GetTopDishesByBrandRequest) (*DishIDList, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTopDishesByBrand not implemented")
 }
 func (UnimplementedOrderServiceServer) mustEmbedUnimplementedOrderServiceServer() {}
 func (UnimplementedOrderServiceServer) testEmbeddedByValue()                      {}
@@ -259,24 +291,6 @@ func _OrderService_PayForFriend_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _OrderService_GetOrderPaymentID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetOrderPaymentIDRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(OrderServiceServer).GetOrderPaymentID(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: OrderService_GetOrderPaymentID_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(OrderServiceServer).GetOrderPaymentID(ctx, req.(*GetOrderPaymentIDRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _OrderService_CancelOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CancelOrderRequest)
 	if err := dec(in); err != nil {
@@ -291,6 +305,60 @@ func _OrderService_CancelOrder_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(OrderServiceServer).CancelOrder(ctx, req.(*CancelOrderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrderService_GetUserPaidBrands_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserPaidBrandsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).GetUserPaidBrands(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_GetUserPaidBrands_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).GetUserPaidBrands(ctx, req.(*GetUserPaidBrandsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrderService_GetTrendingBrands_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTrendingBrandsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).GetTrendingBrands(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_GetTrendingBrands_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).GetTrendingBrands(ctx, req.(*GetTrendingBrandsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrderService_GetTopDishesByBrand_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTopDishesByBrandRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).GetTopDishesByBrand(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_GetTopDishesByBrand_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).GetTopDishesByBrand(ctx, req.(*GetTopDishesByBrandRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -319,12 +387,330 @@ var OrderService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _OrderService_PayForFriend_Handler,
 		},
 		{
-			MethodName: "GetOrderPaymentID",
-			Handler:    _OrderService_GetOrderPaymentID_Handler,
-		},
-		{
 			MethodName: "CancelOrder",
 			Handler:    _OrderService_CancelOrder_Handler,
+		},
+		{
+			MethodName: "GetUserPaidBrands",
+			Handler:    _OrderService_GetUserPaidBrands_Handler,
+		},
+		{
+			MethodName: "GetTrendingBrands",
+			Handler:    _OrderService_GetTrendingBrands_Handler,
+		},
+		{
+			MethodName: "GetTopDishesByBrand",
+			Handler:    _OrderService_GetTopDishesByBrand_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "order/order.proto",
+}
+
+const (
+	PromoService_GetUserPromos_FullMethodName           = "/order.PromoService/GetUserPromos"
+	PromoService_GetRestaurantPromos_FullMethodName     = "/order.PromoService/GetRestaurantPromos"
+	PromoService_BindPromocode_FullMethodName           = "/order.PromoService/BindPromocode"
+	PromoService_ValidatePromocode_FullMethodName       = "/order.PromoService/ValidatePromocode"
+	PromoService_UsePromocode_FullMethodName            = "/order.PromoService/UsePromocode"
+	PromoService_CreateAndBindWheelPromo_FullMethodName = "/order.PromoService/CreateAndBindWheelPromo"
+)
+
+// PromoServiceClient is the client API for PromoService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// Сервис промокодов. Промокоды хранятся в БД OrderService, поэтому
+// вся работа с ними реализована здесь, а api-gateway ходит сюда по gRPC.
+type PromoServiceClient interface {
+	// Промокоды, привязанные к пользователю
+	GetUserPromos(ctx context.Context, in *GetUserPromosRequest, opts ...grpc.CallOption) (*PromocodeList, error)
+	// Действующие промокоды ресторана
+	GetRestaurantPromos(ctx context.Context, in *GetRestaurantPromosRequest, opts ...grpc.CallOption) (*PromocodeList, error)
+	// Привязка промокода к пользователю по коду
+	BindPromocode(ctx context.Context, in *BindPromocodeRequest, opts ...grpc.CallOption) (*Promocode, error)
+	// Проверка промокода для заказа и расчёт скидки
+	ValidatePromocode(ctx context.Context, in *ValidatePromocodeRequest, opts ...grpc.CallOption) (*ValidatePromocodeResponse, error)
+	// Фиксация использования промокода после оформления заказа
+	UsePromocode(ctx context.Context, in *UsePromocodeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Создание уникального промокода и привязка его к пользователю
+	CreateAndBindWheelPromo(ctx context.Context, in *CreateAndBindWheelPromoRequest, opts ...grpc.CallOption) (*Promocode, error)
+}
+
+type promoServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewPromoServiceClient(cc grpc.ClientConnInterface) PromoServiceClient {
+	return &promoServiceClient{cc}
+}
+
+func (c *promoServiceClient) GetUserPromos(ctx context.Context, in *GetUserPromosRequest, opts ...grpc.CallOption) (*PromocodeList, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PromocodeList)
+	err := c.cc.Invoke(ctx, PromoService_GetUserPromos_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *promoServiceClient) GetRestaurantPromos(ctx context.Context, in *GetRestaurantPromosRequest, opts ...grpc.CallOption) (*PromocodeList, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PromocodeList)
+	err := c.cc.Invoke(ctx, PromoService_GetRestaurantPromos_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *promoServiceClient) BindPromocode(ctx context.Context, in *BindPromocodeRequest, opts ...grpc.CallOption) (*Promocode, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Promocode)
+	err := c.cc.Invoke(ctx, PromoService_BindPromocode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *promoServiceClient) ValidatePromocode(ctx context.Context, in *ValidatePromocodeRequest, opts ...grpc.CallOption) (*ValidatePromocodeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ValidatePromocodeResponse)
+	err := c.cc.Invoke(ctx, PromoService_ValidatePromocode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *promoServiceClient) UsePromocode(ctx context.Context, in *UsePromocodeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, PromoService_UsePromocode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *promoServiceClient) CreateAndBindWheelPromo(ctx context.Context, in *CreateAndBindWheelPromoRequest, opts ...grpc.CallOption) (*Promocode, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Promocode)
+	err := c.cc.Invoke(ctx, PromoService_CreateAndBindWheelPromo_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PromoServiceServer is the server API for PromoService service.
+// All implementations must embed UnimplementedPromoServiceServer
+// for forward compatibility.
+//
+// Сервис промокодов. Промокоды хранятся в БД OrderService, поэтому
+// вся работа с ними реализована здесь, а api-gateway ходит сюда по gRPC.
+type PromoServiceServer interface {
+	// Промокоды, привязанные к пользователю
+	GetUserPromos(context.Context, *GetUserPromosRequest) (*PromocodeList, error)
+	// Действующие промокоды ресторана
+	GetRestaurantPromos(context.Context, *GetRestaurantPromosRequest) (*PromocodeList, error)
+	// Привязка промокода к пользователю по коду
+	BindPromocode(context.Context, *BindPromocodeRequest) (*Promocode, error)
+	// Проверка промокода для заказа и расчёт скидки
+	ValidatePromocode(context.Context, *ValidatePromocodeRequest) (*ValidatePromocodeResponse, error)
+	// Фиксация использования промокода после оформления заказа
+	UsePromocode(context.Context, *UsePromocodeRequest) (*emptypb.Empty, error)
+	// Создание уникального промокода и привязка его к пользователю
+	CreateAndBindWheelPromo(context.Context, *CreateAndBindWheelPromoRequest) (*Promocode, error)
+	mustEmbedUnimplementedPromoServiceServer()
+}
+
+// UnimplementedPromoServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedPromoServiceServer struct{}
+
+func (UnimplementedPromoServiceServer) GetUserPromos(context.Context, *GetUserPromosRequest) (*PromocodeList, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserPromos not implemented")
+}
+func (UnimplementedPromoServiceServer) GetRestaurantPromos(context.Context, *GetRestaurantPromosRequest) (*PromocodeList, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetRestaurantPromos not implemented")
+}
+func (UnimplementedPromoServiceServer) BindPromocode(context.Context, *BindPromocodeRequest) (*Promocode, error) {
+	return nil, status.Error(codes.Unimplemented, "method BindPromocode not implemented")
+}
+func (UnimplementedPromoServiceServer) ValidatePromocode(context.Context, *ValidatePromocodeRequest) (*ValidatePromocodeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ValidatePromocode not implemented")
+}
+func (UnimplementedPromoServiceServer) UsePromocode(context.Context, *UsePromocodeRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method UsePromocode not implemented")
+}
+func (UnimplementedPromoServiceServer) CreateAndBindWheelPromo(context.Context, *CreateAndBindWheelPromoRequest) (*Promocode, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateAndBindWheelPromo not implemented")
+}
+func (UnimplementedPromoServiceServer) mustEmbedUnimplementedPromoServiceServer() {}
+func (UnimplementedPromoServiceServer) testEmbeddedByValue()                      {}
+
+// UnsafePromoServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to PromoServiceServer will
+// result in compilation errors.
+type UnsafePromoServiceServer interface {
+	mustEmbedUnimplementedPromoServiceServer()
+}
+
+func RegisterPromoServiceServer(s grpc.ServiceRegistrar, srv PromoServiceServer) {
+	// If the following call panics, it indicates UnimplementedPromoServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&PromoService_ServiceDesc, srv)
+}
+
+func _PromoService_GetUserPromos_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserPromosRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PromoServiceServer).GetUserPromos(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PromoService_GetUserPromos_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PromoServiceServer).GetUserPromos(ctx, req.(*GetUserPromosRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PromoService_GetRestaurantPromos_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRestaurantPromosRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PromoServiceServer).GetRestaurantPromos(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PromoService_GetRestaurantPromos_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PromoServiceServer).GetRestaurantPromos(ctx, req.(*GetRestaurantPromosRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PromoService_BindPromocode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BindPromocodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PromoServiceServer).BindPromocode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PromoService_BindPromocode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PromoServiceServer).BindPromocode(ctx, req.(*BindPromocodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PromoService_ValidatePromocode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ValidatePromocodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PromoServiceServer).ValidatePromocode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PromoService_ValidatePromocode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PromoServiceServer).ValidatePromocode(ctx, req.(*ValidatePromocodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PromoService_UsePromocode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UsePromocodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PromoServiceServer).UsePromocode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PromoService_UsePromocode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PromoServiceServer).UsePromocode(ctx, req.(*UsePromocodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PromoService_CreateAndBindWheelPromo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAndBindWheelPromoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PromoServiceServer).CreateAndBindWheelPromo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PromoService_CreateAndBindWheelPromo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PromoServiceServer).CreateAndBindWheelPromo(ctx, req.(*CreateAndBindWheelPromoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// PromoService_ServiceDesc is the grpc.ServiceDesc for PromoService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var PromoService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "order.PromoService",
+	HandlerType: (*PromoServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetUserPromos",
+			Handler:    _PromoService_GetUserPromos_Handler,
+		},
+		{
+			MethodName: "GetRestaurantPromos",
+			Handler:    _PromoService_GetRestaurantPromos_Handler,
+		},
+		{
+			MethodName: "BindPromocode",
+			Handler:    _PromoService_BindPromocode_Handler,
+		},
+		{
+			MethodName: "ValidatePromocode",
+			Handler:    _PromoService_ValidatePromocode_Handler,
+		},
+		{
+			MethodName: "UsePromocode",
+			Handler:    _PromoService_UsePromocode_Handler,
+		},
+		{
+			MethodName: "CreateAndBindWheelPromo",
+			Handler:    _PromoService_CreateAndBindWheelPromo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

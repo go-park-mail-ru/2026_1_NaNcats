@@ -5,15 +5,19 @@ package order
 import (
 	"errors"
 	"net/http"
+	"strconv"
+	"sync"
 
 	wsManager "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/websocket"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/orderclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/paymentclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/restaurantclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/userclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
+	pbUser "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/user"
 
 	"github.com/gorilla/websocket"
 )
@@ -33,8 +37,10 @@ type CreateOrderRequest struct {
 	DeliveryCost       int64  `json:"delivery_cost"`
 	ServiceFee         int64  `json:"service_fee"`
 
-	PayForAll    bool            `json:"pay_for_all"`
-	PayerMapping map[int64]int64 `json:"payer_mapping,omitempty"`
+	PayForAll    bool              `json:"pay_for_all"`
+	PayerMapping map[string]string `json:"payer_mapping,omitempty"`
+
+	Promocode *string `json:"promocode,omitempty"`
 }
 
 //easyjson:json
@@ -44,28 +50,38 @@ type CreateOrderResponse struct {
 
 //easyjson:json
 type OrderDishDTO struct {
-	DishID      int64  `json:"dish_id"`
-	Name        string `json:"name"`
-	ImageURL    string `json:"image_url"`
-	Quantity    int32  `json:"quantity"`
-	Price       int64  `json:"price"`
-	OwnerUserID *int64 `json:"owner_user_id,omitempty"`
+	DishID        int64   `json:"dish_id"`
+	Name          string  `json:"name"`
+	ImageURL      string  `json:"image_url"`
+	Quantity      int32   `json:"quantity"`
+	Price         int64   `json:"price"`
+	OwnerPublicID *string `json:"owner_public_id,omitempty"`
+	OwnerName     *string `json:"owner_name,omitempty"`
+	OwnerAvatar   *string `json:"owner_avatar,omitempty"`
 }
 
 //easyjson:json
 type OrderSplitDTO struct {
-	SplitID string `json:"split_id"`
-	UserID  int64  `json:"user_id"`
-	Amount  int64  `json:"amount"`
-	Status  string `json:"status"`
+	SplitID        string `json:"split_id"`
+	UserPublicID   string `json:"user_public_id"`
+	UserName       string `json:"user_name"`
+	UserAvatar     string `json:"user_avatar"`
+	BaseAmount     int64  `json:"base_amount"`
+	DiscountAmount int64  `json:"discount_amount"`
+	Amount         int64  `json:"amount"`
+	Status         string `json:"status"`
 }
 
 //easyjson:json
 type OrderHistoryResponse struct {
 	OrderID            string          `json:"order_id"`
+	AdminPublicID      string          `json:"admin_public_id"`
+	RestaurantID       int64           `json:"restaurant_id"`
 	RestaurantName     string          `json:"restaurant_name"`
 	RestaurantImageURL string          `json:"restaurant_image_url"`
 	TotalCost          int64           `json:"total_cost"`
+	AppliedPromocode   *string         `json:"applied_promocode,omitempty"`
+	DiscountAmount     int64           `json:"discount_amount"`
 	Status             string          `json:"status"`
 	CreatedAt          string          `json:"created_at"`
 	Items              []OrderDishDTO  `json:"items"`
@@ -81,25 +97,20 @@ type OrderHandler struct {
 	orderClient      orderclient.OrderClient
 	paymentClient    paymentclient.PaymentClient
 	restaurantClient restaurantclient.RestaurantClient
+	userClient       userclient.UserClient
 	wsManager        *wsManager.WsManager
 	logger           logger.Logger
 }
 
-func NewOrderHandler(oc orderclient.OrderClient, pc paymentclient.PaymentClient, rc restaurantclient.RestaurantClient, wsm *wsManager.WsManager, l logger.Logger) *OrderHandler {
+func NewOrderHandler(oc orderclient.OrderClient, pc paymentclient.PaymentClient, rc restaurantclient.RestaurantClient, uc userclient.UserClient, wsm *wsManager.WsManager, l logger.Logger) *OrderHandler {
 	return &OrderHandler{
 		orderClient:      oc,
 		paymentClient:    pc,
 		restaurantClient: rc,
+		userClient:       uc,
 		wsManager:        wsm,
 		logger:           l,
 	}
-}
-
-//easyjson:json
-type CheckPaymentResponse struct {
-	OrderID       string `json:"order_id"`
-	PaymentID     string `json:"payment_id"`
-	PaymentStatus string `json:"payment_status"`
 }
 
 // CancelOrder godoc
@@ -139,60 +150,6 @@ func (h *OrderHandler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.JSON(w, http.StatusOK, map[string]string{"status": "cancelled"})
-}
-
-// CheckPayment godoc
-// @Summary 		Проверка статуса платежа
-// @Description		Для dev-окружения: актуализирует статус платежа через YooKassa REST, эмулируя webhook.
-// @Tags			order
-// @Accept			json
-// @Produce			json
-// @Param			id		path	string	true	"ID заказа"
-// @Success			200		{object}  CheckPaymentResponse		"Успешное обновление статуса"
-// @Success			202		{object}  CheckPaymentResponse		"Платеж еще не готов (pending)"
-// @Failure			400		{object}  response.ErrorResponse	"Отсутствует ID заказа"
-// @Failure			401		{object}  response.ErrorResponse	"Неавторизован"
-// @Failure			403		{object}  response.ErrorResponse	"Доступ запрещен"
-// @Failure			404		{object}  response.ErrorResponse	"Заказ или платеж не найден"
-// @Failure			500		{object}  response.ErrorResponse	"Внутренняя ошибка сервера"
-// @Router			/order/{id}/check-payment [get]
-func (h *OrderHandler) CheckPayment(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	l := h.logger.WithContext(ctx)
-
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok {
-		response.Error(w, http.StatusUnauthorized, "Unauthorized")
-		return
-	}
-
-	orderID := r.PathValue("id")
-	if orderID == "" {
-		response.Error(w, http.StatusBadRequest, "order id is required")
-		return
-	}
-
-	paymentID, err := h.orderClient.GetOrderPaymentID(ctx, orderID, userID)
-	if err != nil {
-		response.JSON(w, http.StatusAccepted, CheckPaymentResponse{
-			OrderID:       orderID,
-			PaymentStatus: "pending",
-		})
-		return
-	}
-
-	statusStr, err := h.paymentClient.RefreshPaymentStatus(ctx, paymentID)
-	if err != nil {
-		l.Error("refresh payment status failed", err)
-		response.Error(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	response.JSON(w, http.StatusOK, CheckPaymentResponse{
-		OrderID:       orderID,
-		PaymentID:     paymentID,
-		PaymentStatus: statusStr,
-	})
 }
 
 // CreateOrder godoc
@@ -238,6 +195,23 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	internalPayerMapping := make(map[int64]int64)
+	if len(req.PayerMapping) > 0 {
+		for targetUUID, payerUUID := range req.PayerMapping {
+			targetInternalID, err := h.userClient.ResolvePublicID(ctx, targetUUID)
+			if err != nil {
+				response.Error(w, http.StatusBadRequest, "invalid target user id in payer mapping")
+				return
+			}
+			payerInternalID, err := h.userClient.ResolvePublicID(ctx, payerUUID)
+			if err != nil {
+				response.Error(w, http.StatusBadRequest, "invalid payer user id in payer mapping")
+				return
+			}
+			internalPayerMapping[targetInternalID] = payerInternalID
+		}
+	}
+
 	input := orderclient.CreateOrderInput{
 		AddressPublicID:    req.AddressID,
 		RestaurantBranchID: req.RestaurantBranchID,
@@ -246,7 +220,8 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		DeliveryCost:       req.DeliveryCost,
 		ServiceFee:         req.ServiceFee,
 		PayForAll:          req.PayForAll,
-		PayerMapping:       req.PayerMapping,
+		PayerMapping:       internalPayerMapping,
+		Promocode:          req.Promocode,
 	}
 
 	orderPublicID, err := h.orderClient.CreateOrder(ctx, userID, input, idemKey)
@@ -294,42 +269,107 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orders, err := h.orderClient.GetOrders(ctx, userID)
+	limit := int32(10)
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		if parsed, err := strconv.ParseInt(limitStr, 10, 32); err == nil && parsed > 0 {
+			limit = int32(parsed)
+		}
+	}
+
+	offset := int32(0)
+	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
+		if parsed, err := strconv.ParseInt(offsetStr, 10, 32); err == nil && parsed >= 0 {
+			offset = int32(parsed)
+		}
+	}
+
+	orders, err := h.orderClient.GetOrders(ctx, userID, limit, offset)
 	if err != nil {
 		l.Error("failed to fetch user orders via grpc", err)
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
+	if len(orders) == 0 {
+		response.JSON(w, http.StatusOK, []OrderHistoryResponse{})
+		return
+	}
+
+	brandIDSet := make(map[int64]struct{})
 	dishIDSet := make(map[int64]struct{})
+	userIDSet := make(map[int64]struct{})
+
 	for _, o := range orders {
+		brandIDSet[o.RestaurantBrandID] = struct{}{}
+		if o.AdminID != 0 {
+			userIDSet[o.AdminID] = struct{}{}
+		}
 		for _, item := range o.Items {
 			dishIDSet[item.DishID] = struct{}{}
+			if item.OwnerUserID != nil {
+				userIDSet[*item.OwnerUserID] = struct{}{}
+			}
+		}
+		for _, split := range o.Splits {
+			userIDSet[split.UserID] = struct{}{}
 		}
 	}
 
-	dishMeta := make(map[int64]struct {
-		Name     string
-		ImageURL string
-	}, len(dishIDSet))
+	brandIDs := make([]int64, 0, len(brandIDSet))
+	for id := range brandIDSet {
+		brandIDs = append(brandIDs, id)
+	}
 
-	if len(dishIDSet) > 0 {
-		dishIDs := make([]int64, 0, len(dishIDSet))
-		for id := range dishIDSet {
-			dishIDs = append(dishIDs, id)
-		}
+	dishIDs := make([]int64, 0, len(dishIDSet))
+	for id := range dishIDSet {
+		dishIDs = append(dishIDs, id)
+	}
 
-		dishes, derr := h.restaurantClient.GetDishesByIDs(ctx, dishIDs)
-		if derr != nil {
-			l.Error("failed to enrich order items with dish info", derr)
-		} else {
-			for _, d := range dishes {
-				dishMeta[d.Id] = struct {
-					Name     string
-					ImageURL string
-				}{Name: d.Name, ImageURL: d.ImageUrl}
+	userIDs := make([]int64, 0, len(userIDSet))
+	for id := range userIDSet {
+		userIDs = append(userIDs, id)
+	}
+
+	usersInfo, err := h.userClient.GetUsersByIDs(ctx, userIDs)
+	if err != nil {
+		l.Warn("failed to fetch users info for enrichment", logger.Err(err))
+		usersInfo = make(map[int64]*pbUser.User)
+	}
+
+	var wg sync.WaitGroup
+	var logos map[int64]string
+	var dishes []restaurantclient.Dish
+	var logoErr, dishErr error
+
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		if len(dishIDs) > 0 {
+			dishes, dishErr = h.restaurantClient.GetDishesByIDs(ctx, dishIDs)
+			if dishErr != nil {
+				l.Warn("failed to fetch dishes images", logger.String("error", dishErr.Error()))
 			}
 		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		if len(brandIDs) > 0 {
+			logos, logoErr = h.restaurantClient.GetRestaurantLogos(ctx, brandIDs)
+			if logoErr != nil {
+				l.Warn("failed to fetch restaurant logos", logger.String("error", logoErr.Error()))
+			}
+		}
+	}()
+
+	wg.Wait()
+
+	dishImages := make(map[int64]string, len(dishes))
+	dishNames := make(map[int64]string, len(dishes))
+	for _, d := range dishes {
+		dishImages[d.ID] = d.ImageURL
+		dishNames[d.ID] = d.Name
 	}
 
 	resp := make([]OrderHistoryResponse, 0, len(orders))
@@ -337,32 +377,74 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 
 		items := make([]OrderDishDTO, 0, len(o.Items))
 		for _, item := range o.Items {
-			meta := dishMeta[item.DishID]
+			imgURL := dishImages[item.DishID]
+
+			var pubID, name, avatar *string
+			if item.OwnerUserID != nil {
+				if u, exists := usersInfo[*item.OwnerUserID]; exists {
+					pubID = &u.PublicId
+					name = &u.Name
+					avatar = &u.AvatarUrl
+				}
+			}
+
+			dishName := item.DishName
+			if dishName == "" {
+				dishName = dishNames[item.DishID]
+			}
+
 			items = append(items, OrderDishDTO{
-				DishID:      item.DishID,
-				Name:        meta.Name,
-				ImageURL:    meta.ImageURL,
-				Quantity:    item.Quantity,
-				Price:       item.Price,
-				OwnerUserID: item.OwnerUserID,
+				DishID:        item.DishID,
+				Name:          dishName,
+				ImageURL:      imgURL,
+				Quantity:      item.Quantity,
+				Price:         item.Price,
+				OwnerPublicID: pubID,
+				OwnerName:     name,
+				OwnerAvatar:   avatar,
 			})
 		}
 
 		splits := make([]OrderSplitDTO, 0, len(o.Splits))
 		for _, split := range o.Splits {
+			var pubID, name, avatar string
+			if u, exists := usersInfo[split.UserID]; exists {
+				pubID = u.PublicId
+				name = u.Name
+				avatar = u.AvatarUrl
+			} else {
+				pubID = "unknown"
+				name = "Unknown User"
+			}
+
 			splits = append(splits, OrderSplitDTO{
-				SplitID: split.SplitID,
-				UserID:  split.UserID,
-				Amount:  split.Amount,
-				Status:  split.Status,
+				SplitID:        split.SplitID,
+				UserPublicID:   pubID,
+				UserName:       name,
+				UserAvatar:     avatar,
+				BaseAmount:     split.BaseAmount,
+				DiscountAmount: split.DiscountAmount,
+				Amount:         split.Amount,
+				Status:         split.Status,
 			})
+		}
+
+		brandLogo := logos[o.RestaurantBrandID]
+
+		var adminPublicID string
+		if u, exists := usersInfo[o.AdminID]; exists {
+			adminPublicID = u.PublicId
 		}
 
 		resp = append(resp, OrderHistoryResponse{
 			OrderID:            o.PublicID,
+			AdminPublicID:      adminPublicID,
+			RestaurantID:       o.RestaurantBrandID,
 			RestaurantName:     o.RestaurantName,
-			RestaurantImageURL: o.RestaurantLogoURL,
+			RestaurantImageURL: brandLogo,
 			TotalCost:          o.TotalCost,
+			AppliedPromocode:   o.Promocode,
+			DiscountAmount:     o.DiscountAmount,
 			Status:             o.Status,
 			CreatedAt:          o.CreatedAt.Format("02.01.2006"),
 			Items:              items,

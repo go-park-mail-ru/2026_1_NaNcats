@@ -14,3 +14,9 @@ otel:
 grpc_clients:
   auth_service_addr: "localhost:50054"
   user_service_addr: "localhost:50052"
+  restaurant_service_addr: "localhost:50053"
+  cart_service_addr: "localhost:50055"
+  address_service_addr: "localhost:50051"
+  payment_service_addr: "localhost:50056"
+  order_service_addr: "localhost:50057"
+  analytics_service_addr: "localhost:50059"

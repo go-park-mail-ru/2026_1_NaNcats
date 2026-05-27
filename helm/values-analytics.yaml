@@ -1,0 +1,17 @@
+serviceName: analytics-service
+image:
+  repository: ghcr.io/go-park-mail-ru/2026_1_nancats/analytics
+service:
+  port: 50059
+env:
+  CONFIG_PATH: "./services/analytics/config.yaml"
+  RABBITMQ_URL: "amqp://guest:guest@rabbitmq-service:5672/"
+  CLICKHOUSE_HOST: "clickhouse"
+  CLICKHOUSE_PORT: "9000"
+  CLICKHOUSE_DB: "analytics"
+  CLICKHOUSE_USER: "admin"
+  RESTAURANT_SERVICE_ADDR: "restaurant-service:50053"
+secrets:
+  CLICKHOUSE_PASSWORD:
+    secretName: nancats-prod-secrets
+    secretKey: clickhouse-password

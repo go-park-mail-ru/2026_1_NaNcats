@@ -16,6 +16,7 @@ func mapDomainToPBOrder(o domain.Order) *pb.Order {
 	for _, item := range o.Items {
 		pbItem := &pb.OrderDish{
 			DishId:   item.DishID,
+			DishName: item.Name,
 			Quantity: int32(item.Quantity),
 			Price:    item.Price,
 		}
@@ -28,22 +29,27 @@ func mapDomainToPBOrder(o domain.Order) *pb.Order {
 	splits := make([]*pb.OrderSplit, 0, len(o.Splits))
 	for _, split := range o.Splits {
 		splits = append(splits, &pb.OrderSplit{
-			SplitId: split.ID,
-			UserId:  split.UserID,
-			Amount:  split.Amount,
-			Status:  split.Status,
+			SplitId:        split.ID,
+			UserId:         split.UserID,
+			BaseAmount:     split.BaseAmount,
+			DiscountAmount: split.DiscountAmount,
+			Amount:         split.Amount,
+			Status:         split.Status,
 		})
 	}
 
 	return &pb.Order{
 		PublicId:          o.PublicID,
+		RestaurantBrandId: o.RestaurantBrandID,
 		RestaurantName:    o.RestaurantName,
-		RestaurantLogoUrl: o.RestaurantLogoURL,
 		TotalCost:         o.TotalCost,
 		Status:            o.Status,
 		CreatedAt:         timestamppb.New(o.CreatedAt),
 		Items:             items,
 		Splits:            splits,
+		AppliedPromocode:  o.PromocodeString,
+		DiscountAmount:    o.DiscountAmount,
+		AdminAccountId:    o.AdminID,
 	}
 }
 
@@ -58,6 +64,7 @@ func mapCreateOrderInputFromPB(req *pb.CreateOrderRequest) domain.CreateOrderInp
 		PaymentMethodID:    req.PaymentMethodId,
 		PayForAll:          req.PayForAll,
 		PayerMapping:       req.PayerMapping,
+		Promocode:          req.Promocode,
 	}
 }
 
@@ -87,7 +94,7 @@ func (h *OrderHandler) CreateOrder(ctx context.Context, req *pb.CreateOrderReque
 }
 
 func (h *OrderHandler) GetOrders(ctx context.Context, req *pb.GetOrdersRequest) (*pb.GetOrdersResponse, error) {
-	orders, err := h.usecase.GetOrders(ctx, req.UserId)
+	orders, err := h.usecase.GetOrders(ctx, req.UserId, req.Limit, req.Offset)
 	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
 	}
@@ -100,7 +107,6 @@ func (h *OrderHandler) GetOrders(ctx context.Context, req *pb.GetOrdersRequest) 
 	return &pb.GetOrdersResponse{
 		Orders: pbOrders,
 	}, nil
-
 }
 
 func (h *OrderHandler) UpdateOrderStatusByPaymentID(ctx context.Context, req *pb.UpdateStatusRequest) (*emptypb.Empty, error) {
@@ -108,21 +114,13 @@ func (h *OrderHandler) UpdateOrderStatusByPaymentID(ctx context.Context, req *pb
 	return &emptypb.Empty{}, grpcutil.ToGRPCError(err)
 }
 
-func (h *OrderHandler) PayForFriend(ctx context.Context, req *pb.PayForFriendRequest) (*pb.PayForFriendResponse, error) {
+func (h *OrderHandler) PayForFriend(ctx context.Context, req *pb.PayForFriendRequest) (*emptypb.Empty, error) {
 	err := h.usecase.PayForFriend(ctx, req.SplitId, req.PayerUserId, req.PaymentMethodId, req.IdempotencyKey)
 	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
 	}
 
-	return &pb.PayForFriendResponse{}, nil
-}
-
-func (h *OrderHandler) GetOrderPaymentID(ctx context.Context, req *pb.GetOrderPaymentIDRequest) (*pb.GetOrderPaymentIDResponse, error) {
-	paymentID, err := h.usecase.GetOrderPaymentID(ctx, req.OrderPublicId, req.UserId)
-	if err != nil {
-		return nil, grpcutil.ToGRPCError(err)
-	}
-	return &pb.GetOrderPaymentIDResponse{YookassaPaymentId: paymentID}, nil
+	return &emptypb.Empty{}, nil
 }
 
 func (h *OrderHandler) CancelOrder(ctx context.Context, req *pb.CancelOrderRequest) (*emptypb.Empty, error) {
@@ -130,4 +128,28 @@ func (h *OrderHandler) CancelOrder(ctx context.Context, req *pb.CancelOrderReque
 		return nil, grpcutil.ToGRPCError(err)
 	}
 	return &emptypb.Empty{}, nil
+}
+
+func (h *OrderHandler) GetUserPaidBrands(ctx context.Context, req *pb.GetUserPaidBrandsRequest) (*pb.BrandIDList, error) {
+	ids, err := h.usecase.GetUserPaidBrands(ctx, req.UserId)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	return &pb.BrandIDList{BrandIds: ids}, nil
+}
+
+func (h *OrderHandler) GetTrendingBrands(ctx context.Context, req *pb.GetTrendingBrandsRequest) (*pb.BrandIDList, error) {
+	ids, err := h.usecase.GetTrendingBrands(ctx, req.WindowDays, req.Limit)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	return &pb.BrandIDList{BrandIds: ids}, nil
+}
+
+func (h *OrderHandler) GetTopDishesByBrand(ctx context.Context, req *pb.GetTopDishesByBrandRequest) (*pb.DishIDList, error) {
+	ids, err := h.usecase.GetTopDishesByBrand(ctx, req.BrandId, req.WindowDays, req.Limit)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	return &pb.DishIDList{DishIds: ids}, nil
 }

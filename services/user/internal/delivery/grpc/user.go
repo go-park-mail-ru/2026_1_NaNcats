@@ -21,6 +21,7 @@ func mapDomainToPBUser(u domain.User) *pb.User {
 		Role:         u.Role,
 		AvatarUrl:    u.AvatarURL,
 		PasswordHash: u.PasswordHash,
+		PublicId:     u.PublicID,
 	}
 }
 
@@ -57,15 +58,92 @@ func mapDomainToPBClientProfile(u domain.ClientProfile) *pb.ClientProfile {
 
 type UserHandler struct {
 	pb.UnimplementedUserServiceServer
-	userUC   usecase.UserUseCase
-	clientUC usecase.ClientProfileUseCase
+	userUC        usecase.UserUseCase
+	clientUC      usecase.ClientProfileUseCase
+	achievementUC usecase.AchievementUseCase
 }
 
-func NewUserHandler(uuc usecase.UserUseCase, cpuc usecase.ClientProfileUseCase) *UserHandler {
+func NewUserHandler(uuc usecase.UserUseCase, cpuc usecase.ClientProfileUseCase, auc usecase.AchievementUseCase) *UserHandler {
 	return &UserHandler{
-		userUC:   uuc,
-		clientUC: cpuc,
+		userUC:        uuc,
+		clientUC:      cpuc,
+		achievementUC: auc,
 	}
+}
+
+func (h *UserHandler) SpinWheel(ctx context.Context, req *pb.SpinWheelRequest) (*pb.SpinWheelResponse, error) {
+	res, err := h.clientUC.SpinWheel(ctx, req.UserId)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	resp := &pb.SpinWheelResponse{
+		SectorId:   int32(res.SectorID),
+		SectorName: res.SectorName,
+		Emoji:      res.Emoji,
+		Message:    res.Message,
+	}
+
+	if res.PromoCode != nil {
+		resp.PromoCode = res.PromoCode
+	}
+	if res.ExpiresAt != nil {
+		resp.ExpiresAt = res.ExpiresAt
+	}
+
+	return resp, nil
+}
+
+func (h *UserHandler) GetWheelSectors(ctx context.Context, _ *emptypb.Empty) (*pb.GetWheelSectorsResponse, error) {
+	sectors, err := h.clientUC.GetWheelSectors(ctx)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	pbSectors := make([]*pb.WheelSector, 0, len(sectors))
+	for _, s := range sectors {
+		pbSectors = append(pbSectors, &pb.WheelSector{
+			Id:    int32(s.ID),
+			Name:  s.Name,
+			Emoji: s.Emoji,
+		})
+	}
+
+	return &pb.GetWheelSectorsResponse{Sectors: pbSectors}, nil
+}
+
+func (h *UserHandler) ListAchievements(ctx context.Context, _ *emptypb.Empty) (*pb.ListAchievementsResponse, error) {
+	items, err := h.achievementUC.ListAll(ctx)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	resp := &pb.ListAchievementsResponse{Achievements: make([]*pb.Achievement, 0, len(items))}
+	for _, a := range items {
+		resp.Achievements = append(resp.Achievements, &pb.Achievement{
+			Id:          a.ID,
+			Code:        a.Code,
+			Title:       a.Title,
+			Description: a.Description,
+			Icon:        a.Icon,
+			SortOrder:   int32(a.SortOrder),
+		})
+	}
+	return resp, nil
+}
+
+func (h *UserHandler) GetUserAchievements(ctx context.Context, req *pb.GetUserAchievementsRequest) (*pb.GetUserAchievementsResponse, error) {
+	items, err := h.achievementUC.ListForUser(ctx, req.UserId)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	resp := &pb.GetUserAchievementsResponse{Achievements: make([]*pb.UserAchievement, 0, len(items))}
+	for _, ua := range items {
+		resp.Achievements = append(resp.Achievements, &pb.UserAchievement{
+			AchievementId: ua.AchievementID,
+			AwardedAt:     timestamppb.New(ua.AwardedAt),
+		})
+	}
+	return resp, nil
 }
 
 func (h *UserHandler) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error) {
@@ -178,5 +256,81 @@ func (h *UserHandler) UpdateUserRole(ctx context.Context, req *pb.UpdateUserRole
 	if err != nil {
 		return nil, grpcutil.ToGRPCError(err)
 	}
+	return &emptypb.Empty{}, nil
+}
+
+func (h *UserHandler) GetUsersByIDs(ctx context.Context, req *pb.GetUsersByIDsRequest) (*pb.GetUsersByIDsResponse, error) {
+	users, err := h.userUC.GetUsersByIDs(ctx, req.UserIds)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	pbUsers := make(map[int64]*pb.User, len(users))
+	for id, u := range users {
+		pbUsers[id] = mapDomainToPBUser(u)
+	}
+
+	return &pb.GetUsersByIDsResponse{Users: pbUsers}, nil
+}
+
+func (h *UserHandler) ResolvePublicID(ctx context.Context, req *pb.ResolvePublicIDRequest) (*pb.ResolvePublicIDResponse, error) {
+	user, err := h.userUC.GetByPublicID(ctx, req.PublicId)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	return &pb.ResolvePublicIDResponse{UserId: user.ID}, nil
+}
+
+func (h *UserHandler) ActivateStreakFreeze(ctx context.Context, req *pb.ActivateStreakFreezeRequest) (*emptypb.Empty, error) {
+	err := h.clientUC.ActivateStreakFreeze(ctx, req.UserId)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (h *UserHandler) IncrementStreak(ctx context.Context, req *pb.IncrementStreakRequest) (*emptypb.Empty, error) {
+	err := h.clientUC.IncrementStreak(ctx, req.UserId)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (h *UserHandler) OnWheelSpin(ctx context.Context, req *pb.OnWheelSpinRequest) (*emptypb.Empty, error) {
+	err := h.achievementUC.OnWheelSpin(ctx, req.UserId, req.GetWonAchievementCode())
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (h *UserHandler) OnWordleResult(ctx context.Context, req *pb.OnWordleResultRequest) (*emptypb.Empty, error) {
+	err := h.achievementUC.OnWordleResult(ctx, req.UserId, req.IsWin, req.TotalWins, req.CurrentStreak)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (h *UserHandler) ClaimWheelSpin(ctx context.Context, req *pb.ClaimWheelSpinRequest) (*emptypb.Empty, error) {
+	err := h.clientUC.ClaimWheelSpin(ctx, req.UserId)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (h *UserHandler) ResetWheelSpinCooldown(ctx context.Context, req *pb.ResetWheelSpinCooldownRequest) (*emptypb.Empty, error) {
+	err := h.clientUC.ResetWheelSpinCooldown(ctx, req.UserId)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+
 	return &emptypb.Empty{}, nil
 }

@@ -4,8 +4,11 @@ import "time"
 
 type OrderSplit struct {
 	ID                string
-	OrderID           int64
+	OrderID           int64  // Внутренний id заказа
+	OrderPublicID     string // Публичный UUID заказа (для саги и WS-маршрутизации)
 	UserID            int64
+	BaseAmount        int64
+	DiscountAmount    int64
 	Amount            int64
 	Status            string
 	PaymentMethodID   *string
@@ -22,18 +25,20 @@ type Order struct {
 	RestaurantBrandID  int64
 	ClientAddressID    string
 	TotalCost          int64
-	PromocodeID        int64
+	PromocodeID        *int64
+	PromocodeString    *string
+	DiscountAmount     int64
 	RestaurantName     string
 	Status             string
 	Items              []OrderDish
 	Splits             []OrderSplit
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
-	RestaurantLogoURL  string
 }
 
 type OrderDish struct {
 	DishID      int64
+	Name        string
 	Quantity    int
 	Price       int64
 	OwnerUserID *int64
@@ -50,4 +55,5 @@ type CreateOrderInput struct {
 	PaymentMethodID string
 	PayForAll       bool
 	PayerMapping    map[int64]int64
+	Promocode       *string
 }

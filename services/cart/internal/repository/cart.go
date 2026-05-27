@@ -8,6 +8,8 @@ import (
 
 //go:generate mockgen -destination=mocks/cart_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/repository CartRepository
 type CartRepository interface {
+	WithTransaction(ctx context.Context, fn func(txCtx context.Context) error) error
+	CheckAndSaveIdempotency(ctx context.Context, userID int64, key string, method string) error
 	// Базовые операции с корзиной
 	GetCartByUserID(ctx context.Context, userID int64) (domain.Cart, error)
 	GetCartByID(ctx context.Context, cartID string) (domain.Cart, error)
@@ -18,10 +20,12 @@ type CartRepository interface {
 	SetCartRestaurantBrand(ctx context.Context, cartID string, brandID int64) error
 	GetActiveCartByUserID(ctx context.Context, userID int64) (domain.Cart, error)
 	CreateCart(ctx context.Context, adminID int64, brandID int64) (string, error)
-	// Гранулярные операции с позициями
+	// Гранулярные операции с позициями. В совместной корзине одно блюдо может
+	// быть у нескольких участников отдельными строками, поэтому позиция
+	// адресуется парой (dishID, ownerID).
 	AddItem(ctx context.Context, cartID string, item domain.CartItem) error
-	RemoveItem(ctx context.Context, cartID string, dishID int64) error
-	UpdateItemQuantity(ctx context.Context, cartID string, dishID int64, quantity int32) error
+	RemoveItem(ctx context.Context, cartID string, dishID, ownerID int64) error
+	UpdateItemQuantity(ctx context.Context, cartID string, dishID, ownerID int64, quantity int32) error
 	ReassignItemOwner(ctx context.Context, cartID string, dishID int64, newOwnerID *int64) error
 	OrphanUserItems(ctx context.Context, cartID string, targetUserID int64) error // Делает позиции кикнутого юзера ничейными
 	// Управление Shared Cart
@@ -29,5 +33,6 @@ type CartRepository interface {
 	GetInviteByToken(ctx context.Context, token string) (domain.CartInvite, error)
 	AddMember(ctx context.Context, cartID string, userID int64) error
 	RemoveMember(ctx context.Context, cartID string, userID int64) error
+	KickMemberAtomic(ctx context.Context, cartID string, targetUserID int64) error
 	DowngradeToSolo(ctx context.Context, cartID string, adminID int64) error
 }

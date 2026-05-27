@@ -41,6 +41,20 @@ func (m *MockAddressRepository) EXPECT() *MockAddressRepositoryMockRecorder {
 	return m.recorder
 }
 
+// CheckAddressExists mocks base method.
+func (m *MockAddressRepository) CheckAddressExists(ctx context.Context, userID int64, publicID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckAddressExists", ctx, userID, publicID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CheckAddressExists indicates an expected call of CheckAddressExists.
+func (mr *MockAddressRepositoryMockRecorder) CheckAddressExists(ctx, userID, publicID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckAddressExists", reflect.TypeOf((*MockAddressRepository)(nil).CheckAddressExists), ctx, userID, publicID)
+}
+
 // CreateAddress mocks base method.
 func (m *MockAddressRepository) CreateAddress(ctx context.Context, userID int64, addr domain.Address, idempotencyKey string) (string, error) {
 	m.ctrl.T.Helper()
@@ -57,17 +71,17 @@ func (mr *MockAddressRepositoryMockRecorder) CreateAddress(ctx, userID, addr, id
 }
 
 // DeleteAddress mocks base method.
-func (m *MockAddressRepository) DeleteAddress(ctx context.Context, userID int64, publicID string) error {
+func (m *MockAddressRepository) DeleteAddress(ctx context.Context, userID int64, publicID, idempotencyKey string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteAddress", ctx, userID, publicID)
+	ret := m.ctrl.Call(m, "DeleteAddress", ctx, userID, publicID, idempotencyKey)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteAddress indicates an expected call of DeleteAddress.
-func (mr *MockAddressRepositoryMockRecorder) DeleteAddress(ctx, userID, publicID any) *gomock.Call {
+func (mr *MockAddressRepositoryMockRecorder) DeleteAddress(ctx, userID, publicID, idempotencyKey any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAddress", reflect.TypeOf((*MockAddressRepository)(nil).DeleteAddress), ctx, userID, publicID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAddress", reflect.TypeOf((*MockAddressRepository)(nil).DeleteAddress), ctx, userID, publicID, idempotencyKey)
 }
 
 // GetAddressesByUserID mocks base method.
@@ -101,15 +115,15 @@ func (mr *MockAddressRepositoryMockRecorder) GetInternalIDByPublicID(ctx, userID
 }
 
 // UpdateAddress mocks base method.
-func (m *MockAddressRepository) UpdateAddress(ctx context.Context, userID int64, addr domain.Address) error {
+func (m *MockAddressRepository) UpdateAddress(ctx context.Context, userID int64, addr domain.Address, idempotencyKey string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateAddress", ctx, userID, addr)
+	ret := m.ctrl.Call(m, "UpdateAddress", ctx, userID, addr, idempotencyKey)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateAddress indicates an expected call of UpdateAddress.
-func (mr *MockAddressRepositoryMockRecorder) UpdateAddress(ctx, userID, addr any) *gomock.Call {
+func (mr *MockAddressRepositoryMockRecorder) UpdateAddress(ctx, userID, addr, idempotencyKey any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAddress", reflect.TypeOf((*MockAddressRepository)(nil).UpdateAddress), ctx, userID, addr)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAddress", reflect.TypeOf((*MockAddressRepository)(nil).UpdateAddress), ctx, userID, addr, idempotencyKey)
 }

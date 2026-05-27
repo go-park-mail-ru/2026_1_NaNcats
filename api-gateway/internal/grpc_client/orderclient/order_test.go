@@ -144,6 +144,8 @@ func TestOrderClient_GetOrders(t *testing.T) {
 	tests := []struct {
 		name         string
 		userID       int64
+		limit        int32
+		offset       int32
 		mockBehavior mockBehavior
 		expectedRes  []Order
 		expectedErr  error
@@ -151,18 +153,21 @@ func TestOrderClient_GetOrders(t *testing.T) {
 		{
 			name:   "Успешное получение заказов",
 			userID: 1,
+			limit:  10,
+			offset: 0,
 			mockBehavior: func(m *mocks.MockOrderServiceClient) {
 				m.EXPECT().GetOrders(gomock.Any(), &pbOrder.GetOrdersRequest{
 					UserId: 1,
+					Limit:  10,
+					Offset: 0,
 				}).Return(&pbOrder.GetOrdersResponse{
 					Orders: []*pbOrder.Order{
 						{
-							PublicId:          "pub-1",
-							RestaurantName:    "KFC",
-							RestaurantLogoUrl: "url",
-							TotalCost:         1000,
-							Status:            "paid",
-							CreatedAt:         pbNow,
+							PublicId:       "pub-1",
+							RestaurantName: "KFC",
+							TotalCost:      1000,
+							Status:         "paid",
+							CreatedAt:      pbNow,
 							Items: []*pbOrder.OrderDish{
 								{DishId: 10, Quantity: 2, Price: 500, OwnerUserId: ptr(int64(1))},
 							},
@@ -175,12 +180,11 @@ func TestOrderClient_GetOrders(t *testing.T) {
 			},
 			expectedRes: []Order{
 				{
-					PublicID:          "pub-1",
-					RestaurantName:    "KFC",
-					RestaurantLogoURL: "url",
-					TotalCost:         1000,
-					Status:            "paid",
-					CreatedAt:         pbNow.AsTime(),
+					PublicID:       "pub-1",
+					RestaurantName: "KFC",
+					TotalCost:      1000,
+					Status:         "paid",
+					CreatedAt:      pbNow.AsTime(),
 					Items: []OrderDish{
 						{DishID: 10, Quantity: 2, Price: 500, OwnerUserID: ptr(int64(1))},
 					},
@@ -194,6 +198,8 @@ func TestOrderClient_GetOrders(t *testing.T) {
 		{
 			name:   "Ошибка получения",
 			userID: 1,
+			limit:  10,
+			offset: 0,
 			mockBehavior: func(m *mocks.MockOrderServiceClient) {
 				m.EXPECT().GetOrders(gomock.Any(), gomock.Any()).
 					Return(nil, status.Error(codes.Internal, "db error"))
@@ -212,7 +218,7 @@ func TestOrderClient_GetOrders(t *testing.T) {
 			tt.mockBehavior(mockGRPC)
 
 			client := NewOrderClient(mockGRPC)
-			res, err := client.GetOrders(context.Background(), tt.userID)
+			res, err := client.GetOrders(context.Background(), tt.userID, tt.limit, tt.offset)
 
 			if tt.expectedErr != nil {
 				assert.ErrorIs(t, err, tt.expectedErr)
@@ -240,7 +246,7 @@ func TestOrderClient_PayForFriend(t *testing.T) {
 					PayerUserId:     1,
 					PaymentMethodId: "pm-1",
 					IdempotencyKey:  "idem-1",
-				}).Return(&pbOrder.PayForFriendResponse{ConfirmationUrl: "url"}, nil)
+				}).Return(&emptypb.Empty{}, nil)
 			},
 			expectedErr: nil,
 		},
@@ -266,77 +272,6 @@ func TestOrderClient_PayForFriend(t *testing.T) {
 			err := client.PayForFriend(context.Background(), "split-1", 1, "pm-1", "idem-1")
 
 			assert.ErrorIs(t, err, tt.expectedErr)
-		})
-	}
-}
-
-func TestOrderClient_GetOrderPaymentID(t *testing.T) {
-	type mockBehavior func(m *mocks.MockOrderServiceClient)
-
-	tests := []struct {
-		name         string
-		mockBehavior mockBehavior
-		expectedRes  string
-		expectedErr  error
-		errContains  string
-	}{
-		{
-			name: "Успешное получение Payment ID",
-			mockBehavior: func(m *mocks.MockOrderServiceClient) {
-				m.EXPECT().GetOrderPaymentID(gomock.Any(), &pbOrder.GetOrderPaymentIDRequest{
-					OrderPublicId: "pub-1",
-					UserId:        1,
-				}).Return(&pbOrder.GetOrderPaymentIDResponse{YookassaPaymentId: "pay-123"}, nil)
-			},
-			expectedRes: "pay-123",
-			expectedErr: nil,
-		},
-		{
-			name: "Заказ не найден",
-			mockBehavior: func(m *mocks.MockOrderServiceClient) {
-				m.EXPECT().GetOrderPaymentID(gomock.Any(), gomock.Any()).
-					Return(nil, status.Error(codes.NotFound, "not found"))
-			},
-			expectedErr: ErrAddressNotFound,
-		},
-		{
-			name: "Отказ в доступе (PermissionDenied)",
-			mockBehavior: func(m *mocks.MockOrderServiceClient) {
-				m.EXPECT().GetOrderPaymentID(gomock.Any(), gomock.Any()).
-					Return(nil, status.Error(codes.PermissionDenied, "forbidden"))
-			},
-			expectedErr: ErrInternal,
-		},
-		{
-			name: "Платеж еще не готов (FailedPrecondition)",
-			mockBehavior: func(m *mocks.MockOrderServiceClient) {
-				m.EXPECT().GetOrderPaymentID(gomock.Any(), gomock.Any()).
-					Return(nil, status.Error(codes.FailedPrecondition, "pending"))
-			},
-			errContains: "payment not ready: pending",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			mockGRPC := mocks.NewMockOrderServiceClient(ctrl)
-			tt.mockBehavior(mockGRPC)
-
-			client := NewOrderClient(mockGRPC)
-			res, err := client.GetOrderPaymentID(context.Background(), "pub-1", 1)
-
-			if tt.expectedErr != nil {
-				assert.ErrorIs(t, err, tt.expectedErr)
-			} else if tt.errContains != "" {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errContains)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedRes, res)
-			}
 		})
 	}
 }

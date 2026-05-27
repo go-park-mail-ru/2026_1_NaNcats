@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/cart/internal/domain"
@@ -77,9 +78,6 @@ func (u *cartUseCase) GetCart(ctx context.Context, userID int64) (domain.Cart, i
 
 	dishes, err := u.restaurantClient.GetDishesByIDs(ctx, dishIDs)
 	if err != nil {
-		// Не валим всю ручку — возвращаем корзину без обогащённых данных.
-		// Иначе при недоступности restaurant-сервиса (или временной ошибке)
-		// фронт не может ни прочитать корзину, ни добавить новый товар.
 		span.AddEvent("dishes_enrichment_failed", trace.WithAttributes(
 			attribute.String("error", err.Error()),
 		))
@@ -131,51 +129,51 @@ func (u *cartUseCase) LockCart(ctx context.Context, cartID string, userID int64,
 		attribute.Int64("user.id", userID),
 		attribute.String("lock.idempotency_key", idempotencyKey),
 	)
-	if cartID == "" {
-		activeCart, err := u.cartRepo.GetActiveCartByUserID(ctx, userID)
+
+	err := u.cartRepo.WithTransaction(ctx, func(txCtx context.Context) error {
+		if err := u.cartRepo.CheckAndSaveIdempotency(txCtx, userID, idempotencyKey, "LockCart"); err != nil {
+			return err
+		}
+
+		var activeCartID string
+		if cartID == "" {
+			activeCart, err := u.cartRepo.GetActiveCartByUserID(txCtx, userID)
+			if err != nil {
+				return err
+			}
+			activeCartID = activeCart.ID
+		} else {
+			activeCartID = cartID
+		}
+
+		cart, err := u.cartRepo.GetCartByID(txCtx, activeCartID)
 		if err != nil {
 			return err
 		}
-		cartID = activeCart.ID
-	}
 
-	cart, err := u.cartRepo.GetCartByID(ctx, cartID)
-	if err != nil {
-		return err
-	}
+		span.SetAttributes(attribute.Int64("cart.admin_id", cart.AdminID))
 
-	span.SetAttributes(attribute.Int64("cart.admin_id", cart.AdminID))
-
-	if cart.AdminID != userID {
-		return domain.ErrForbidden
-	}
-
-	for _, item := range cart.Items {
-		if item.OwnerUserID == nil {
-			span.AddEvent("unassigned_item_error", trace.WithAttributes(
-				attribute.Int64("dish.id", item.DishID),
-			))
-			return domain.ErrUnassignedItems
+		if cart.AdminID != userID {
+			return domain.ErrForbidden
 		}
-	}
 
-	// Сначала лочим (саге нужен ивент CartLocked для перехода к payment),
-	// потом сразу очищаем — корзина больше не нужна, все данные заказа
-	// уже в order_db. Это позволяет пользователю оформлять следующий заказ
-	// не дожидаясь завершения оплаты предыдущего и не висеть с залоченной
-	// корзиной если saga умрёт где-то в payment.
-	if err := u.cartRepo.LockCart(ctx, cartID); err != nil {
-		return err
+		for _, item := range cart.Items {
+			if item.OwnerUserID == nil {
+				span.AddEvent("unassigned_item_error", trace.WithAttributes(
+					attribute.Int64("dish.id", item.DishID),
+				))
+				return domain.ErrUnassignedItems
+			}
+		}
+
+		return u.cartRepo.LockCart(txCtx, activeCartID)
+	})
+
+	if errors.Is(err, domain.ErrIdempotencyConflict) {
+		span.AddEvent("idempotency_hit_skipping")
+		return nil
 	}
-	if err := u.cartRepo.ClearCart(ctx, cartID); err != nil {
-		// Не валим всю сагу — ивент CartLocked уже отправлен. Очистка
-		// неудалась — корзина останется пустой+locked, фронт сам разлочит
-		// через CART_LOCKED auto-recover при следующей попытке добавить.
-		span.AddEvent("post_lock_clear_failed", trace.WithAttributes(
-			attribute.String("error", err.Error()),
-		))
-	}
-	return nil
+	return err
 }
 
 func (u *cartUseCase) UnlockCart(ctx context.Context, cartID string, userID int64, idempotencyKey string) error {
@@ -186,17 +184,28 @@ func (u *cartUseCase) UnlockCart(ctx context.Context, cartID string, userID int6
 		attribute.String("unlock.idempotency_key", idempotencyKey),
 	)
 
-	cart, err := u.cartRepo.GetCartByID(ctx, cartID)
-	if err != nil {
-		return err
-	}
+	err := u.cartRepo.WithTransaction(ctx, func(txCtx context.Context) error {
+		if err := u.cartRepo.CheckAndSaveIdempotency(txCtx, userID, idempotencyKey, "UnlockCart"); err != nil {
+			return err
+		}
 
-	if !cart.HasMember(userID) {
-		err = domain.ErrForbidden
-		return err
-	}
+		cart, err := u.cartRepo.GetCartByID(txCtx, cartID)
+		if err != nil {
+			return err
+		}
 
-	return u.cartRepo.UnlockCart(ctx, cartID)
+		if !cart.HasMember(userID) {
+			return domain.ErrForbidden
+		}
+
+		return u.cartRepo.UnlockCart(txCtx, cartID)
+	})
+
+	if errors.Is(err, domain.ErrIdempotencyConflict) {
+		span.AddEvent("idempotency_hit_skipping")
+		return nil
+	}
+	return err
 }
 
 func (u *cartUseCase) ClearCart(ctx context.Context, cartID string, userID int64, idempotencyKey string) error {
@@ -207,17 +216,28 @@ func (u *cartUseCase) ClearCart(ctx context.Context, cartID string, userID int64
 		attribute.String("clear.idempotency_key", idempotencyKey),
 	)
 
-	cart, err := u.cartRepo.GetCartByID(ctx, cartID)
-	if err != nil {
-		return err
-	}
+	err := u.cartRepo.WithTransaction(ctx, func(txCtx context.Context) error {
+		if err := u.cartRepo.CheckAndSaveIdempotency(txCtx, userID, idempotencyKey, "ClearCart"); err != nil {
+			return err
+		}
 
-	if cart.AdminID != userID {
-		err = domain.ErrForbidden
-		return err
-	}
+		cart, err := u.cartRepo.GetCartByID(txCtx, cartID)
+		if err != nil {
+			return err
+		}
 
-	return u.cartRepo.ClearCart(ctx, cartID)
+		if cart.AdminID != userID {
+			return domain.ErrForbidden
+		}
+
+		return u.cartRepo.ClearCart(txCtx, cartID)
+	})
+
+	if errors.Is(err, domain.ErrIdempotencyConflict) {
+		span.AddEvent("idempotency_hit_skipping")
+		return nil
+	}
+	return err
 }
 
 func (u *cartUseCase) GenerateInvite(ctx context.Context, cartID string, adminID int64) (domain.CartInvite, error) {
@@ -237,7 +257,6 @@ func (u *cartUseCase) GenerateInvite(ctx context.Context, cartID string, adminID
 		return domain.CartInvite{}, err
 	}
 
-	// Переводим корзину в режим Shared, если она еще не там
 	if cart.Mode == domain.CartModeSolo {
 		span.AddEvent("switching_to_shared_mode")
 		if err := u.cartRepo.UpdateCartMode(ctx, cartID, domain.CartModeShared); err != nil {
@@ -291,21 +310,31 @@ func (u *cartUseCase) KickMember(ctx context.Context, cartID string, adminID, ta
 		attribute.String("kick.idempotency_key", idempotencyKey),
 	)
 
-	cart, err := u.cartRepo.GetCartByID(ctx, cartID)
-	if err != nil {
-		return err
-	}
+	err := u.cartRepo.WithTransaction(ctx, func(txCtx context.Context) error {
+		if err := u.cartRepo.CheckAndSaveIdempotency(txCtx, adminID, idempotencyKey, "KickMember"); err != nil {
+			return err
+		}
 
-	if cart.AdminID != adminID {
-		return domain.ErrForbidden
-	}
+		cart, err := u.cartRepo.GetCartByID(txCtx, cartID)
+		if err != nil {
+			return err
+		}
 
-	if err := u.cartRepo.RemoveMember(ctx, cartID, targetUserID); err != nil {
-		return err
-	}
+		if cart.AdminID != adminID {
+			return domain.ErrForbidden
+		}
 
-	// обезличиваем позиции кикнутого
-	return u.cartRepo.OrphanUserItems(ctx, cartID, targetUserID)
+		if err := u.cartRepo.RemoveMember(txCtx, cartID, targetUserID); err != nil {
+			return err
+		}
+		return u.cartRepo.OrphanUserItems(txCtx, cartID, targetUserID)
+	})
+
+	if errors.Is(err, domain.ErrIdempotencyConflict) {
+		span.AddEvent("idempotency_hit_skipping")
+		return nil
+	}
+	return err
 }
 
 func (u *cartUseCase) CloseSharedCart(ctx context.Context, cartID string, adminID int64, idempotencyKey string) error {
@@ -316,16 +345,28 @@ func (u *cartUseCase) CloseSharedCart(ctx context.Context, cartID string, adminI
 		attribute.String("close.idempotency_key", idempotencyKey),
 	)
 
-	cart, err := u.cartRepo.GetCartByID(ctx, cartID)
-	if err != nil {
-		return err
-	}
+	err := u.cartRepo.WithTransaction(ctx, func(txCtx context.Context) error {
+		if err := u.cartRepo.CheckAndSaveIdempotency(txCtx, adminID, idempotencyKey, "CloseSharedCart"); err != nil {
+			return err
+		}
 
-	if cart.AdminID != adminID {
-		return domain.ErrForbidden
-	}
+		cart, err := u.cartRepo.GetCartByID(txCtx, cartID)
+		if err != nil {
+			return err
+		}
 
-	return u.cartRepo.DowngradeToSolo(ctx, cartID, adminID)
+		if cart.AdminID != adminID {
+			return domain.ErrForbidden
+		}
+
+		return u.cartRepo.DowngradeToSolo(txCtx, cartID, adminID)
+	})
+
+	if errors.Is(err, domain.ErrIdempotencyConflict) {
+		span.AddEvent("idempotency_hit_skipping")
+		return nil
+	}
+	return err
 }
 
 func (u *cartUseCase) AddItem(ctx context.Context, cartID string, userID, dishID int64, quantity int32, idempotencyKey string) error {
@@ -347,63 +388,71 @@ func (u *cartUseCase) AddItem(ctx context.Context, cartID string, userID, dishID
 	dishBrandID := dishes[0].RestaurantBrandID
 	span.SetAttributes(attribute.Int64("restaurant.brand_id", dishBrandID))
 
-	var cart domain.Cart
-
-	if cartID != "" {
-		span.SetAttributes(attribute.String("cart.id", cartID))
-		cart, err = u.cartRepo.GetCartByID(ctx, cartID)
-		if err != nil {
+	err = u.cartRepo.WithTransaction(ctx, func(txCtx context.Context) error {
+		if err := u.cartRepo.CheckAndSaveIdempotency(txCtx, userID, idempotencyKey, "AddItem"); err != nil {
 			return err
 		}
-		if !cart.HasMember(userID) {
-			return domain.ErrForbidden
-		}
-		if cart.Status != domain.CartStatusActive {
-			return domain.ErrCartLocked
-		}
-	} else {
-		cart, err = u.cartRepo.GetActiveCartByUserID(ctx, userID)
-		if err != nil {
-			// Если корзины нет создаем новую
-			span.AddEvent("creating_new_cart")
-			newCartID, createErr := u.cartRepo.CreateCart(ctx, userID, dishBrandID)
-			if createErr != nil {
-				return createErr
-			}
-			cartID = newCartID
 
-			cart = domain.Cart{
-				ID:                cartID,
-				RestaurantBrandID: dishBrandID,
-			}
-		} else {
-			cartID = cart.ID
-		}
-		span.SetAttributes(attribute.String("cart.id", cartID))
-	}
+		var cart domain.Cart
+		var err error
 
-	if cart.RestaurantBrandID != dishBrandID {
-		// Пустая корзина может быть привязана к ресторану от прошлой попытки
-		// (после ClearCart cart_dish=∅ но restaurant_brand_id остаётся).
-		// Перепривязываем к ресторану нового блюда — это корректно, так как
-		// корзина буквально пустая и ничего не теряем.
-		if len(cart.Items) == 0 {
-			if err := u.cartRepo.SetCartRestaurantBrand(ctx, cartID, dishBrandID); err != nil {
+		if cartID != "" {
+			span.SetAttributes(attribute.String("cart.id", cartID))
+			cart, err = u.cartRepo.GetCartByID(txCtx, cartID)
+			if err != nil {
 				return err
 			}
-			cart.RestaurantBrandID = dishBrandID
+			if !cart.HasMember(userID) {
+				return domain.ErrForbidden
+			}
+			if cart.Status != domain.CartStatusActive {
+				return domain.ErrCartLocked
+			}
 		} else {
-			return domain.ErrMultipleRestaurants
+			cart, err = u.cartRepo.GetActiveCartByUserID(txCtx, userID)
+			if err != nil {
+				span.AddEvent("creating_new_cart")
+				newCartID, createErr := u.cartRepo.CreateCart(txCtx, userID, dishBrandID)
+				if createErr != nil {
+					return createErr
+				}
+				cartID = newCartID
+
+				cart = domain.Cart{
+					ID:                cartID,
+					RestaurantBrandID: dishBrandID,
+				}
+			} else {
+				cartID = cart.ID
+			}
+			span.SetAttributes(attribute.String("cart.id", cartID))
 		}
-	}
 
-	item := domain.CartItem{
-		DishID:      dishID,
-		Quantity:    quantity,
-		OwnerUserID: &userID,
-	}
+		if cart.RestaurantBrandID != dishBrandID {
+			if len(cart.Items) == 0 {
+				if err := u.cartRepo.SetCartRestaurantBrand(txCtx, cartID, dishBrandID); err != nil {
+					return err
+				}
+				cart.RestaurantBrandID = dishBrandID
+			} else {
+				return domain.ErrMultipleRestaurants
+			}
+		}
 
-	return u.cartRepo.AddItem(ctx, cartID, item)
+		item := domain.CartItem{
+			DishID:      dishID,
+			Quantity:    quantity,
+			OwnerUserID: &userID,
+		}
+
+		return u.cartRepo.AddItem(txCtx, cartID, item)
+	})
+
+	if errors.Is(err, domain.ErrIdempotencyConflict) {
+		span.AddEvent("idempotency_hit_skipping")
+		return nil
+	}
+	return err
 }
 
 func (u *cartUseCase) RemoveItem(ctx context.Context, cartID string, userID, dishID int64, idempotencyKey string) error {
@@ -414,24 +463,30 @@ func (u *cartUseCase) RemoveItem(ctx context.Context, cartID string, userID, dis
 		attribute.Int64("dish.id", dishID),
 	)
 
-	cart, err := u.cartRepo.GetCartByID(ctx, cartID)
-	if err != nil {
-		return err
-	}
+	err := u.cartRepo.WithTransaction(ctx, func(txCtx context.Context) error {
+		if err := u.cartRepo.CheckAndSaveIdempotency(txCtx, userID, idempotencyKey, "RemoveItem"); err != nil {
+			return err
+		}
 
-	item := cart.GetItem(dishID)
-	if item == nil {
-		span.AddEvent("item_already_absent") // Событие для идемпотентного выхода
+		cart, err := u.cartRepo.GetCartByID(txCtx, cartID)
+		if err != nil {
+			return err
+		}
+
+		item := cart.GetItem(dishID, userID)
+		if item == nil {
+			span.AddEvent("item_already_absent")
+			return nil
+		}
+
+		return u.cartRepo.RemoveItem(txCtx, cartID, dishID, userID)
+	})
+
+	if errors.Is(err, domain.ErrIdempotencyConflict) {
+		span.AddEvent("idempotency_hit_skipping")
 		return nil
 	}
-
-	if cart.AdminID != userID {
-		if item.OwnerUserID == nil || *item.OwnerUserID != userID {
-			return domain.ErrForbidden
-		}
-	}
-
-	return u.cartRepo.RemoveItem(ctx, cartID, dishID)
+	return err
 }
 
 func (u *cartUseCase) UpdateItemQuantity(ctx context.Context, cartID string, userID, dishID int64, qty int32, idempotencyKey string) error {
@@ -452,20 +507,14 @@ func (u *cartUseCase) UpdateItemQuantity(ctx context.Context, cartID string, use
 		return err
 	}
 
-	item := cart.GetItem(dishID)
+	// Меняем только свою позицию блюда: у каждого участника она своя.
+	item := cart.GetItem(dishID, userID)
 	if item == nil {
 		span.AddEvent("item_not_found_in_cart")
 		return domain.ErrDishNotFound
 	}
 
-	// Гость не может менять чужое или ничейное
-	if cart.AdminID != userID {
-		if item.OwnerUserID == nil || *item.OwnerUserID != userID {
-			return domain.ErrForbidden
-		}
-	}
-
-	return u.cartRepo.UpdateItemQuantity(ctx, cartID, dishID, qty)
+	return u.cartRepo.UpdateItemQuantity(ctx, cartID, dishID, userID, qty)
 }
 
 func (u *cartUseCase) ReassignItemOwner(ctx context.Context, cartID string, adminID, dishID int64, newOwnerID *int64, idempotencyKey string) error {
@@ -476,25 +525,37 @@ func (u *cartUseCase) ReassignItemOwner(ctx context.Context, cartID string, admi
 		attribute.Int64("dish.id", dishID),
 	)
 
-	if newOwnerID != nil {
-		span.SetAttributes(attribute.Int64("new_owner.id", *newOwnerID))
-	} else {
-		span.AddEvent("stripping_item_owner")
-	}
+	err := u.cartRepo.WithTransaction(ctx, func(txCtx context.Context) error {
+		if err := u.cartRepo.CheckAndSaveIdempotency(txCtx, adminID, idempotencyKey, "ReassignItemOwner"); err != nil {
+			return err
+		}
 
-	cart, err := u.cartRepo.GetCartByID(ctx, cartID)
-	if err != nil {
-		return err
-	}
+		if newOwnerID != nil {
+			span.SetAttributes(attribute.Int64("new_owner.id", *newOwnerID))
+		} else {
+			span.AddEvent("stripping_item_owner")
+		}
 
-	if cart.AdminID != adminID {
-		return domain.ErrForbidden
-	}
+		cart, err := u.cartRepo.GetCartByID(txCtx, cartID)
+		if err != nil {
+			return err
+		}
 
-	if newOwnerID != nil && !cart.HasMember(*newOwnerID) {
-		span.AddEvent("new_owner_not_in_cart")
-		return domain.ErrUserNotInCart
-	}
+		if cart.AdminID != adminID {
+			return domain.ErrForbidden
+		}
 
-	return u.cartRepo.ReassignItemOwner(ctx, cartID, dishID, newOwnerID)
+		if newOwnerID != nil && !cart.HasMember(*newOwnerID) {
+			span.AddEvent("new_owner_not_in_cart")
+			return domain.ErrUserNotInCart
+		}
+
+		return u.cartRepo.ReassignItemOwner(txCtx, cartID, dishID, newOwnerID)
+	})
+
+	if errors.Is(err, domain.ErrIdempotencyConflict) {
+		span.AddEvent("idempotency_hit_skipping")
+		return nil
+	}
+	return err
 }

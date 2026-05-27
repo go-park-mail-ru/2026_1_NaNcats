@@ -45,10 +45,11 @@ func (c *Cart) HasMember(userID int64) bool {
 	return false
 }
 
-// встроенный поиск
-func (c *Cart) GetItem(dishID int64) *CartItem {
+// GetItem возвращает позицию блюда участника ownerID. В совместной корзине у
+// одного блюда бывает по позиции на участника, поэтому нужен и владелец.
+func (c *Cart) GetItem(dishID, ownerID int64) *CartItem {
 	for i := range c.Items {
-		if c.Items[i].DishID == dishID {
+		if c.Items[i].DishID == dishID && c.Items[i].OwnerUserID != nil && *c.Items[i].OwnerUserID == ownerID {
 			return &c.Items[i]
 		}
 	}

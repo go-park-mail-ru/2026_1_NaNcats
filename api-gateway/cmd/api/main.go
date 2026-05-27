@@ -19,25 +19,30 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	addressHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/address"
+	analyticsHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/analytics"
 	authHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/auth"
 	cartHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/cart"
+	gameHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/game"
 	orderHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/order"
 	paymentHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/payment"
+	promoHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/promo"
 	restaurantHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/restaurant"
 	reviewHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/review"
-	supportHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/support"
 	userHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/user"
+	wheelHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/wheel"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/rabbitmq"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/websocket"
 	rabbitclient "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq"
+	pbAnalytics "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/analytics"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/addressclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/analyticsclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/authclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/cartclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/gameclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/orderclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/paymentclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/restaurantclient"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/supportclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/userclient"
 
 	gatewayConfig "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/infrastructure/config"
@@ -53,7 +58,6 @@ import (
 	pbOrder "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/order"
 	pbPayment "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/payment"
 	pbRestaurant "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
-	pbSupport "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/support"
 	pbUser "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/user"
 
 	_ "github.com/go-park-mail-ru/2026_1_NaNcats/docs"
@@ -150,17 +154,18 @@ func main() {
 	orderConn := mustInitConn(cfg.GRPCClients.OrderAddr, "Order Service", appLogger, grpcOpts)
 	defer orderConn.Close()
 
-	supportConn := mustInitConn(cfg.GRPCClients.SupportAddr, "Support Service", appLogger, grpcOpts)
-	defer supportConn.Close()
+	analyticsConn := mustInitConn(cfg.GRPCClients.AnalyticsAddr, "Analytics Service", appLogger, grpcOpts)
+	defer analyticsConn.Close()
 
 	authClient := authclient.NewAuthClient(pbAuth.NewAuthServiceClient(authConn))
 	userClient := userclient.NewUserClient(pbUser.NewUserServiceClient(userConn))
+	gameClient := gameclient.NewGameClient(pbUser.NewWordleServiceClient(userConn))
 	restClient := restaurantclient.NewRestaurantClient(pbRestaurant.NewRestaurantServiceClient(restConn))
 	cartClient := cartclient.NewCartClient(pbCart.NewCartServiceClient(cartConn))
 	addrClient := addressclient.NewAddressClient(pbAddress.NewAddressServiceClient(addrConn))
 	payClient := paymentclient.NewPaymentClient(pbPayment.NewPaymentServiceClient(payConn))
 	orderClient := orderclient.NewOrderClient(pbOrder.NewOrderServiceClient(orderConn))
-	supportClient := supportclient.NewSupportClient(pbSupport.NewSupportServiceClient(supportConn))
+	analyticsClient := analyticsclient.NewAnalyticsClient(pbAnalytics.NewAnalyticsServiceClient(analyticsConn))
 	rabbitClient, err := rabbitclient.NewRabbitClient(cfg.RabbitMQURL, appLogger)
 	if err != nil {
 		appLogger.Fatal("failed to init RabbitMq client", err)
@@ -173,21 +178,23 @@ func main() {
 
 	authHandler := authHttp.NewAuthHandler(authClient, userClient, appLogger, validate)
 	userProfileHandler := userHttp.NewUserProfileHandler(userClient, appLogger)
+	gameHandler := gameHttp.NewGameHandler(gameClient, userClient, pbOrder.NewPromoServiceClient(orderConn), appLogger)
 	restaurantHandler := restaurantHttp.NewRestaurantHandler(restClient, appLogger)
-	cartHandler := cartHttp.NewCartHandler(cartClient, wsManager, appLogger)
+	cartHandler := cartHttp.NewCartHandler(cartClient, userClient, wsManager, appLogger)
 	addressHandler := addressHttp.NewAddressHandler(addrClient, appLogger)
 	paymentHandler := paymentHttp.NewPaymentHandler(payClient, appLogger)
-	orderHandler := orderHttp.NewOrderHandler(orderClient, payClient, restClient, wsManager, appLogger)
+	orderHandler := orderHttp.NewOrderHandler(orderClient, payClient, restClient, userClient, wsManager, appLogger)
+	wheelHandler := wheelHttp.NewWheelHandler(userClient, appLogger)
 
-	redisHub := supportHttp.NewRedisHub(redisPool, appLogger)
-	supportHandler := supportHttp.NewSupportHandler(supportClient, redisHub, appLogger)
 	reviewHandler := reviewHttp.NewReviewHandler(appLogger)
+	promoHandler := promoHttp.NewPromoHandler(pbOrder.NewPromoServiceClient(orderConn), appLogger)
 
 	reqIDMW := middleware.NewRequestIDMiddleware()
 	loggingMW := middleware.NewLoggingMiddleware(appLogger)
 	corsMW := middleware.NewCORSMiddleware(cfg.HTTP.AllowedOrigins)
 	authMW := middleware.NewAuthMiddleware(authClient, appLogger)
 	csrfMW := middleware.NewCSRFMiddleware(authClient, appLogger)
+	analyticsHandler := analyticsHttp.NewAnalyticsHandler(analyticsClient, appLogger)
 
 	gatewayConsumer := rabbitmq.NewGatewayConsumer(rabbitClient, wsManager, appLogger)
 	if err := gatewayConsumer.Start(ctx); err != nil {
@@ -209,18 +216,86 @@ func main() {
 	mux.Handle("PATCH /api/profile", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(userProfileHandler.UpdateProfile))))
 	mux.Handle("POST /api/profile/avatar", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(userProfileHandler.UpdateAvatar))))
 	mux.Handle("DELETE /api/profile/avatar", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(userProfileHandler.DeleteAvatar))))
+	mux.Handle("GET /api/profile/achievements", authMW.RequireAuth(http.HandlerFunc(userProfileHandler.GetAchievements)))
 
-	// === ADMIN ===
-	mux.Handle("POST /api/admin/users/role",
+	// === LUCKY WHEEL ===
+	mux.Handle("POST /api/profile/wheel/spin", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(wheelHandler.Spin))))
+	mux.Handle("GET /api/profile/wheel/sectors", authMW.RequireAuth(http.HandlerFunc(wheelHandler.GetSectors)))
+
+	// === GAME (5 БУКВ) ===
+	mux.Handle("GET /api/game/wordle", authMW.RequireAuth(http.HandlerFunc(gameHandler.GetDailyWordleState)))
+	mux.Handle("POST /api/game/wordle/guess", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(gameHandler.MakeWordleGuess))))
+
+	// === OWNER ===
+	mux.Handle("GET /api/owner/restaurants",
 		authMW.RequireAuth(
-			authMW.RequireRole("admin")(
-				csrfMW.Check(http.HandlerFunc(userProfileHandler.AdminUpdateRole)),
+			authMW.RequireRole("owner")(
+				http.HandlerFunc(restaurantHandler.GetOwnerBrands),
+			),
+		),
+	)
+	mux.Handle("POST /api/owner/restaurants",
+		authMW.RequireAuth(
+			authMW.RequireRole("owner")(
+				csrfMW.Check(http.HandlerFunc(restaurantHandler.CreateBrand)),
+			),
+		),
+	)
+	mux.Handle("PATCH /api/owner/restaurants/{id}",
+		authMW.RequireAuth(
+			authMW.RequireRole("owner")(
+				csrfMW.Check(http.HandlerFunc(restaurantHandler.UpdateBrand)),
+			),
+		),
+	)
+	mux.Handle("PATCH /api/owner/restaurants/{id}/logo",
+		authMW.RequireAuth(
+			authMW.RequireRole("owner")(
+				csrfMW.Check(http.HandlerFunc(restaurantHandler.UpdateBrandLogo)),
+			),
+		),
+	)
+	mux.Handle("DELETE /api/owner/restaurants/{id}",
+		authMW.RequireAuth(
+			authMW.RequireRole("owner")(
+				csrfMW.Check(http.HandlerFunc(restaurantHandler.DeleteBrand)),
+			),
+		),
+	)
+	mux.Handle("POST /api/owner/restaurants/{id}/dishes",
+		authMW.RequireAuth(
+			authMW.RequireRole("owner")(
+				csrfMW.Check(http.HandlerFunc(restaurantHandler.CreateDish)),
+			),
+		),
+	)
+	mux.Handle("PUT /api/owner/dishes/{id}",
+		authMW.RequireAuth(
+			authMW.RequireRole("owner")(
+				csrfMW.Check(http.HandlerFunc(restaurantHandler.UpdateDish)),
+			),
+		),
+	)
+	mux.Handle("DELETE /api/owner/dishes/{id}",
+		authMW.RequireAuth(
+			authMW.RequireRole("owner")(
+				csrfMW.Check(http.HandlerFunc(restaurantHandler.DeleteDish)),
+			),
+		),
+	)
+
+	mux.Handle("GET /api/owner/analytics",
+		authMW.RequireAuth(
+			authMW.RequireRole("owner")(
+				http.HandlerFunc(analyticsHandler.GetOwnerAnalytics),
 			),
 		),
 	)
 
 	// === RESTAURANTS & DISHES ===
 	mux.HandleFunc("GET /api/restaurants/brands", restaurantHandler.GetRestaurantBrandsList)
+	mux.Handle("GET /api/restaurants/recommendations", authMW.OptionalAuth(http.HandlerFunc(restaurantHandler.GetRecommendations)))
+	mux.Handle("GET /api/restaurants/brands/{id}/recommended-dishes", authMW.OptionalAuth(http.HandlerFunc(restaurantHandler.GetRecommendedDishes)))
 	mux.HandleFunc("GET /api/restaurants/brands/{id}", restaurantHandler.GetRestaurantBrandByID)
 	mux.HandleFunc("GET /api/restaurants/brands/{id}/dishes", restaurantHandler.GetDishesByRestaurantBrandID)
 	mux.HandleFunc("GET /api/restaurants/categories", restaurantHandler.GetCategories)
@@ -262,22 +337,14 @@ func main() {
 	mux.Handle("GET /api/profile/orders", authMW.RequireAuth(http.HandlerFunc(orderHandler.GetMyOrders)))
 	mux.Handle("GET /api/ws/orders/{id}", authMW.RequireAuth(http.HandlerFunc(orderHandler.TrackOrderWS)))
 	mux.Handle("POST /api/orders/splits/{id}/pay", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.PayForFriend))))
-	mux.Handle("POST /api/orders/{id}/check-payment", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.CheckPayment))))
 	mux.Handle("POST /api/orders/{id}/cancel", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(orderHandler.CancelOrder))))
 
-	// === SUPPORT ===
-	mux.HandleFunc("GET /api/support/categories", supportHandler.GetCategories)
-	mux.HandleFunc("POST /api/support/tickets", supportHandler.CreateTicket)
-	mux.HandleFunc("GET /api/support/tickets", supportHandler.GetMyTickets)
-	mux.HandleFunc("GET /api/support/tickets/{id}/events", supportHandler.GetTicketEvents)
-	mux.HandleFunc("POST /api/support/tickets/{id}/rate", supportHandler.RateTicket)
-	mux.HandleFunc("GET /api/support/tickets/{id}/chat", supportHandler.ConnectChat)
-
-	mux.Handle("GET /api/admin/support/tickets", authMW.RequireAuth(http.HandlerFunc(supportHandler.GetAssignedTickets)))
-	mux.Handle("PATCH /api/admin/support/tickets/{id}/status", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(supportHandler.ChangeTicketStatus))))
-	mux.Handle("POST /api/admin/support/tickets/{id}/reassign", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(supportHandler.ReassignTicket))))
-	mux.Handle("PATCH /api/admin/support/agent/status", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(supportHandler.SetAgentStatus))))
-	mux.Handle("GET /api/admin/support/templates", authMW.RequireAuth(http.HandlerFunc(supportHandler.GetTemplates)))
+	// === PROMOS ===
+	mux.Handle("GET /api/promos", authMW.RequireAuth(http.HandlerFunc(promoHandler.GetUserPromos)))
+	mux.HandleFunc("GET /api/promos/restaurant", promoHandler.GetRestaurantPromos)
+	mux.Handle("POST /api/promos/bind", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(promoHandler.BindPromo))))
+	mux.Handle("POST /api/promos/validate", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(promoHandler.ValidatePromo))))
+	mux.Handle("POST /api/promos/use", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(promoHandler.UsePromo))))
 
 	// === SWAGGER ===
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)

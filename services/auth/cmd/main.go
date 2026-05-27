@@ -20,7 +20,6 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/infrastructure/config"
 	grpcClient "github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/infrastructure/grpc_client"
 	redisRepo "github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/repository/redisrepo"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/usecase"
 	authUsecase "github.com/go-park-mail-ru/2026_1_NaNcats/services/auth/internal/usecase"
 
 	pbAuth "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/auth"
@@ -34,8 +33,6 @@ import (
 func main() {
 	_ = godotenv.Load()
 	cfg := config.Load()
-
-	ctx := context.Background()
 
 	// Контекст, который отменяется по сигналу ОС
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -80,9 +77,9 @@ func main() {
 
 	sessionRepo := redisRepo.NewSessionRepo(redisPool)
 	sessionUC := authUsecase.NewSessionUseCase(sessionRepo, cfg.SessionTTL)
-	tracedSessionUC := usecase.NewSessionUseCaseTracingMiddleware(sessionUC)
+	tracedSessionUC := authUsecase.NewSessionUseCaseTracingMiddleware(sessionUC)
 	authUC := authUsecase.NewAuthUseCase(userClient, tracedSessionUC)
-	tracedAuthUC := usecase.NewAuthUseCaseTracingMiddleware(authUC)
+	tracedAuthUC := authUsecase.NewAuthUseCaseTracingMiddleware(authUC)
 	authHandler := authDelivery.NewAuthHandler(tracedAuthUC)
 
 	cleanup, err := metrics.InitMetrics(ctx, cfg.OTEL.ServiceName, cfg.OTEL.CollectorAddr)

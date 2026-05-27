@@ -1,7 +1,10 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TYPE courier_status AS ENUM('offline', 'waiting', 'delivering');
 
 CREATE TABLE "user" (
 	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	public_id UUID DEFAULT gen_random_uuid() UNIQUE NOT NULL,
 	
 	name TEXT NOT NULL
 		CHECK (char_length(name) >= 1 AND char_length(name) <= 39),
@@ -49,7 +52,11 @@ CREATE TABLE "client_profile" (
 	last_order_date TIMESTAMP WITH TIME ZONE,
 	premium_expires_at TIMESTAMP WITH TIME ZONE,
 
+	streak_freeze_active BOOLEAN DEFAULT false NOT NULL,
+
 	idempotency_key TEXT UNIQUE,
+
+	last_wheel_spin_at TIMESTAMP WITH TIME ZONE,
 	
 	CONSTRAINT fk_client_profile_user
 		FOREIGN KEY (account_id)

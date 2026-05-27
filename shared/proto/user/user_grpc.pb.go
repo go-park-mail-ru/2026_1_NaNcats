@@ -20,16 +20,28 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserService_CreateUser_FullMethodName          = "/user.UserService/CreateUser"
-	UserService_CreateClientProfile_FullMethodName = "/user.UserService/CreateClientProfile"
-	UserService_UpdateProfile_FullMethodName       = "/user.UserService/UpdateProfile"
-	UserService_UpdateAvatar_FullMethodName        = "/user.UserService/UpdateAvatar"
-	UserService_DeleteAvatar_FullMethodName        = "/user.UserService/DeleteAvatar"
-	UserService_GetByID_FullMethodName             = "/user.UserService/GetByID"
-	UserService_GetByEmail_FullMethodName          = "/user.UserService/GetByEmail"
-	UserService_CheckUserExists_FullMethodName     = "/user.UserService/CheckUserExists"
-	UserService_GetUserProfile_FullMethodName      = "/user.UserService/GetUserProfile"
-	UserService_UpdateUserRole_FullMethodName      = "/user.UserService/UpdateUserRole"
+	UserService_CreateUser_FullMethodName             = "/user.UserService/CreateUser"
+	UserService_CreateClientProfile_FullMethodName    = "/user.UserService/CreateClientProfile"
+	UserService_UpdateProfile_FullMethodName          = "/user.UserService/UpdateProfile"
+	UserService_UpdateAvatar_FullMethodName           = "/user.UserService/UpdateAvatar"
+	UserService_DeleteAvatar_FullMethodName           = "/user.UserService/DeleteAvatar"
+	UserService_GetByID_FullMethodName                = "/user.UserService/GetByID"
+	UserService_GetByEmail_FullMethodName             = "/user.UserService/GetByEmail"
+	UserService_CheckUserExists_FullMethodName        = "/user.UserService/CheckUserExists"
+	UserService_GetUserProfile_FullMethodName         = "/user.UserService/GetUserProfile"
+	UserService_UpdateUserRole_FullMethodName         = "/user.UserService/UpdateUserRole"
+	UserService_GetUsersByIDs_FullMethodName          = "/user.UserService/GetUsersByIDs"
+	UserService_ResolvePublicID_FullMethodName        = "/user.UserService/ResolvePublicID"
+	UserService_ListAchievements_FullMethodName       = "/user.UserService/ListAchievements"
+	UserService_GetUserAchievements_FullMethodName    = "/user.UserService/GetUserAchievements"
+	UserService_ActivateStreakFreeze_FullMethodName   = "/user.UserService/ActivateStreakFreeze"
+	UserService_IncrementStreak_FullMethodName        = "/user.UserService/IncrementStreak"
+	UserService_OnWheelSpin_FullMethodName            = "/user.UserService/OnWheelSpin"
+	UserService_ClaimWheelSpin_FullMethodName         = "/user.UserService/ClaimWheelSpin"
+	UserService_ResetWheelSpinCooldown_FullMethodName = "/user.UserService/ResetWheelSpinCooldown"
+	UserService_OnWordleResult_FullMethodName         = "/user.UserService/OnWordleResult"
+	UserService_SpinWheel_FullMethodName              = "/user.UserService/SpinWheel"
+	UserService_GetWheelSectors_FullMethodName        = "/user.UserService/GetWheelSectors"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -58,6 +70,30 @@ type UserServiceClient interface {
 	GetUserProfile(ctx context.Context, in *GetUserProfileRequest, opts ...grpc.CallOption) (*GetUserProfileResponse, error)
 	// Метод смены роли пользователя
 	UpdateUserRole(ctx context.Context, in *UpdateUserRoleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Получить пользователей пачкой
+	GetUsersByIDs(ctx context.Context, in *GetUsersByIDsRequest, opts ...grpc.CallOption) (*GetUsersByIDsResponse, error)
+	// Обратный поиск внутреннего ID по публичному
+	ResolvePublicID(ctx context.Context, in *ResolvePublicIDRequest, opts ...grpc.CallOption) (*ResolvePublicIDResponse, error)
+	// Возвращает все ачивки системы.
+	ListAchievements(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ListAchievementsResponse, error)
+	// Возвращает ачивки текущего пользователя (только полученные).
+	GetUserAchievements(ctx context.Context, in *GetUserAchievementsRequest, opts ...grpc.CallOption) (*GetUserAchievementsResponse, error)
+	// Метод для активации заморозки серии заказов (streak freeze)
+	ActivateStreakFreeze(ctx context.Context, in *ActivateStreakFreezeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Метод для начисления стрик-буста (+1 неделя к серии)
+	IncrementStreak(ctx context.Context, in *IncrementStreakRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Метод-хук, вызываемый при любой прокрутке колеса
+	OnWheelSpin(ctx context.Context, in *OnWheelSpinRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Метод проверки кулдауна и резервирования попытки прокрутки колеса
+	ClaimWheelSpin(ctx context.Context, in *ClaimWheelSpinRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Сброс кулдауна колеса (при выпадении реролла)
+	ResetWheelSpinCooldown(ctx context.Context, in *ResetWheelSpinCooldownRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Метод-хук после партии 5 букв: выдаёт wordle-ачивки по тоталу и стрику.
+	OnWordleResult(ctx context.Context, in *OnWordleResultRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Метод для запуска Колеса Пиццули
+	SpinWheel(ctx context.Context, in *SpinWheelRequest, opts ...grpc.CallOption) (*SpinWheelResponse, error)
+	// Метод для получения секторов Колеса Пиццули
+	GetWheelSectors(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetWheelSectorsResponse, error)
 }
 
 type userServiceClient struct {
@@ -168,6 +204,126 @@ func (c *userServiceClient) UpdateUserRole(ctx context.Context, in *UpdateUserRo
 	return out, nil
 }
 
+func (c *userServiceClient) GetUsersByIDs(ctx context.Context, in *GetUsersByIDsRequest, opts ...grpc.CallOption) (*GetUsersByIDsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUsersByIDsResponse)
+	err := c.cc.Invoke(ctx, UserService_GetUsersByIDs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) ResolvePublicID(ctx context.Context, in *ResolvePublicIDRequest, opts ...grpc.CallOption) (*ResolvePublicIDResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResolvePublicIDResponse)
+	err := c.cc.Invoke(ctx, UserService_ResolvePublicID_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) ListAchievements(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ListAchievementsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAchievementsResponse)
+	err := c.cc.Invoke(ctx, UserService_ListAchievements_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetUserAchievements(ctx context.Context, in *GetUserAchievementsRequest, opts ...grpc.CallOption) (*GetUserAchievementsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserAchievementsResponse)
+	err := c.cc.Invoke(ctx, UserService_GetUserAchievements_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) ActivateStreakFreeze(ctx context.Context, in *ActivateStreakFreezeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, UserService_ActivateStreakFreeze_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) IncrementStreak(ctx context.Context, in *IncrementStreakRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, UserService_IncrementStreak_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) OnWheelSpin(ctx context.Context, in *OnWheelSpinRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, UserService_OnWheelSpin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) ClaimWheelSpin(ctx context.Context, in *ClaimWheelSpinRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, UserService_ClaimWheelSpin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) ResetWheelSpinCooldown(ctx context.Context, in *ResetWheelSpinCooldownRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, UserService_ResetWheelSpinCooldown_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) OnWordleResult(ctx context.Context, in *OnWordleResultRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, UserService_OnWordleResult_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) SpinWheel(ctx context.Context, in *SpinWheelRequest, opts ...grpc.CallOption) (*SpinWheelResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SpinWheelResponse)
+	err := c.cc.Invoke(ctx, UserService_SpinWheel_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetWheelSectors(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetWheelSectorsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetWheelSectorsResponse)
+	err := c.cc.Invoke(ctx, UserService_GetWheelSectors_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
@@ -194,6 +350,30 @@ type UserServiceServer interface {
 	GetUserProfile(context.Context, *GetUserProfileRequest) (*GetUserProfileResponse, error)
 	// Метод смены роли пользователя
 	UpdateUserRole(context.Context, *UpdateUserRoleRequest) (*emptypb.Empty, error)
+	// Получить пользователей пачкой
+	GetUsersByIDs(context.Context, *GetUsersByIDsRequest) (*GetUsersByIDsResponse, error)
+	// Обратный поиск внутреннего ID по публичному
+	ResolvePublicID(context.Context, *ResolvePublicIDRequest) (*ResolvePublicIDResponse, error)
+	// Возвращает все ачивки системы.
+	ListAchievements(context.Context, *emptypb.Empty) (*ListAchievementsResponse, error)
+	// Возвращает ачивки текущего пользователя (только полученные).
+	GetUserAchievements(context.Context, *GetUserAchievementsRequest) (*GetUserAchievementsResponse, error)
+	// Метод для активации заморозки серии заказов (streak freeze)
+	ActivateStreakFreeze(context.Context, *ActivateStreakFreezeRequest) (*emptypb.Empty, error)
+	// Метод для начисления стрик-буста (+1 неделя к серии)
+	IncrementStreak(context.Context, *IncrementStreakRequest) (*emptypb.Empty, error)
+	// Метод-хук, вызываемый при любой прокрутке колеса
+	OnWheelSpin(context.Context, *OnWheelSpinRequest) (*emptypb.Empty, error)
+	// Метод проверки кулдауна и резервирования попытки прокрутки колеса
+	ClaimWheelSpin(context.Context, *ClaimWheelSpinRequest) (*emptypb.Empty, error)
+	// Сброс кулдауна колеса (при выпадении реролла)
+	ResetWheelSpinCooldown(context.Context, *ResetWheelSpinCooldownRequest) (*emptypb.Empty, error)
+	// Метод-хук после партии 5 букв: выдаёт wordle-ачивки по тоталу и стрику.
+	OnWordleResult(context.Context, *OnWordleResultRequest) (*emptypb.Empty, error)
+	// Метод для запуска Колеса Пиццули
+	SpinWheel(context.Context, *SpinWheelRequest) (*SpinWheelResponse, error)
+	// Метод для получения секторов Колеса Пиццули
+	GetWheelSectors(context.Context, *emptypb.Empty) (*GetWheelSectorsResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -233,6 +413,42 @@ func (UnimplementedUserServiceServer) GetUserProfile(context.Context, *GetUserPr
 }
 func (UnimplementedUserServiceServer) UpdateUserRole(context.Context, *UpdateUserRoleRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateUserRole not implemented")
+}
+func (UnimplementedUserServiceServer) GetUsersByIDs(context.Context, *GetUsersByIDsRequest) (*GetUsersByIDsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUsersByIDs not implemented")
+}
+func (UnimplementedUserServiceServer) ResolvePublicID(context.Context, *ResolvePublicIDRequest) (*ResolvePublicIDResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResolvePublicID not implemented")
+}
+func (UnimplementedUserServiceServer) ListAchievements(context.Context, *emptypb.Empty) (*ListAchievementsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListAchievements not implemented")
+}
+func (UnimplementedUserServiceServer) GetUserAchievements(context.Context, *GetUserAchievementsRequest) (*GetUserAchievementsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserAchievements not implemented")
+}
+func (UnimplementedUserServiceServer) ActivateStreakFreeze(context.Context, *ActivateStreakFreezeRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method ActivateStreakFreeze not implemented")
+}
+func (UnimplementedUserServiceServer) IncrementStreak(context.Context, *IncrementStreakRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method IncrementStreak not implemented")
+}
+func (UnimplementedUserServiceServer) OnWheelSpin(context.Context, *OnWheelSpinRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method OnWheelSpin not implemented")
+}
+func (UnimplementedUserServiceServer) ClaimWheelSpin(context.Context, *ClaimWheelSpinRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method ClaimWheelSpin not implemented")
+}
+func (UnimplementedUserServiceServer) ResetWheelSpinCooldown(context.Context, *ResetWheelSpinCooldownRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResetWheelSpinCooldown not implemented")
+}
+func (UnimplementedUserServiceServer) OnWordleResult(context.Context, *OnWordleResultRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method OnWordleResult not implemented")
+}
+func (UnimplementedUserServiceServer) SpinWheel(context.Context, *SpinWheelRequest) (*SpinWheelResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SpinWheel not implemented")
+}
+func (UnimplementedUserServiceServer) GetWheelSectors(context.Context, *emptypb.Empty) (*GetWheelSectorsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetWheelSectors not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
@@ -435,6 +651,222 @@ func _UserService_UpdateUserRole_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_GetUsersByIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUsersByIDsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetUsersByIDs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetUsersByIDs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetUsersByIDs(ctx, req.(*GetUsersByIDsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_ResolvePublicID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResolvePublicIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ResolvePublicID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ResolvePublicID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ResolvePublicID(ctx, req.(*ResolvePublicIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_ListAchievements_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ListAchievements(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ListAchievements_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ListAchievements(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetUserAchievements_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserAchievementsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetUserAchievements(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetUserAchievements_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetUserAchievements(ctx, req.(*GetUserAchievementsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_ActivateStreakFreeze_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ActivateStreakFreezeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ActivateStreakFreeze(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ActivateStreakFreeze_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ActivateStreakFreeze(ctx, req.(*ActivateStreakFreezeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_IncrementStreak_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IncrementStreakRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).IncrementStreak(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_IncrementStreak_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).IncrementStreak(ctx, req.(*IncrementStreakRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_OnWheelSpin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(OnWheelSpinRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).OnWheelSpin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_OnWheelSpin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).OnWheelSpin(ctx, req.(*OnWheelSpinRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_ClaimWheelSpin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClaimWheelSpinRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ClaimWheelSpin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ClaimWheelSpin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ClaimWheelSpin(ctx, req.(*ClaimWheelSpinRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_ResetWheelSpinCooldown_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResetWheelSpinCooldownRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ResetWheelSpinCooldown(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ResetWheelSpinCooldown_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ResetWheelSpinCooldown(ctx, req.(*ResetWheelSpinCooldownRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_OnWordleResult_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(OnWordleResultRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).OnWordleResult(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_OnWordleResult_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).OnWordleResult(ctx, req.(*OnWordleResultRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_SpinWheel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SpinWheelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).SpinWheel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_SpinWheel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).SpinWheel(ctx, req.(*SpinWheelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetWheelSectors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetWheelSectors(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetWheelSectors_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetWheelSectors(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -481,6 +913,54 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateUserRole",
 			Handler:    _UserService_UpdateUserRole_Handler,
+		},
+		{
+			MethodName: "GetUsersByIDs",
+			Handler:    _UserService_GetUsersByIDs_Handler,
+		},
+		{
+			MethodName: "ResolvePublicID",
+			Handler:    _UserService_ResolvePublicID_Handler,
+		},
+		{
+			MethodName: "ListAchievements",
+			Handler:    _UserService_ListAchievements_Handler,
+		},
+		{
+			MethodName: "GetUserAchievements",
+			Handler:    _UserService_GetUserAchievements_Handler,
+		},
+		{
+			MethodName: "ActivateStreakFreeze",
+			Handler:    _UserService_ActivateStreakFreeze_Handler,
+		},
+		{
+			MethodName: "IncrementStreak",
+			Handler:    _UserService_IncrementStreak_Handler,
+		},
+		{
+			MethodName: "OnWheelSpin",
+			Handler:    _UserService_OnWheelSpin_Handler,
+		},
+		{
+			MethodName: "ClaimWheelSpin",
+			Handler:    _UserService_ClaimWheelSpin_Handler,
+		},
+		{
+			MethodName: "ResetWheelSpinCooldown",
+			Handler:    _UserService_ResetWheelSpinCooldown_Handler,
+		},
+		{
+			MethodName: "OnWordleResult",
+			Handler:    _UserService_OnWordleResult_Handler,
+		},
+		{
+			MethodName: "SpinWheel",
+			Handler:    _UserService_SpinWheel_Handler,
+		},
+		{
+			MethodName: "GetWheelSectors",
+			Handler:    _UserService_GetWheelSectors_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

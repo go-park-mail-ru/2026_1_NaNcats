@@ -10,6 +10,13 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+type contextKey string
+
+const (
+	tracer1Key contextKey = "tracer_1"
+	tracer2Key contextKey = "tracer_2"
+)
+
 func TestMultiTracer_TraceQueryStart(t *testing.T) {
 	type mockInit func(t1 *mocks.MockQueryTracer, t2 *mocks.MockQueryTracer)
 
@@ -25,14 +32,14 @@ func TestMultiTracer_TraceQueryStart(t *testing.T) {
 				// Первый трейсер получает исходный контекст
 				t1.EXPECT().TraceQueryStart(gomock.Any(), nil, pgx.TraceQueryStartData{SQL: "SELECT * FROM test"}).
 					DoAndReturn(func(ctx context.Context, _ *pgx.Conn, _ pgx.TraceQueryStartData) context.Context {
-						return context.WithValue(ctx, "tracer_1", true)
+						return context.WithValue(ctx, tracer1Key, true)
 					})
 
 				// Второй трейсер получает контекст от первого
 				t2.EXPECT().TraceQueryStart(gomock.Any(), nil, pgx.TraceQueryStartData{SQL: "SELECT * FROM test"}).
 					DoAndReturn(func(ctx context.Context, _ *pgx.Conn, _ pgx.TraceQueryStartData) context.Context {
-						assert.Equal(t, true, ctx.Value("tracer_1"))
-						return context.WithValue(ctx, "tracer_2", true)
+						assert.Equal(t, true, ctx.Value(tracer1Key))
+						return context.WithValue(ctx, tracer2Key, true)
 					})
 			},
 		},
@@ -53,7 +60,7 @@ func TestMultiTracer_TraceQueryStart(t *testing.T) {
 			newCtx := multiTracer.TraceQueryStart(ctx, nil, tt.data)
 
 			assert.NotNil(t, newCtx)
-			assert.Equal(t, true, newCtx.Value("tracer_2"))
+			assert.Equal(t, true, newCtx.Value(tracer2Key))
 		})
 	}
 }

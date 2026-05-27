@@ -2,10 +2,12 @@ package autoadvance
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/repository"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq/events"
 )
@@ -26,24 +28,26 @@ type Publisher interface {
 
 var transitions = map[string]string{
 	"paid":        "in_progress",
-	"in_progress": "delivering",
+	"in_progress": "waiting",
 	"waiting":     "delivering",
 	"delivering":  "finished",
 }
 
 type Runner struct {
-	repo      repository.OrderRepository
-	publisher Publisher
-	interval  time.Duration
-	logger    logger.Logger
+	repo         repository.OrderRepository
+	publisher    Publisher
+	orderUseCase usecase.OrderUseCase
+	interval     time.Duration
+	logger       logger.Logger
 }
 
-func New(repo repository.OrderRepository, pub Publisher, interval time.Duration, l logger.Logger) *Runner {
+func New(repo repository.OrderRepository, pub Publisher, interval time.Duration, l logger.Logger, orderUseCase usecase.OrderUseCase) *Runner {
 	return &Runner{
-		repo:      repo,
-		publisher: pub,
-		interval:  interval,
-		logger:    l,
+		repo:         repo,
+		publisher:    pub,
+		orderUseCase: orderUseCase,
+		interval:     interval,
+		logger:       l,
 	}
 }
 
@@ -78,7 +82,17 @@ func (r *Runner) tick(ctx context.Context) {
 		if !ok {
 			continue
 		}
-		if err := r.repo.UpdateOrderStatus(ctx, o.PublicID, next); err != nil {
+
+		err = r.orderUseCase.AdvanceOrderStatus(ctx, o.PublicID, next, o.Status)
+		if err != nil {
+			if errors.Is(err, repository.ErrStateChanged) {
+				r.logger.Info("autoadvance: state changed concurrently, skipping",
+					logger.String("order_id", o.PublicID),
+					logger.String("expected_state", o.Status),
+				)
+				continue
+			}
+
 			r.logger.Error("autoadvance: update status failed", err,
 				logger.String("order_id", o.PublicID),
 				logger.String("from", o.Status),

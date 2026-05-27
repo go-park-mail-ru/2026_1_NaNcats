@@ -16,34 +16,45 @@ service OrderService {
   // Метод смены статус заказа
   rpc UpdateOrderStatusByPaymentID (UpdateStatusRequest) returns (google.protobuf.Empty);
   // Метод для оплаты счета за друга
-  rpc PayForFriend (PayForFriendRequest) returns (PayForFriendResponse);
-  // Возвращает yookassa payment_id для конкретного заказа (нужен фронту/гейтвею
-  // чтобы вручную опросить YooKassa без полагания на её webhook).
-  rpc GetOrderPaymentID (GetOrderPaymentIDRequest) returns (GetOrderPaymentIDResponse);
-  // Помечает заказ как cancelled. Доступно только владельцу и только пока
-  // заказ ещё не payed/in_progress
+  rpc PayForFriend (PayForFriendRequest) returns (google.protobuf.Empty);
+  // Метод для отмены заказа
   rpc CancelOrder (CancelOrderRequest) returns (google.protobuf.Empty);
+  // Возвращает бренды, у которых пользователь когда-либо оплачивал заказ.
+  rpc GetUserPaidBrands (GetUserPaidBrandsRequest) returns (BrandIDList);
+  // Возвращает бренды, набравшие больше всего оплат за последние window_days.
+  rpc GetTrendingBrands (GetTrendingBrandsRequest) returns (BrandIDList);
+  // Возвращает топ-N блюд ресторана по сумме quantity за window_days, paid|finished.
+  rpc GetTopDishesByBrand (GetTopDishesByBrandRequest) returns (DishIDList);
+}
+
+// Сервис промокодов. Промокоды хранятся в БД OrderService, поэтому
+// вся работа с ними реализована здесь, а api-gateway ходит сюда по gRPC.
+service PromoService {
+  // Промокоды, привязанные к пользователю
+  rpc GetUserPromos (GetUserPromosRequest) returns (PromocodeList);
+  // Действующие промокоды ресторана
+  rpc GetRestaurantPromos (GetRestaurantPromosRequest) returns (PromocodeList);
+  // Привязка промокода к пользователю по коду
+  rpc BindPromocode (BindPromocodeRequest) returns (Promocode);
+  // Проверка промокода для заказа и расчёт скидки
+  rpc ValidatePromocode (ValidatePromocodeRequest) returns (ValidatePromocodeResponse);
+  // Фиксация использования промокода после оформления заказа
+  rpc UsePromocode (UsePromocodeRequest) returns (google.protobuf.Empty);
+  // Создание уникального промокода и привязка его к пользователю
+  rpc CreateAndBindWheelPromo (CreateAndBindWheelPromoRequest) returns (Promocode);
 }
 
 message CancelOrderRequest {
   string order_public_id = 1;
-  int64  user_id = 2;
-}
-
-message GetOrderPaymentIDRequest {
-  string order_public_id = 1;
-  int64  user_id = 2;
-}
-
-message GetOrderPaymentIDResponse {
-  string yookassa_payment_id = 1;
+  int64 user_id = 2;
 }
 
 message OrderDish {
   int64 dish_id = 1;
-  int32 quantity = 2;
-  int64 price = 3;
-  optional int64 owner_user_id = 4;
+  string dish_name = 2;
+  int32 quantity = 3;
+  int64 price = 4;
+  optional int64 owner_user_id = 5;
 }
 
 message OrderSplit {
@@ -51,6 +62,8 @@ message OrderSplit {
   int64 user_id = 2;
   int64 amount = 3;
   string status = 4;
+  int64 base_amount = 5;
+  int64 discount_amount = 6;
 }
 
 message Order {
@@ -62,6 +75,10 @@ message Order {
   google.protobuf.Timestamp created_at = 6;
   repeated OrderDish items = 7;
   repeated OrderSplit splits = 8;
+  int64 restaurant_brand_id = 9;
+  optional string applied_promocode = 10;
+  int64 discount_amount = 11;
+  int64 admin_account_id = 12;
 }
 
 message CreateOrderRequest {
@@ -77,15 +94,18 @@ message CreateOrderRequest {
   int64 delivery_cost = 8;
   int64 service_fee = 9;
   string idempotency_key = 10;
+
+  optional string promocode = 11;
 }
 
 message CreateOrderResponse {
   string order_public_id = 1;
-  string confirmation_url = 2; 
 }
 
 message GetOrdersRequest {
   int64 user_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
 }
 
 message GetOrdersResponse {
@@ -95,7 +115,7 @@ message GetOrdersResponse {
 message UpdateStatusRequest {
   string yookassa_payment_id = 1;
   string status = 2;
-  string idempotency_key = 7;
+  string idempotency_key = 3;
 }
 
 message PayForFriendRequest {
@@ -105,6 +125,85 @@ message PayForFriendRequest {
   string idempotency_key = 4;
 }
 
-message PayForFriendResponse {
-  string confirmation_url = 1;
+// --- Промокоды ---
+
+message Promocode {
+  int64 id = 1;
+  string code = 2;
+  string title = 3;
+  optional int32 discount_percent = 4;
+  optional int64 discount_amount = 5;
+  int64 min_order_amount = 6;
+  optional string expires_at = 7;
+  repeated int64 restaurant_brand_ids = 8;
+}
+
+message PromocodeList {
+  repeated Promocode promocodes = 1;
+}
+
+message GetUserPromosRequest {
+  int64 user_id = 1;
+}
+
+message GetRestaurantPromosRequest {
+  int64 restaurant_brand_id = 1;
+}
+
+message BindPromocodeRequest {
+  int64 user_id = 1;
+  string code = 2;
+}
+
+message ValidatePromocodeRequest {
+  int64 user_id = 1;
+  string code = 2;
+  int64 restaurant_brand_id = 3;
+  int64 order_amount = 4;
+  int64 delivery_cost = 5;
+  int64 service_fee = 6;
+}
+
+message ValidatePromocodeResponse {
+  bool valid = 1;
+  int64 discount = 2;
+  string reason = 3;
+}
+
+message UsePromocodeRequest {
+  int64 user_id = 1;
+  string code = 2;
+  string order_public_id = 3;
+}
+
+message GetUserPaidBrandsRequest {
+  int64 user_id = 1;
+}
+
+message GetTrendingBrandsRequest {
+  int32 window_days = 1;
+  int32 limit = 2;
+}
+
+message BrandIDList {
+  repeated int64 brand_ids = 1;
+}
+
+message GetTopDishesByBrandRequest {
+  int64 brand_id = 1;
+  int32 window_days = 2;
+  int32 limit = 3;
+}
+
+message DishIDList {
+  repeated int64 dish_ids = 1;
+}
+
+message CreateAndBindWheelPromoRequest {
+  int64 user_id = 1;
+  optional int64 discount_amount = 2;
+  optional int32 discount_percent = 3;
+  optional int64 restaurant_brand_id = 4;
+  optional int64 min_order_amount = 5;
+  string title = 6;
 }

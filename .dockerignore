@@ -1,5 +1,12 @@
 .git
-coverage.html
-coverage.out
-bin
+.idea
+.vscode
 .env
+coverage.*
+bin/
+*/bin/
+
+postgres_data/
+grafana_data/
+prometheus_data/
+pg_data/

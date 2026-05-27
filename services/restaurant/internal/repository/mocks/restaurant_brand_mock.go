@@ -70,6 +70,21 @@ func (mr *MockRestaurantBrandRepositoryMockRecorder) Delete(ctx, id any) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockRestaurantBrandRepository)(nil).Delete), ctx, id)
 }
 
+// GetAllCategories mocks base method.
+func (m *MockRestaurantBrandRepository) GetAllCategories(ctx context.Context) ([]domain.Category, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllCategories", ctx)
+	ret0, _ := ret[0].([]domain.Category)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllCategories indicates an expected call of GetAllCategories.
+func (mr *MockRestaurantBrandRepositoryMockRecorder) GetAllCategories(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllCategories", reflect.TypeOf((*MockRestaurantBrandRepository)(nil).GetAllCategories), ctx)
+}
+
 // GetByID mocks base method.
 func (m *MockRestaurantBrandRepository) GetByID(ctx context.Context, id int64) (domain.RestaurantBrand, error) {
 	m.ctrl.T.Helper()
@@ -83,6 +98,36 @@ func (m *MockRestaurantBrandRepository) GetByID(ctx context.Context, id int64) (
 func (mr *MockRestaurantBrandRepositoryMockRecorder) GetByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockRestaurantBrandRepository)(nil).GetByID), ctx, id)
+}
+
+// GetRestaurantBrandsByCategory mocks base method.
+func (m *MockRestaurantBrandRepository) GetRestaurantBrandsByCategory(ctx context.Context, categoryID int64, limit, offset int) ([]domain.RestaurantBrand, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRestaurantBrandsByCategory", ctx, categoryID, limit, offset)
+	ret0, _ := ret[0].([]domain.RestaurantBrand)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRestaurantBrandsByCategory indicates an expected call of GetRestaurantBrandsByCategory.
+func (mr *MockRestaurantBrandRepositoryMockRecorder) GetRestaurantBrandsByCategory(ctx, categoryID, limit, offset any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestaurantBrandsByCategory", reflect.TypeOf((*MockRestaurantBrandRepository)(nil).GetRestaurantBrandsByCategory), ctx, categoryID, limit, offset)
+}
+
+// GetRestaurantBrandsByCategoryName mocks base method.
+func (m *MockRestaurantBrandRepository) GetRestaurantBrandsByCategoryName(ctx context.Context, categoryName string, limit, offset int) ([]domain.RestaurantBrand, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRestaurantBrandsByCategoryName", ctx, categoryName, limit, offset)
+	ret0, _ := ret[0].([]domain.RestaurantBrand)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRestaurantBrandsByCategoryName indicates an expected call of GetRestaurantBrandsByCategoryName.
+func (mr *MockRestaurantBrandRepositoryMockRecorder) GetRestaurantBrandsByCategoryName(ctx, categoryName, limit, offset any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestaurantBrandsByCategoryName", reflect.TypeOf((*MockRestaurantBrandRepository)(nil).GetRestaurantBrandsByCategoryName), ctx, categoryName, limit, offset)
 }
 
 // GetRestaurantBrandsByIDs mocks base method.
@@ -113,6 +158,36 @@ func (m *MockRestaurantBrandRepository) GetRestaurantBrandsList(ctx context.Cont
 func (mr *MockRestaurantBrandRepositoryMockRecorder) GetRestaurantBrandsList(ctx, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestaurantBrandsList", reflect.TypeOf((*MockRestaurantBrandRepository)(nil).GetRestaurantBrandsList), ctx, limit, offset)
+}
+
+// RecommendByCategorySimilarity mocks base method.
+func (m *MockRestaurantBrandRepository) RecommendByCategorySimilarity(ctx context.Context, seedBrandIDs, excludeBrandIDs []int64, limit int) ([]domain.RestaurantBrand, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RecommendByCategorySimilarity", ctx, seedBrandIDs, excludeBrandIDs, limit)
+	ret0, _ := ret[0].([]domain.RestaurantBrand)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RecommendByCategorySimilarity indicates an expected call of RecommendByCategorySimilarity.
+func (mr *MockRestaurantBrandRepositoryMockRecorder) RecommendByCategorySimilarity(ctx, seedBrandIDs, excludeBrandIDs, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecommendByCategorySimilarity", reflect.TypeOf((*MockRestaurantBrandRepository)(nil).RecommendByCategorySimilarity), ctx, seedBrandIDs, excludeBrandIDs, limit)
+}
+
+// SearchRestaurantBrands mocks base method.
+func (m *MockRestaurantBrandRepository) SearchRestaurantBrands(ctx context.Context, query string, limit, offset int) ([]domain.RestaurantBrand, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchRestaurantBrands", ctx, query, limit, offset)
+	ret0, _ := ret[0].([]domain.RestaurantBrand)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchRestaurantBrands indicates an expected call of SearchRestaurantBrands.
+func (mr *MockRestaurantBrandRepositoryMockRecorder) SearchRestaurantBrands(ctx, query, limit, offset any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchRestaurantBrands", reflect.TypeOf((*MockRestaurantBrandRepository)(nil).SearchRestaurantBrands), ctx, query, limit, offset)
 }
 
 // Update mocks base method.

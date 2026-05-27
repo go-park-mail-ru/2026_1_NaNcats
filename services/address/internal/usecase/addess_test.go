@@ -80,7 +80,7 @@ func TestAddressUseCase_GetMyAddresses(t *testing.T) {
 			name: "Успешное получение списка адресов",
 			mockInit: func(r *repoMocks.MockAddressRepository) {
 				r.EXPECT().GetAddressesByUserID(gomock.Any(), userID).
-					Return(addressList, nil).Times(2)
+					Return(addressList, nil).Times(1)
 			},
 			want:    addressList,
 			wantErr: nil,
@@ -89,7 +89,7 @@ func TestAddressUseCase_GetMyAddresses(t *testing.T) {
 			name: "Успешное получение пустого списка",
 			mockInit: func(r *repoMocks.MockAddressRepository) {
 				r.EXPECT().GetAddressesByUserID(gomock.Any(), userID).
-					Return([]domain.Address{}, nil).Times(2)
+					Return([]domain.Address{}, nil).Times(1)
 			},
 			want:    []domain.Address{},
 			wantErr: nil,
@@ -137,7 +137,7 @@ func TestAddressUseCase_DeleteAddress(t *testing.T) {
 		{
 			name: "Успешное удаление",
 			mockInit: func(r *repoMocks.MockAddressRepository) {
-				r.EXPECT().DeleteAddress(gomock.Any(), userID, publicID).
+				r.EXPECT().DeleteAddress(gomock.Any(), userID, publicID, idemKey).
 					Return(nil)
 			},
 			wantErr: nil,
@@ -145,7 +145,7 @@ func TestAddressUseCase_DeleteAddress(t *testing.T) {
 		{
 			name: "Адрес не найден",
 			mockInit: func(r *repoMocks.MockAddressRepository) {
-				r.EXPECT().DeleteAddress(gomock.Any(), userID, publicID).
+				r.EXPECT().DeleteAddress(gomock.Any(), userID, publicID, idemKey).
 					Return(domain.ErrAddressNotFound)
 			},
 			wantErr: domain.ErrAddressNotFound,
@@ -153,7 +153,7 @@ func TestAddressUseCase_DeleteAddress(t *testing.T) {
 		{
 			name: "Системная ошибка репозитория",
 			mockInit: func(r *repoMocks.MockAddressRepository) {
-				r.EXPECT().DeleteAddress(gomock.Any(), userID, publicID).
+				r.EXPECT().DeleteAddress(gomock.Any(), userID, publicID, idemKey).
 					Return(errors.New("internal"))
 			},
 			wantErr: errors.New("internal"),
@@ -195,7 +195,7 @@ func TestAddressUseCase_UpdateAddress(t *testing.T) {
 		{
 			name: "Успешное обновление адреса",
 			mockInit: func(r *repoMocks.MockAddressRepository) {
-				r.EXPECT().UpdateAddress(gomock.Any(), userID, addr).
+				r.EXPECT().UpdateAddress(gomock.Any(), userID, addr, idemKey).
 					Return(nil)
 			},
 			wantErr: nil,
@@ -203,7 +203,7 @@ func TestAddressUseCase_UpdateAddress(t *testing.T) {
 		{
 			name: "Ошибка: адрес не найден",
 			mockInit: func(r *repoMocks.MockAddressRepository) {
-				r.EXPECT().UpdateAddress(gomock.Any(), userID, addr).
+				r.EXPECT().UpdateAddress(gomock.Any(), userID, addr, idemKey).
 					Return(domain.ErrAddressNotFound)
 			},
 			wantErr: domain.ErrAddressNotFound,
@@ -211,7 +211,7 @@ func TestAddressUseCase_UpdateAddress(t *testing.T) {
 		{
 			name: "Системная ошибка при обновлении",
 			mockInit: func(r *repoMocks.MockAddressRepository) {
-				r.EXPECT().UpdateAddress(gomock.Any(), userID, addr).
+				r.EXPECT().UpdateAddress(gomock.Any(), userID, addr, idemKey).
 					Return(errors.New("db failure"))
 			},
 			wantErr: errors.New("db failure"),
@@ -228,6 +228,51 @@ func TestAddressUseCase_UpdateAddress(t *testing.T) {
 
 			uc := NewAddressUseCase(repo)
 			err := uc.UpdateAddress(context.Background(), userID, addr, idemKey)
+
+			assert.Equal(t, tt.wantErr, err)
+		})
+	}
+}
+
+func TestAddressUseCase_CheckAddressExists(t *testing.T) {
+	type mockInit func(r *repoMocks.MockAddressRepository)
+
+	userID := int64(1)
+	publicID := "addr-uuid-123"
+
+	tests := []struct {
+		name     string
+		mockInit mockInit
+		wantErr  error
+	}{
+		{
+			name: "Успешно: адрес существует",
+			mockInit: func(r *repoMocks.MockAddressRepository) {
+				r.EXPECT().CheckAddressExists(gomock.Any(), userID, publicID).
+					Return(nil)
+			},
+			wantErr: nil,
+		},
+		{
+			name: "Ошибка: адрес не найден",
+			mockInit: func(r *repoMocks.MockAddressRepository) {
+				r.EXPECT().CheckAddressExists(gomock.Any(), userID, publicID).
+					Return(domain.ErrAddressNotFound)
+			},
+			wantErr: domain.ErrAddressNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			repo := repoMocks.NewMockAddressRepository(ctrl)
+			tt.mockInit(repo)
+
+			uc := NewAddressUseCase(repo)
+			err := uc.CheckAddressExists(context.Background(), userID, publicID)
 
 			assert.Equal(t, tt.wantErr, err)
 		})

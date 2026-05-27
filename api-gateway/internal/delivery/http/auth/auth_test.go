@@ -160,6 +160,9 @@ func TestAuthHandler_Login(t *testing.T) {
 
 				auth.EXPECT().SetCSRF(gomock.Any(), "session-uuid").
 					Return("csrf-token-123", nil)
+
+				user.EXPECT().GetUserProfile(gomock.Any(), int64(42)).
+					Return(nil, &pbUser.ClientProfile{StreakCount: 3}, nil).AnyTimes()
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -246,6 +249,8 @@ func TestAuthHandler_GetMe(t *testing.T) {
 				Email:     "test@mail.ru",
 				AvatarUrl: "img.png",
 			}, nil)
+		mockUser.EXPECT().GetUserProfile(gomock.Any(), int64(42)).
+			Return(nil, &pbUser.ClientProfile{StreakCount: 3}, nil).AnyTimes()
 
 		req := httptest.NewRequest(http.MethodGet, "/auth/me", nil)
 		req = withUserIDContext(req, 42) // Имитируем успешную работу middleware

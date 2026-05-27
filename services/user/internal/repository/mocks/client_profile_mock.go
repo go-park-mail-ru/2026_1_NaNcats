@@ -41,6 +41,20 @@ func (m *MockClientProfileRepository) EXPECT() *MockClientProfileRepositoryMockR
 	return m.recorder
 }
 
+// ClaimWheelSpin mocks base method.
+func (m *MockClientProfileRepository) ClaimWheelSpin(ctx context.Context, accountID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClaimWheelSpin", ctx, accountID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ClaimWheelSpin indicates an expected call of ClaimWheelSpin.
+func (mr *MockClientProfileRepositoryMockRecorder) ClaimWheelSpin(ctx, accountID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClaimWheelSpin", reflect.TypeOf((*MockClientProfileRepository)(nil).ClaimWheelSpin), ctx, accountID)
+}
+
 // Create mocks base method.
 func (m *MockClientProfileRepository) Create(ctx context.Context, accountID int64, idempotencyKey string) error {
 	m.ctrl.T.Helper()
@@ -68,4 +82,60 @@ func (m *MockClientProfileRepository) GetByAccountID(ctx context.Context, accoun
 func (mr *MockClientProfileRepositoryMockRecorder) GetByAccountID(ctx, accountID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByAccountID", reflect.TypeOf((*MockClientProfileRepository)(nil).GetByAccountID), ctx, accountID)
+}
+
+// IncrementStreak mocks base method.
+func (m *MockClientProfileRepository) IncrementStreak(ctx context.Context, accountID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IncrementStreak", ctx, accountID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// IncrementStreak indicates an expected call of IncrementStreak.
+func (mr *MockClientProfileRepositoryMockRecorder) IncrementStreak(ctx, accountID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementStreak", reflect.TypeOf((*MockClientProfileRepository)(nil).IncrementStreak), ctx, accountID)
+}
+
+// ResetStreak mocks base method.
+func (m *MockClientProfileRepository) ResetStreak(ctx context.Context, accountID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResetStreak", ctx, accountID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResetStreak indicates an expected call of ResetStreak.
+func (mr *MockClientProfileRepositoryMockRecorder) ResetStreak(ctx, accountID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetStreak", reflect.TypeOf((*MockClientProfileRepository)(nil).ResetStreak), ctx, accountID)
+}
+
+// ResetWheelSpinCooldown mocks base method.
+func (m *MockClientProfileRepository) ResetWheelSpinCooldown(ctx context.Context, accountID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResetWheelSpinCooldown", ctx, accountID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResetWheelSpinCooldown indicates an expected call of ResetWheelSpinCooldown.
+func (mr *MockClientProfileRepositoryMockRecorder) ResetWheelSpinCooldown(ctx, accountID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetWheelSpinCooldown", reflect.TypeOf((*MockClientProfileRepository)(nil).ResetWheelSpinCooldown), ctx, accountID)
+}
+
+// UpdateStreakFreeze mocks base method.
+func (m *MockClientProfileRepository) UpdateStreakFreeze(ctx context.Context, accountID int64, active bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateStreakFreeze", ctx, accountID, active)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateStreakFreeze indicates an expected call of UpdateStreakFreeze.
+func (mr *MockClientProfileRepositoryMockRecorder) UpdateStreakFreeze(ctx, accountID, active any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStreakFreeze", reflect.TypeOf((*MockClientProfileRepository)(nil).UpdateStreakFreeze), ctx, accountID, active)
 }

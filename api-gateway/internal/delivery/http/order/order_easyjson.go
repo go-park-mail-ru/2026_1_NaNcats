@@ -102,11 +102,35 @@ func easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			} else {
 				out.SplitID = string(in.String())
 			}
-		case "user_id":
+		case "user_public_id":
 			if in.IsNull() {
 				in.Skip()
 			} else {
-				out.UserID = int64(in.Int64())
+				out.UserPublicID = string(in.String())
+			}
+		case "user_name":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.UserName = string(in.String())
+			}
+		case "user_avatar":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.UserAvatar = string(in.String())
+			}
+		case "base_amount":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.BaseAmount = int64(in.Int64())
+			}
+		case "discount_amount":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.DiscountAmount = int64(in.Int64())
 			}
 		case "amount":
 			if in.IsNull() {
@@ -140,9 +164,29 @@ func easyjson120d1ca2EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		out.String(string(in.SplitID))
 	}
 	{
-		const prefix string = ",\"user_id\":"
+		const prefix string = ",\"user_public_id\":"
 		out.RawString(prefix)
-		out.Int64(int64(in.UserID))
+		out.String(string(in.UserPublicID))
+	}
+	{
+		const prefix string = ",\"user_name\":"
+		out.RawString(prefix)
+		out.String(string(in.UserName))
+	}
+	{
+		const prefix string = ",\"user_avatar\":"
+		out.RawString(prefix)
+		out.String(string(in.UserAvatar))
+	}
+	{
+		const prefix string = ",\"base_amount\":"
+		out.RawString(prefix)
+		out.Int64(int64(in.BaseAmount))
+	}
+	{
+		const prefix string = ",\"discount_amount\":"
+		out.RawString(prefix)
+		out.Int64(int64(in.DiscountAmount))
 	}
 	{
 		const prefix string = ",\"amount\":"
@@ -200,6 +244,18 @@ func easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			} else {
 				out.OrderID = string(in.String())
 			}
+		case "admin_public_id":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.AdminPublicID = string(in.String())
+			}
+		case "restaurant_id":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.RestaurantID = int64(in.Int64())
+			}
 		case "restaurant_name":
 			if in.IsNull() {
 				in.Skip()
@@ -217,6 +273,26 @@ func easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 				in.Skip()
 			} else {
 				out.TotalCost = int64(in.Int64())
+			}
+		case "applied_promocode":
+			if in.IsNull() {
+				in.Skip()
+				out.AppliedPromocode = nil
+			} else {
+				if out.AppliedPromocode == nil {
+					out.AppliedPromocode = new(string)
+				}
+				if in.IsNull() {
+					in.Skip()
+				} else {
+					*out.AppliedPromocode = string(in.String())
+				}
+			}
+		case "discount_amount":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.DiscountAmount = int64(in.Int64())
 			}
 		case "status":
 			if in.IsNull() {
@@ -238,7 +314,7 @@ func easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 				in.Delim('[')
 				if out.Items == nil {
 					if !in.IsDelim(']') {
-						out.Items = make([]OrderDishDTO, 0, 1)
+						out.Items = make([]OrderDishDTO, 0, 0)
 					} else {
 						out.Items = []OrderDishDTO{}
 					}
@@ -265,7 +341,7 @@ func easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 				in.Delim('[')
 				if out.Splits == nil {
 					if !in.IsDelim(']') {
-						out.Splits = make([]OrderSplitDTO, 0, 1)
+						out.Splits = make([]OrderSplitDTO, 0, 0)
 					} else {
 						out.Splits = []OrderSplitDTO{}
 					}
@@ -304,6 +380,16 @@ func easyjson120d1ca2EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		out.String(string(in.OrderID))
 	}
 	{
+		const prefix string = ",\"admin_public_id\":"
+		out.RawString(prefix)
+		out.String(string(in.AdminPublicID))
+	}
+	{
+		const prefix string = ",\"restaurant_id\":"
+		out.RawString(prefix)
+		out.Int64(int64(in.RestaurantID))
+	}
+	{
 		const prefix string = ",\"restaurant_name\":"
 		out.RawString(prefix)
 		out.String(string(in.RestaurantName))
@@ -317,6 +403,16 @@ func easyjson120d1ca2EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		const prefix string = ",\"total_cost\":"
 		out.RawString(prefix)
 		out.Int64(int64(in.TotalCost))
+	}
+	if in.AppliedPromocode != nil {
+		const prefix string = ",\"applied_promocode\":"
+		out.RawString(prefix)
+		out.String(string(*in.AppliedPromocode))
+	}
+	{
+		const prefix string = ",\"discount_amount\":"
+		out.RawString(prefix)
+		out.Int64(int64(in.DiscountAmount))
 	}
 	{
 		const prefix string = ",\"status\":"
@@ -430,18 +526,46 @@ func easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			} else {
 				out.Price = int64(in.Int64())
 			}
-		case "owner_user_id":
+		case "owner_public_id":
 			if in.IsNull() {
 				in.Skip()
-				out.OwnerUserID = nil
+				out.OwnerPublicID = nil
 			} else {
-				if out.OwnerUserID == nil {
-					out.OwnerUserID = new(int64)
+				if out.OwnerPublicID == nil {
+					out.OwnerPublicID = new(string)
 				}
 				if in.IsNull() {
 					in.Skip()
 				} else {
-					*out.OwnerUserID = int64(in.Int64())
+					*out.OwnerPublicID = string(in.String())
+				}
+			}
+		case "owner_name":
+			if in.IsNull() {
+				in.Skip()
+				out.OwnerName = nil
+			} else {
+				if out.OwnerName == nil {
+					out.OwnerName = new(string)
+				}
+				if in.IsNull() {
+					in.Skip()
+				} else {
+					*out.OwnerName = string(in.String())
+				}
+			}
+		case "owner_avatar":
+			if in.IsNull() {
+				in.Skip()
+				out.OwnerAvatar = nil
+			} else {
+				if out.OwnerAvatar == nil {
+					out.OwnerAvatar = new(string)
+				}
+				if in.IsNull() {
+					in.Skip()
+				} else {
+					*out.OwnerAvatar = string(in.String())
 				}
 			}
 		default:
@@ -483,10 +607,20 @@ func easyjson120d1ca2EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		out.RawString(prefix)
 		out.Int64(int64(in.Price))
 	}
-	if in.OwnerUserID != nil {
-		const prefix string = ",\"owner_user_id\":"
+	if in.OwnerPublicID != nil {
+		const prefix string = ",\"owner_public_id\":"
 		out.RawString(prefix)
-		out.Int64(int64(*in.OwnerUserID))
+		out.String(string(*in.OwnerPublicID))
+	}
+	if in.OwnerName != nil {
+		const prefix string = ",\"owner_name\":"
+		out.RawString(prefix)
+		out.String(string(*in.OwnerName))
+	}
+	if in.OwnerAvatar != nil {
+		const prefix string = ",\"owner_avatar\":"
+		out.RawString(prefix)
+		out.String(string(*in.OwnerAvatar))
 	}
 	out.RawByte('}')
 }
@@ -641,23 +775,37 @@ func easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			} else {
 				in.Delim('{')
 				if !in.IsDelim('}') {
-					out.PayerMapping = make(map[int64]int64)
+					out.PayerMapping = make(map[string]string)
 				} else {
 					out.PayerMapping = nil
 				}
 				for !in.IsDelim('}') {
-					key := int64(in.Int64Str())
+					key := string(in.String())
 					in.WantColon()
-					var v7 int64
+					var v7 string
 					if in.IsNull() {
 						in.Skip()
 					} else {
-						v7 = int64(in.Int64())
+						v7 = string(in.String())
 					}
 					(out.PayerMapping)[key] = v7
 					in.WantComma()
 				}
 				in.Delim('}')
+			}
+		case "promocode":
+			if in.IsNull() {
+				in.Skip()
+				out.Promocode = nil
+			} else {
+				if out.Promocode == nil {
+					out.Promocode = new(string)
+				}
+				if in.IsNull() {
+					in.Skip()
+				} else {
+					*out.Promocode = string(in.String())
+				}
 			}
 		default:
 			in.SkipRecursive()
@@ -720,12 +868,17 @@ func easyjson120d1ca2EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 				} else {
 					out.RawByte(',')
 				}
-				out.Int64Str(int64(v8Name))
+				out.String(string(v8Name))
 				out.RawByte(':')
-				out.Int64(int64(v8Value))
+				out.String(string(v8Value))
 			}
 			out.RawByte('}')
 		}
+	}
+	if in.Promocode != nil {
+		const prefix string = ",\"promocode\":"
+		out.RawString(prefix)
+		out.String(string(*in.Promocode))
 	}
 	out.RawByte('}')
 }
@@ -752,91 +905,4 @@ func (v *CreateOrderRequest) UnmarshalJSON(data []byte) error {
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *CreateOrderRequest) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpOrder5(l, v)
-}
-func easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpOrder6(in *jlexer.Lexer, out *CheckPaymentResponse) {
-	isTopLevel := in.IsStart()
-	if in.IsNull() {
-		if isTopLevel {
-			in.Consumed()
-		}
-		in.Skip()
-		return
-	}
-	in.Delim('{')
-	for !in.IsDelim('}') {
-		key := in.UnsafeFieldName(false)
-		in.WantColon()
-		switch key {
-		case "order_id":
-			if in.IsNull() {
-				in.Skip()
-			} else {
-				out.OrderID = string(in.String())
-			}
-		case "payment_id":
-			if in.IsNull() {
-				in.Skip()
-			} else {
-				out.PaymentID = string(in.String())
-			}
-		case "payment_status":
-			if in.IsNull() {
-				in.Skip()
-			} else {
-				out.PaymentStatus = string(in.String())
-			}
-		default:
-			in.SkipRecursive()
-		}
-		in.WantComma()
-	}
-	in.Delim('}')
-	if isTopLevel {
-		in.Consumed()
-	}
-}
-func easyjson120d1ca2EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpOrder6(out *jwriter.Writer, in CheckPaymentResponse) {
-	out.RawByte('{')
-	first := true
-	_ = first
-	{
-		const prefix string = ",\"order_id\":"
-		out.RawString(prefix[1:])
-		out.String(string(in.OrderID))
-	}
-	{
-		const prefix string = ",\"payment_id\":"
-		out.RawString(prefix)
-		out.String(string(in.PaymentID))
-	}
-	{
-		const prefix string = ",\"payment_status\":"
-		out.RawString(prefix)
-		out.String(string(in.PaymentStatus))
-	}
-	out.RawByte('}')
-}
-
-// MarshalJSON supports json.Marshaler interface
-func (v CheckPaymentResponse) MarshalJSON() ([]byte, error) {
-	w := jwriter.Writer{}
-	easyjson120d1ca2EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpOrder6(&w, v)
-	return w.Buffer.BuildBytes(), w.Error
-}
-
-// MarshalEasyJSON supports easyjson.Marshaler interface
-func (v CheckPaymentResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson120d1ca2EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpOrder6(w, v)
-}
-
-// UnmarshalJSON supports json.Unmarshaler interface
-func (v *CheckPaymentResponse) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
-	easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpOrder6(&r, v)
-	return r.Error()
-}
-
-// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
-func (v *CheckPaymentResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson120d1ca2DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpOrder6(l, v)
 }

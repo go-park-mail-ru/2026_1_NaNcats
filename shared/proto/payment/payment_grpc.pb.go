@@ -52,7 +52,7 @@ type PaymentServiceClient interface {
 	ProcessPaymentWebhook(ctx context.Context, in *ProcessPaymentWebhookRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Принудительно тянет статус платежа из YooKassa и применяет его (как обычный
 	// webhook). Нужно для dev-окружения / случаев когда YooKassa не может
-	// достучаться webhook'ом до localhost.
+	// достучаться webhook'ом до localhost
 	RefreshPaymentStatus(ctx context.Context, in *RefreshPaymentStatusRequest, opts ...grpc.CallOption) (*RefreshPaymentStatusResponse, error)
 }
 
@@ -166,7 +166,7 @@ type PaymentServiceServer interface {
 	ProcessPaymentWebhook(context.Context, *ProcessPaymentWebhookRequest) (*emptypb.Empty, error)
 	// Принудительно тянет статус платежа из YooKassa и применяет его (как обычный
 	// webhook). Нужно для dev-окружения / случаев когда YooKassa не может
-	// достучаться webhook'ом до localhost.
+	// достучаться webhook'ом до localhost
 	RefreshPaymentStatus(context.Context, *RefreshPaymentStatusRequest) (*RefreshPaymentStatusResponse, error)
 	mustEmbedUnimplementedPaymentServiceServer()
 }

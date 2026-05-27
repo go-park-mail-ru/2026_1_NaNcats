@@ -43,6 +43,26 @@ func (m *MockUserServiceClient) EXPECT() *MockUserServiceClientMockRecorder {
 	return m.recorder
 }
 
+// ActivateStreakFreeze mocks base method.
+func (m *MockUserServiceClient) ActivateStreakFreeze(ctx context.Context, in *user.ActivateStreakFreezeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ActivateStreakFreeze", varargs...)
+	ret0, _ := ret[0].(*emptypb.Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ActivateStreakFreeze indicates an expected call of ActivateStreakFreeze.
+func (mr *MockUserServiceClientMockRecorder) ActivateStreakFreeze(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ActivateStreakFreeze", reflect.TypeOf((*MockUserServiceClient)(nil).ActivateStreakFreeze), varargs...)
+}
+
 // CheckUserExists mocks base method.
 func (m *MockUserServiceClient) CheckUserExists(ctx context.Context, in *user.CheckUserExistsRequest, opts ...grpc.CallOption) (*user.CheckUserExistsResponse, error) {
 	m.ctrl.T.Helper()
@@ -61,6 +81,26 @@ func (mr *MockUserServiceClientMockRecorder) CheckUserExists(ctx, in any, opts .
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckUserExists", reflect.TypeOf((*MockUserServiceClient)(nil).CheckUserExists), varargs...)
+}
+
+// ClaimWheelSpin mocks base method.
+func (m *MockUserServiceClient) ClaimWheelSpin(ctx context.Context, in *user.ClaimWheelSpinRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ClaimWheelSpin", varargs...)
+	ret0, _ := ret[0].(*emptypb.Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ClaimWheelSpin indicates an expected call of ClaimWheelSpin.
+func (mr *MockUserServiceClientMockRecorder) ClaimWheelSpin(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClaimWheelSpin", reflect.TypeOf((*MockUserServiceClient)(nil).ClaimWheelSpin), varargs...)
 }
 
 // CreateClientProfile mocks base method.
@@ -163,6 +203,26 @@ func (mr *MockUserServiceClientMockRecorder) GetByID(ctx, in any, opts ...any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockUserServiceClient)(nil).GetByID), varargs...)
 }
 
+// GetUserAchievements mocks base method.
+func (m *MockUserServiceClient) GetUserAchievements(ctx context.Context, in *user.GetUserAchievementsRequest, opts ...grpc.CallOption) (*user.GetUserAchievementsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetUserAchievements", varargs...)
+	ret0, _ := ret[0].(*user.GetUserAchievementsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserAchievements indicates an expected call of GetUserAchievements.
+func (mr *MockUserServiceClientMockRecorder) GetUserAchievements(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserAchievements", reflect.TypeOf((*MockUserServiceClient)(nil).GetUserAchievements), varargs...)
+}
+
 // GetUserProfile mocks base method.
 func (m *MockUserServiceClient) GetUserProfile(ctx context.Context, in *user.GetUserProfileRequest, opts ...grpc.CallOption) (*user.GetUserProfileResponse, error) {
 	m.ctrl.T.Helper()
@@ -181,6 +241,186 @@ func (mr *MockUserServiceClientMockRecorder) GetUserProfile(ctx, in any, opts ..
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserProfile", reflect.TypeOf((*MockUserServiceClient)(nil).GetUserProfile), varargs...)
+}
+
+// GetUsersByIDs mocks base method.
+func (m *MockUserServiceClient) GetUsersByIDs(ctx context.Context, in *user.GetUsersByIDsRequest, opts ...grpc.CallOption) (*user.GetUsersByIDsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetUsersByIDs", varargs...)
+	ret0, _ := ret[0].(*user.GetUsersByIDsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUsersByIDs indicates an expected call of GetUsersByIDs.
+func (mr *MockUserServiceClientMockRecorder) GetUsersByIDs(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersByIDs", reflect.TypeOf((*MockUserServiceClient)(nil).GetUsersByIDs), varargs...)
+}
+
+// GetWheelSectors mocks base method.
+func (m *MockUserServiceClient) GetWheelSectors(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*user.GetWheelSectorsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetWheelSectors", varargs...)
+	ret0, _ := ret[0].(*user.GetWheelSectorsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWheelSectors indicates an expected call of GetWheelSectors.
+func (mr *MockUserServiceClientMockRecorder) GetWheelSectors(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWheelSectors", reflect.TypeOf((*MockUserServiceClient)(nil).GetWheelSectors), varargs...)
+}
+
+// IncrementStreak mocks base method.
+func (m *MockUserServiceClient) IncrementStreak(ctx context.Context, in *user.IncrementStreakRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "IncrementStreak", varargs...)
+	ret0, _ := ret[0].(*emptypb.Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IncrementStreak indicates an expected call of IncrementStreak.
+func (mr *MockUserServiceClientMockRecorder) IncrementStreak(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementStreak", reflect.TypeOf((*MockUserServiceClient)(nil).IncrementStreak), varargs...)
+}
+
+// ListAchievements mocks base method.
+func (m *MockUserServiceClient) ListAchievements(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*user.ListAchievementsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListAchievements", varargs...)
+	ret0, _ := ret[0].(*user.ListAchievementsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAchievements indicates an expected call of ListAchievements.
+func (mr *MockUserServiceClientMockRecorder) ListAchievements(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAchievements", reflect.TypeOf((*MockUserServiceClient)(nil).ListAchievements), varargs...)
+}
+
+// OnWheelSpin mocks base method.
+func (m *MockUserServiceClient) OnWheelSpin(ctx context.Context, in *user.OnWheelSpinRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "OnWheelSpin", varargs...)
+	ret0, _ := ret[0].(*emptypb.Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// OnWheelSpin indicates an expected call of OnWheelSpin.
+func (mr *MockUserServiceClientMockRecorder) OnWheelSpin(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnWheelSpin", reflect.TypeOf((*MockUserServiceClient)(nil).OnWheelSpin), varargs...)
+}
+
+// OnWordleResult mocks base method.
+func (m *MockUserServiceClient) OnWordleResult(ctx context.Context, in *user.OnWordleResultRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "OnWordleResult", varargs...)
+	ret0, _ := ret[0].(*emptypb.Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// OnWordleResult indicates an expected call of OnWordleResult.
+func (mr *MockUserServiceClientMockRecorder) OnWordleResult(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnWordleResult", reflect.TypeOf((*MockUserServiceClient)(nil).OnWordleResult), varargs...)
+}
+
+// ResetWheelSpinCooldown mocks base method.
+func (m *MockUserServiceClient) ResetWheelSpinCooldown(ctx context.Context, in *user.ResetWheelSpinCooldownRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ResetWheelSpinCooldown", varargs...)
+	ret0, _ := ret[0].(*emptypb.Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ResetWheelSpinCooldown indicates an expected call of ResetWheelSpinCooldown.
+func (mr *MockUserServiceClientMockRecorder) ResetWheelSpinCooldown(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetWheelSpinCooldown", reflect.TypeOf((*MockUserServiceClient)(nil).ResetWheelSpinCooldown), varargs...)
+}
+
+// ResolvePublicID mocks base method.
+func (m *MockUserServiceClient) ResolvePublicID(ctx context.Context, in *user.ResolvePublicIDRequest, opts ...grpc.CallOption) (*user.ResolvePublicIDResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ResolvePublicID", varargs...)
+	ret0, _ := ret[0].(*user.ResolvePublicIDResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ResolvePublicID indicates an expected call of ResolvePublicID.
+func (mr *MockUserServiceClientMockRecorder) ResolvePublicID(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResolvePublicID", reflect.TypeOf((*MockUserServiceClient)(nil).ResolvePublicID), varargs...)
+}
+
+// SpinWheel mocks base method.
+func (m *MockUserServiceClient) SpinWheel(ctx context.Context, in *user.SpinWheelRequest, opts ...grpc.CallOption) (*user.SpinWheelResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "SpinWheel", varargs...)
+	ret0, _ := ret[0].(*user.SpinWheelResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SpinWheel indicates an expected call of SpinWheel.
+func (mr *MockUserServiceClientMockRecorder) SpinWheel(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SpinWheel", reflect.TypeOf((*MockUserServiceClient)(nil).SpinWheel), varargs...)
 }
 
 // UpdateAvatar mocks base method.

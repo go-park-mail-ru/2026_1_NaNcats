@@ -26,7 +26,6 @@ import (
 
 	orderRabbitMQ "github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/delivery/rabbitmq"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/infrastructure/autoadvance"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq"
 
 	addressPb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/address"
@@ -114,15 +113,19 @@ func main() {
 		cfg.DefaultRestaurantLogoURL,
 		appLogger,
 	)
-	tracedOrderUC := usecase.NewOrderUseCaseTracingMiddleware(orderUC)
+	tracedOrderUC := orderUseCase.NewOrderUseCaseTracingMiddleware(orderUC)
 	orderHandler := orderDelivery.NewOrderHandler(tracedOrderUC)
+
+	promoRepo := orderPG.NewPromoRepo(pool)
+	promoUC := orderUseCase.NewPromoUseCase(promoRepo)
+	promoHandler := orderDelivery.NewPromoHandler(promoUC)
 
 	orderConsumer := orderRabbitMQ.NewOrderConsumer(rabbitClient, orderUC, appLogger)
 	if err := orderConsumer.Start(ctx); err != nil {
 		appLogger.Fatal("Failed to start RabbitMQ consumer", err)
 	}
 
-	advancer := autoadvance.New(orderRepo, rabbitClient, 15*time.Second, appLogger)
+	advancer := autoadvance.New(orderRepo, rabbitClient, 15*time.Second, appLogger, tracedOrderUC)
 	go advancer.Run(ctx)
 
 	cleanup, err := metrics.InitMetrics(ctx, cfg.OTEL.ServiceName, cfg.OTEL.CollectorAddr)
@@ -146,6 +149,7 @@ func main() {
 	)
 
 	pb.RegisterOrderServiceServer(grpcServer, orderHandler)
+	pb.RegisterPromoServiceServer(grpcServer, promoHandler)
 	reflection.Register(grpcServer)
 
 	listener, err := net.Listen("tcp", ":"+cfg.GRPC.Port)

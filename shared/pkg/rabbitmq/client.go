@@ -6,16 +6,35 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
+	rabbitmqErrors "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/rabbitmq/errors"
 	"github.com/mailru/easyjson"
 	"go.opentelemetry.io/otel"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+const (
+	DlxExchangeName  = "dlx.exchange"
+	DlxBindingSuffix = ".failed"
+	DlqSuffix        = ".dlq"
+)
+
+// Белый список очередей для создания DLX
+var queuesWithDLX = map[string]bool{
+	"queue.analytics.clickhouse": true,
+}
+
+func (rc *RabbitClient) shouldSetupDLX(queueName string) bool {
+	return queuesWithDLX[queueName]
+}
+
 type AMQPChannel interface {
 	QueueDeclare(name string, durable, autoDelete, exclusive, noWait bool, args amqp.Table) (amqp.Queue, error)
+	ExchangeDeclare(name, kind string, durable, autoDelete, internal, noWait bool, args amqp.Table) error
+	QueueBind(name, key, exchange string, noWait bool, args amqp.Table) error
 	PublishWithContext(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error
 	Qos(prefetchCount, prefetchSize int, global bool) error
 	ConsumeWithContext(ctx context.Context, queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args amqp.Table) (<-chan amqp.Delivery, error)
@@ -62,10 +81,73 @@ func (rc *RabbitClient) Close() {
 	}
 }
 
+// Декларирует DLX, DLQ и связывает их
+func (rc *RabbitClient) setupTopology(ctx context.Context, queueName string) error {
+	if !rc.shouldSetupDLX(queueName) {
+		return nil
+	}
+
+	// Декларируем общий Dead Letter Exchange
+	err := rc.ch.ExchangeDeclare(
+		DlxExchangeName,
+		"direct",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to declare DLX: %w", err)
+	}
+
+	// Декларируем Dead Letter Queue для конкретной очереди
+	dlqName := queueName + DlqSuffix
+	_, err = rc.ch.QueueDeclare(
+		dlqName,
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to declare DLQ [%s]: %w", dlqName, err)
+	}
+
+	// Связываем DLQ с DLX по ключу queueName + ".failed"
+	routingKey := queueName + DlxBindingSuffix
+	err = rc.ch.QueueBind(
+		dlqName,
+		routingKey,
+		DlxExchangeName,
+		false,
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to bind DLQ to DLX: %w", err)
+	}
+
+	return nil
+}
+
 func (rc *RabbitClient) PublishJSON(ctx context.Context, queueName string, data any) error {
+	if err := rc.setupTopology(ctx, queueName); err != nil {
+		return err
+	}
+
+	var args amqp.Table
+	if rc.shouldSetupDLX(queueName) {
+		routingKey := queueName + DlxBindingSuffix
+		args = amqp.Table{
+			"x-dead-letter-exchange":    DlxExchangeName,
+			"x-dead-letter-routing-key": routingKey,
+		}
+	}
+
 	q, err := rc.ch.QueueDeclare(
 		queueName,
-		true, false, false, false, nil,
+		true, false, false, false, args,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to declare a queue: %w", err)
@@ -107,9 +189,22 @@ func (rc *RabbitClient) PublishJSON(ctx context.Context, queueName string, data 
 }
 
 func (rc *RabbitClient) ConsumeJSON(ctx context.Context, queueName string, handler func(ctx context.Context, body []byte) error) error {
+	if err := rc.setupTopology(ctx, queueName); err != nil {
+		return err
+	}
+
+	var args amqp.Table
+	if rc.shouldSetupDLX(queueName) {
+		routingKey := queueName + DlxBindingSuffix
+		args = amqp.Table{
+			"x-dead-letter-exchange":    DlxExchangeName,
+			"x-dead-letter-routing-key": routingKey,
+		}
+	}
+
 	q, err := rc.ch.QueueDeclare(
 		queueName,
-		true, false, false, false, nil,
+		true, false, false, false, args,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to declare a queue: %w", err)
@@ -143,9 +238,21 @@ func (rc *RabbitClient) ConsumeJSON(ctx context.Context, queueName string, handl
 					Key:   "queue",
 					Value: queueName,
 				})
-				err := d.Nack(false, true)
-				if err != nil {
-					rc.logger.Error("failed to send message back to RabbitMQ", err)
+
+				retryable := rabbitmqErrors.IsRetryable(err)
+				if !retryable {
+					rc.logger.Warn("non-retryable error encountered, routing to DLQ",
+						logger.String("queue", queueName),
+						logger.Err(err),
+					)
+				}
+
+				nackErr := d.Nack(false, retryable)
+				if nackErr != nil {
+					rc.logger.Error("failed to send Nack to RabbitMQ", nackErr)
+				}
+				if retryable {
+					time.Sleep(1 * time.Second)
 				}
 			} else {
 				err := d.Ack(false)

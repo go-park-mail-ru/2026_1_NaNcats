@@ -3,7 +3,6 @@ package restaurant
 import (
 	"context"
 	"errors"
-	"regexp"
 	"testing"
 	"time"
 
@@ -32,7 +31,7 @@ func TestDishRepo_SearchDishes(t *testing.T) {
 		{
 			name: "Успешный поиск блюд",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`WHERE name ILIKE $1 OR description ILIKE $1`)).
+				m.ExpectQuery(`WHERE name ILIKE \$1 OR description ILIKE \$1`).
 					WithArgs(pattern, limit).
 					WillReturnRows(pgxmock.NewRows(columns).
 						AddRow(int64(1), int64(10), "Pizza Margherita", ptrString("Cheese and tomato"), ptrString("url"), int64(500000000), now, now))
@@ -42,7 +41,7 @@ func TestDishRepo_SearchDishes(t *testing.T) {
 		{
 			name: "Ошибка выполнения запроса",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`SELECT`)).
+				m.ExpectQuery(`SELECT`).
 					WithArgs(pattern, limit).
 					WillReturnError(errors.New("db error"))
 			},
@@ -92,7 +91,7 @@ func TestDishRepo_SearchDishesByBrand(t *testing.T) {
 		{
 			name: "Успешный поиск блюд бренда",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`WHERE restaurant_brand_id = $1 AND (name ILIKE $2 OR description ILIKE $2)`)).
+				m.ExpectQuery(`WHERE restaurant_brand_id = \$1\s+AND \(name ILIKE \$2 OR description ILIKE \$2\)`).
 					WithArgs(brandID, pattern, limit).
 					WillReturnRows(pgxmock.NewRows(columns).
 						AddRow(int64(1), brandID, "Cheese Burger", ptrString("Double meat"), nil, int64(600000000), now, now))
@@ -102,7 +101,7 @@ func TestDishRepo_SearchDishesByBrand(t *testing.T) {
 		{
 			name: "Ошибка сканирования результатов",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`SELECT`)).
+				m.ExpectQuery(`SELECT`).
 					WithArgs(brandID, pattern, limit).
 					WillReturnRows(pgxmock.NewRows([]string{"id"}).AddRow("not-an-int"))
 			},
@@ -112,7 +111,8 @@ func TestDishRepo_SearchDishesByBrand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mock, _ := pgxmock.NewPool()
+			mock, err := pgxmock.NewPool()
+			require.NoError(t, err)
 			defer mock.Close()
 
 			repo := NewDishRepo(mock)
@@ -149,7 +149,7 @@ func TestDishRepo_GetDishesByRestaurantBrandID(t *testing.T) {
 		{
 			name: "Успешное получение блюд по ID бренда",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`WHERE restaurant_brand_id = $1 ORDER BY id ASC LIMIT $2 OFFSET $3`)).
+				m.ExpectQuery(`WHERE restaurant_brand_id = \$1\s+ORDER BY id ASC\s+LIMIT \$2 OFFSET \$3`).
 					WithArgs(brandID, limit, offset).
 					WillReturnRows(pgxmock.NewRows(columns).
 						AddRow(int64(101), brandID, "Sushi", nil, ptrString("img.png"), int64(800000000), now, now).
@@ -160,7 +160,7 @@ func TestDishRepo_GetDishesByRestaurantBrandID(t *testing.T) {
 		{
 			name: "Ошибка подключения к базе",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`SELECT`)).
+				m.ExpectQuery(`SELECT`).
 					WithArgs(brandID, limit, offset).
 					WillReturnError(errors.New("connection reset"))
 			},
@@ -170,7 +170,8 @@ func TestDishRepo_GetDishesByRestaurantBrandID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mock, _ := pgxmock.NewPool()
+			mock, err := pgxmock.NewPool()
+			require.NoError(t, err)
 			defer mock.Close()
 
 			repo := NewDishRepo(mock)
@@ -206,7 +207,7 @@ func TestDishRepo_GetDishByID(t *testing.T) {
 		{
 			name: "Успешное получение блюда",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`SELECT id, restaurant_brand_id, name, description, image_url, price, created_at, updated_at FROM "dish" WHERE id = $1`)).
+				m.ExpectQuery(`FROM "dish"\s+WHERE id = \$1`).
 					WithArgs(dishID).
 					WillReturnRows(pgxmock.NewRows(columns).
 						AddRow(dishID, int64(1), "Burger", ptrString("Tasty"), ptrString("url"), int64(500000000), now, now))
@@ -216,7 +217,7 @@ func TestDishRepo_GetDishByID(t *testing.T) {
 		{
 			name: "Блюдо не найдено",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`WHERE id = $1`)).
+				m.ExpectQuery(`WHERE id = \$1`).
 					WithArgs(dishID).
 					WillReturnRows(pgxmock.NewRows(columns))
 			},
@@ -225,7 +226,7 @@ func TestDishRepo_GetDishByID(t *testing.T) {
 		{
 			name: "Ошибка выполнения запроса",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`WHERE id = $1`)).
+				m.ExpectQuery(`WHERE id = \$1`).
 					WithArgs(dishID).
 					WillReturnError(errors.New("db crash"))
 			},
@@ -272,7 +273,7 @@ func TestDishRepo_GetDishesByIDs(t *testing.T) {
 		{
 			name: "Успешное получение нескольких блюд",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`WHERE id=ANY($1)`)).
+				m.ExpectQuery(`WHERE id=ANY\(\$1\)`).
 					WithArgs(ids).
 					WillReturnRows(pgxmock.NewRows(columns).
 						AddRow(int64(1), int64(10), "Dish 1", nil, nil, int64(100), now, now).
@@ -283,7 +284,7 @@ func TestDishRepo_GetDishesByIDs(t *testing.T) {
 		{
 			name: "Ошибка сканирования строк",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`WHERE id=ANY($1)`)).
+				m.ExpectQuery(`WHERE id=ANY\(\$1\)`).
 					WithArgs(ids).
 					WillReturnError(errors.New("fatal db error"))
 			},
@@ -293,7 +294,8 @@ func TestDishRepo_GetDishesByIDs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mock, _ := pgxmock.NewPool()
+			mock, err := pgxmock.NewPool()
+			require.NoError(t, err)
 			defer mock.Close()
 
 			repo := NewDishRepo(mock)
@@ -325,6 +327,7 @@ func TestDishRepo_Create(t *testing.T) {
 		ImageURL:          "burger.png",
 	}
 
+	// Columns match RETURNING exact order: id, restaurant_brand_id, name, description, price, image_url, created_at, updated_at
 	columns := []string{"id", "restaurant_brand_id", "name", "description", "price", "image_url", "created_at", "updated_at"}
 
 	type mockInit func(m pgxmock.PgxPoolIface)
@@ -336,7 +339,7 @@ func TestDishRepo_Create(t *testing.T) {
 		{
 			name: "Успешное создание блюда",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "dish" (restaurant_brand_id, name, description, price, image_url, idempotency_key) VALUES ($1, $2, $3, $4, $5, $6)`)).
+				m.ExpectQuery(`INSERT INTO "dish"`).
 					WithArgs(dish.RestaurantBrandID, dish.Name, dish.Description, dish.Price, dish.ImageURL, idemKey).
 					WillReturnRows(pgxmock.NewRows(columns).
 						AddRow(int64(1), dish.RestaurantBrandID, dish.Name, ptrString(dish.Description), dish.Price, ptrString(dish.ImageURL), now, now))
@@ -345,7 +348,7 @@ func TestDishRepo_Create(t *testing.T) {
 		{
 			name: "Ошибка выполнения QueryRow/Scan",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "dish"`)).
+				m.ExpectQuery(`INSERT INTO "dish"`).
 					WithArgs(dish.RestaurantBrandID, dish.Name, dish.Description, dish.Price, dish.ImageURL, idemKey).
 					WillReturnError(errors.New("insert failed"))
 			},
@@ -399,7 +402,7 @@ func TestDishRepo_Update(t *testing.T) {
 		{
 			name: "Успешное обновление",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`UPDATE "dish" SET name = $1, description = $2, price = $3, image_url = $4, updated_at = NOW() WHERE id = $5`)).
+				m.ExpectQuery(`UPDATE "dish"\s+SET`).
 					WithArgs(dish.Name, dish.Description, dish.Price, dish.ImageURL, dish.ID).
 					WillReturnRows(pgxmock.NewRows(columns).
 						AddRow(dish.ID, dish.RestaurantBrandID, dish.Name, ptrString(dish.Description), dish.Price, ptrString(dish.ImageURL), now, now))
@@ -408,7 +411,7 @@ func TestDishRepo_Update(t *testing.T) {
 		{
 			name: "Ошибка: блюдо не найдено (ErrNoRows)",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`UPDATE "dish"`)).
+				m.ExpectQuery(`UPDATE "dish"`).
 					WithArgs(dish.Name, dish.Description, dish.Price, dish.ImageURL, dish.ID).
 					WillReturnError(pgx.ErrNoRows)
 			},
@@ -417,7 +420,7 @@ func TestDishRepo_Update(t *testing.T) {
 		{
 			name: "Внутренняя ошибка базы данных",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`UPDATE "dish"`)).
+				m.ExpectQuery(`UPDATE "dish"`).
 					WithArgs(dish.Name, dish.Description, dish.Price, dish.ImageURL, dish.ID).
 					WillReturnError(errors.New("db fail"))
 			},
@@ -461,7 +464,7 @@ func TestDishRepo_Delete(t *testing.T) {
 		{
 			name: "Успешное удаление блюда",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectExec(regexp.QuoteMeta(`DELETE FROM "dish" WHERE id = $1`)).
+				m.ExpectExec(`DELETE FROM "dish" WHERE id = \$1`).
 					WithArgs(dishID).
 					WillReturnResult(pgxmock.NewResult("DELETE", 1))
 			},
@@ -470,7 +473,7 @@ func TestDishRepo_Delete(t *testing.T) {
 		{
 			name: "Ошибка при удалении (например, нарушение связей)",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectExec(regexp.QuoteMeta(`DELETE FROM "dish"`)).
+				m.ExpectExec(`DELETE FROM "dish"`).
 					WithArgs(dishID).
 					WillReturnError(errors.New("foreign key constraint"))
 			},

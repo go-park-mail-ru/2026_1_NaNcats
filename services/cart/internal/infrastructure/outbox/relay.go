@@ -52,14 +52,26 @@ func (r *Relay) Run(ctx context.Context) {
 }
 
 func (r *Relay) processEvents(ctx context.Context) {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		r.logger.Error("Failed to begin transaction for outbox relay", err)
+		return
+	}
+	defer tx.Rollback(ctx)
+
 	query := `
-		SELECT id, aggregate_id, event_type, payload 
-		FROM outbox_events 
-		WHERE status = 'PENDING' 
-		ORDER BY created_at ASC 
-		LIMIT 50
+		UPDATE outbox_events
+		SET status = 'PROCESSED'
+		WHERE id IN (
+			SELECT id FROM outbox_events
+			WHERE status = 'PENDING'
+			ORDER BY created_at ASC
+			LIMIT 50
+			FOR UPDATE SKIP LOCKED
+		)
+		RETURNING id, aggregate_id, event_type, payload
 	`
-	rows, err := r.db.Query(ctx, query)
+	rows, err := tx.Query(ctx, query)
 	if err != nil {
 		r.logger.Error("Failed to query outbox events", err)
 		return
@@ -75,8 +87,6 @@ func (r *Relay) processEvents(ctx context.Context) {
 		return // Нет новых событий
 	}
 
-	var processedIDs []string
-
 	for _, event := range events {
 		gatewayMsg := gwEvent.GatewayEvent{
 			CartID:    event.AggregateID,
@@ -87,16 +97,10 @@ func (r *Relay) processEvents(ctx context.Context) {
 		err = r.rabbit.PublishJSON(ctx, r.targetQueue, gatewayMsg)
 		if err != nil {
 			r.logger.Error("Failed to publish event to RabbitMQ", err, logger.String("event_id", event.ID))
-			break
 		}
-
-		processedIDs = append(processedIDs, event.ID)
 	}
 
-	if len(processedIDs) > 0 {
-		_, err = r.db.Exec(ctx, `UPDATE outbox_events SET status = 'PROCESSED' WHERE id = ANY($1)`, processedIDs)
-		if err != nil {
-			r.logger.Error("Failed to bulk update outbox events", err)
-		}
+	if err := tx.Commit(ctx); err != nil {
+		r.logger.Error("Failed to commit outbox processing transaction", err)
 	}
 }

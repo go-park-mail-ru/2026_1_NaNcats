@@ -30,6 +30,7 @@ func (c *cartClient) GetCart(ctx context.Context, userID int64) (domain.Cart, in
 	for _, item := range resp.Cart.Items {
 		items = append(items, domain.CartItem{
 			DishID:      item.DishId,
+			Name:        item.Name,
 			Quantity:    int(item.Quantity),
 			Price:       item.Price,
 			OwnerUserID: item.OwnerUserId,
@@ -37,9 +38,28 @@ func (c *cartClient) GetCart(ctx context.Context, userID int64) (domain.Cart, in
 	}
 
 	cart := domain.Cart{
+		ID:                resp.Cart.CartId,
 		RestaurantBrandID: resp.Cart.RestaurantBrandId,
 		Items:             items,
 	}
 
 	return cart, resp.TotalCost, nil
+}
+
+func (c *cartClient) LockCart(ctx context.Context, cartID string, userID int64, idempotencyKey string) error {
+	_, err := c.client.LockCart(ctx, &pb.LockCartRequest{
+		CartId:         cartID,
+		UserId:         userID,
+		IdempotencyKey: idempotencyKey,
+	})
+	return err
+}
+
+func (c *cartClient) UnlockCart(ctx context.Context, cartID string, userID int64, idempotencyKey string) error {
+	_, err := c.client.UnlockCart(ctx, &pb.CartOperationRequest{
+		CartId:         cartID,
+		UserId:         userID,
+		IdempotencyKey: idempotencyKey,
+	})
+	return err
 }

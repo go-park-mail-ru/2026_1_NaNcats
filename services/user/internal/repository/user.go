@@ -24,4 +24,6 @@ type UserRepository interface {
 	UpdateAvatarURL(ctx context.Context, userID int64, newAvatarURL string) error
 	// метод для изменения роли юзера
 	UpdateUserRole(ctx context.Context, userID int64, newRole string, idempotencyKey string) (string, bool, error)
+	GetUserByPublicID(ctx context.Context, publicID string) (domain.User, error)
+	GetUsersByIDs(ctx context.Context, userIDs []int64) ([]domain.User, error)
 }

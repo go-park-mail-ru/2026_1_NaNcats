@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/websocket"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/cartclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/cartclient/mocks"
+	userMocks "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/userclient/mocks"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/stretchr/testify/assert"
@@ -23,10 +25,15 @@ func withUserIDContext(req *http.Request, userID int64) *http.Request {
 }
 
 func setupTestHandler(ctrl *gomock.Controller) (*CartHandler, *mocks.MockCartClient) {
-	mockClient := mocks.NewMockCartClient(ctrl)
+	mockCartClient := mocks.NewMockCartClient(ctrl)
+	mockUserClient := userMocks.NewMockUserClient(ctrl)
+
+	mockUserClient.EXPECT().GetUsersByIDs(gomock.Any(), gomock.Any()).Return(nil, errors.New("mock fallback")).AnyTimes()
+	mockUserClient.EXPECT().ResolvePublicID(gomock.Any(), gomock.Any()).Return(int64(0), errors.New("mock fallback")).AnyTimes()
+
 	log := logger.NewNopLogger()
-	handler := NewCartHandler(mockClient, (*websocket.WsManager)(nil), log)
-	return handler, mockClient
+	handler := NewCartHandler(mockCartClient, mockUserClient, (*websocket.WsManager)(nil), log)
+	return handler, mockCartClient
 }
 
 func ptr[T any](v T) *T {

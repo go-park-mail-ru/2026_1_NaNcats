@@ -10,8 +10,6 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/restaurantclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/restaurantclient/mocks"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
-	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
-	pbRestaurant "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
@@ -31,8 +29,8 @@ func TestRestaurantHandler_GetRestaurantBrandsList(t *testing.T) {
 			mockInit: func(m *mocks.MockRestaurantClient) {
 				m.EXPECT().
 					GetRestaurantBrandsList(gomock.Any(), int32(20), int32(0)).
-					Return([]*pb.RestaurantBrand{
-						{Id: 1, Name: "Бренд 1", LogoUrl: "logo.png"},
+					Return([]restaurantclient.RestaurantBrand{
+						{ID: 1, Name: "Бренд 1", LogoURL: "logo.png"},
 					}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -43,7 +41,7 @@ func TestRestaurantHandler_GetRestaurantBrandsList(t *testing.T) {
 			mockInit: func(m *mocks.MockRestaurantClient) {
 				m.EXPECT().
 					GetRestaurantBrandsList(gomock.Any(), int32(10), int32(5)).
-					Return([]*pb.RestaurantBrand{}, nil)
+					Return([]restaurantclient.RestaurantBrand{}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -94,7 +92,7 @@ func TestRestaurantHandler_GetRestaurantBrandByID(t *testing.T) {
 			mockInit: func(m *mocks.MockRestaurantClient) {
 				m.EXPECT().
 					GetRestaurantBrandByID(gomock.Any(), int64(1)).
-					Return(&pb.RestaurantBrand{Id: 1, Name: "Тест"}, nil)
+					Return(restaurantclient.RestaurantBrand{ID: 1, Name: "Тест"}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -116,7 +114,7 @@ func TestRestaurantHandler_GetRestaurantBrandByID(t *testing.T) {
 			mockInit: func(m *mocks.MockRestaurantClient) {
 				m.EXPECT().
 					GetRestaurantBrandByID(gomock.Any(), int64(404)).
-					Return(nil, restaurantclient.ErrNotFound)
+					Return(restaurantclient.RestaurantBrand{}, restaurantclient.ErrNotFound)
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -126,7 +124,7 @@ func TestRestaurantHandler_GetRestaurantBrandByID(t *testing.T) {
 			mockInit: func(m *mocks.MockRestaurantClient) {
 				m.EXPECT().
 					GetRestaurantBrandByID(gomock.Any(), int64(500)).
-					Return(nil, errors.New("fatal"))
+					Return(restaurantclient.RestaurantBrand{}, errors.New("fatal"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 		},
@@ -170,8 +168,8 @@ func TestRestaurantHandler_GetDishesByRestaurantBrandID(t *testing.T) {
 			mockInit: func(m *mocks.MockRestaurantClient) {
 				m.EXPECT().
 					GetDishesByRestaurantBrandID(gomock.Any(), int64(1), int32(10), int32(5)).
-					Return([]*pbRestaurant.Dish{
-						{Id: 101, Name: "Борщ", Price: 300},
+					Return([]restaurantclient.Dish{
+						{ID: 101, Name: "Борщ", Price: 300},
 					}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -183,8 +181,8 @@ func TestRestaurantHandler_GetDishesByRestaurantBrandID(t *testing.T) {
 			mockInit: func(m *mocks.MockRestaurantClient) {
 				m.EXPECT().
 					SearchDishesByBrand(gomock.Any(), int64(1), "pizza", int32(5)).
-					Return([]*pbRestaurant.Dish{
-						{Id: 202, Name: "Margarita", Price: 500},
+					Return([]restaurantclient.Dish{
+						{ID: 202, Name: "Margarita", Price: 500},
 					}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -245,22 +243,55 @@ func TestRestaurantHandler_GetDishesByRestaurantBrandID(t *testing.T) {
 }
 
 func TestRestaurantHandler_GetCategories(t *testing.T) {
-	h := NewRestaurantHandler(nil, logger.NewNopLogger())
+	type mockInit func(m *mocks.MockRestaurantClient)
 
-	t.Run("Успешное получение списка категорий", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/api/restaurants/categories", nil)
-		rec := httptest.NewRecorder()
+	tests := []struct {
+		name           string
+		mockInit       mockInit
+		expectedStatus int
+	}{
+		{
+			name: "Успешное получение списка категорий",
+			mockInit: func(m *mocks.MockRestaurantClient) {
+				m.EXPECT().GetCategories(gomock.Any()).Return([]restaurantclient.Category{
+					{ID: 1, Name: "Суши", Emoji: "🍣"},
+				}, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "Ошибка gRPC",
+			mockInit: func(m *mocks.MockRestaurantClient) {
+				m.EXPECT().GetCategories(gomock.Any()).Return(nil, errors.New("grpc err"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
 
-		h.GetCategories(rec, req)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Contains(t, rec.Header().Get("Content-Type"), "application/json")
+			mockClient := mocks.NewMockRestaurantClient(ctrl)
+			tt.mockInit(mockClient)
 
-		var resp CategoriesResponse
-		err := json.Unmarshal(rec.Body.Bytes(), &resp)
-		assert.NoError(t, err)
-		assert.NotEmpty(t, resp.Categories)
-	})
+			h := NewRestaurantHandler(mockClient, logger.NewNopLogger())
+
+			req := httptest.NewRequest(http.MethodGet, "/api/restaurants/categories", nil)
+			rec := httptest.NewRecorder()
+
+			h.GetCategories(rec, req)
+
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+			if tt.expectedStatus == http.StatusOK {
+				var resp CategoriesResponse
+				err := json.Unmarshal(rec.Body.Bytes(), &resp)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, resp.Categories)
+			}
+		})
+	}
 }
 
 func TestRestaurantHandler_GetRestaurantBrandsListByCategory(t *testing.T) {
@@ -275,25 +306,21 @@ func TestRestaurantHandler_GetRestaurantBrandsListByCategory(t *testing.T) {
 	}{
 		{
 			name:        "Успешное получение по известной категории",
-			slug:        "pizza", // Из categoryNameMap
+			slug:        "pizza",
 			queryParams: "?limit=10",
 			mockInit: func(m *mocks.MockRestaurantClient) {
 				m.EXPECT().
-					GetRestaurantBrandsListByCategoryName(gomock.Any(), "Пицца", int32(10), int32(0)).
-					Return([]*pb.RestaurantBrand{{Id: 1, Name: "Pizza Dominos"}}, nil)
+					GetRestaurantBrandsByCategoryName(gomock.Any(), "pizza", int32(10), int32(0)).
+					Return([]restaurantclient.RestaurantBrand{{ID: 1, Name: "Pizza Dominos"}}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:        "Успешный фолбэк при неизвестной категории",
-			slug:        "unknown-slug",
-			queryParams: "?offset=5",
-			mockInit: func(m *mocks.MockRestaurantClient) {
-				m.EXPECT().
-					GetRestaurantBrandsList(gomock.Any(), int32(20), int32(5)).
-					Return([]*pb.RestaurantBrand{{Id: 2, Name: "Any Rest"}}, nil)
-			},
-			expectedStatus: http.StatusOK,
+			name:           "Ошибка: пустой слаг",
+			slug:           "",
+			queryParams:    "",
+			mockInit:       func(m *mocks.MockRestaurantClient) {},
+			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:        "Ошибка gRPC при получении по имени категории",
@@ -301,18 +328,8 @@ func TestRestaurantHandler_GetRestaurantBrandsListByCategory(t *testing.T) {
 			queryParams: "",
 			mockInit: func(m *mocks.MockRestaurantClient) {
 				m.EXPECT().
-					GetRestaurantBrandsListByCategoryName(gomock.Any(), "Бургеры", int32(20), int32(0)).
+					GetRestaurantBrandsByCategoryName(gomock.Any(), "burgers", int32(20), int32(0)).
 					Return(nil, errors.New("grpc error"))
-			},
-			expectedStatus: http.StatusInternalServerError,
-		},
-		{
-			name: "Ошибка gRPC при фолбэке",
-			slug: "ghost",
-			mockInit: func(m *mocks.MockRestaurantClient) {
-				m.EXPECT().
-					GetRestaurantBrandsList(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil, errors.New("fatal"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 		},
@@ -354,10 +371,10 @@ func TestRestaurantHandler_SearchRestaurants(t *testing.T) {
 			mockInit: func(m *mocks.MockRestaurantClient) {
 				m.EXPECT().
 					SearchRestaurantBrands(gomock.Any(), "бургер", int32(20), int32(0)).
-					Return([]*pb.RestaurantBrand{{Id: 1, Name: "Burger Club"}}, nil)
+					Return([]restaurantclient.RestaurantBrand{{ID: 1, Name: "Burger Club"}}, nil)
 				m.EXPECT().
 					SearchDishes(gomock.Any(), "бургер", int32(20)).
-					Return([]*pb.Dish{{Id: 101, Name: "Чизбургер", RestaurantBrandId: 1}}, nil)
+					Return([]restaurantclient.Dish{{ID: 101, Name: "Чизбургер", RestaurantBrandID: 1}}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -367,7 +384,7 @@ func TestRestaurantHandler_SearchRestaurants(t *testing.T) {
 			mockInit: func(m *mocks.MockRestaurantClient) {
 				m.EXPECT().
 					SearchRestaurantBrands(gomock.Any(), "test", int32(20), int32(0)).
-					Return([]*pb.RestaurantBrand{{Id: 1}}, nil)
+					Return([]restaurantclient.RestaurantBrand{{ID: 1}}, nil)
 				m.EXPECT().
 					SearchDishes(gomock.Any(), "test", int32(20)).
 					Return(nil, errors.New("dish search failed"))
@@ -386,10 +403,10 @@ func TestRestaurantHandler_SearchRestaurants(t *testing.T) {
 			mockInit: func(m *mocks.MockRestaurantClient) {
 				m.EXPECT().
 					SearchRestaurantBrands(gomock.Any(), "pizza", int32(5), int32(10)).
-					Return([]*pb.RestaurantBrand{}, nil)
+					Return([]restaurantclient.RestaurantBrand{}, nil)
 				m.EXPECT().
 					SearchDishes(gomock.Any(), "pizza", int32(5)).
-					Return([]*pb.Dish{}, nil)
+					Return([]restaurantclient.Dish{}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},

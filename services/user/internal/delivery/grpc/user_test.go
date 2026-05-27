@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/domain"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/usecase/mocks"
@@ -13,6 +14,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestUserHandler_CreateUser(t *testing.T) {
@@ -62,7 +64,7 @@ func TestUserHandler_CreateUser(t *testing.T) {
 			userUC := mocks.NewMockUserUseCase(ctrl)
 			tt.mockInit(userUC)
 
-			h := NewUserHandler(userUC, nil)
+			h := NewUserHandler(userUC, nil, nil)
 			resp, err := h.CreateUser(context.Background(), tt.req)
 
 			if tt.expectedCode == codes.OK {
@@ -120,7 +122,7 @@ func TestUserHandler_CreateClientProfile(t *testing.T) {
 			clientUC := mocks.NewMockClientProfileUseCase(ctrl)
 			tt.mockInit(clientUC)
 
-			h := NewUserHandler(nil, clientUC)
+			h := NewUserHandler(nil, clientUC, nil)
 			resp, err := h.CreateClientProfile(context.Background(), tt.req)
 
 			if tt.expectedCode == codes.OK {
@@ -195,7 +197,7 @@ func TestUserHandler_UpdateProfile(t *testing.T) {
 			userUC := mocks.NewMockUserUseCase(ctrl)
 			tt.mockInit(userUC)
 
-			h := NewUserHandler(userUC, nil)
+			h := NewUserHandler(userUC, nil, nil)
 			resp, err := h.UpdateProfile(context.Background(), tt.req)
 
 			if tt.expectedCode == codes.OK {
@@ -258,7 +260,7 @@ func TestUserHandler_UpdateAvatar(t *testing.T) {
 			userUC := mocks.NewMockUserUseCase(ctrl)
 			tt.mockInit(userUC)
 
-			h := NewUserHandler(userUC, nil)
+			h := NewUserHandler(userUC, nil, nil)
 			resp, err := h.UpdateAvatar(context.Background(), tt.req)
 
 			if tt.expectedCode == codes.OK {
@@ -316,7 +318,7 @@ func TestUserHandler_DeleteAvatar(t *testing.T) {
 			userUC := mocks.NewMockUserUseCase(ctrl)
 			tt.mockInit(userUC)
 
-			h := NewUserHandler(userUC, nil)
+			h := NewUserHandler(userUC, nil, nil)
 			resp, err := h.DeleteAvatar(context.Background(), tt.req)
 
 			if tt.expectedCode == codes.OK {
@@ -378,7 +380,7 @@ func TestUserHandler_GetByID(t *testing.T) {
 			userUC := mocks.NewMockUserUseCase(ctrl)
 			tt.mockInit(userUC)
 
-			h := NewUserHandler(userUC, nil)
+			h := NewUserHandler(userUC, nil, nil)
 			resp, err := h.GetByID(context.Background(), tt.req)
 
 			if tt.expectedCode == codes.OK {
@@ -430,7 +432,7 @@ func TestUserHandler_GetByEmail(t *testing.T) {
 			userUC := mocks.NewMockUserUseCase(ctrl)
 			tt.mockInit(userUC)
 
-			h := NewUserHandler(userUC, nil)
+			h := NewUserHandler(userUC, nil, nil)
 			resp, err := h.GetByEmail(context.Background(), tt.req)
 
 			st, _ := status.FromError(err)
@@ -480,7 +482,7 @@ func TestUserHandler_CheckUserExists(t *testing.T) {
 			userUC := mocks.NewMockUserUseCase(ctrl)
 			tt.mockInit(userUC)
 
-			h := NewUserHandler(userUC, nil)
+			h := NewUserHandler(userUC, nil, nil)
 			resp, err := h.CheckUserExists(context.Background(), tt.req)
 
 			st, _ := status.FromError(err)
@@ -540,7 +542,7 @@ func TestUserHandler_GetUserProfile(t *testing.T) {
 			clientUC := mocks.NewMockClientProfileUseCase(ctrl)
 			tt.mockInit(userUC, clientUC)
 
-			h := NewUserHandler(userUC, clientUC)
+			h := NewUserHandler(userUC, clientUC, nil)
 			resp, err := h.GetUserProfile(context.Background(), tt.req)
 
 			st, _ := status.FromError(err)
@@ -599,13 +601,558 @@ func TestUserHandler_UpdateUserRole(t *testing.T) {
 			userUC := mocks.NewMockUserUseCase(ctrl)
 			tt.mockInit(userUC)
 
-			h := NewUserHandler(userUC, nil)
+			h := NewUserHandler(userUC, nil, nil)
 			resp, err := h.UpdateUserRole(context.Background(), tt.req)
 
 			st, _ := status.FromError(err)
 			assert.Equal(t, tt.expectedCode, st.Code())
 			if tt.expectedCode == codes.OK {
 				assert.Equal(t, &emptypb.Empty{}, resp)
+			}
+		})
+	}
+}
+
+func TestUserHandler_GetUsersByIDs(t *testing.T) {
+	type mockInit func(u *mocks.MockUserUseCase)
+	req := &pb.GetUsersByIDsRequest{UserIds: []int64{1, 2}}
+	usersMap := map[int64]domain.User{
+		1: {ID: 1, Name: "User1", Email: "user1@mail.ru"},
+		2: {ID: 2, Name: "User2", Email: "user2@mail.ru"},
+	}
+
+	tests := []struct {
+		name         string
+		req          *pb.GetUsersByIDsRequest
+		mockInit     mockInit
+		expectedCode codes.Code
+		expectedMap  map[int64]*pb.User
+	}{
+		{
+			name: "Успешное получение списка пользователей",
+			req:  req,
+			mockInit: func(u *mocks.MockUserUseCase) {
+				u.EXPECT().GetUsersByIDs(gomock.Any(), req.UserIds).Return(usersMap, nil)
+			},
+			expectedCode: codes.OK,
+			expectedMap: map[int64]*pb.User{
+				1: {Id: 1, Name: "User1", Email: "user1@mail.ru"},
+				2: {Id: 2, Name: "User2", Email: "user2@mail.ru"},
+			},
+		},
+		{
+			name: "Ошибка при получении пользователей",
+			req:  req,
+			mockInit: func(u *mocks.MockUserUseCase) {
+				u.EXPECT().GetUsersByIDs(gomock.Any(), req.UserIds).Return(nil, errors.New("db error"))
+			},
+			expectedCode: codes.Internal,
+			expectedMap:  nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			userUC := mocks.NewMockUserUseCase(ctrl)
+			tt.mockInit(userUC)
+
+			h := NewUserHandler(userUC, nil, nil)
+			resp, err := h.GetUsersByIDs(context.Background(), tt.req)
+
+			if tt.expectedCode == codes.OK {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedMap, resp.Users)
+			} else {
+				st, _ := status.FromError(err)
+				assert.Equal(t, tt.expectedCode, st.Code())
+			}
+		})
+	}
+}
+
+func TestUserHandler_ResolvePublicID(t *testing.T) {
+	type mockInit func(u *mocks.MockUserUseCase)
+	pubID := "public-uuid-123"
+	req := &pb.ResolvePublicIDRequest{PublicId: pubID}
+
+	tests := []struct {
+		name         string
+		req          *pb.ResolvePublicIDRequest
+		mockInit     mockInit
+		expectedCode codes.Code
+		expectedID   int64
+	}{
+		{
+			name: "Успешный резолв публичного ID",
+			req:  req,
+			mockInit: func(u *mocks.MockUserUseCase) {
+				u.EXPECT().GetByPublicID(gomock.Any(), pubID).Return(domain.User{ID: 42, PublicID: pubID}, nil)
+			},
+			expectedCode: codes.OK,
+			expectedID:   42,
+		},
+		{
+			name: "Пользователь не найден",
+			req:  req,
+			mockInit: func(u *mocks.MockUserUseCase) {
+				u.EXPECT().GetByPublicID(gomock.Any(), pubID).Return(domain.User{}, domain.ErrUserNotFound)
+			},
+			expectedCode: codes.NotFound,
+			expectedID:   0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			userUC := mocks.NewMockUserUseCase(ctrl)
+			tt.mockInit(userUC)
+
+			h := NewUserHandler(userUC, nil, nil)
+			resp, err := h.ResolvePublicID(context.Background(), tt.req)
+
+			if tt.expectedCode == codes.OK {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedID, resp.UserId)
+			} else {
+				st, _ := status.FromError(err)
+				assert.Equal(t, tt.expectedCode, st.Code())
+			}
+		})
+	}
+}
+
+func TestUserHandler_ListAchievements(t *testing.T) {
+	type mockInit func(a *mocks.MockAchievementUseCase)
+	req := &emptypb.Empty{}
+	domainList := []domain.Achievement{
+		{ID: 1, Code: "ACH1", Title: "Title1", Description: "Desc1", Icon: "icon1.png", SortOrder: 1},
+	}
+
+	tests := []struct {
+		name         string
+		req          *emptypb.Empty
+		mockInit     mockInit
+		expectedCode codes.Code
+		expectedResp *pb.ListAchievementsResponse
+	}{
+		{
+			name: "Успешное получение списка достижений",
+			req:  req,
+			mockInit: func(a *mocks.MockAchievementUseCase) {
+				a.EXPECT().ListAll(gomock.Any()).Return(domainList, nil)
+			},
+			expectedCode: codes.OK,
+			expectedResp: &pb.ListAchievementsResponse{
+				Achievements: []*pb.Achievement{
+					{Id: 1, Code: "ACH1", Title: "Title1", Description: "Desc1", Icon: "icon1.png", SortOrder: 1},
+				},
+			},
+		},
+		{
+			name: "Ошибка при получении списка достижений",
+			req:  req,
+			mockInit: func(a *mocks.MockAchievementUseCase) {
+				a.EXPECT().ListAll(gomock.Any()).Return(nil, errors.New("db error"))
+			},
+			expectedCode: codes.Internal,
+			expectedResp: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			achieveUC := mocks.NewMockAchievementUseCase(ctrl)
+			tt.mockInit(achieveUC)
+
+			h := NewUserHandler(nil, nil, achieveUC)
+			resp, err := h.ListAchievements(context.Background(), tt.req)
+
+			if tt.expectedCode == codes.OK {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedResp, resp)
+			} else {
+				st, _ := status.FromError(err)
+				assert.Equal(t, tt.expectedCode, st.Code())
+			}
+		})
+	}
+}
+
+func TestUserHandler_GetUserAchievements(t *testing.T) {
+	type mockInit func(a *mocks.MockAchievementUseCase)
+	req := &pb.GetUserAchievementsRequest{UserId: 1}
+	awardedTime := time.Now()
+	domainList := []domain.UserAchievement{
+		{AchievementID: 42, AwardedAt: awardedTime},
+	}
+
+	tests := []struct {
+		name         string
+		req          *pb.GetUserAchievementsRequest
+		mockInit     mockInit
+		expectedCode codes.Code
+		expectedResp *pb.GetUserAchievementsResponse
+	}{
+		{
+			name: "Успешное получение достижений пользователя",
+			req:  req,
+			mockInit: func(a *mocks.MockAchievementUseCase) {
+				a.EXPECT().ListForUser(gomock.Any(), int64(1)).Return(domainList, nil)
+			},
+			expectedCode: codes.OK,
+			expectedResp: &pb.GetUserAchievementsResponse{
+				Achievements: []*pb.UserAchievement{
+					{AchievementId: 42, AwardedAt: timestamppb.New(awardedTime)},
+				},
+			},
+		},
+		{
+			name: "Ошибка при получении достижений пользователя",
+			req:  req,
+			mockInit: func(a *mocks.MockAchievementUseCase) {
+				a.EXPECT().ListForUser(gomock.Any(), int64(1)).Return(nil, errors.New("db error"))
+			},
+			expectedCode: codes.Internal,
+			expectedResp: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			achieveUC := mocks.NewMockAchievementUseCase(ctrl)
+			tt.mockInit(achieveUC)
+
+			h := NewUserHandler(nil, nil, achieveUC)
+			resp, err := h.GetUserAchievements(context.Background(), tt.req)
+
+			if tt.expectedCode == codes.OK {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedResp.Achievements[0].AchievementId, resp.Achievements[0].AchievementId)
+				assert.Equal(t, tt.expectedResp.Achievements[0].AwardedAt.Seconds, resp.Achievements[0].AwardedAt.Seconds)
+			} else {
+				st, _ := status.FromError(err)
+				assert.Equal(t, tt.expectedCode, st.Code())
+			}
+		})
+	}
+}
+
+func TestUserHandler_ActivateStreakFreeze(t *testing.T) {
+	type mockInit func(c *mocks.MockClientProfileUseCase)
+	req := &pb.ActivateStreakFreezeRequest{UserId: 42}
+
+	tests := []struct {
+		name         string
+		req          *pb.ActivateStreakFreezeRequest
+		mockInit     mockInit
+		expectedCode codes.Code
+	}{
+		{
+			name: "Успешная активация заморозки",
+			req:  req,
+			mockInit: func(c *mocks.MockClientProfileUseCase) {
+				c.EXPECT().ActivateStreakFreeze(gomock.Any(), int64(42)).Return(nil)
+			},
+			expectedCode: codes.OK,
+		},
+		{
+			name: "Ошибка активации заморозки",
+			req:  req,
+			mockInit: func(c *mocks.MockClientProfileUseCase) {
+				c.EXPECT().ActivateStreakFreeze(gomock.Any(), int64(42)).Return(errors.New("db error"))
+			},
+			expectedCode: codes.Internal,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			clientUC := mocks.NewMockClientProfileUseCase(ctrl)
+			tt.mockInit(clientUC)
+
+			h := NewUserHandler(nil, clientUC, nil)
+			resp, err := h.ActivateStreakFreeze(context.Background(), tt.req)
+
+			if tt.expectedCode == codes.OK {
+				assert.NoError(t, err)
+				assert.Equal(t, &emptypb.Empty{}, resp)
+			} else {
+				st, _ := status.FromError(err)
+				assert.Equal(t, tt.expectedCode, st.Code())
+			}
+		})
+	}
+}
+
+func TestUserHandler_IncrementStreak(t *testing.T) {
+	type mockInit func(c *mocks.MockClientProfileUseCase)
+	req := &pb.IncrementStreakRequest{UserId: 42}
+
+	tests := []struct {
+		name         string
+		req          *pb.IncrementStreakRequest
+		mockInit     mockInit
+		expectedCode codes.Code
+	}{
+		{
+			name: "Успешное увеличение стрика",
+			req:  req,
+			mockInit: func(c *mocks.MockClientProfileUseCase) {
+				c.EXPECT().IncrementStreak(gomock.Any(), int64(42)).Return(nil)
+			},
+			expectedCode: codes.OK,
+		},
+		{
+			name: "Ошибка при увеличении стрика",
+			req:  req,
+			mockInit: func(c *mocks.MockClientProfileUseCase) {
+				c.EXPECT().IncrementStreak(gomock.Any(), int64(42)).Return(errors.New("db error"))
+			},
+			expectedCode: codes.Internal,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			clientUC := mocks.NewMockClientProfileUseCase(ctrl)
+			tt.mockInit(clientUC)
+
+			h := NewUserHandler(nil, clientUC, nil)
+			resp, err := h.IncrementStreak(context.Background(), tt.req)
+
+			if tt.expectedCode == codes.OK {
+				assert.NoError(t, err)
+				assert.Equal(t, &emptypb.Empty{}, resp)
+			} else {
+				st, _ := status.FromError(err)
+				assert.Equal(t, tt.expectedCode, st.Code())
+			}
+		})
+	}
+}
+
+func TestUserHandler_OnWheelSpin(t *testing.T) {
+	type mockInit func(a *mocks.MockAchievementUseCase)
+	wonCode := "LUCKY"
+	req := &pb.OnWheelSpinRequest{UserId: 42, WonAchievementCode: &wonCode}
+
+	tests := []struct {
+		name         string
+		req          *pb.OnWheelSpinRequest
+		mockInit     mockInit
+		expectedCode codes.Code
+	}{
+		{
+			name: "Успешная обработка вращения колеса",
+			req:  req,
+			mockInit: func(a *mocks.MockAchievementUseCase) {
+				a.EXPECT().OnWheelSpin(gomock.Any(), int64(42), "LUCKY").Return(nil)
+			},
+			expectedCode: codes.OK,
+		},
+		{
+			name: "Успешная обработка вращения колеса без кода",
+			req:  &pb.OnWheelSpinRequest{UserId: 42},
+			mockInit: func(a *mocks.MockAchievementUseCase) {
+				a.EXPECT().OnWheelSpin(gomock.Any(), int64(42), "").Return(nil)
+			},
+			expectedCode: codes.OK,
+		},
+		{
+			name: "Ошибка при обработке вращения колеса",
+			req:  req,
+			mockInit: func(a *mocks.MockAchievementUseCase) {
+				a.EXPECT().OnWheelSpin(gomock.Any(), int64(42), "LUCKY").Return(errors.New("db error"))
+			},
+			expectedCode: codes.Internal,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			achieveUC := mocks.NewMockAchievementUseCase(ctrl)
+			tt.mockInit(achieveUC)
+
+			h := NewUserHandler(nil, nil, achieveUC)
+			resp, err := h.OnWheelSpin(context.Background(), tt.req)
+
+			if tt.expectedCode == codes.OK {
+				assert.NoError(t, err)
+				assert.Equal(t, &emptypb.Empty{}, resp)
+			} else {
+				st, _ := status.FromError(err)
+				assert.Equal(t, tt.expectedCode, st.Code())
+			}
+		})
+	}
+}
+
+func TestUserHandler_OnWordleResult(t *testing.T) {
+	type mockInit func(a *mocks.MockAchievementUseCase)
+	req := &pb.OnWordleResultRequest{UserId: 42, IsWin: true, TotalWins: 10, CurrentStreak: 5}
+
+	tests := []struct {
+		name         string
+		req          *pb.OnWordleResultRequest
+		mockInit     mockInit
+		expectedCode codes.Code
+	}{
+		{
+			name: "Успешная обработка результата wordle",
+			req:  req,
+			mockInit: func(a *mocks.MockAchievementUseCase) {
+				a.EXPECT().OnWordleResult(gomock.Any(), int64(42), true, int32(10), int32(5)).Return(nil)
+			},
+			expectedCode: codes.OK,
+		},
+		{
+			name: "Ошибка при обработке результата wordle",
+			req:  req,
+			mockInit: func(a *mocks.MockAchievementUseCase) {
+				a.EXPECT().OnWordleResult(gomock.Any(), int64(42), true, int32(10), int32(5)).Return(errors.New("db error"))
+			},
+			expectedCode: codes.Internal,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			achieveUC := mocks.NewMockAchievementUseCase(ctrl)
+			tt.mockInit(achieveUC)
+
+			h := NewUserHandler(nil, nil, achieveUC)
+			resp, err := h.OnWordleResult(context.Background(), tt.req)
+
+			if tt.expectedCode == codes.OK {
+				assert.NoError(t, err)
+				assert.Equal(t, &emptypb.Empty{}, resp)
+			} else {
+				st, _ := status.FromError(err)
+				assert.Equal(t, tt.expectedCode, st.Code())
+			}
+		})
+	}
+}
+
+func TestUserHandler_ClaimWheelSpin(t *testing.T) {
+	type mockInit func(c *mocks.MockClientProfileUseCase)
+	req := &pb.ClaimWheelSpinRequest{UserId: 42}
+
+	tests := []struct {
+		name         string
+		req          *pb.ClaimWheelSpinRequest
+		mockInit     mockInit
+		expectedCode codes.Code
+	}{
+		{
+			name: "Успешное применение вращения колеса",
+			req:  req,
+			mockInit: func(c *mocks.MockClientProfileUseCase) {
+				c.EXPECT().ClaimWheelSpin(gomock.Any(), int64(42)).Return(nil)
+			},
+			expectedCode: codes.OK,
+		},
+		{
+			name: "Ошибка при применении вращения",
+			req:  req,
+			mockInit: func(c *mocks.MockClientProfileUseCase) {
+				c.EXPECT().ClaimWheelSpin(gomock.Any(), int64(42)).Return(errors.New("db error"))
+			},
+			expectedCode: codes.Internal,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			clientUC := mocks.NewMockClientProfileUseCase(ctrl)
+			tt.mockInit(clientUC)
+
+			h := NewUserHandler(nil, clientUC, nil)
+			resp, err := h.ClaimWheelSpin(context.Background(), tt.req)
+
+			if tt.expectedCode == codes.OK {
+				assert.NoError(t, err)
+				assert.Equal(t, &emptypb.Empty{}, resp)
+			} else {
+				st, _ := status.FromError(err)
+				assert.Equal(t, tt.expectedCode, st.Code())
+			}
+		})
+	}
+}
+
+func TestUserHandler_ResetWheelSpinCooldown(t *testing.T) {
+	type mockInit func(c *mocks.MockClientProfileUseCase)
+	req := &pb.ResetWheelSpinCooldownRequest{UserId: 42}
+
+	tests := []struct {
+		name         string
+		req          *pb.ResetWheelSpinCooldownRequest
+		mockInit     mockInit
+		expectedCode codes.Code
+	}{
+		{
+			name: "Успешный сброс кулдауна",
+			req:  req,
+			mockInit: func(c *mocks.MockClientProfileUseCase) {
+				c.EXPECT().ResetWheelSpinCooldown(gomock.Any(), int64(42)).Return(nil)
+			},
+			expectedCode: codes.OK,
+		},
+		{
+			name: "Ошибка при сбросе кулдауна",
+			req:  req,
+			mockInit: func(c *mocks.MockClientProfileUseCase) {
+				c.EXPECT().ResetWheelSpinCooldown(gomock.Any(), int64(42)).Return(errors.New("db error"))
+			},
+			expectedCode: codes.Internal,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			clientUC := mocks.NewMockClientProfileUseCase(ctrl)
+			tt.mockInit(clientUC)
+
+			h := NewUserHandler(nil, clientUC, nil)
+			resp, err := h.ResetWheelSpinCooldown(context.Background(), tt.req)
+
+			if tt.expectedCode == codes.OK {
+				assert.NoError(t, err)
+				assert.Equal(t, &emptypb.Empty{}, resp)
+			} else {
+				st, _ := status.FromError(err)
+				assert.Equal(t, tt.expectedCode, st.Code())
 			}
 		})
 	}

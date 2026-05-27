@@ -30,6 +30,23 @@ func NewOrderUseCaseTracingMiddleware(next OrderUseCase) OrderUseCaseTracingMidd
 	}
 }
 
+// AdvanceOrderStatus трассирует выполнение метода AdvanceOrderStatus
+func (m OrderUseCaseTracingMiddleware) AdvanceOrderStatus(ctx context.Context, publicID string, newStatus string, expectedStatus string) (err error) {
+
+	ctx, span := m.tracer.Start(ctx, "OrderUseCase.AdvanceOrderStatus")
+
+	defer span.End()
+
+	err = m.next.AdvanceOrderStatus(ctx, publicID, newStatus, expectedStatus)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
 // CancelOrder трассирует выполнение метода CancelOrder
 func (m OrderUseCaseTracingMiddleware) CancelOrder(ctx context.Context, orderPublicID string, userID int64) (err error) {
 
@@ -64,14 +81,14 @@ func (m OrderUseCaseTracingMiddleware) CreateOrder(ctx context.Context, req doma
 	return
 }
 
-// GetOrderPaymentID трассирует выполнение метода GetOrderPaymentID
-func (m OrderUseCaseTracingMiddleware) GetOrderPaymentID(ctx context.Context, orderPublicID string, userID int64) (s1 string, err error) {
+// GetOrders трассирует выполнение метода GetOrders
+func (m OrderUseCaseTracingMiddleware) GetOrders(ctx context.Context, userID int64, limit int32, offset int32) (oa1 []domain.Order, err error) {
 
-	ctx, span := m.tracer.Start(ctx, "OrderUseCase.GetOrderPaymentID")
+	ctx, span := m.tracer.Start(ctx, "OrderUseCase.GetOrders")
 
 	defer span.End()
 
-	s1, err = m.next.GetOrderPaymentID(ctx, orderPublicID, userID)
+	oa1, err = m.next.GetOrders(ctx, userID, limit, offset)
 
 	if err != nil {
 		span.RecordError(err)
@@ -81,14 +98,48 @@ func (m OrderUseCaseTracingMiddleware) GetOrderPaymentID(ctx context.Context, or
 	return
 }
 
-// GetOrders трассирует выполнение метода GetOrders
-func (m OrderUseCaseTracingMiddleware) GetOrders(ctx context.Context, userID int64) (oa1 []domain.Order, err error) {
+// GetTopDishesByBrand трассирует выполнение метода GetTopDishesByBrand
+func (m OrderUseCaseTracingMiddleware) GetTopDishesByBrand(ctx context.Context, brandID int64, windowDays int32, limit int32) (ia1 []int64, err error) {
 
-	ctx, span := m.tracer.Start(ctx, "OrderUseCase.GetOrders")
+	ctx, span := m.tracer.Start(ctx, "OrderUseCase.GetTopDishesByBrand")
 
 	defer span.End()
 
-	oa1, err = m.next.GetOrders(ctx, userID)
+	ia1, err = m.next.GetTopDishesByBrand(ctx, brandID, windowDays, limit)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
+// GetTrendingBrands трассирует выполнение метода GetTrendingBrands
+func (m OrderUseCaseTracingMiddleware) GetTrendingBrands(ctx context.Context, windowDays int32, limit int32) (ia1 []int64, err error) {
+
+	ctx, span := m.tracer.Start(ctx, "OrderUseCase.GetTrendingBrands")
+
+	defer span.End()
+
+	ia1, err = m.next.GetTrendingBrands(ctx, windowDays, limit)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return
+}
+
+// GetUserPaidBrands трассирует выполнение метода GetUserPaidBrands
+func (m OrderUseCaseTracingMiddleware) GetUserPaidBrands(ctx context.Context, userID int64) (ia1 []int64, err error) {
+
+	ctx, span := m.tracer.Start(ctx, "OrderUseCase.GetUserPaidBrands")
+
+	defer span.End()
+
+	ia1, err = m.next.GetUserPaidBrands(ctx, userID)
 
 	if err != nil {
 		span.RecordError(err)

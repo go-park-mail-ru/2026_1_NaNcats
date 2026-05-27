@@ -116,6 +116,36 @@ func (mr *MockUserUseCaseMockRecorder) GetByID(ctx, userID any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockUserUseCase)(nil).GetByID), ctx, userID)
 }
 
+// GetByPublicID mocks base method.
+func (m *MockUserUseCase) GetByPublicID(ctx context.Context, publicID string) (domain.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByPublicID", ctx, publicID)
+	ret0, _ := ret[0].(domain.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByPublicID indicates an expected call of GetByPublicID.
+func (mr *MockUserUseCaseMockRecorder) GetByPublicID(ctx, publicID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByPublicID", reflect.TypeOf((*MockUserUseCase)(nil).GetByPublicID), ctx, publicID)
+}
+
+// GetUsersByIDs mocks base method.
+func (m *MockUserUseCase) GetUsersByIDs(ctx context.Context, userIDs []int64) (map[int64]domain.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUsersByIDs", ctx, userIDs)
+	ret0, _ := ret[0].(map[int64]domain.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUsersByIDs indicates an expected call of GetUsersByIDs.
+func (mr *MockUserUseCaseMockRecorder) GetUsersByIDs(ctx, userIDs any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersByIDs", reflect.TypeOf((*MockUserUseCase)(nil).GetUsersByIDs), ctx, userIDs)
+}
+
 // UpdateAvatar mocks base method.
 func (m *MockUserUseCase) UpdateAvatar(ctx context.Context, userID int64, imageData []byte, idempotencyKey string) (string, error) {
 	m.ctrl.T.Helper()

@@ -12,8 +12,6 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-var _ repository.ExtendedRestaurantRepository = (*restaurantBrandRepo)(nil)
-
 type restaurantBrandDB struct {
 	ID             int64     `db:"id"`
 	OwnerProfileID int64     `db:"owner_profile_id"`
@@ -23,6 +21,14 @@ type restaurantBrandDB struct {
 	LogoURL        *string   `db:"logo_url"`
 	CreatedAt      time.Time `db:"created_at"`
 	UpdatedAt      time.Time `db:"updated_at"`
+}
+
+type categoryDB struct {
+	ID        int64     `db:"id"`
+	Name      string    `db:"name"`
+	Emoji     string    `db:"emoji"`
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 func (d restaurantBrandDB) toDomain() domain.RestaurantBrand {
@@ -50,7 +56,7 @@ type restaurantBrandRepo struct {
 	pool postgres.PgxPool
 }
 
-func NewRestaurantBrandRepo(pool postgres.PgxPool) repository.RestaurantBrandFullRepository {
+func NewRestaurantBrandRepo(pool postgres.PgxPool) repository.RestaurantBrandRepository {
 	return &restaurantBrandRepo{
 		pool: pool,
 	}
@@ -98,7 +104,6 @@ func (r *restaurantBrandRepo) GetByID(ctx context.Context, id int64) (domain.Res
 			return domain.RestaurantBrand{}, domain.ErrRestaurantNotFound
 		}
 		return domain.RestaurantBrand{}, fmt.Errorf("get restaurant by id [%d]: %w", id, err)
-
 	}
 	return rb.toDomain(), nil
 }
@@ -118,10 +123,10 @@ func (r *restaurantBrandRepo) GetRestaurantBrandsByIDs(ctx context.Context, ids 
 
 	dbRestaurantBrands, err := pgx.CollectRows(rows, pgx.RowToStructByName[restaurantBrandDB])
 	if err != nil {
-		return nil, fmt.Errorf("mapping dishes: %w", err)
+		return nil, fmt.Errorf("mapping restaurant brands: %w", err)
 	}
 
-	restaurantBrands := make([]domain.RestaurantBrand, 0, len(ids))
+	restaurantBrands := make([]domain.RestaurantBrand, 0, len(dbRestaurantBrands))
 	for _, rb := range dbRestaurantBrands {
 		restaurantBrands = append(restaurantBrands, rb.toDomain())
 	}
@@ -130,18 +135,17 @@ func (r *restaurantBrandRepo) GetRestaurantBrandsByIDs(ctx context.Context, ids 
 
 func (r *restaurantBrandRepo) Create(ctx context.Context, b domain.RestaurantBrand, idempotencyKey string) (domain.RestaurantBrand, error) {
 	query := `
-		INSERT INTO "restaurant_brand" (owner_profile_id, name, description, logo_url, idempotency_key)
-		VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT (idempotency_key) DO UPDATE SET 
-            idempotency_key = EXCLUDED.idempotency_key
+		INSERT INTO "restaurant_brand" (owner_profile_id, name, description, promotion_tier, logo_url, idempotency_key)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (idempotency_key) DO UPDATE SET updated_at = NOW()
 		RETURNING id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at;
 	`
 	var rb restaurantBrandDB
-	err := r.pool.QueryRow(ctx, query, b.OwnerProfileID, b.Name, b.Description, b.LogoURL, idempotencyKey).Scan(
+	err := r.pool.QueryRow(ctx, query, b.OwnerProfileID, b.Name, b.Description, b.PromotionTier, b.LogoURL, idempotencyKey).Scan(
 		&rb.ID, &rb.OwnerProfileID, &rb.Name, &rb.Description, &rb.PromotionTier, &rb.LogoURL, &rb.CreatedAt, &rb.UpdatedAt,
 	)
 	if err != nil {
-		return domain.RestaurantBrand{}, err
+		return domain.RestaurantBrand{}, fmt.Errorf("create restaurant brand: %w", err)
 	}
 	return rb.toDomain(), nil
 }
@@ -156,13 +160,20 @@ func (r *restaurantBrandRepo) Update(ctx context.Context, b domain.RestaurantBra
 		UPDATE "restaurant_brand"
 		SET name = $1, description = $2, logo_url = $3, promotion_tier = $4, updated_at = NOW()
 		WHERE id = $5
+		RETURNING id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at;
 	`
-	_, err := r.pool.Exec(ctx, query, b.Name, b.Description, b.LogoURL, b.PromotionTier, b.ID)
+	var rb restaurantBrandDB
+	err := r.pool.QueryRow(ctx, query, b.Name, b.Description, b.LogoURL, b.PromotionTier, b.ID).Scan(
+		&rb.ID, &rb.OwnerProfileID, &rb.Name, &rb.Description, &rb.PromotionTier, &rb.LogoURL, &rb.CreatedAt, &rb.UpdatedAt,
+	)
 	if err != nil {
-		return domain.RestaurantBrand{}, err
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.RestaurantBrand{}, domain.ErrRestaurantNotFound
+		}
+		return domain.RestaurantBrand{}, fmt.Errorf("update restaurant brand: %w", err)
 	}
 
-	return b, err
+	return rb.toDomain(), nil
 }
 
 func (r *restaurantBrandRepo) GetRestaurantBrandsByCategory(ctx context.Context, categoryID int64, limit, offset int) ([]domain.RestaurantBrand, error) {
@@ -247,14 +258,8 @@ func (r *restaurantBrandRepo) SearchRestaurantBrands(ctx context.Context, query 
 	return brands, nil
 }
 
-type categoryDB struct {
-	ID    int64  `db:"id"`
-	Name  string `db:"name"`
-	Emoji string `db:"emoji"`
-}
-
-func (r *restaurantBrandRepo) GetAllCategories(ctx context.Context) ([]repository.Category, error) {
-	query := `SELECT id, name, COALESCE(emoji, '') as emoji FROM "category" ORDER BY id ASC;`
+func (r *restaurantBrandRepo) GetAllCategories(ctx context.Context) ([]domain.Category, error) {
+	query := `SELECT id, name, COALESCE(emoji, '') as emoji, created_at, updated_at FROM "category" ORDER BY id ASC;`
 	rows, err := r.pool.Query(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("get categories: %w", err)
@@ -266,9 +271,75 @@ func (r *restaurantBrandRepo) GetAllCategories(ctx context.Context) ([]repositor
 		return nil, fmt.Errorf("scan categories: %w", err)
 	}
 
-	cats := make([]repository.Category, 0, len(dbCats))
+	cats := make([]domain.Category, 0, len(dbCats))
 	for _, c := range dbCats {
-		cats = append(cats, repository.Category{ID: c.ID, Name: c.Name, Emoji: c.Emoji})
+		cats = append(cats, domain.Category{
+			ID:        c.ID,
+			Name:      c.Name,
+			Emoji:     c.Emoji,
+			CreatedAt: c.CreatedAt,
+			UpdatedAt: c.UpdatedAt,
+		})
 	}
 	return cats, nil
+}
+
+// RecommendByCategorySimilarity ранжирует бренды по числу общих категорий
+// с seedBrandIDs. При пустом seed выбирает топ по promotion_tier как
+// «холодный старт». excludeBrandIDs всегда фильтруются.
+func (r *restaurantBrandRepo) RecommendByCategorySimilarity(ctx context.Context, seedBrandIDs, excludeBrandIDs []int64, limit int) ([]domain.RestaurantBrand, error) {
+	if limit <= 0 {
+		limit = 8
+	}
+	if excludeBrandIDs == nil {
+		excludeBrandIDs = []int64{}
+	}
+
+	if len(seedBrandIDs) == 0 {
+		rows, err := r.pool.Query(ctx, `
+			SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at
+			FROM "restaurant_brand"
+			WHERE NOT (id = ANY($1))
+			ORDER BY promotion_tier DESC, id ASC
+			LIMIT $2
+		`, excludeBrandIDs, limit)
+		if err != nil {
+			return nil, fmt.Errorf("recommend cold-start: %w", err)
+		}
+		defer rows.Close()
+		return scanRecommendedBrands(rows)
+	}
+
+	rows, err := r.pool.Query(ctx, `
+		WITH seed_categories AS (
+			SELECT DISTINCT category_id
+			FROM "restaurant_brand_category"
+			WHERE restaurant_brand_id = ANY($1)
+		)
+		SELECT b.id, b.owner_profile_id, b.name, b.description, b.promotion_tier, b.logo_url, b.created_at, b.updated_at
+		FROM "restaurant_brand" b
+		JOIN "restaurant_brand_category" rbc ON rbc.restaurant_brand_id = b.id
+		WHERE rbc.category_id IN (SELECT category_id FROM seed_categories)
+		  AND NOT (b.id = ANY($2))
+		GROUP BY b.id, b.owner_profile_id, b.name, b.description, b.promotion_tier, b.logo_url, b.created_at, b.updated_at
+		ORDER BY COUNT(rbc.category_id) DESC, b.promotion_tier DESC, b.id ASC
+		LIMIT $3
+	`, seedBrandIDs, excludeBrandIDs, limit)
+	if err != nil {
+		return nil, fmt.Errorf("recommend by category: %w", err)
+	}
+	defer rows.Close()
+	return scanRecommendedBrands(rows)
+}
+
+func scanRecommendedBrands(rows pgx.Rows) ([]domain.RestaurantBrand, error) {
+	out := make([]domain.RestaurantBrand, 0, 8)
+	for rows.Next() {
+		var d restaurantBrandDB
+		if err := rows.Scan(&d.ID, &d.OwnerProfileID, &d.Name, &d.Description, &d.PromotionTier, &d.LogoURL, &d.CreatedAt, &d.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("scan brand: %w", err)
+		}
+		out = append(out, d.toDomain())
+	}
+	return out, rows.Err()
 }

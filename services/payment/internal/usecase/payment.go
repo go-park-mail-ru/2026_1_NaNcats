@@ -68,6 +68,14 @@ func (p *paymentUseCase) CreatePayment(ctx context.Context, amount int64, paymen
 	kopecks := (amount%1_000_000)/10_000 + 100
 	value := strconv.FormatInt(rubles, 10) + "." + strconv.FormatInt(kopecks, 10)[1:]
 
+	span.SetAttributes(attribute.String("payment.amount_formatted", value))
+	p.logger.Info("creating yookassa payment",
+		logger.Int64("amount_micros", amount),
+		logger.String("amount_value", value),
+		logger.String("payment_method_id", paymentMethodID),
+		logger.String("idempotency_key", idempotencyKey),
+	)
+
 	paymentRequest := yookassa.CreatePaymentRequest{
 		Amount: yookassa.CreatePaymentRequestAmount{
 			Value:    value,
@@ -75,9 +83,6 @@ func (p *paymentUseCase) CreatePayment(ctx context.Context, amount int64, paymen
 		},
 		Capture:           true,
 		SavePaymentMethod: false,
-		// Confirmation указываем всегда: для новой карты это redirect на форму YooKassa,
-		// для сохранённой - fallback на случай, когда YooKassa внезапно требует 3DS;
-		// без return_url пользователь застрянет на странице YooKassa после подтверждения.
 		Confirmation: &yookassa.CreatePaymentRequestConfirmation{
 			Type:      "redirect",
 			ReturnURL: p.returnURL,
@@ -86,9 +91,26 @@ func (p *paymentUseCase) CreatePayment(ctx context.Context, amount int64, paymen
 
 	if paymentMethodID != "" {
 		paymentRequest.PaymentMethodID = paymentMethodID
+	} else {
+		paymentRequest.PaymentMethodData = &yookassa.PaymentMethodData{
+			Type: "bank_card",
+		}
 	}
 
 	paymentResponse, err := p.yookassaClient.CreatePayment(ctx, paymentRequest, idempotencyKey)
+
+	if err != nil && paymentMethodID != "" && (errors.Is(err, yookassa.ErrBadRequest) || errors.Is(err, yookassa.ErrNotFound)) {
+		p.logger.Info("saved card rejected by yookassa, falling back to new card payment",
+			logger.String("payment_method_id", paymentMethodID),
+			logger.Err(err),
+		)
+		paymentRequest.PaymentMethodID = ""
+		paymentRequest.PaymentMethodData = &yookassa.PaymentMethodData{
+			Type: "bank_card",
+		}
+		paymentResponse, err = p.yookassaClient.CreatePayment(ctx, paymentRequest, idempotencyKey+"-fallback")
+	}
+
 	if err != nil {
 		switch {
 		case errors.Is(err, yookassa.ErrBadRequest):
@@ -122,15 +144,23 @@ func (p *paymentUseCase) InitiateCardBinding(ctx context.Context, userID int64, 
 		attribute.String("binding.idempotency_key", idempotencyKey),
 	)
 
-	req := yookassa.CreatePaymentMethodRequest{
-		Type: "bank_card",
-		Confirmation: &yookassa.PaymentMethodRequestConfirmation{
+	req := yookassa.CreatePaymentRequest{
+		Amount: yookassa.CreatePaymentRequestAmount{
+			Value:    "1.00",
+			Currency: "RUB",
+		},
+		Capture:           true,
+		SavePaymentMethod: true,
+		Confirmation: &yookassa.CreatePaymentRequestConfirmation{
 			Type:      "redirect",
 			ReturnURL: p.returnURL,
 		},
+		PaymentMethodData: &yookassa.PaymentMethodData{
+			Type: "bank_card",
+		},
 	}
 
-	resp, err := p.yookassaClient.CreatePaymentMethod(ctx, req, idempotencyKey)
+	resp, err := p.yookassaClient.CreatePayment(ctx, req, idempotencyKey)
 	if err != nil {
 		if errors.Is(err, yookassa.ErrBadRequest) {
 			return "", errutil.Wrap("BINDING_INVALID_CONFIG", "yookassa rejected binding request", err, codes.InvalidArgument)
@@ -146,8 +176,6 @@ func (p *paymentUseCase) InitiateCardBinding(ctx context.Context, userID int64, 
 	if resp.Confirmation == nil || resp.Confirmation.ConfirmationURL == "" {
 		return "", errutil.Internal("empty confirmation url from yookassa", errors.New("malformed provider response"))
 	}
-
-	confirmationURL = resp.Confirmation.ConfirmationURL
 
 	err = p.cacheRepo.SetPendingBinding(ctx, resp.ID, userID, 15*time.Minute)
 	if err != nil {
@@ -261,9 +289,6 @@ func (p *paymentUseCase) ProcessPaymentMethodWebhook(ctx context.Context, pm *yo
 	return nil
 }
 
-// RefreshPaymentStatus тянет актуальный статус из YooKassa REST и применяет
-// его как обычный webhook (через ProcessPaymentWebhook). Используется когда
-// YooKassa-вебхук не доходит до нашего сервера
 func (p *paymentUseCase) RefreshPaymentStatus(ctx context.Context, paymentID string) (string, error) {
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(attribute.String("payment.external_id", paymentID))
@@ -282,7 +307,6 @@ func (p *paymentUseCase) RefreshPaymentStatus(ctx context.Context, paymentID str
 
 	span.SetAttributes(attribute.String("payment.status", resp.Status))
 
-	// Применяем тот же путь, что и для веб-хука
 	if err := p.ProcessPaymentWebhook(ctx, &yookassa.WebhookPaymentObject{
 		ID:     resp.ID,
 		Status: resp.Status,
@@ -305,6 +329,23 @@ func (p *paymentUseCase) ProcessPaymentWebhook(ctx context.Context, payment *yoo
 		return nil
 	}
 
+	userID, cacheErr := p.cacheRepo.GetUserIDByPaymentID(ctx, payment.ID)
+	if cacheErr == nil {
+		span.SetAttributes(attribute.Int64("binding.user_id", userID))
+		if payment.Status == "succeeded" {
+			if err := p.saveCardFromBindingPayment(ctx, payment.ID, userID); err != nil {
+				return err
+			}
+		}
+		if delErr := p.cacheRepo.DeletePendingBinding(ctx, payment.ID); delErr != nil {
+			p.logger.WithContext(ctx).Warn("failed to delete pending binding from cache",
+				logger.String("payment_id", payment.ID),
+				logger.Err(delErr),
+			)
+		}
+		return nil
+	}
+
 	err := p.orderClient.UpdateOrderStatus(ctx, payment.ID, payment.Status)
 	if err != nil {
 		st, ok := status.FromError(err)
@@ -318,5 +359,38 @@ func (p *paymentUseCase) ProcessPaymentWebhook(ctx context.Context, payment *yoo
 		return errutil.Internal("failed to notify order service", err)
 	}
 
+	return nil
+}
+
+func (p *paymentUseCase) saveCardFromBindingPayment(ctx context.Context, paymentID string, userID int64) error {
+	span := trace.SpanFromContext(ctx)
+	resp, err := p.yookassaClient.GetPayment(ctx, paymentID)
+	if err != nil {
+		return errutil.Internal("failed to fetch binding payment from yookassa", err)
+	}
+	if resp.PaymentMethod == nil || !resp.PaymentMethod.Saved || resp.PaymentMethod.Card == nil {
+		span.AddEvent("binding_payment_method_missing_card")
+		return nil
+	}
+
+	method := domain.PaymentMethod{
+		UserID:      userID,
+		ExternalID:  resp.PaymentMethod.ID,
+		First6:      resp.PaymentMethod.Card.First6,
+		Last4:       resp.PaymentMethod.Card.Last4,
+		ExpiryMonth: resp.PaymentMethod.Card.ExpiryMonth,
+		ExpiryYear:  resp.PaymentMethod.Card.ExpiryYear,
+		CardType:    resp.PaymentMethod.Card.CardType,
+		IssuerName:  resp.PaymentMethod.Card.IssuerName,
+		IsDefault:   false,
+	}
+	_, err = p.paymentRepo.Create(ctx, method, resp.PaymentMethod.ID)
+	if err != nil {
+		if errors.Is(err, domain.ErrPaymentMethodAlreadyExists) {
+			span.AddEvent("payment_method_already_exists")
+			return nil
+		}
+		return errutil.Internal("failed to save payment method to db", err)
+	}
 	return nil
 }

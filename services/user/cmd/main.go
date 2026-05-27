@@ -9,6 +9,8 @@ import (
 	"syscall"
 
 	"github.com/exaring/otelpgx"
+	userRabbit "github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/delivery/rabbitmq"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/infrastructure/grpc_client"
 	infrastructureLogger "github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/common/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/interceptors"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
@@ -23,12 +25,13 @@ import (
 	userDelivery "github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/delivery/grpc"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/infrastructure/config"
 	userPG "github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/repository/postgres"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/usecase"
 	userUsecase "github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/usecase"
+	pbOrder "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/order"
 	pb "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/user"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -86,6 +89,8 @@ func main() {
 
 	userRepo := userPG.NewUserRepo(pool)
 	clientProfileRepo := userPG.NewClientProfileRepo(pool)
+	achievementRepo := userPG.NewAchievementRepo(pool)
+	wordleRepo := userPG.NewWordleRepo(pool)
 
 	rabbitClient, err := rabbitmq.NewRabbitClient(cfg.RabbitMQURL, appLogger)
 	if err != nil {
@@ -93,12 +98,38 @@ func main() {
 	}
 	defer rabbitClient.Close()
 
-	userUC := userUsecase.NewUserUseCase(userRepo, s3Repo, cfg.DefaultAvatarURL, rabbitClient, appLogger)
-	tracedUserUC := usecase.NewUserUseCaseTracingMiddleware(userUC)
-	clientProfileUC := userUsecase.NewClientProfileUseCase(clientProfileRepo)
-	tracedProfileUC := usecase.NewClientProfileUseCaseTracingMiddleware(clientProfileUC)
+	orderConn, err := grpc.NewClient(
+		cfg.OrderServiceAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+	)
+	if err != nil {
+		appLogger.Fatal("Failed to connect to Order Service", err)
+	}
+	defer orderConn.Close()
+	appLogger.Info("Connected to Order Service (gRPC client)", logger.String("addr", cfg.OrderServiceAddr))
 
-	userHandler := userDelivery.NewUserHandler(tracedUserUC, tracedProfileUC)
+	orderGrpcClient := pbOrder.NewOrderServiceClient(orderConn)
+	promoGrpcClient := pbOrder.NewPromoServiceClient(orderConn)
+	orderClient := grpc_client.NewOrderClient(orderGrpcClient, promoGrpcClient)
+
+	userUC := userUsecase.NewUserUseCase(userRepo, s3Repo, cfg.DefaultAvatarURL, rabbitClient, appLogger)
+	tracedUserUC := userUsecase.NewUserUseCaseTracingMiddleware(userUC)
+
+	achievementUC := userUsecase.NewAchievementUseCase(achievementRepo, appLogger)
+
+	clientProfileUC := userUsecase.NewClientProfileUseCase(clientProfileRepo, orderClient, achievementUC)
+	tracedProfileUC := userUsecase.NewClientProfileUseCaseTracingMiddleware(clientProfileUC)
+
+	wordleUC := userUsecase.NewWordleUseCase(wordleRepo, appLogger)
+
+	userConsumer := userRabbit.NewUserConsumer(rabbitClient, achievementUC, appLogger)
+	if err := userConsumer.Start(ctx); err != nil {
+		appLogger.Fatal("Failed to start User RabbitMQ consumer", err)
+	}
+
+	userHandler := userDelivery.NewUserHandler(tracedUserUC, tracedProfileUC, achievementUC)
+	gameHandler := userDelivery.NewGameHandler(wordleUC)
 
 	// Контекст, который отменяется по сигналу ОС
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -125,6 +156,7 @@ func main() {
 	)
 
 	pb.RegisterUserServiceServer(grpcServer, userHandler)
+	pb.RegisterWordleServiceServer(grpcServer, gameHandler)
 	reflection.Register(grpcServer)
 
 	listener, err := net.Listen("tcp", ":"+cfg.GRPC.Port)

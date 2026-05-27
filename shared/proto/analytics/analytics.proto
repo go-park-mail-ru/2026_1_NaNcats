@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package analytics;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/analytics";
+
+// Сервис аналитики для владельцев ресторанов
+service AnalyticsService {
+  // Метод получения агрегированной статистики по ресторану за выбранный период
+  rpc GetOwnerStats (GetOwnerStatsRequest) returns (GetOwnerStatsResponse);
+}
+
+message GetOwnerStatsRequest {
+  int64 restaurant_id = 1;
+  google.protobuf.Timestamp start_time = 2;
+  google.protobuf.Timestamp end_time = 3;
+}
+
+message GetOwnerStatsResponse {
+  FinancialStats financial = 1;
+  OperationalStats operational = 2;
+  repeated BestSeller dishes = 3;
+  repeated OrderTypeStat order_types = 4;
+  repeated DailyStat timeline = 5; 
+}
+
+message FinancialStats {
+  int64 total_revenue_raw = 1;      // Общая выручка
+  int64 average_ticket_raw = 2;     // Средний чек в копейках
+  int64 total_discounts_raw = 3;    // Общая сумма предоставленных скидок по промокодам
+  int64 total_orders_count = 4;     // Общее количество созданных заказов за период
+}
+
+message OperationalStats {
+  int64 avg_cooking_time_sec = 1;   // Среднее время готовки на кухне в секундах (waiting - in_progress)
+  map<string, int64> status_counts = 2; // Количество заказов для каждого статуса
+}
+
+message BestSeller {
+  int64 dish_id = 1;
+  string dish_name = 2;
+  int32 units_sold = 3;             // Общее количество проданных порций
+  int64 total_revenue_raw = 4;      // Общая выручка, принесенная продажей этого блюда
+}
+
+message OrderTypeStat {
+  string order_type = 1;            // "solo" или "shared"
+  int64 orders_count = 2;           // Количество заказов этого типа
+  double avg_group_size = 3;        // Среднее количество участников
+}
+
+message DailyStat {
+  google.protobuf.Timestamp date = 1; // День, к которому относится статистика
+  int64 revenue_raw = 2;             // Выручка за этот день (1 рубль = 1 000 000)
+  int64 orders_count = 3;            // Количество заказов за этот день
+}

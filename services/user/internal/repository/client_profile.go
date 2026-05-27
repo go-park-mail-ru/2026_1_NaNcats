@@ -10,4 +10,10 @@ import (
 type ClientProfileRepository interface {
 	Create(ctx context.Context, accountID int64, idempotencyKey string) error
 	GetByAccountID(ctx context.Context, accountID int64) (domain.ClientProfile, error)
+	UpdateStreakFreeze(ctx context.Context, accountID int64, active bool) error
+	IncrementStreak(ctx context.Context, accountID int64) error
+	ResetStreak(ctx context.Context, accountID int64) error
+
+	ClaimWheelSpin(ctx context.Context, accountID int64) error
+	ResetWheelSpinCooldown(ctx context.Context, accountID int64) error
 }

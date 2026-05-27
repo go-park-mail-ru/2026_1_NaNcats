@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/authclient"
+	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/common"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
 )
@@ -54,9 +55,38 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 		}
 
 		ctxWithUser := context.WithValue(ctx, UserIDKey, userID)
+		// Дублируем под common.UserIDKey, чтобы gRPC-интерцептор UnaryClientUserID
+		// (читающий common.UserIDKey) мог прокинуть userID в метаданные микросервисов.
+		ctxWithUser = context.WithValue(ctxWithUser, common.UserIDKey, userID)
 		ctxWithUser = context.WithValue(ctxWithUser, RoleKey, role)
 
 		// Отдаем обработать запрос дальше
+		next.ServeHTTP(w, r.WithContext(ctxWithUser))
+	})
+}
+
+// OptionalAuth прокидывает userID/role в контекст, если в куке валидная
+// сессия; иначе пропускает запрос дальше как анонимный (без 401). Используется
+// эндпоинтами, у которых поведение различается для гостя и авторизованного.
+func (m *AuthMiddleware) OptionalAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		cookie, err := r.Cookie("session_id")
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		userID, role, err := m.authClient.CheckSession(ctx, cookie.Value)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		ctxWithUser := context.WithValue(ctx, UserIDKey, userID)
+		ctxWithUser = context.WithValue(ctxWithUser, common.UserIDKey, userID)
+		ctxWithUser = context.WithValue(ctxWithUser, RoleKey, role)
 		next.ServeHTTP(w, r.WithContext(ctxWithUser))
 	})
 }

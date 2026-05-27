@@ -106,7 +106,7 @@ func TestUserRepo_GetUserByEmail(t *testing.T) {
 	ctx := context.Background()
 	email := "TEST@mail.ru"
 	cleanEmail := "test@mail.ru"
-	columns := []string{"id", "name", "email", "password_hash", "user_role", "avatar_url"}
+	columns := []string{"id", "public_id", "name", "email", "password_hash", "user_role", "avatar_url"}
 
 	type mockInit func(m pgxmock.PgxPoolIface)
 	tests := []struct {
@@ -121,13 +121,15 @@ func TestUserRepo_GetUserByEmail(t *testing.T) {
 				m.ExpectQuery(`SELECT (.+) FROM "user" WHERE email = \$1`).
 					WithArgs(cleanEmail).
 					WillReturnRows(pgxmock.NewRows(columns).
-						AddRow(int64(10), "Ivan", cleanEmail, "hash", "client", "avatar.png"))
+						AddRow(int64(10), "pub-123", "Ivan", cleanEmail, "hash", "client", "avatar.png"))
 			},
 			expectedUser: domain.User{
 				ID:           10,
+				PublicID:     "pub-123",
 				Name:         "Ivan",
 				Email:        cleanEmail,
 				PasswordHash: "hash",
+				Role:         "client",
 				AvatarURL:    "avatar.png",
 			},
 		},
@@ -172,11 +174,10 @@ func TestUserRepo_GetUserByEmail(t *testing.T) {
 		})
 	}
 }
-
 func TestUserRepo_GetUserByID(t *testing.T) {
 	ctx := context.Background()
 	var userID int64 = 1
-	columns := []string{"id", "name", "email", "password_hash", "user_role", "avatar_url"}
+	columns := []string{"id", "public_id", "name", "email", "password_hash", "user_role", "avatar_url"}
 
 	type mockInit func(m pgxmock.PgxPoolIface)
 	tests := []struct {
@@ -191,13 +192,15 @@ func TestUserRepo_GetUserByID(t *testing.T) {
 				m.ExpectQuery(`SELECT (.+) FROM "user" WHERE id = \$1`).
 					WithArgs(userID).
 					WillReturnRows(pgxmock.NewRows(columns).
-						AddRow(userID, "Ivan", "test@mail.ru", "hash", "client", "avatar.png"))
+						AddRow(userID, "pub-123", "Ivan", "test@mail.ru", "hash", "client", "avatar.png"))
 			},
 			expectedUser: domain.User{
 				ID:           userID,
+				PublicID:     "pub-123",
 				Name:         "Ivan",
 				Email:        "test@mail.ru",
 				PasswordHash: "hash",
+				Role:         "client",
 				AvatarURL:    "avatar.png",
 			},
 		},
@@ -351,6 +354,14 @@ func TestUserRepo_UpdateProfile(t *testing.T) {
 			},
 			expectedError: domain.ErrUserNotFound,
 		},
+		{
+			name:   "Ошибка: не переданы данные для обновления",
+			uName:  nil,
+			uEmail: nil,
+			mockInit: func(m pgxmock.PgxPoolIface) {
+			},
+			expectedError: domain.ErrNoChangesProvided,
+		},
 	}
 
 	for _, tt := range tests {
@@ -400,6 +411,15 @@ func TestUserRepo_UpdateAvatarURL(t *testing.T) {
 					WillReturnError(&pgconn.PgError{Code: pgerrcode.CheckViolation})
 			},
 			expectedError: domain.ErrInvalidInput,
+		},
+		{
+			name: "Пользователь не найден (0 строк затронуто)",
+			mockInit: func(m pgxmock.PgxPoolIface) {
+				m.ExpectExec(`UPDATE "user" SET "avatar_url" = \$1 WHERE id = \$2`).
+					WithArgs(newAvatar, userID).
+					WillReturnResult(pgxmock.NewResult("UPDATE", 0))
+			},
+			expectedError: domain.ErrUserNotFound,
 		},
 		{
 			name: "Неизвестная ошибка БД",
@@ -506,7 +526,6 @@ func TestUserRepo_UpdateUserRole(t *testing.T) {
 					WithArgs(userID).
 					WillReturnRows(pgxmock.NewRows([]string{"role", "key"}).AddRow("owner", nil))
 
-				// Эмулируем сбой на первом же DELETE
 				m.ExpectExec(regexp.QuoteMeta(`DELETE FROM "courier_profile" WHERE account_id = $1`)).
 					WithArgs(userID).
 					WillReturnError(errors.New("db cleanup error"))
@@ -523,17 +542,14 @@ func TestUserRepo_UpdateUserRole(t *testing.T) {
 					WithArgs(userID).
 					WillReturnRows(pgxmock.NewRows([]string{"role", "key"}).AddRow("client", nil))
 
-				// Цикл очистки
 				m.ExpectExec(`DELETE FROM "courier_profile"`).WithArgs(userID).WillReturnResult(pgxmock.NewResult("DELETE", 0))
 				m.ExpectExec(`DELETE FROM "owner_profile"`).WithArgs(userID).WillReturnResult(pgxmock.NewResult("DELETE", 0))
 				m.ExpectExec(`DELETE FROM "client_profile"`).WithArgs(userID).WillReturnResult(pgxmock.NewResult("DELETE", 1))
 
-				// Апдейт роли на owner
 				m.ExpectExec(`UPDATE "user" SET user_role = \$1`).
 					WithArgs("owner", idemKey, userID).
 					WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
-				// Создание профиля владельца
 				m.ExpectExec(regexp.QuoteMeta(`INSERT INTO "owner_profile" (account_id) VALUES ($1)`)).
 					WithArgs(userID).
 					WillReturnResult(pgxmock.NewResult("INSERT", 1))
@@ -553,7 +569,6 @@ func TestUserRepo_UpdateUserRole(t *testing.T) {
 			repo := NewUserRepo(mock)
 			tt.mockInit(mock)
 
-			// Для случая с owner меняем входной аргумент в самом тесте
 			currentNewRole := newRole
 			if tt.name == "Успешная смена роли на Owner" {
 				currentNewRole = "owner"
@@ -568,6 +583,151 @@ func TestUserRepo_UpdateUserRole(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedOld, oldRole)
 				assert.Equal(t, tt.expectedNotify, notify)
+			}
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestUserRepo_GetUsersByIDs(t *testing.T) {
+	ctx := context.Background()
+	userIDs := []int64{1, 2}
+	columns := []string{"id", "public_id", "name", "email", "password_hash", "user_role", "avatar_url"}
+
+	type mockInit func(m pgxmock.PgxPoolIface)
+	tests := []struct {
+		name          string
+		ids           []int64
+		mockInit      mockInit
+		expectedUsers []domain.User
+		expectedError error
+	}{
+		{
+			name: "Успешное получение пользователей",
+			ids:  userIDs,
+			mockInit: func(m pgxmock.PgxPoolIface) {
+				m.ExpectQuery(`SELECT (.+) FROM "user" WHERE id = ANY\(\$1\)`).
+					WithArgs(userIDs).
+					WillReturnRows(pgxmock.NewRows(columns).
+						AddRow(int64(1), "pub1", "Ivan", "ivan@mail.ru", "hash1", "client", "avatar1.png").
+						AddRow(int64(2), "pub2", "Petr", "petr@mail.ru", "hash2", "courier", "avatar2.png"))
+			},
+			expectedUsers: []domain.User{
+				{ID: 1, PublicID: "pub1", Name: "Ivan", Email: "ivan@mail.ru", PasswordHash: "hash1", Role: "client", AvatarURL: "avatar1.png"},
+				{ID: 2, PublicID: "pub2", Name: "Petr", Email: "petr@mail.ru", PasswordHash: "hash2", Role: "courier", AvatarURL: "avatar2.png"},
+			},
+		},
+		{
+			name: "Пустой список ID",
+			ids:  []int64{},
+			mockInit: func(m pgxmock.PgxPoolIface) {
+			},
+			expectedUsers: nil,
+		},
+		{
+			name: "Ошибка БД",
+			ids:  userIDs,
+			mockInit: func(m pgxmock.PgxPoolIface) {
+				m.ExpectQuery(`SELECT (.+) FROM "user" WHERE id = ANY\(\$1\)`).
+					WithArgs(userIDs).
+					WillReturnError(errors.New("db error"))
+			},
+			expectedError: errors.New("db error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock, _ := pgxmock.NewPool()
+			defer mock.Close()
+
+			repo := NewUserRepo(mock)
+			tt.mockInit(mock)
+
+			res, err := repo.GetUsersByIDs(ctx, tt.ids)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedError.Error())
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedUsers, res)
+			}
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestUserRepo_GetUserByPublicID(t *testing.T) {
+	ctx := context.Background()
+	publicID := "pub-123"
+	columns := []string{"id", "public_id", "name", "email", "password_hash", "user_role", "avatar_url"}
+
+	type mockInit func(m pgxmock.PgxPoolIface)
+	tests := []struct {
+		name          string
+		mockInit      mockInit
+		expectedUser  domain.User
+		expectedError error
+	}{
+		{
+			name: "Успешное получение",
+			mockInit: func(m pgxmock.PgxPoolIface) {
+				m.ExpectQuery(`SELECT (.+) FROM "user" WHERE public_id = \$1`).
+					WithArgs(publicID).
+					WillReturnRows(pgxmock.NewRows(columns).
+						AddRow(int64(10), publicID, "Ivan", "test@mail.ru", "hash", "client", "avatar.png"))
+			},
+			expectedUser: domain.User{
+				ID:           10,
+				PublicID:     publicID,
+				Name:         "Ivan",
+				Email:        "test@mail.ru",
+				PasswordHash: "hash",
+				Role:         "client",
+				AvatarURL:    "avatar.png",
+			},
+		},
+		{
+			name: "Пользователь не найден",
+			mockInit: func(m pgxmock.PgxPoolIface) {
+				m.ExpectQuery(`SELECT (.+) FROM "user" WHERE public_id = \$1`).
+					WithArgs(publicID).
+					WillReturnError(pgx.ErrNoRows)
+			},
+			expectedError: domain.ErrUserNotFound,
+		},
+		{
+			name: "Ошибка БД",
+			mockInit: func(m pgxmock.PgxPoolIface) {
+				m.ExpectQuery(`SELECT (.+) FROM "user" WHERE public_id = \$1`).
+					WithArgs(publicID).
+					WillReturnError(errors.New("db error"))
+			},
+			expectedError: errors.New("db error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock, _ := pgxmock.NewPool()
+			defer mock.Close()
+
+			repo := NewUserRepo(mock)
+			tt.mockInit(mock)
+
+			res, err := repo.GetUserByPublicID(ctx, publicID)
+
+			if tt.expectedError != nil {
+				if errors.Is(tt.expectedError, domain.ErrUserNotFound) {
+					assert.ErrorIs(t, err, tt.expectedError)
+				} else {
+					assert.Error(t, err)
+					assert.Contains(t, err.Error(), tt.expectedError.Error())
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedUser, res)
 			}
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})

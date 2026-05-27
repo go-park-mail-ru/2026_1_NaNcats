@@ -8,6 +8,8 @@ main
 *.so
 *.dylib
 app
+# Скомпилированный бинарник api-gateway, если собран в корень репозитория
+/api
 
 # Зависимости
 vendor/
@@ -42,3 +44,6 @@ coverage.out
 coverage.html
 coverage_clean.out
 coverage*.out
+
+# Логи кликхауса
+infrastructure/clickhouse/logs/
