@@ -275,6 +275,14 @@ func (h *UserHandler) OnWheelSpin(ctx context.Context, req *pb.OnWheelSpinReques
 	return &emptypb.Empty{}, nil
 }
 
+func (h *UserHandler) OnWordleResult(ctx context.Context, req *pb.OnWordleResultRequest) (*emptypb.Empty, error) {
+	err := h.achievementUC.OnWordleResult(ctx, req.UserId, req.IsWin, req.TotalWins, req.CurrentStreak)
+	if err != nil {
+		return nil, grpcutil.ToGRPCError(err)
+	}
+	return &emptypb.Empty{}, nil
+}
+
 func (h *UserHandler) ClaimWheelSpin(ctx context.Context, req *pb.ClaimWheelSpinRequest) (*emptypb.Empty, error) {
 	err := h.clientUC.ClaimWheelSpin(ctx, req.UserId)
 	if err != nil {
