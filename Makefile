@@ -15,7 +15,7 @@ DB_PORT ?= 5432
 RABBITMQ_URL ?= amqp://guest:guest@localhost:5672/
 REDIS_URL ?= redis://localhost:6379/0
 
-POSTGRES_SERVICES = auth user restaurant cart address payment order support
+POSTGRES_SERVICES = auth user restaurant cart address payment order
 MICROSERVICES = $(POSTGRES_SERVICES) analytics
 ALL_SERVICES = $(MICROSERVICES) api-gateway
 
@@ -80,7 +80,6 @@ PORT_auth        = 50054
 PORT_cart        = 50055
 PORT_payment     = 50056
 PORT_order       = 50057
-PORT_support     = 50058
 
 # Остановка конкретного сервиса
 stop:

@@ -43,7 +43,6 @@ func mapDomainToPBPromocodeList(promos []domain.Promocode) *pb.PromocodeList {
 	return &pb.PromocodeList{Promocodes: out}
 }
 
-// PromoHandler — gRPC-обработчик сервиса промокодов.
 type PromoHandler struct {
 	pb.UnimplementedPromoServiceServer
 	usecase usecase.PromoUseCase

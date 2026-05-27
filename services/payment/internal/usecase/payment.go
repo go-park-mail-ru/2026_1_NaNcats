@@ -83,9 +83,6 @@ func (p *paymentUseCase) CreatePayment(ctx context.Context, amount int64, paymen
 		},
 		Capture:           true,
 		SavePaymentMethod: false,
-		// Confirmation указываем всегда: для новой карты это redirect на форму YooKassa,
-		// для сохранённой - fallback на случай, когда YooKassa внезапно требует 3DS;
-		// без return_url пользователь застрянет на странице YooKassa после подтверждения.
 		Confirmation: &yookassa.CreatePaymentRequestConfirmation{
 			Type:      "redirect",
 			ReturnURL: p.returnURL,
@@ -292,9 +289,6 @@ func (p *paymentUseCase) ProcessPaymentMethodWebhook(ctx context.Context, pm *yo
 	return nil
 }
 
-// RefreshPaymentStatus тянет актуальный статус из YooKassa REST и применяет
-// его как обычный webhook (через ProcessPaymentWebhook). Используется когда
-// YooKassa-вебхук не доходит до нашего сервера
 func (p *paymentUseCase) RefreshPaymentStatus(ctx context.Context, paymentID string) (string, error) {
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(attribute.String("payment.external_id", paymentID))
@@ -313,7 +307,6 @@ func (p *paymentUseCase) RefreshPaymentStatus(ctx context.Context, paymentID str
 
 	span.SetAttributes(attribute.String("payment.status", resp.Status))
 
-	// Применяем тот же путь, что и для веб-хука
 	if err := p.ProcessPaymentWebhook(ctx, &yookassa.WebhookPaymentObject{
 		ID:     resp.ID,
 		Status: resp.Status,

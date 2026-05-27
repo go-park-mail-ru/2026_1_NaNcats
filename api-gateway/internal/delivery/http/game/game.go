@@ -15,7 +15,6 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 )
 
-// WordleWinPromoDiscount — фиксированный размер промо за победу (в микрорублях).
 const WordleWinPromoDiscount = int64(100_000_000)
 
 //go:generate easyjson $GOFILE
@@ -219,8 +218,6 @@ func (h *GameHandler) MakeWordleGuess(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// За победу выпускаем единичный промокод (как и Колесо). При проигрыше —
-	// никакого подарка. В обоих случаях триггерим ачивки.
 	if res.Status == pb.GameStatus_GAME_STATUS_WON {
 		discount := WordleWinPromoDiscount
 		promo, perr := h.promoClient.CreateAndBindWheelPromo(ctx, &pbOrder.CreateAndBindWheelPromoRequest{

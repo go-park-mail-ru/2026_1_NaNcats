@@ -473,11 +473,9 @@ func (u *cartUseCase) RemoveItem(ctx context.Context, cartID string, userID, dis
 			return err
 		}
 
-		// Каждый участник управляет только своими позициями: берём позицию
-		// инициатора запроса (одно блюдо может быть у нескольких участников).
 		item := cart.GetItem(dishID, userID)
 		if item == nil {
-			span.AddEvent("item_already_absent") // Событие для идемпотентного выхода
+			span.AddEvent("item_already_absent")
 			return nil
 		}
 

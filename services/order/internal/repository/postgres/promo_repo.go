@@ -45,8 +45,6 @@ func collectPromoViews(rows pgx.Rows) ([]domain.Promocode, error) {
 }
 
 func (r *promoRepo) GetUserPromocodes(ctx context.Context, userID int64) ([]domain.Promocode, error) {
-	// Промокоды пользователя, которые он ещё может применить: не истёкшие,
-	// не израсходованные им и не упёршиеся в общий лимит использований.
 	query := `
 		SELECT ` + promoViewColumns + `
 		FROM "user_promocode" up
@@ -130,8 +128,6 @@ func (r *promoRepo) CountUserPromocodeUsage(ctx context.Context, promoID, userID
 }
 
 func (r *promoRepo) RecordPromocodeUsage(ctx context.Context, promoID, userID int64, orderID *int64) error {
-	// ON CONFLICT по (promocode_id, user_id) делает запись идемпотентной:
-	// повторный /promos/use по тому же промокоду пользователя — no-op.
 	tag, err := r.pool.Exec(ctx, `
 		INSERT INTO "promocode_usage" (promocode_id, user_id, order_id)
 		VALUES ($1, $2, $3)

@@ -1,5 +1,7 @@
 package promo
 
+//go:generate easyjson $GOFILE
+
 import (
 	"net/http"
 	"strconv"
@@ -13,7 +15,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// PromoCodeDTO — промокод в формате, ожидаемом фронтендом.
+//easyjson:json
 type PromoCodeDTO struct {
 	ID                 int64   `json:"id"`
 	Code               string  `json:"code"`
@@ -25,10 +27,12 @@ type PromoCodeDTO struct {
 	RestaurantBrandIDs []int64 `json:"restaurant_brand_ids"`
 }
 
+//easyjson:json
 type BindPromoRequest struct {
 	Code string `json:"code"`
 }
 
+//easyjson:json
 type ValidatePromoRequest struct {
 	Code              string `json:"code"`
 	RestaurantBrandID int64  `json:"restaurant_brand_id"`
@@ -37,20 +41,19 @@ type ValidatePromoRequest struct {
 	ServiceFee        int64  `json:"service_fee"`
 }
 
+//easyjson:json
 type ValidatePromoResponse struct {
 	Valid    bool   `json:"valid"`
 	Discount int64  `json:"discount"`
 	Reason   string `json:"reason"`
 }
 
+//easyjson:json
 type UsePromoRequest struct {
-	Code string `json:"code"`
-	// OrderPublicID — публичный id заказа (тот, что отдаётся фронту).
+	Code          string `json:"code"`
 	OrderPublicID string `json:"order_public_id"`
 }
 
-// PromoHandler проксирует запросы промокодов в OrderService по gRPC.
-// Промокоды хранятся в БД OrderService, поэтому gateway не ходит в БД сам.
 type PromoHandler struct {
 	client pbOrder.PromoServiceClient
 	logger logger.Logger
@@ -92,7 +95,6 @@ func toDTOList(list *pbOrder.PromocodeList) []PromoCodeDTO {
 	return out
 }
 
-// GetUserPromos отдаёт промокоды, привязанные к пользователю.
 func (h *PromoHandler) GetUserPromos(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
@@ -113,8 +115,6 @@ func (h *PromoHandler) GetUserPromos(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, toDTOList(resp))
 }
 
-// GetRestaurantPromos отдаёт действующие промокоды ресторана.
-// Публичный эндпоинт: баннер промокода виден всем, в том числе гостям.
 func (h *PromoHandler) GetRestaurantPromos(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
@@ -135,7 +135,6 @@ func (h *PromoHandler) GetRestaurantPromos(w http.ResponseWriter, r *http.Reques
 	response.JSON(w, http.StatusOK, toDTOList(resp))
 }
 
-// BindPromo привязывает промокод к пользователю по коду.
 func (h *PromoHandler) BindPromo(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
@@ -168,7 +167,6 @@ func (h *PromoHandler) BindPromo(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, toDTO(promo))
 }
 
-// ValidatePromo проверяет промокод для конкретного заказа и считает скидку.
 func (h *PromoHandler) ValidatePromo(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
@@ -210,7 +208,6 @@ func (h *PromoHandler) ValidatePromo(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// UsePromo фиксирует использование промокода после оформления заказа.
 func (h *PromoHandler) UsePromo(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	l := h.logger.WithContext(ctx)
@@ -244,7 +241,6 @@ func (h *PromoHandler) UsePromo(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-// writePromoError переводит gRPC-ошибку OrderService в HTTP-ответ.
 func (h *PromoHandler) writePromoError(w http.ResponseWriter, l logger.Logger, logMsg string, err error) {
 	st, ok := status.FromError(err)
 	if !ok {

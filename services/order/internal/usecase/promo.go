@@ -16,7 +16,6 @@ import (
 
 //go:generate mockgen -destination=mocks/promo_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/order/internal/usecase PromoUseCase
 
-// PromoUseCase - операции с промокодами (хранятся в БД OrderService)
 type PromoUseCase interface {
 	GetUserPromos(ctx context.Context, userID int64) ([]domain.Promocode, error)
 	GetRestaurantPromos(ctx context.Context, brandID int64) ([]domain.Promocode, error)
@@ -133,7 +132,6 @@ func (u *promoUseCase) UsePromo(ctx context.Context, userID int64, code, orderPu
 	if err != nil {
 		return errutil.Internal("failed to check promo usage", err)
 	}
-	// Уже зафиксировано этим пользователем — операция идемпотентна
 	if usedByUser > 0 {
 		return nil
 	}
@@ -141,8 +139,6 @@ func (u *promoUseCase) UsePromo(ctx context.Context, userID int64, code, orderPu
 		return errutil.New("PROMO_LIMIT_REACHED", "promocode usage limit reached", codes.FailedPrecondition)
 	}
 
-	// Резолвим внутренний id заказа по публичному. Если заказ не найден,
-	// фиксируем использование без привязки к заказу (order_id = NULL)
 	var orderID *int64
 	if orderPublicID != "" {
 		orderID, err = u.repo.ResolveOrderInternalID(ctx, orderPublicID)
@@ -191,10 +187,6 @@ func (u *promoUseCase) CreateAndBindWheelPromo(ctx context.Context, userID int64
 	return createdPromo, nil
 }
 
-// Вспомогательный генератор случайных строк-кодов.
-// Фронт нормализует ввод пользователя через toUpperCase(), поэтому hex
-// тоже отдаём в верхнем регистре — иначе ручной ввод выпавшего кода
-// сравнивался бы с регистрозависимым WHERE code = $1 и не находил.
 func generateWheelPromoCode() (string, error) {
 	b := make([]byte, 4) // 4 байта дадут 8 шестнадцатеричных символов
 	_, err := rand.Read(b)
@@ -204,8 +196,6 @@ func generateWheelPromoCode() (string, error) {
 	return "WHL-" + strings.ToUpper(hex.EncodeToString(b)), nil
 }
 
-// computeDiscount считает скидку промокода от стоимости блюд. Фиксированная
-// скидка не может превышать стоимость самих блюд.
 func computeDiscount(promo domain.Promocode, orderAmount int64) int64 {
 	var discount int64
 	switch {

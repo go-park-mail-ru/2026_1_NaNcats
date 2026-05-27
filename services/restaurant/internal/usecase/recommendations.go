@@ -13,9 +13,6 @@ import (
 
 //go:generate mockgen -destination=mocks/recommendations_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/services/restaurant/internal/usecase RecommendationsUseCase,OrderHistoryClient
 
-// OrderHistoryClient — порт во внешний order-service. Restaurant-service сам
-// не владеет историей заказов; вся межсервисная зависимость скрыта за этим
-// интерфейсом, что сохраняет чистую архитектуру слоя usecase.
 type OrderHistoryClient interface {
 	GetUserPaidBrands(ctx context.Context, userID int64) ([]int64, error)
 	GetTrendingBrands(ctx context.Context, windowDays, limit int32) ([]int64, error)
@@ -58,12 +55,6 @@ const (
 	trendingPoolFactor = 3
 )
 
-// GetRecommendations подбирает бренды для пользователя:
-//   - есть история paid-заказов → берёт бренды с пересекающимися категориями,
-//     исключая уже посещённые. Если пересечений мало — добивает выдачу
-//     трендом за 7 дней.
-//   - истории нет (или userID == 0) → возвращает топ-N тренда за 7 дней;
-//     при пустом тренде fallback на «холодный старт» по promotion_tier.
 func (u *recommendationsUseCase) GetRecommendations(ctx context.Context, userID int64, limit int) ([]domain.RestaurantBrand, error) {
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(
@@ -98,7 +89,6 @@ func (u *recommendationsUseCase) GetRecommendations(ctx context.Context, userID 
 		return results[:limit], nil
 	}
 
-	// Добиваем трендом, если эвристика по категориям не насыщает limit.
 	exclude := append([]int64{}, seedBrands...)
 	for _, b := range results {
 		exclude = append(exclude, b.ID)
@@ -138,8 +128,6 @@ func (u *recommendationsUseCase) GetRecommendations(ctx context.Context, userID 
 	}
 
 	if len(results) < limit {
-		// Финальный fallback: «холодный старт» по promotion_tier, исключая
-		// всё, что уже выдали и историю пользователя.
 		exclude = exclude[:0]
 		exclude = append(exclude, seedBrands...)
 		for _, b := range results {
@@ -169,9 +157,6 @@ func (u *recommendationsUseCase) applyDefaultLogos(brands []domain.RestaurantBra
 
 const topDishesWindowDays = 30
 
-// GetRecommendedDishes возвращает топ-N блюд бренда по продажам за 30 дней.
-// Если данных мало — добивает «первыми из меню», чтобы блок не пустовал.
-// userID пока не влияет на выдачу (закладываем под будущую персонализацию).
 func (u *recommendationsUseCase) GetRecommendedDishes(ctx context.Context, brandID, userID int64, limit int) ([]domain.Dish, error) {
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(

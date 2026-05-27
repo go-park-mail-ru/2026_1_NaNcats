@@ -31,11 +31,6 @@ func NewPaymentConsumer(client *rabbitmq.RabbitClient, uc usecase.PaymentUseCase
 	}
 }
 
-// pollPaymentUntilSettled подстраховывает доставку статуса платежа на случай,
-// когда вебхук YooKassa не доходит до сервиса (типично для локальной
-// разработки: YooKassa не достучится до localhost). Периодически тянет статус
-// платежа из YooKassa REST и применяет его тем же путём, что и вебхук;
-// останавливается, как только платёж в терминальном статусе либо по таймауту.
 func (c *PaymentConsumer) pollPaymentUntilSettled(ctx context.Context, paymentID string) {
 	if paymentID == "" {
 		return

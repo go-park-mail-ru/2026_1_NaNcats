@@ -178,7 +178,6 @@ func (u *wordleUseCase) MakeGuess(ctx context.Context, userID int64, guess strin
 		status = domain.GameStatusLost
 	}
 
-	// Стрик/тотал читаем уже после транзакции — она их и обновила.
 	var currentStreak, totalWins int32
 	if v, err := u.repo.GetCurrentStreak(ctx, userID); err == nil {
 		currentStreak = v

@@ -321,61 +321,7 @@ func (v *MakeGuessResponse) UnmarshalJSON(data []byte) error {
 func (v *MakeGuessResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson85f0d656DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpGame2(l, v)
 }
-func easyjson85f0d656DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpGame3(in *jlexer.Lexer, out *GameHandler) {
-	isTopLevel := in.IsStart()
-	if in.IsNull() {
-		if isTopLevel {
-			in.Consumed()
-		}
-		in.Skip()
-		return
-	}
-	in.Delim('{')
-	for !in.IsDelim('}') {
-		key := in.UnsafeFieldName(false)
-		in.WantColon()
-		switch key {
-		default:
-			in.SkipRecursive()
-		}
-		in.WantComma()
-	}
-	in.Delim('}')
-	if isTopLevel {
-		in.Consumed()
-	}
-}
-func easyjson85f0d656EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpGame3(out *jwriter.Writer, in GameHandler) {
-	out.RawByte('{')
-	first := true
-	_ = first
-	out.RawByte('}')
-}
-
-// MarshalJSON supports json.Marshaler interface
-func (v GameHandler) MarshalJSON() ([]byte, error) {
-	w := jwriter.Writer{}
-	easyjson85f0d656EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpGame3(&w, v)
-	return w.Buffer.BuildBytes(), w.Error
-}
-
-// MarshalEasyJSON supports easyjson.Marshaler interface
-func (v GameHandler) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson85f0d656EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpGame3(w, v)
-}
-
-// UnmarshalJSON supports json.Unmarshaler interface
-func (v *GameHandler) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
-	easyjson85f0d656DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpGame3(&r, v)
-	return r.Error()
-}
-
-// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
-func (v *GameHandler) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson85f0d656DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpGame3(l, v)
-}
-func easyjson85f0d656DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpGame4(in *jlexer.Lexer, out *DailyStateResponse) {
+func easyjson85f0d656DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpGame3(in *jlexer.Lexer, out *DailyStateResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -456,7 +402,7 @@ func easyjson85f0d656DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		in.Consumed()
 	}
 }
-func easyjson85f0d656EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpGame4(out *jwriter.Writer, in DailyStateResponse) {
+func easyjson85f0d656EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpGame3(out *jwriter.Writer, in DailyStateResponse) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -507,23 +453,23 @@ func easyjson85f0d656EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 // MarshalJSON supports json.Marshaler interface
 func (v DailyStateResponse) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson85f0d656EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpGame4(&w, v)
+	easyjson85f0d656EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpGame3(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v DailyStateResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson85f0d656EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpGame4(w, v)
+	easyjson85f0d656EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpGame3(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *DailyStateResponse) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson85f0d656DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpGame4(&r, v)
+	easyjson85f0d656DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpGame3(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *DailyStateResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson85f0d656DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpGame4(l, v)
+	easyjson85f0d656DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDeliveryHttpGame3(l, v)
 }

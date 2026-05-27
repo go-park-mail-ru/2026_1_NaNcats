@@ -142,8 +142,6 @@ func (uc *restaurantBrandUseCase) CreateRestaurantBrand(ctx context.Context, b d
 	}
 
 	b.OwnerProfileID = ownerID
-	// Новые рестораны получают минимальный promotion_tier=1, чтобы отображаться
-	// в общем списке наравне с другими ресторанами (tier=0 прячет их в самый конец).
 	if b.PromotionTier == 0 {
 		b.PromotionTier = 1
 	}

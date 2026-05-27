@@ -18,8 +18,6 @@ type Promocode struct {
 	ExpiresAt         time.Time
 }
 
-// RestaurantBrandIDs возвращает список брендов, к которым привязан промокод.
-// Промокод scope-ится одним брендом (либо ни одним — тогда список пуст).
 func (p Promocode) RestaurantBrandIDs() []int64 {
 	if p.RestaurantBrandID == nil {
 		return []int64{}
@@ -27,7 +25,6 @@ func (p Promocode) RestaurantBrandIDs() []int64 {
 	return []int64{*p.RestaurantBrandID}
 }
 
-// PromoValidation — результат проверки промокода для конкретного заказа.
 type PromoValidation struct {
 	Valid    bool
 	Discount int64

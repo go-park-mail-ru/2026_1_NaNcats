@@ -57,6 +57,36 @@ func (mr *MockWordleRepositoryMockRecorder) CheckWordExists(ctx, word any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckWordExists", reflect.TypeOf((*MockWordleRepository)(nil).CheckWordExists), ctx, word)
 }
 
+// CountWins mocks base method.
+func (m *MockWordleRepository) CountWins(ctx context.Context, userID int64) (int32, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountWins", ctx, userID)
+	ret0, _ := ret[0].(int32)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountWins indicates an expected call of CountWins.
+func (mr *MockWordleRepositoryMockRecorder) CountWins(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountWins", reflect.TypeOf((*MockWordleRepository)(nil).CountWins), ctx, userID)
+}
+
+// GetCurrentStreak mocks base method.
+func (m *MockWordleRepository) GetCurrentStreak(ctx context.Context, userID int64) (int32, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCurrentStreak", ctx, userID)
+	ret0, _ := ret[0].(int32)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCurrentStreak indicates an expected call of GetCurrentStreak.
+func (mr *MockWordleRepositoryMockRecorder) GetCurrentStreak(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentStreak", reflect.TypeOf((*MockWordleRepository)(nil).GetCurrentStreak), ctx, userID)
+}
+
 // GetDailyWord mocks base method.
 func (m *MockWordleRepository) GetDailyWord(ctx context.Context, date time.Time) (string, error) {
 	m.ctrl.T.Helper()
@@ -89,15 +119,15 @@ func (mr *MockWordleRepositoryMockRecorder) GetGameState(ctx, userID, date any) 
 }
 
 // SaveGuessWithTransaction mocks base method.
-func (m *MockWordleRepository) SaveGuessWithTransaction(ctx context.Context, guess domain.WordleGuess, isWin, isLoss bool, bonusAmount int64) error {
+func (m *MockWordleRepository) SaveGuessWithTransaction(ctx context.Context, guess domain.WordleGuess, isWin, isLoss bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveGuessWithTransaction", ctx, guess, isWin, isLoss, bonusAmount)
+	ret := m.ctrl.Call(m, "SaveGuessWithTransaction", ctx, guess, isWin, isLoss)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SaveGuessWithTransaction indicates an expected call of SaveGuessWithTransaction.
-func (mr *MockWordleRepositoryMockRecorder) SaveGuessWithTransaction(ctx, guess, isWin, isLoss, bonusAmount any) *gomock.Call {
+func (mr *MockWordleRepositoryMockRecorder) SaveGuessWithTransaction(ctx, guess, isWin, isLoss any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveGuessWithTransaction", reflect.TypeOf((*MockWordleRepository)(nil).SaveGuessWithTransaction), ctx, guess, isWin, isLoss, bonusAmount)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveGuessWithTransaction", reflect.TypeOf((*MockWordleRepository)(nil).SaveGuessWithTransaction), ctx, guess, isWin, isLoss)
 }

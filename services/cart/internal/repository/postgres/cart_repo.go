@@ -128,8 +128,6 @@ func (r *cartRepo) AddItem(ctx context.Context, cartID string, item domain.CartI
 		return fmt.Errorf("cannot add item: cart is locked")
 	}
 
-	// owner_user_id входит в первичный ключ, поэтому блюдо каждого участника
-	// лежит в своей строке и количество растёт независимо от других.
 	ownerID := int64(0)
 	if item.OwnerUserID != nil {
 		ownerID = *item.OwnerUserID
@@ -196,8 +194,6 @@ func (r *cartRepo) ClearCart(ctx context.Context, cartID string) error {
 		if _, err := q.Exec(ctx, `DELETE FROM "cart_dish" WHERE cart_id = $1`, cartID); err != nil {
 			return fmt.Errorf("clear cart dishes: %w", err)
 		}
-		// После очистки корзина снова в соло-режиме, поэтому убираем гостей:
-		// иначе при следующем приглашении они вернулись бы сами.
 		if _, err := q.Exec(ctx,
 			`DELETE FROM "cart_member" WHERE cart_id = $1 AND user_id <> (SELECT admin_id FROM "cart" WHERE cart_id = $1)`,
 			cartID); err != nil {
@@ -282,11 +278,6 @@ func (r *cartRepo) DowngradeToSolo(ctx context.Context, cartID string, adminID i
 }
 
 func (r *cartRepo) GetCartByUserID(ctx context.Context, userID int64) (domain.Cart, error) {
-	// Пользователь может одновременно быть владельцем своей соло-корзины и
-	// участником чужой совместной. Без явного порядка LIMIT 1 вернул бы любую
-	// из них. Приоритет: активная важнее залоченной, совместная важнее соло,
-	// при равенстве - последняя обновлённая. Так после входа по приглашению
-	// фронт стабильно получает именно совместную корзину.
 	query := `
 		SELECT c.cart_id FROM "cart" c
 		LEFT JOIN "cart_member" cm ON c.cart_id = cm.cart_id
@@ -343,10 +334,6 @@ func (r *cartRepo) GetCartByID(ctx context.Context, cartID string) (domain.Cart,
 		Members:           []domain.CartMember{},
 	}
 
-	// JOIN с cart_member дублирует строки cart_dish, поэтому отбираем
-	// уникальные по паре (dish_id, owner_user_id): одно блюдо у разных
-	// участников это разные позиции. owner_user_id = 0 в БД значит «ничьё»,
-	// в домене этому соответствует nil.
 	itemCheck := make(map[string]bool)
 	memberCheck := make(map[int64]bool)
 
@@ -397,8 +384,7 @@ func (r *cartRepo) RemoveItem(ctx context.Context, cartID string, dishID, ownerI
 	})
 }
 
-// ReassignItemOwner отдаёт ничейную позицию блюда (owner_user_id = 0)
-// участнику newOwnerID. Если у него это блюдо уже есть, количества складываются.
+// ReassignItemOwner отдаёт ничейную позицию блюда
 func (r *cartRepo) ReassignItemOwner(ctx context.Context, cartID string, dishID int64, newOwnerID *int64) error {
 	target := int64(0)
 	if newOwnerID != nil {
@@ -421,8 +407,6 @@ func (r *cartRepo) ReassignItemOwner(ctx context.Context, cartID string, dishID 
 }
 
 // OrphanUserItems делает позиции исключённого участника ничейными
-// (owner_user_id = 0). Если ничейная позиция блюда уже есть, количества
-// складываются.
 func (r *cartRepo) OrphanUserItems(ctx context.Context, cartID string, targetUserID int64) error {
 	return r.execWithOutbox(ctx, cartID, "ItemsOrphaned", map[string]any{"user_id": targetUserID}, func(q PgxQuerier) error {
 		_, err := q.Exec(ctx, `

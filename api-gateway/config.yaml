@@ -19,5 +19,4 @@ grpc_clients:
   address_service_addr: "localhost:50051"
   payment_service_addr: "localhost:50056"
   order_service_addr: "localhost:50057"
-  support_service_addr: "localhost:50058"
   analytics_service_addr: "localhost:50059"

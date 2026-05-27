@@ -28,7 +28,6 @@ import (
 	promoHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/promo"
 	restaurantHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/restaurant"
 	reviewHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/review"
-	supportHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/support"
 	userHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/user"
 	wheelHttp "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/http/wheel"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/delivery/rabbitmq"
@@ -44,7 +43,6 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/orderclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/paymentclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/restaurantclient"
-	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/supportclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/userclient"
 
 	gatewayConfig "github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/infrastructure/config"
@@ -60,7 +58,6 @@ import (
 	pbOrder "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/order"
 	pbPayment "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/payment"
 	pbRestaurant "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/restaurant"
-	pbSupport "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/support"
 	pbUser "github.com/go-park-mail-ru/2026_1_NaNcats/shared/proto/user"
 
 	_ "github.com/go-park-mail-ru/2026_1_NaNcats/docs"
@@ -157,9 +154,6 @@ func main() {
 	orderConn := mustInitConn(cfg.GRPCClients.OrderAddr, "Order Service", appLogger, grpcOpts)
 	defer orderConn.Close()
 
-	supportConn := mustInitConn(cfg.GRPCClients.SupportAddr, "Support Service", appLogger, grpcOpts)
-	defer supportConn.Close()
-
 	analyticsConn := mustInitConn(cfg.GRPCClients.AnalyticsAddr, "Analytics Service", appLogger, grpcOpts)
 	defer analyticsConn.Close()
 
@@ -171,7 +165,6 @@ func main() {
 	addrClient := addressclient.NewAddressClient(pbAddress.NewAddressServiceClient(addrConn))
 	payClient := paymentclient.NewPaymentClient(pbPayment.NewPaymentServiceClient(payConn))
 	orderClient := orderclient.NewOrderClient(pbOrder.NewOrderServiceClient(orderConn))
-	supportClient := supportclient.NewSupportClient(pbSupport.NewSupportServiceClient(supportConn))
 	analyticsClient := analyticsclient.NewAnalyticsClient(pbAnalytics.NewAnalyticsServiceClient(analyticsConn))
 	rabbitClient, err := rabbitclient.NewRabbitClient(cfg.RabbitMQURL, appLogger)
 	if err != nil {
@@ -193,8 +186,6 @@ func main() {
 	orderHandler := orderHttp.NewOrderHandler(orderClient, payClient, restClient, userClient, wsManager, appLogger)
 	wheelHandler := wheelHttp.NewWheelHandler(userClient, orderClient, pbOrder.NewPromoServiceClient(orderConn), appLogger)
 
-	redisHub := supportHttp.NewRedisHub(redisPool, appLogger)
-	supportHandler := supportHttp.NewSupportHandler(supportClient, redisHub, appLogger)
 	reviewHandler := reviewHttp.NewReviewHandler(appLogger)
 	promoHandler := promoHttp.NewPromoHandler(pbOrder.NewPromoServiceClient(orderConn), appLogger)
 
@@ -354,20 +345,6 @@ func main() {
 	mux.Handle("POST /api/promos/bind", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(promoHandler.BindPromo))))
 	mux.Handle("POST /api/promos/validate", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(promoHandler.ValidatePromo))))
 	mux.Handle("POST /api/promos/use", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(promoHandler.UsePromo))))
-
-	// === SUPPORT ===
-	mux.HandleFunc("GET /api/support/categories", supportHandler.GetCategories)
-	mux.HandleFunc("POST /api/support/tickets", supportHandler.CreateTicket)
-	mux.HandleFunc("GET /api/support/tickets", supportHandler.GetMyTickets)
-	mux.HandleFunc("GET /api/support/tickets/{id}/events", supportHandler.GetTicketEvents)
-	mux.HandleFunc("POST /api/support/tickets/{id}/rate", supportHandler.RateTicket)
-	mux.HandleFunc("GET /api/support/tickets/{id}/chat", supportHandler.ConnectChat)
-
-	mux.Handle("GET /api/admin/support/tickets", authMW.RequireAuth(http.HandlerFunc(supportHandler.GetAssignedTickets)))
-	mux.Handle("PATCH /api/admin/support/tickets/{id}/status", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(supportHandler.ChangeTicketStatus))))
-	mux.Handle("POST /api/admin/support/tickets/{id}/reassign", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(supportHandler.ReassignTicket))))
-	mux.Handle("PATCH /api/admin/support/agent/status", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(supportHandler.SetAgentStatus))))
-	mux.Handle("GET /api/admin/support/templates", authMW.RequireAuth(http.HandlerFunc(supportHandler.GetTemplates)))
 
 	// === SWAGGER ===
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)

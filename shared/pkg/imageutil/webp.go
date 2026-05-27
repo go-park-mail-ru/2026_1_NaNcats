@@ -16,7 +16,7 @@ func ConvertToWebp(src io.Reader) (*bytes.Buffer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode image (unsupported format?): %w", err)
 	}
-	_ = format // это я сделал, чтобы не забыть, что возвращает Decode вторым аргументом
+	_ = format
 
 	options := &webp.Options{Lossless: false, Quality: 80}
 

@@ -45,8 +45,6 @@ type LoginRequest struct {
 
 //easyjson:json
 type LoginResponse struct {
-	// PublicID — публичный UUID пользователя. Внутренний числовой id наружу
-	// не отдаём: его утечка — это раскрытие внутренних идентификаторов.
 	PublicID    string `json:"public_id" example:"3fa85f64-5717-4562-b3fc-2c963f66afa6"`
 	Name        string `json:"name" example:"Иван"`
 	Email       string `json:"email" example:"ivan@example.com"`

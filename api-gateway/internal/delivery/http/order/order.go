@@ -388,8 +388,6 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			// Старые заказы могли сохраниться без dish_name (cart-service не
-			// прокидывал название). Тогда подставляем актуальное имя из каталога.
 			dishName := item.DishName
 			if dishName == "" {
 				dishName = dishNames[item.DishID]

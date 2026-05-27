@@ -35,8 +35,6 @@ const (
 	SplitStatusFailed    = "failed"
 	SplitStatusCancelled = "cancelled"
 
-	// StatusSplitPaid не является статусом заказа: это сигнал фронту об
-	// оплате одной доли счёта, по нему модалка помечает долю оплаченной.
 	StatusSplitPaid = "split_paid"
 )
 
@@ -663,7 +661,6 @@ func (o *orderUseCase) ProcessSagaReply(ctx context.Context, reply events.SagaRe
 			}
 			_ = o.rabbitPublisher.PublishJSON(ctx, events.QueueGatewayEvents, gatewayEvent)
 		} else {
-			// Сбой не на шаге оплаты — заказ помечаем проваленным.
 			_ = o.orderRepo.UpdateOrderStatus(ctx, reply.OrderID, StatusFailed)
 			if reply.SplitID != "" {
 				_ = o.orderRepo.UpdateSplitStatus(ctx, reply.SplitID, SplitStatusFailed)

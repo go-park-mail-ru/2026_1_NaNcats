@@ -21,8 +21,7 @@ type PromoRepository interface {
 	BindPromocodeToUser(ctx context.Context, userID, promoID int64) (bool, error)
 	// CountUserPromocodeUsage - сколько раз пользователь уже воспользовался промокодом.
 	CountUserPromocodeUsage(ctx context.Context, promoID, userID int64) (int, error)
-	// RecordPromocodeUsage - фиксирует использование промокода. Идемпотентна:
-	// повторный вызов для той же пары (промокод, пользователь) ничего не делает.
+	// RecordPromocodeUsage - фиксирует использование промокода.
 	RecordPromocodeUsage(ctx context.Context, promoID, userID int64, orderID *int64) error
 	// ResolveOrderInternalID - внутренний id заказа по его публичному UUID.
 	ResolveOrderInternalID(ctx context.Context, orderPublicID string) (*int64, error)

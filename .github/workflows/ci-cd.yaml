@@ -35,8 +35,6 @@ jobs:
             context_path: ./services/payment
           - service: restaurant
             context_path: ./services/restaurant
-          - service: support
-            context_path: ./services/support
           - service: user
             context_path: ./services/user
 
@@ -106,9 +104,6 @@ jobs:
           - service: restaurant
             context_path: ./services/restaurant
             build_path: ./services/restaurant/cmd/main.go
-          - service: support
-            context_path: ./services/support
-            build_path: ./services/support/cmd/main.go
           - service: user
             context_path: ./services/user
             build_path: ./services/user/cmd/main.go
@@ -179,8 +174,6 @@ jobs:
             context_path: ./services/payment
           - service: restaurant
             context_path: ./services/restaurant
-          - service: support
-            context_path: ./services/support
           - service: user
             context_path: ./services/user
 
