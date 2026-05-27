@@ -343,6 +343,26 @@ func (mr *MockUserServiceClientMockRecorder) OnWheelSpin(ctx, in any, opts ...an
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnWheelSpin", reflect.TypeOf((*MockUserServiceClient)(nil).OnWheelSpin), varargs...)
 }
 
+// OnWordleResult mocks base method.
+func (m *MockUserServiceClient) OnWordleResult(ctx context.Context, in *user.OnWordleResultRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "OnWordleResult", varargs...)
+	ret0, _ := ret[0].(*emptypb.Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// OnWordleResult indicates an expected call of OnWordleResult.
+func (mr *MockUserServiceClientMockRecorder) OnWordleResult(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnWordleResult", reflect.TypeOf((*MockUserServiceClient)(nil).OnWordleResult), varargs...)
+}
+
 // ResetWheelSpinCooldown mocks base method.
 func (m *MockUserServiceClient) ResetWheelSpinCooldown(ctx context.Context, in *user.ResetWheelSpinCooldownRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
