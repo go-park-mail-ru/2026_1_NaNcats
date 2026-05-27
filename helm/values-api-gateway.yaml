@@ -17,6 +17,7 @@ env:
   PAYMENT_SERVICE_ADDR: "payment-service:50056"
   ORDER_SERVICE_ADDR: "order-service:50057"
   SUPPORT_SERVICE_ADDR: "support-service:50058"
+  ANALYTICS_SERVICE_ADDR: "analytics-service:50059"
 
 ingress:
   enabled: true

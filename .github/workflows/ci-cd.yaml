@@ -23,6 +23,8 @@ jobs:
             context_path: ./api-gateway
           - service: address
             context_path: ./services/address
+          - service: analytics
+            context_path: ./services/analytics
           - service: auth
             context_path: ./services/auth
           - service: cart
@@ -52,7 +54,7 @@ jobs:
               - 'shared/**'
               - 'go.mod'
               - 'go.sum'
-      
+
       - name: Setup Go
         if: steps.filter.outputs.changed == 'true'
         uses: actions/setup-go@v6
@@ -86,6 +88,9 @@ jobs:
           - service: address
             context_path: ./services/address
             build_path: ./services/address/cmd/main.go
+          - service: analytics
+            context_path: ./services/analytics
+            build_path: ./services/analytics/cmd/main.go
           - service: auth
             context_path: ./services/auth
             build_path: ./services/auth/cmd/main.go
@@ -162,6 +167,8 @@ jobs:
             context_path: ./api-gateway
           - service: address
             context_path: ./services/address
+          - service: analytics
+            context_path: ./services/analytics
           - service: auth
             context_path: ./services/auth
           - service: cart
@@ -176,11 +183,11 @@ jobs:
             context_path: ./services/support
           - service: user
             context_path: ./services/user
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      
+
       - name: Check for changes
         uses: dorny/paths-filter@v4
         id: filter
