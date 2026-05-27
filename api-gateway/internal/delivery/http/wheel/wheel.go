@@ -9,6 +9,7 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/logger"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
+	"google.golang.org/grpc/status"
 )
 
 // Описание секторов колеса (нужно для метода GetSectors)
@@ -78,7 +79,17 @@ func (h *WheelHandler) Spin(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.userClient.SpinWheel(ctx, userID)
 	if err != nil {
-		response.WriteError(w, err)
+		if st, ok := status.FromError(err); ok {
+			if st.Message() == "WHEEL_COOLDOWN_ACTIVE" {
+				response.Error(w, http.StatusBadRequest, "Вы уже крутили колесо сегодня. Попробуйте завтра!")
+				return
+			}
+		}
+		l.Error("lucky wheel system failure", err,
+			logger.Int64("user_id", userID),
+		)
+
+		response.Error(w, http.StatusInternalServerError, "К сожалению, колесо Пиццули не крутится! Мы уже чиним, попробуйте позже!")
 		return
 	}
 
@@ -87,7 +98,6 @@ func (h *WheelHandler) Spin(w http.ResponseWriter, r *http.Request) {
 		logger.String("sector_name", resp.SectorName),
 	)
 
-	// 2. Маппим gRPC ответ в структуру ответа для фронтенда
 	spinResult := WheelSpinResponse{
 		SectorID:   int(resp.SectorId),
 		SectorName: resp.SectorName,
