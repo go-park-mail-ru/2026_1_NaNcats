@@ -206,6 +206,7 @@ func TestRestaurantBrandRepo_Create(t *testing.T) {
 		OwnerProfileID: 10,
 		Name:           "Burger Heroes",
 		Description:    "Best in town",
+		PromotionTier:  1,
 		LogoURL:        "logo.png",
 	}
 
@@ -220,16 +221,16 @@ func TestRestaurantBrandRepo_Create(t *testing.T) {
 			name: "Успешное создание бренда",
 			mockInit: func(m pgxmock.PgxPoolIface) {
 				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "restaurant_brand"`)).
-					WithArgs(brand.OwnerProfileID, brand.Name, brand.Description, brand.LogoURL, idemKey).
+					WithArgs(brand.OwnerProfileID, brand.Name, brand.Description, brand.PromotionTier, brand.LogoURL, idemKey).
 					WillReturnRows(pgxmock.NewRows([]string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "created_at", "updated_at"}).
-						AddRow(int64(1), brand.OwnerProfileID, brand.Name, ptrString(brand.Description), 0, ptrString(brand.LogoURL), now, now))
+						AddRow(int64(1), brand.OwnerProfileID, brand.Name, ptrString(brand.Description), brand.PromotionTier, ptrString(brand.LogoURL), now, now))
 			},
 			expectedRes: domain.RestaurantBrand{
 				ID:             1,
 				OwnerProfileID: brand.OwnerProfileID,
 				Name:           brand.Name,
 				Description:    brand.Description,
-				PromotionTier:  0,
+				PromotionTier:  brand.PromotionTier,
 				LogoURL:        brand.LogoURL,
 				CreatedAt:      now,
 				UpdatedAt:      now,
@@ -239,7 +240,7 @@ func TestRestaurantBrandRepo_Create(t *testing.T) {
 			name: "Ошибка базы данных",
 			mockInit: func(m pgxmock.PgxPoolIface) {
 				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "restaurant_brand"`)).
-					WithArgs(brand.OwnerProfileID, brand.Name, brand.Description, brand.LogoURL, idemKey).
+					WithArgs(brand.OwnerProfileID, brand.Name, brand.Description, brand.PromotionTier, brand.LogoURL, idemKey).
 					WillReturnError(errors.New("db fail"))
 			},
 			expectedError: errors.New("db fail"),

@@ -135,13 +135,13 @@ func (r *restaurantBrandRepo) GetRestaurantBrandsByIDs(ctx context.Context, ids 
 
 func (r *restaurantBrandRepo) Create(ctx context.Context, b domain.RestaurantBrand, idempotencyKey string) (domain.RestaurantBrand, error) {
 	query := `
-		INSERT INTO "restaurant_brand" (owner_profile_id, name, description, logo_url, idempotency_key)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO "restaurant_brand" (owner_profile_id, name, description, promotion_tier, logo_url, idempotency_key)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT (idempotency_key) DO UPDATE SET updated_at = NOW()
 		RETURNING id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at;
 	`
 	var rb restaurantBrandDB
-	err := r.pool.QueryRow(ctx, query, b.OwnerProfileID, b.Name, b.Description, b.LogoURL, idempotencyKey).Scan(
+	err := r.pool.QueryRow(ctx, query, b.OwnerProfileID, b.Name, b.Description, b.PromotionTier, b.LogoURL, idempotencyKey).Scan(
 		&rb.ID, &rb.OwnerProfileID, &rb.Name, &rb.Description, &rb.PromotionTier, &rb.LogoURL, &rb.CreatedAt, &rb.UpdatedAt,
 	)
 	if err != nil {

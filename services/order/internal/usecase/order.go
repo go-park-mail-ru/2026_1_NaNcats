@@ -404,8 +404,11 @@ func (o *orderUseCase) updateStatusAndPublishAnalytics(ctx context.Context, orde
 		return err
 	}
 
-	// Формируем список купленных блюд, только если заказ успешно оплачен
+	// Формируем список купленных блюд и считаем выручку ресторана,
+	// только если заказ успешно оплачен — именно на эту строку аналитика
+	// опирается при подсчёте sumIf(restaurant_revenue_raw, is_financial_impact = 1).
 	var items []events.AnalyticsOrderItem
+	var restaurantRevenue int64
 	if newStatus == StatusPaid {
 		items = make([]events.AnalyticsOrderItem, 0, len(order.Items))
 		for _, item := range order.Items {
@@ -413,14 +416,22 @@ func (o *orderUseCase) updateStatusAndPublishAnalytics(ctx context.Context, orde
 			if item.OwnerUserID != nil {
 				uid = *item.OwnerUserID
 			}
+			rowTotal := item.Price * int64(item.Quantity)
 			items = append(items, events.AnalyticsOrderItem{
 				DishID:      item.DishID,
 				DishName:    item.Name,
 				Quantity:    int32(item.Quantity),
 				PriceRaw:    item.Price,
-				RowTotalRaw: item.Price * int64(item.Quantity),
+				RowTotalRaw: rowTotal,
 				UserID:      uid,
 			})
+			restaurantRevenue += rowTotal
+		}
+		// Скидка вычитается из выручки ресторана — её платит ресторан,
+		// а не платформа (delivery/service-fee на ресторан не идут).
+		restaurantRevenue -= order.DiscountAmount
+		if restaurantRevenue < 0 {
+			restaurantRevenue = 0
 		}
 	}
 
@@ -431,17 +442,18 @@ func (o *orderUseCase) updateStatusAndPublishAnalytics(ctx context.Context, orde
 
 	// Собираем полное событие
 	analyticsEvent := events.AnalyticsOrderEvent{
-		EventTime:     time.Now().UnixMilli(),
-		OrderPublicID: orderPublicID,
-		RestaurantID:  order.RestaurantBrandID,
-		ClientID:      order.AdminID,
-		TotalCostRaw:  order.TotalCost,
-		DiscountRaw:   order.DiscountAmount,
-		Status:        newStatus,
-		PrevStatus:    prevStatus,
-		OrderType:     orderType,
-		MembersCount:  int32(len(order.Splits)),
-		Items:         items,
+		EventTime:            time.Now().UnixMilli(),
+		OrderPublicID:        orderPublicID,
+		RestaurantID:         order.RestaurantBrandID,
+		ClientID:             order.AdminID,
+		TotalCostRaw:         order.TotalCost,
+		DiscountRaw:          order.DiscountAmount,
+		RestaurantRevenueRaw: restaurantRevenue,
+		Status:               newStatus,
+		PrevStatus:           prevStatus,
+		OrderType:            orderType,
+		MembersCount:         int32(len(order.Splits)),
+		Items:                items,
 	}
 
 	// Асинхронно отправляем событие в RabbitMQ
