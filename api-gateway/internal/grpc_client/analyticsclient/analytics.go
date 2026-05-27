@@ -21,42 +21,42 @@ var (
 )
 
 type FinancialStats struct {
-	TotalRevenueRaw   int64
-	AverageTicketRaw  int64
-	TotalDiscountsRaw int64
-	TotalOrdersCount  int64
+	TotalRevenueRaw   int64 `json:"total_revenue_raw"`
+	AverageTicketRaw  int64 `json:"average_ticket_raw"`
+	TotalDiscountsRaw int64 `json:"total_discounts_raw"`
+	TotalOrdersCount  int64 `json:"total_orders_count"`
 }
 
 type OperationalStats struct {
-	AvgCookingTimeSec int64
-	StatusCounts      map[string]int64
+	AvgCookingTimeSec int64            `json:"avg_cooking_time_sec"`
+	StatusCounts      map[string]int64 `json:"status_counts"`
 }
 
 type BestSeller struct {
-	DishID          int64
-	DishName        string
-	UnitsSold       int32
-	TotalRevenueRaw int64
+	DishID          int64  `json:"dish_id"`
+	DishName        string `json:"dish_name"`
+	UnitsSold       int32  `json:"units_sold"`
+	TotalRevenueRaw int64  `json:"total_revenue_raw"`
 }
 
 type OrderTypeStat struct {
-	OrderType    string
-	OrdersCount  int64
-	AvgGroupSize float64
+	OrderType    string  `json:"order_type"`
+	OrdersCount  int64   `json:"orders_count"`
+	AvgGroupSize float64 `json:"avg_group_size"`
 }
 
 type DailyStat struct {
-	Date        time.Time
-	RevenueRaw  int64
-	OrdersCount int64
+	Date        time.Time `json:"date"`
+	RevenueRaw  int64     `json:"revenue_raw"`
+	OrdersCount int64     `json:"orders_count"`
 }
 
 type OwnerStats struct {
-	Financial   FinancialStats
-	Operational OperationalStats
-	Dishes      []BestSeller
-	OrderTypes  []OrderTypeStat
-	Timeline    []DailyStat
+	Financial   FinancialStats   `json:"financial"`
+	Operational OperationalStats `json:"operational"`
+	Dishes      []BestSeller     `json:"dishes"`
+	OrderTypes  []OrderTypeStat  `json:"order_types"`
+	Timeline    []DailyStat      `json:"timeline"`
 }
 
 type AnalyticsClient interface {
