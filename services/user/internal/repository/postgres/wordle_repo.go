@@ -141,20 +141,7 @@ func (r *wordleRepo) SaveGuessWithTransaction(ctx context.Context, guess domain.
 	}
 	defer tx.Rollback(ctx)
 
-	insertGuessQuery := `
-		INSERT INTO "wordle_guess" (user_id, guess_date, attempt_num, word, idempotency_key)
-		VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT (idempotency_key) DO NOTHING
-	`
 	dateStr := guess.GuessDate.Format("2006-01-02")
-	tag, err := tx.Exec(ctx, insertGuessQuery, guess.UserID, dateStr, guess.AttemptNum, guess.Word, guess.IdempotencyKey)
-	if err != nil {
-		return err
-	}
-
-	if tag.RowsAffected() == 0 {
-		return domain.ErrIdempotencyConflict
-	}
 
 	var finishedAt *time.Time
 	if isWin || isLoss {
@@ -162,10 +149,12 @@ func (r *wordleRepo) SaveGuessWithTransaction(ctx context.Context, guess domain.
 		finishedAt = &now
 	}
 
+	// wordle_guess ссылается на wordle_game по (user_id, game_date), поэтому
+	// сначала апсертим саму игру, потом сохраняем попытку.
 	upsertGameQuery := `
 		INSERT INTO "wordle_game" (user_id, game_date, solved, attempt, finished_at)
 		VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT (user_id, game_date) DO UPDATE 
+		ON CONFLICT (user_id, game_date) DO UPDATE
 		SET solved = EXCLUDED.solved,
 		    attempt = EXCLUDED.attempt,
 		    finished_at = EXCLUDED.finished_at,
@@ -174,6 +163,20 @@ func (r *wordleRepo) SaveGuessWithTransaction(ctx context.Context, guess domain.
 	_, err = tx.Exec(ctx, upsertGameQuery, guess.UserID, dateStr, isWin, guess.AttemptNum, finishedAt)
 	if err != nil {
 		return err
+	}
+
+	insertGuessQuery := `
+		INSERT INTO "wordle_guess" (user_id, guess_date, attempt_num, word, idempotency_key)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (idempotency_key) DO NOTHING
+	`
+	tag, err := tx.Exec(ctx, insertGuessQuery, guess.UserID, dateStr, guess.AttemptNum, guess.Word, guess.IdempotencyKey)
+	if err != nil {
+		return err
+	}
+
+	if tag.RowsAffected() == 0 {
+		return domain.ErrIdempotencyConflict
 	}
 
 	if isWin {
