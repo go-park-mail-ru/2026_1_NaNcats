@@ -843,3 +843,34 @@ func (h *RestaurantHandler) DeleteDish(w http.ResponseWriter, r *http.Request) {
 
 	response.JSON(w, http.StatusOK, response.MessageResponse{Message: "dish deleted successfully"})
 }
+
+// GetOwnerBrands возвращает рестораны, принадлежащие аутентифицированному владельцу.
+// GET /api/owner/restaurants
+func (h *RestaurantHandler) GetOwnerBrands(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	l := h.logger.WithContext(ctx)
+
+	ownerID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Получаем все бренды и фильтруем по владельцу.
+	// Лимит 1000 достаточен для текущего масштаба.
+	brands, err := h.restaurantClient.GetRestaurantBrandsList(ctx, 1000, 0)
+	if err != nil {
+		l.Error("GetOwnerBrands: failed to list brands", err)
+		response.Error(w, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+
+	ownerBrands := make([]RestaurantBrandResponse, 0)
+	for _, b := range brands {
+		if b.OwnerProfileID == ownerID {
+			ownerBrands = append(ownerBrands, toRestaurantBrandResponse(b))
+		}
+	}
+
+	response.JSON(w, http.StatusOK, RestaurantBrandsResponse{RestaurantBrands: ownerBrands})
+}

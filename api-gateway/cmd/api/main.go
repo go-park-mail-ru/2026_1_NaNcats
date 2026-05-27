@@ -236,6 +236,13 @@ func main() {
 	mux.Handle("POST /api/game/wordle/guess", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(gameHandler.MakeWordleGuess))))
 
 	// === OWNER ===
+	mux.Handle("GET /api/owner/restaurants",
+		authMW.RequireAuth(
+			authMW.RequireRole("owner")(
+				http.HandlerFunc(restaurantHandler.GetOwnerBrands),
+			),
+		),
+	)
 	mux.Handle("POST /api/owner/restaurants",
 		authMW.RequireAuth(
 			authMW.RequireRole("owner")(

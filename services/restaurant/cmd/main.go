@@ -131,6 +131,7 @@ func main() {
 		grpc.ChainUnaryInterceptor(
 			interceptors.UnaryServerRecovery(appLogger),
 			interceptors.UnaryServerLogging(appLogger),
+			interceptors.UnaryServerUserIDKey(), // читает x-user-id из gRPC-метаданных и кладёт в контекст
 		),
 	)
 
