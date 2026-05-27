@@ -27,13 +27,6 @@ func makeAuthMW(t *testing.T) (*AuthMiddleware, *authMocks.MockAuthClient, *gomo
 // nextOK — простой пробник, который запоминает, что был вызван.
 type probe struct{ called bool }
 
-func (p *probe) handler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		p.called = true
-		w.WriteHeader(http.StatusOK)
-	})
-}
-
 func TestAuthMiddleware_RequireAuth(t *testing.T) {
 	tests := []struct {
 		name           string
