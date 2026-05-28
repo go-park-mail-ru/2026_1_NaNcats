@@ -36,7 +36,7 @@ CREATE TABLE "restaurant_branch" (
 	CONSTRAINT fk_restaurant_branch_restaurant_brand
 		FOREIGN KEY (restaurant_brand_id)
 		REFERENCES "restaurant_brand"(id)
-		ON DELETE RESTRICT
+		ON DELETE CASCADE
 );
 
 CREATE TABLE "dish" (
