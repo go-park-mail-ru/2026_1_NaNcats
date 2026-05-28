@@ -63,7 +63,7 @@ CREATE TABLE "dish" (
 	CONSTRAINT fk_dish_restaurant_brand
 		FOREIGN KEY (restaurant_brand_id)
 		REFERENCES "restaurant_brand"(id)
-		ON DELETE RESTRICT
+		ON DELETE CASCADE
 );
 
 CREATE TABLE "category" (
@@ -94,7 +94,7 @@ CREATE TABLE "restaurant_brand_category" (
 	CONSTRAINT fk_restaurant_brand_category_category
 		FOREIGN KEY (category_id)
 		REFERENCES "category"(id)
-		ON DELETE RESTRICT
+		ON DELETE CASCADE
 );
 
 CREATE TABLE "dish_category" (
