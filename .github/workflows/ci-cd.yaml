@@ -191,14 +191,14 @@ jobs:
               - 'shared/**'
               - 'helm/**'
       
-      - name: Copy Helm charts to server
+      - name: Copy Helm charts and infrastructure config to server
         if: steps.filter.outputs.changed == 'true'
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "helm/**"
+          source: "helm/**,infrastructure/**"
           target: "/home/ubuntu/k8s_manifests/"
 
       - name: SSH to k3s server and Deploy via Helm
