@@ -25,6 +25,7 @@ func mapPBRestaurant(pb *pbRestaurant.RestaurantBrand) RestaurantBrand {
 		Description:    pb.Description,
 		PromotionTier:  int(pb.PromotionTier),
 		LogoURL:        pb.LogoUrl,
+		BannerURL:      pb.BannerUrl,
 	}
 }
 
@@ -72,6 +73,7 @@ type RestaurantBrand struct {
 	Description    string
 	PromotionTier  int
 	LogoURL        string
+	BannerURL      string
 }
 
 type Dish struct {

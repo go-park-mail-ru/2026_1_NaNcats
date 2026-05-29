@@ -19,6 +19,7 @@ type restaurantBrandDB struct {
 	Description    *string   `db:"description"`
 	PromotionTier  int       `db:"promotion_tier"`
 	LogoURL        *string   `db:"logo_url"`
+	BannerURL      *string   `db:"banner_url"`
 	CreatedAt      time.Time `db:"created_at"`
 	UpdatedAt      time.Time `db:"updated_at"`
 }
@@ -40,6 +41,10 @@ func (d restaurantBrandDB) toDomain() domain.RestaurantBrand {
 	if d.LogoURL != nil {
 		logoURL = *d.LogoURL
 	}
+	bannerURL := ""
+	if d.BannerURL != nil {
+		bannerURL = *d.BannerURL
+	}
 	return domain.RestaurantBrand{
 		ID:             d.ID,
 		OwnerProfileID: d.OwnerProfileID,
@@ -47,6 +52,7 @@ func (d restaurantBrandDB) toDomain() domain.RestaurantBrand {
 		Description:    description,
 		PromotionTier:  d.PromotionTier,
 		LogoURL:        logoURL,
+		BannerURL:      bannerURL,
 		CreatedAt:      d.CreatedAt,
 		UpdatedAt:      d.UpdatedAt,
 	}
@@ -64,7 +70,7 @@ func NewRestaurantBrandRepo(pool postgres.PgxPool) repository.RestaurantBrandRep
 
 func (r *restaurantBrandRepo) GetRestaurantBrandsList(ctx context.Context, limit, offset int) ([]domain.RestaurantBrand, error) {
 	query := `
-		SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at
+		SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, banner_url, created_at, updated_at
 		FROM "restaurant_brand"
 		ORDER BY promotion_tier DESC, id ASC
 		LIMIT $1 OFFSET $2;
@@ -90,14 +96,14 @@ func (r *restaurantBrandRepo) GetRestaurantBrandsList(ctx context.Context, limit
 
 func (r *restaurantBrandRepo) GetByID(ctx context.Context, id int64) (domain.RestaurantBrand, error) {
 	query := `
-		SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at
+		SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, banner_url, created_at, updated_at
 		FROM "restaurant_brand"
 		WHERE id = $1;
 	`
 	var rb restaurantBrandDB
 	err := r.pool.QueryRow(ctx, query, id).Scan(
 		&rb.ID, &rb.OwnerProfileID, &rb.Name, &rb.Description,
-		&rb.PromotionTier, &rb.LogoURL, &rb.CreatedAt, &rb.UpdatedAt,
+		&rb.PromotionTier, &rb.LogoURL, &rb.BannerURL, &rb.CreatedAt, &rb.UpdatedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -110,7 +116,7 @@ func (r *restaurantBrandRepo) GetByID(ctx context.Context, id int64) (domain.Res
 
 func (r *restaurantBrandRepo) GetRestaurantBrandsByIDs(ctx context.Context, ids []int64) ([]domain.RestaurantBrand, error) {
 	query := `
-		SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at
+		SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, banner_url, created_at, updated_at
 		FROM "restaurant_brand"
 		WHERE id = ANY($1);
 	`
@@ -138,11 +144,11 @@ func (r *restaurantBrandRepo) Create(ctx context.Context, b domain.RestaurantBra
 		INSERT INTO "restaurant_brand" (owner_profile_id, name, description, promotion_tier, logo_url, idempotency_key)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT (idempotency_key) DO UPDATE SET updated_at = NOW()
-		RETURNING id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at;
+		RETURNING id, owner_profile_id, name, description, promotion_tier, logo_url, banner_url, created_at, updated_at;
 	`
 	var rb restaurantBrandDB
 	err := r.pool.QueryRow(ctx, query, b.OwnerProfileID, b.Name, b.Description, b.PromotionTier, b.LogoURL, idempotencyKey).Scan(
-		&rb.ID, &rb.OwnerProfileID, &rb.Name, &rb.Description, &rb.PromotionTier, &rb.LogoURL, &rb.CreatedAt, &rb.UpdatedAt,
+		&rb.ID, &rb.OwnerProfileID, &rb.Name, &rb.Description, &rb.PromotionTier, &rb.LogoURL, &rb.BannerURL, &rb.CreatedAt, &rb.UpdatedAt,
 	)
 	if err != nil {
 		return domain.RestaurantBrand{}, fmt.Errorf("create restaurant brand: %w", err)
@@ -160,11 +166,11 @@ func (r *restaurantBrandRepo) Update(ctx context.Context, b domain.RestaurantBra
 		UPDATE "restaurant_brand"
 		SET name = $1, description = $2, logo_url = $3, promotion_tier = $4, updated_at = NOW()
 		WHERE id = $5
-		RETURNING id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at;
+		RETURNING id, owner_profile_id, name, description, promotion_tier, logo_url, banner_url, created_at, updated_at;
 	`
 	var rb restaurantBrandDB
 	err := r.pool.QueryRow(ctx, query, b.Name, b.Description, b.LogoURL, b.PromotionTier, b.ID).Scan(
-		&rb.ID, &rb.OwnerProfileID, &rb.Name, &rb.Description, &rb.PromotionTier, &rb.LogoURL, &rb.CreatedAt, &rb.UpdatedAt,
+		&rb.ID, &rb.OwnerProfileID, &rb.Name, &rb.Description, &rb.PromotionTier, &rb.LogoURL, &rb.BannerURL, &rb.CreatedAt, &rb.UpdatedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -178,7 +184,7 @@ func (r *restaurantBrandRepo) Update(ctx context.Context, b domain.RestaurantBra
 
 func (r *restaurantBrandRepo) GetRestaurantBrandsByCategory(ctx context.Context, categoryID int64, limit, offset int) ([]domain.RestaurantBrand, error) {
 	query := `
-		SELECT rb.id, rb.owner_profile_id, rb.name, rb.description, rb.promotion_tier, rb.logo_url, rb.created_at, rb.updated_at
+		SELECT rb.id, rb.owner_profile_id, rb.name, rb.description, rb.promotion_tier, rb.logo_url, rb.banner_url, rb.created_at, rb.updated_at
 		FROM "restaurant_brand" rb
 		JOIN "restaurant_brand_category" rbc ON rbc.restaurant_brand_id = rb.id
 		WHERE rbc.category_id = $1
@@ -205,7 +211,7 @@ func (r *restaurantBrandRepo) GetRestaurantBrandsByCategory(ctx context.Context,
 
 func (r *restaurantBrandRepo) GetRestaurantBrandsByCategoryName(ctx context.Context, categoryName string, limit, offset int) ([]domain.RestaurantBrand, error) {
 	query := `
-		SELECT rb.id, rb.owner_profile_id, rb.name, rb.description, rb.promotion_tier, rb.logo_url, rb.created_at, rb.updated_at
+		SELECT rb.id, rb.owner_profile_id, rb.name, rb.description, rb.promotion_tier, rb.logo_url, rb.banner_url, rb.created_at, rb.updated_at
 		FROM "restaurant_brand" rb
 		JOIN "restaurant_brand_category" rbc ON rbc.restaurant_brand_id = rb.id
 		JOIN "category" c ON c.id = rbc.category_id
@@ -233,7 +239,7 @@ func (r *restaurantBrandRepo) GetRestaurantBrandsByCategoryName(ctx context.Cont
 
 func (r *restaurantBrandRepo) SearchRestaurantBrands(ctx context.Context, query string, limit, offset int) ([]domain.RestaurantBrand, error) {
 	q := `
-		SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at
+		SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, banner_url, created_at, updated_at
 		FROM "restaurant_brand"
 		WHERE name ILIKE $1 OR description ILIKE $1
 		ORDER BY promotion_tier DESC, id ASC
@@ -297,7 +303,7 @@ func (r *restaurantBrandRepo) RecommendByCategorySimilarity(ctx context.Context,
 
 	if len(seedBrandIDs) == 0 {
 		rows, err := r.pool.Query(ctx, `
-			SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at
+			SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, banner_url, created_at, updated_at
 			FROM "restaurant_brand"
 			WHERE NOT (id = ANY($1))
 			ORDER BY promotion_tier DESC, id ASC

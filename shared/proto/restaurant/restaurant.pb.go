@@ -246,6 +246,7 @@ type RestaurantBrand struct {
 	Description    string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
 	PromotionTier  int32                  `protobuf:"varint,5,opt,name=promotion_tier,json=promotionTier,proto3" json:"promotion_tier,omitempty"`
 	LogoUrl        string                 `protobuf:"bytes,6,opt,name=logo_url,json=logoUrl,proto3" json:"logo_url,omitempty"`
+	BannerUrl      string                 `protobuf:"bytes,7,opt,name=banner_url,json=bannerUrl,proto3" json:"banner_url,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -318,6 +319,13 @@ func (x *RestaurantBrand) GetPromotionTier() int32 {
 func (x *RestaurantBrand) GetLogoUrl() string {
 	if x != nil {
 		return x.LogoUrl
+	}
+	return ""
+}
+
+func (x *RestaurantBrand) GetBannerUrl() string {
+	if x != nil {
+		return x.BannerUrl
 	}
 	return ""
 }
@@ -1546,14 +1554,16 @@ const file_restaurant_restaurant_proto_rawDesc = "" +
 	"\x15GetCategoriesResponse\x124\n" +
 	"\n" +
 	"categories\x18\x01 \x03(\v2\x14.restaurant.CategoryR\n" +
-	"categories\"\xc3\x01\n" +
+	"categories\"\xe2\x01\n" +
 	"\x0fRestaurantBrand\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12(\n" +
 	"\x10owner_profile_id\x18\x02 \x01(\x03R\x0eownerProfileId\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x04 \x01(\tR\vdescription\x12%\n" +
 	"\x0epromotion_tier\x18\x05 \x01(\x05R\rpromotionTier\x12\x19\n" +
-	"\blogo_url\x18\x06 \x01(\tR\alogoUrl\"\xc9\x01\n" +
+	"\blogo_url\x18\x06 \x01(\tR\alogoUrl\x12\x1d\n" +
+	"\n" +
+	"banner_url\x18\a \x01(\tR\tbannerUrl\"\xc9\x01\n" +
 	"\x04Dish\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12.\n" +
 	"\x13restaurant_brand_id\x18\x02 \x01(\x03R\x11restaurantBrandId\x12\x12\n" +

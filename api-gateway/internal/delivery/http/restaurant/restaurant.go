@@ -47,6 +47,7 @@ func toRestaurantBrandResponse(b restaurantclient.RestaurantBrand) RestaurantBra
 		Description:   b.Description,
 		PromotionTier: b.PromotionTier,
 		LogoURL:       b.LogoURL,
+		BannerURL:     b.BannerURL,
 	}
 }
 
@@ -91,6 +92,7 @@ type RestaurantBrandResponse struct {
 	Description   string `json:"description" example:"Острые крылышки"`
 	PromotionTier int    `json:"promotion_tier" example:"2"`
 	LogoURL       string `json:"logo_url"`
+	BannerURL     string `json:"banner_url"`
 }
 
 //easyjson:json

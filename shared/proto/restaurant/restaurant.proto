@@ -75,6 +75,7 @@ message RestaurantBrand {
   string description =  4;
   int32 promotion_tier = 5;
   string logo_url = 6;
+  string banner_url = 7;
 }
 
 message Dish {

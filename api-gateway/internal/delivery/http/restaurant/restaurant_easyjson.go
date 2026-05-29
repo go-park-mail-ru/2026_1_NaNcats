@@ -396,6 +396,12 @@ func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			} else {
 				out.LogoURL = string(in.String())
 			}
+		case "banner_url":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.BannerURL = string(in.String())
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -434,6 +440,11 @@ func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		const prefix string = ",\"logo_url\":"
 		out.RawString(prefix)
 		out.String(string(in.LogoURL))
+	}
+	{
+		const prefix string = ",\"banner_url\":"
+		out.RawString(prefix)
+		out.String(string(in.BannerURL))
 	}
 	out.RawByte('}')
 }

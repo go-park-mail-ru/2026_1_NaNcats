@@ -12,6 +12,8 @@ type RestaurantBrand struct {
 	Description    string
 	PromotionTier  int
 	LogoURL        string
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	// BannerURL — широкая обложка ресторана для баннера на странице; пусто, если не задана.
+	BannerURL string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }

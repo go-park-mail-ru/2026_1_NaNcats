@@ -20,7 +20,7 @@ func TestRestaurantBrandRepo_GetRestaurantBrandsList(t *testing.T) {
 	ctx := context.Background()
 	limit, offset := 10, 0
 	now := time.Now()
-	columns := []string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "created_at", "updated_at"}
+	columns := []string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "banner_url", "created_at", "updated_at"}
 
 	type mockInit func(m pgxmock.PgxPoolIface)
 	tests := []struct {
@@ -32,11 +32,11 @@ func TestRestaurantBrandRepo_GetRestaurantBrandsList(t *testing.T) {
 		{
 			name: "Успешное получение списка",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at FROM "restaurant_brand"`)).
+				m.ExpectQuery(regexp.QuoteMeta(`SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, banner_url, created_at, updated_at FROM "restaurant_brand"`)).
 					WithArgs(limit, offset).
 					WillReturnRows(pgxmock.NewRows(columns).
-						AddRow(int64(1), int64(10), "Brand 1", ptrString("Desc 1"), 3, ptrString("url1"), now, now).
-						AddRow(int64(2), int64(10), "Brand 2", nil, 1, nil, now, now))
+						AddRow(int64(1), int64(10), "Brand 1", ptrString("Desc 1"), 3, ptrString("url1"), nil, now, now).
+						AddRow(int64(2), int64(10), "Brand 2", nil, 1, nil, nil, now, now))
 			},
 			expectedLen: 2,
 		},
@@ -78,7 +78,7 @@ func TestRestaurantBrandRepo_GetByID(t *testing.T) {
 	ctx := context.Background()
 	var brandID int64 = 1
 	now := time.Now()
-	columns := []string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "created_at", "updated_at"}
+	columns := []string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "banner_url", "created_at", "updated_at"}
 
 	type mockInit func(m pgxmock.PgxPoolIface)
 	tests := []struct {
@@ -90,10 +90,10 @@ func TestRestaurantBrandRepo_GetByID(t *testing.T) {
 		{
 			name: "Успешное получение по ID",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at FROM "restaurant_brand" WHERE id = $1`)).
+				m.ExpectQuery(regexp.QuoteMeta(`SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, banner_url, created_at, updated_at FROM "restaurant_brand" WHERE id = $1`)).
 					WithArgs(brandID).
 					WillReturnRows(pgxmock.NewRows(columns).
-						AddRow(brandID, int64(10), "KFC", ptrString("Fried Chicken"), 2, ptrString("logo.png"), now, now))
+						AddRow(brandID, int64(10), "KFC", ptrString("Fried Chicken"), 2, ptrString("logo.png"), nil, now, now))
 			},
 			expectedName: "KFC",
 		},
@@ -134,7 +134,7 @@ func TestRestaurantBrandRepo_GetRestaurantBrandsByIDs(t *testing.T) {
 	ctx := context.Background()
 	ids := []int64{1, 2}
 	now := time.Now()
-	columns := []string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "created_at", "updated_at"}
+	columns := []string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "banner_url", "created_at", "updated_at"}
 
 	type mockInit func(m pgxmock.PgxPoolIface)
 	tests := []struct {
@@ -146,11 +146,11 @@ func TestRestaurantBrandRepo_GetRestaurantBrandsByIDs(t *testing.T) {
 		{
 			name: "Успешное пакетное получение",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, created_at, updated_at FROM "restaurant_brand" WHERE id = ANY($1)`)).
+				m.ExpectQuery(regexp.QuoteMeta(`SELECT id, owner_profile_id, name, description, promotion_tier, logo_url, banner_url, created_at, updated_at FROM "restaurant_brand" WHERE id = ANY($1)`)).
 					WithArgs(ids).
 					WillReturnRows(pgxmock.NewRows(columns).
-						AddRow(int64(1), int64(10), "B1", nil, 1, nil, now, now).
-						AddRow(int64(2), int64(10), "B2", nil, 1, nil, now, now))
+						AddRow(int64(1), int64(10), "B1", nil, 1, nil, nil, now, now).
+						AddRow(int64(2), int64(10), "B2", nil, 1, nil, nil, now, now))
 			},
 			expectedLen: 2,
 		},
@@ -160,7 +160,7 @@ func TestRestaurantBrandRepo_GetRestaurantBrandsByIDs(t *testing.T) {
 				m.ExpectQuery(regexp.QuoteMeta(`SELECT`)).
 					WithArgs(ids).
 					WillReturnRows(pgxmock.NewRows(columns).
-						AddRow(int64(1), int64(10), "B1", nil, 1, nil, now, now))
+						AddRow(int64(1), int64(10), "B1", nil, 1, nil, nil, now, now))
 			},
 			expectedLen: 1,
 		},
@@ -222,8 +222,8 @@ func TestRestaurantBrandRepo_Create(t *testing.T) {
 			mockInit: func(m pgxmock.PgxPoolIface) {
 				m.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "restaurant_brand"`)).
 					WithArgs(brand.OwnerProfileID, brand.Name, brand.Description, brand.PromotionTier, brand.LogoURL, idemKey).
-					WillReturnRows(pgxmock.NewRows([]string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "created_at", "updated_at"}).
-						AddRow(int64(1), brand.OwnerProfileID, brand.Name, ptrString(brand.Description), brand.PromotionTier, ptrString(brand.LogoURL), now, now))
+					WillReturnRows(pgxmock.NewRows([]string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "banner_url", "created_at", "updated_at"}).
+						AddRow(int64(1), brand.OwnerProfileID, brand.Name, ptrString(brand.Description), brand.PromotionTier, ptrString(brand.LogoURL), nil, now, now))
 			},
 			expectedRes: domain.RestaurantBrand{
 				ID:             1,
@@ -336,8 +336,8 @@ func TestRestaurantBrandRepo_Update(t *testing.T) {
 			mockInit: func(m pgxmock.PgxPoolIface) {
 				m.ExpectQuery(regexp.QuoteMeta(`UPDATE "restaurant_brand" SET name = $1, description = $2, logo_url = $3, promotion_tier = $4, updated_at = NOW() WHERE id = $5 RETURNING`)).
 					WithArgs(brand.Name, brand.Description, brand.LogoURL, brand.PromotionTier, brand.ID).
-					WillReturnRows(pgxmock.NewRows([]string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "created_at", "updated_at"}).
-						AddRow(brand.ID, int64(10), brand.Name, ptrString(brand.Description), brand.PromotionTier, ptrString(brand.LogoURL), now, now))
+					WillReturnRows(pgxmock.NewRows([]string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "banner_url", "created_at", "updated_at"}).
+						AddRow(brand.ID, int64(10), brand.Name, ptrString(brand.Description), brand.PromotionTier, ptrString(brand.LogoURL), nil, now, now))
 			},
 		},
 		{
@@ -388,7 +388,7 @@ func TestRestaurantBrandRepo_GetRestaurantBrandsByCategory(t *testing.T) {
 	var categoryID int64 = 5
 	limit, offset := 10, 0
 	now := time.Now()
-	columns := []string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "created_at", "updated_at"}
+	columns := []string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "banner_url", "created_at", "updated_at"}
 
 	type mockInit func(m pgxmock.PgxPoolIface)
 	tests := []struct {
@@ -400,10 +400,10 @@ func TestRestaurantBrandRepo_GetRestaurantBrandsByCategory(t *testing.T) {
 		{
 			name: "Успешное получение по ID категории",
 			mockInit: func(m pgxmock.PgxPoolIface) {
-				m.ExpectQuery(regexp.QuoteMeta(`SELECT rb.id, rb.owner_profile_id, rb.name, rb.description, rb.promotion_tier, rb.logo_url, rb.created_at, rb.updated_at`)).
+				m.ExpectQuery(regexp.QuoteMeta(`SELECT rb.id, rb.owner_profile_id, rb.name, rb.description, rb.promotion_tier, rb.logo_url, rb.banner_url, rb.created_at, rb.updated_at`)).
 					WithArgs(categoryID, limit, offset).
 					WillReturnRows(pgxmock.NewRows(columns).
-						AddRow(int64(1), int64(10), "Pizza Place", ptrString("Tasty"), 2, ptrString("url"), now, now))
+						AddRow(int64(1), int64(10), "Pizza Place", ptrString("Tasty"), 2, ptrString("url"), nil, now, now))
 			},
 			expectedLen: 1,
 		},
@@ -446,7 +446,7 @@ func TestRestaurantBrandRepo_GetRestaurantBrandsByCategoryName(t *testing.T) {
 	categoryName := "Бургеры"
 	limit, offset := 5, 0
 	now := time.Now()
-	columns := []string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "created_at", "updated_at"}
+	columns := []string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "banner_url", "created_at", "updated_at"}
 
 	type mockInit func(m pgxmock.PgxPoolIface)
 	tests := []struct {
@@ -460,7 +460,7 @@ func TestRestaurantBrandRepo_GetRestaurantBrandsByCategoryName(t *testing.T) {
 				m.ExpectQuery(regexp.QuoteMeta(`LOWER(c.name) = LOWER($1)`)).
 					WithArgs(categoryName, limit, offset).
 					WillReturnRows(pgxmock.NewRows(columns).
-						AddRow(int64(1), int64(10), "Burger King", nil, 3, nil, now, now))
+						AddRow(int64(1), int64(10), "Burger King", nil, 3, nil, nil, now, now))
 			},
 		},
 		{
@@ -501,7 +501,7 @@ func TestRestaurantBrandRepo_SearchRestaurantBrands(t *testing.T) {
 	pattern := "%king%"
 	limit, offset := 10, 0
 	now := time.Now()
-	columns := []string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "created_at", "updated_at"}
+	columns := []string{"id", "owner_profile_id", "name", "description", "promotion_tier", "logo_url", "banner_url", "created_at", "updated_at"}
 
 	type mockInit func(m pgxmock.PgxPoolIface)
 	tests := []struct {
@@ -516,7 +516,7 @@ func TestRestaurantBrandRepo_SearchRestaurantBrands(t *testing.T) {
 				m.ExpectQuery(regexp.QuoteMeta(`WHERE name ILIKE $1 OR description ILIKE $1`)).
 					WithArgs(pattern, limit, offset).
 					WillReturnRows(pgxmock.NewRows(columns).
-						AddRow(int64(1), int64(10), "Burger King", ptrString("The King"), 3, nil, now, now))
+						AddRow(int64(1), int64(10), "Burger King", ptrString("The King"), 3, nil, nil, now, now))
 			},
 			expectedLen: 1,
 		},
