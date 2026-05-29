@@ -347,7 +347,7 @@ func main() {
 	mux.Handle("POST /api/promos/use", authMW.RequireAuth(csrfMW.Check(http.HandlerFunc(promoHandler.UsePromo))))
 
 	// === SWAGGER ===
-	mux.Handle("/api/swagger/", http.StripPrefix("/api", httpSwagger.WrapHandler))
+	mux.HandleFunc("/api/swagger/", httpSwagger.WrapHandler)
 
 	handler := corsMW.Handler(mux)
 	handler = loggingMW.Handler(handler)
