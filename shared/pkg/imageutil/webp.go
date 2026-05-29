@@ -18,7 +18,7 @@ func ConvertToWebp(src io.Reader) (*bytes.Buffer, error) {
 	}
 	_ = format
 
-	options := &webp.Options{Lossless: false, Quality: 80}
+	options := &webp.Options{Lossless: true, Quality: 100}
 
 	buf := new(bytes.Buffer)
 	if err := webp.Encode(buf, img, options); err != nil {

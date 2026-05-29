@@ -71,6 +71,26 @@ data:
     PARTITION BY toYYYYMM(event_date)
     ORDER BY (restaurant_id, order_public_id, dish_id);
 ---
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clickhouse-limits
+data:
+  config-limits.xml: |
+    <clickhouse>
+        <max_server_memory_usage>629145600</max_server_memory_usage>
+    </clickhouse>
+  users-limits.xml: |
+    <clickhouse>
+        <profiles>
+            <default>
+                <max_memory_usage>419430400</max_memory_usage>
+                <max_threads>1</max_threads>
+            </default>
+        </profiles>
+    </clickhouse>
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -109,10 +129,10 @@ spec:
           resources:
             requests:
               cpu: 100m
-              memory: 512Mi
+              memory: 256Mi
             limits:
-              cpu: 1500m
-              memory: 2Gi
+              cpu: 1000m
+              memory: 800Mi
           readinessProbe:
             tcpSocket:
               port: 9000
@@ -128,6 +148,12 @@ spec:
               mountPath: /var/lib/clickhouse
             - name: initdb
               mountPath: /docker-entrypoint-initdb.d
+            - name: config-limits
+              mountPath: /etc/clickhouse-server/config.d/config-limits.xml
+              subPath: config-limits.xml
+            - name: users-limits
+              mountPath: /etc/clickhouse-server/users.d/users-limits.xml
+              subPath: users-limits.xml
       volumes:
         - name: data
           persistentVolumeClaim:
@@ -135,6 +161,18 @@ spec:
         - name: initdb
           configMap:
             name: clickhouse-initdb
+        - name: config-limits
+          configMap:
+            name: clickhouse-limits
+            items:
+              - key: config-limits.xml
+                path: config-limits.xml
+        - name: users-limits
+          configMap:
+            name: clickhouse-limits
+            items:
+              - key: users-limits.xml
+                path: users-limits.xml
 ---
 apiVersion: v1
 kind: Service
