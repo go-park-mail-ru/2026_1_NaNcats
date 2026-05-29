@@ -47,6 +47,8 @@ kind: Deployment
 metadata:
   name: otel-collector
   namespace: default
+  labels:
+    app: otel-collector
 spec:
   replicas: 1
   selector:

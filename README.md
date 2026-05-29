@@ -82,7 +82,7 @@
     make migrate-up-all
     ```
 
-После этого бэкенд будет доступен по адресу `http://localhost:8080`, а Swagger — по адресу `http://localhost:8080/swagger/index.html`.
+После этого бэкенд будет доступен по адресу `http://localhost:8080`, а Swagger - по адресу `http://localhost:8080/swagger/index.html`.
 
 ---
 
