@@ -322,12 +322,12 @@ func (r *restaurantBrandRepo) RecommendByCategorySimilarity(ctx context.Context,
 			FROM "restaurant_brand_category"
 			WHERE restaurant_brand_id = ANY($1)
 		)
-		SELECT b.id, b.owner_profile_id, b.name, b.description, b.promotion_tier, b.logo_url, b.created_at, b.updated_at
+		SELECT b.id, b.owner_profile_id, b.name, b.description, b.promotion_tier, b.logo_url, b.banner_url, b.created_at, b.updated_at
 		FROM "restaurant_brand" b
 		JOIN "restaurant_brand_category" rbc ON rbc.restaurant_brand_id = b.id
 		WHERE rbc.category_id IN (SELECT category_id FROM seed_categories)
 		  AND NOT (b.id = ANY($2))
-		GROUP BY b.id, b.owner_profile_id, b.name, b.description, b.promotion_tier, b.logo_url, b.created_at, b.updated_at
+		GROUP BY b.id, b.owner_profile_id, b.name, b.description, b.promotion_tier, b.logo_url, b.banner_url, b.created_at, b.updated_at
 		ORDER BY COUNT(rbc.category_id) DESC, b.promotion_tier DESC, b.id ASC
 		LIMIT $3
 	`, seedBrandIDs, excludeBrandIDs, limit)
@@ -342,7 +342,7 @@ func scanRecommendedBrands(rows pgx.Rows) ([]domain.RestaurantBrand, error) {
 	out := make([]domain.RestaurantBrand, 0, 8)
 	for rows.Next() {
 		var d restaurantBrandDB
-		if err := rows.Scan(&d.ID, &d.OwnerProfileID, &d.Name, &d.Description, &d.PromotionTier, &d.LogoURL, &d.CreatedAt, &d.UpdatedAt); err != nil {
+		if err := rows.Scan(&d.ID, &d.OwnerProfileID, &d.Name, &d.Description, &d.PromotionTier, &d.LogoURL, &d.BannerURL, &d.CreatedAt, &d.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan brand: %w", err)
 		}
 		out = append(out, d.toDomain())
