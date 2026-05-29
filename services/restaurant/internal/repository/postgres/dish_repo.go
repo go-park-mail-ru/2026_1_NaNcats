@@ -19,6 +19,7 @@ type dishDB struct {
 	Description       *string   `db:"description"`
 	ImageURL          *string   `db:"image_url"`
 	Price             int64     `db:"price"`
+	Section           *string   `db:"section"`
 	CreatedAt         time.Time `db:"created_at"`
 	UpdatedAt         time.Time `db:"updated_at"`
 }
@@ -32,6 +33,10 @@ func (d dishDB) toDomain() domain.Dish {
 	if d.ImageURL != nil {
 		img = *d.ImageURL
 	}
+	section := ""
+	if d.Section != nil {
+		section = *d.Section
+	}
 
 	return domain.Dish{
 		ID:                d.ID,
@@ -40,6 +45,7 @@ func (d dishDB) toDomain() domain.Dish {
 		Description:       desc,
 		ImageURL:          img,
 		Price:             d.Price,
+		Section:           section,
 		CreatedAt:         d.CreatedAt,
 		UpdatedAt:         d.UpdatedAt,
 	}
@@ -55,7 +61,7 @@ func NewDishRepo(pool postgres.PgxPool) repository.DishRepository {
 
 func (r *dishRepo) SearchDishes(ctx context.Context, query string, limit int) ([]domain.Dish, error) {
 	q := `
-		SELECT id, restaurant_brand_id, name, description, image_url, price, created_at, updated_at
+		SELECT id, restaurant_brand_id, name, description, image_url, price, section, created_at, updated_at
 		FROM "dish"
 		WHERE name ILIKE $1 OR description ILIKE $1
 		ORDER BY id ASC
@@ -82,7 +88,7 @@ func (r *dishRepo) SearchDishes(ctx context.Context, query string, limit int) ([
 
 func (r *dishRepo) SearchDishesByBrand(ctx context.Context, brandID int64, query string, limit int) ([]domain.Dish, error) {
 	q := `
-		SELECT id, restaurant_brand_id, name, description, image_url, price, created_at, updated_at
+		SELECT id, restaurant_brand_id, name, description, image_url, price, section, created_at, updated_at
 		FROM "dish"
 		WHERE restaurant_brand_id = $1
 		  AND (name ILIKE $2 OR description ILIKE $2)
@@ -117,6 +123,7 @@ func (r *dishRepo) GetDishesByRestaurantBrandID(ctx context.Context, restaurantB
 			description,
 			image_url,
 			price,
+			section,
 			created_at,
 			updated_at
 		FROM "dish"
@@ -151,6 +158,7 @@ func (r *dishRepo) GetDishByID(ctx context.Context, DishID int64) (domain.Dish, 
 			description,
 			image_url,
 			price,
+			section,
 			created_at,
 			updated_at
 		FROM "dish"
@@ -182,6 +190,7 @@ func (r *dishRepo) GetDishesByIDs(ctx context.Context, ids []int64) ([]domain.Di
 			description,
 			image_url,
 			price,
+			section,
 			created_at,
 			updated_at
 		FROM "dish"

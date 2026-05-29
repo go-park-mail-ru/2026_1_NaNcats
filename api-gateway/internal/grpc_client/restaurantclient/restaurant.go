@@ -39,6 +39,7 @@ func mapPBDish(pb *pbRestaurant.Dish) Dish {
 		Description:       pb.Description,
 		ImageURL:          pb.ImageUrl,
 		Price:             pb.Price,
+		Section:           pb.Section,
 	}
 }
 
@@ -80,6 +81,7 @@ type Dish struct {
 	Description       string
 	ImageURL          string
 	Price             int64
+	Section           string
 }
 
 //go:generate mockgen -destination=mocks/restaurant_mock.go -package=mocks github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/restaurantclient RestaurantClient

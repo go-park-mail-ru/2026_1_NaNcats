@@ -722,6 +722,12 @@ func easyjson16134a91DecodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 			} else {
 				out.Price = int64(in.Int64())
 			}
+		case "section":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.Section = string(in.String())
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -760,6 +766,11 @@ func easyjson16134a91EncodeGithubComGoParkMailRu20261NaNcatsApiGatewayInternalDe
 		const prefix string = ",\"price\":"
 		out.RawString(prefix)
 		out.Int64(int64(in.Price))
+	}
+	{
+		const prefix string = ",\"section\":"
+		out.RawString(prefix)
+		out.String(string(in.Section))
 	}
 	out.RawByte('}')
 }

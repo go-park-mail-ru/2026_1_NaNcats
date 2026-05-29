@@ -29,6 +29,7 @@ func mapDomainToPBDish(d domain.Dish) *pb.Dish {
 		Description:       d.Description,
 		Price:             d.Price,
 		ImageUrl:          d.ImageURL,
+		Section:           d.Section,
 	}
 }
 

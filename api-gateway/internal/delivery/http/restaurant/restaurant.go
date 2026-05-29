@@ -57,6 +57,7 @@ func toDishResponse(d restaurantclient.Dish) DishResponse {
 		Description: d.Description,
 		ImageURL:    d.ImageURL,
 		Price:       d.Price,
+		Section:     d.Section,
 	}
 }
 
@@ -104,6 +105,7 @@ type DishResponse struct {
 	Description string `json:"description" example:"Сочный бургер с сыром"`
 	ImageURL    string `json:"image_url"`
 	Price       int64  `json:"price" example:"199000000"`
+	Section     string `json:"section" example:"Супы"`
 }
 
 //easyjson:json

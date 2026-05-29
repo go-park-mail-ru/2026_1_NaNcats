@@ -12,6 +12,8 @@ type Dish struct {
 	Description       string
 	ImageURL          string
 	Price             int64 // BIGINT
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
+	// Section — раздел меню ресторана (напр. "Супы", "Десерты"); пустая строка, если не задан.
+	Section   string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }

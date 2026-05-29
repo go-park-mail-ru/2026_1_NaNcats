@@ -84,6 +84,7 @@ message Dish {
   string description = 4;
   int64 price = 5;
   string image_url = 6;
+  string section = 7;
 }
 
 message GetRestaurantBrandsListRequest {
