@@ -58,7 +58,11 @@ func (c *gameClient) MakeWordleGuess(ctx context.Context, userID int64, guess, i
 			case codes.FailedPrecondition:
 				return nil, ErrGameAlreadyFinished
 			case codes.InvalidArgument:
-				if strings.Contains(st.Message(), "dictionary") {
+				// Сообщение от gRPC может прийти как человекочитаемый текст
+				// ("word is not in the dictionary"), так и как слаг
+				// ("WORD_NOT_IN_DICTIONARY") — матчим без учёта регистра, иначе
+				// ошибка «нет в словаре» ошибочно классифицировалась как длина.
+				if strings.Contains(strings.ToLower(st.Message()), "dictionary") {
 					return nil, ErrWordNotInDictionary
 				}
 				return nil, ErrInvalidWordLength
