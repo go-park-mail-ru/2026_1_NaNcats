@@ -320,7 +320,9 @@ func (u *cartUseCase) KickMember(ctx context.Context, cartID string, adminID, ta
 			return err
 		}
 
-		if cart.AdminID != adminID {
+		// Удалять участников может администратор; кроме того, любой участник
+		// может удалить сам себя (выйти из совместной корзины).
+		if cart.AdminID != adminID && adminID != targetUserID {
 			return domain.ErrForbidden
 		}
 
