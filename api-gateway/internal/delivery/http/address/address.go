@@ -5,6 +5,8 @@ package address
 import (
 	"errors"
 	"net/http"
+	"strconv"
+	"unicode/utf8"
 
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/grpc_client/addressclient"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/api-gateway/internal/middleware"
@@ -12,6 +14,29 @@ import (
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/request"
 	"github.com/go-park-mail-ru/2026_1_NaNcats/shared/pkg/response"
 )
+
+// validateAddressFields проверяет длины полей до похода в gRPC, чтобы вернуть
+// понятную 400 вместо сырой 500 от check-констрейнтов БД (client_address_*_check).
+func validateAddressFields(req AddressRequest) string {
+	limits := []struct {
+		name  string
+		value string
+		max   int
+	}{
+		{"Название", req.Label, 60},
+		{"Квартира", req.Apartment, 30},
+		{"Подъезд", req.Entrance, 30},
+		{"Этаж", req.Floor, 30},
+		{"Код двери", req.DoorCode, 30},
+		{"Комментарий курьеру", req.CourierComment, 255},
+	}
+	for _, f := range limits {
+		if utf8.RuneCountInString(f.value) > f.max {
+			return f.name + " слишком длинное (максимум " + strconv.Itoa(f.max) + " символов)"
+		}
+	}
+	return ""
+}
 
 //easyjson:json
 type AddressRequest struct {
@@ -121,6 +146,11 @@ func (h *AddressHandler) AddAddress(w http.ResponseWriter, r *http.Request) {
 	if err := request.JSON(r, &req); err != nil {
 		l.Warn("failed to decode add address request", logger.String("error", err.Error()))
 		response.Error(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if msg := validateAddressFields(req); msg != "" {
+		response.Error(w, http.StatusBadRequest, msg)
 		return
 	}
 
@@ -266,6 +296,11 @@ func (h *AddressHandler) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 	if err := request.JSON(r, &req); err != nil {
 		l.Warn("failed to decode update address request", logger.String("error", err.Error()))
 		response.Error(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if msg := validateAddressFields(req); msg != "" {
+		response.Error(w, http.StatusBadRequest, msg)
 		return
 	}
 

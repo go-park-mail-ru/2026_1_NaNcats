@@ -1,0 +1,1 @@
+ALTER TABLE "dish" DROP COLUMN IF EXISTS section;

@@ -4,7 +4,7 @@ ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO "restaurant_brand" (owner_profile_id, name, description, promotion_tier, logo_url)
 VALUES 
-(1, 'Вкусно - и точка', 'Тот самый вкус', 3, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/e5f0825c-c82d-4f8d-b9e0-d0149a38322f.webp'),
+(1, 'Вкусно - и точка', 'Тот самый вкус', 3, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/25253e87-0836-5d32-a0d7-a04f17711bda.webp'),
 (1, 'Subway', 'Ешь свежее', 2, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/2b4eeeb2-501b-4923-8238-9ab99ee8745f.webp'),
 (1, 'Папа Джонс', 'Лучшие ингредиенты. Лучшая пицца.', 2, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/bfb573dd-5ea1-4b52-adaf-17ac5eff5646.webp'),
 (1, 'Крошка Картошка', 'Настоящая русская картошка', 1, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/80eb7180-33f9-4841-b314-50372bbb6a9b.webp'),
@@ -17,7 +17,7 @@ VALUES
 (1, 'KFC', 'Вкусная курица', 2, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/2d94c911-3db4-47a6-bc6b-597dac6a281a.webp'),
 (1, 'Аист', 'Классика на Патриарших', 3, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/c5c1ab16-1997-4a1a-afc8-681791eb7e91.webp'),
 (1, 'Anna', 'Уютная кофейня', 1, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/145cf370-37e4-445a-aa12-b551af28a3c9.webp'),
-(1, 'Arium Grill', 'Мясо на углях', 2, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/8d3b2425-1130-4fae-8ac1-2090f27280b1.webp'),
+(1, 'Torro Grill', 'Стейки и гриль на углях', 2, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/83b25c4a-06f9-512e-93da-6bcb76385a3b.webp'),
 (1, 'Честная Рыба', 'Свежие морепродукты', 2, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/f1fed5c4-2554-468f-b698-24ebf9abcb86.webp'),
 (1, 'DiDi', 'Грузинская кухня', 2, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/f493338c-e75d-441f-9206-2d4133bf1d9b.webp'),
 (1, 'Eshak', 'Восточная кухня', 2, 'https://nancats-bucket.storage.yandexcloud.net/restaurants/9d44017a-feb1-42f0-8996-a035c2534fc8.webp'),

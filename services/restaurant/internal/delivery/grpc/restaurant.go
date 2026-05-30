@@ -18,6 +18,7 @@ func mapDomainToPBRestaurant(b domain.RestaurantBrand) *pb.RestaurantBrand {
 		Description:    b.Description,
 		PromotionTier:  int32(b.PromotionTier),
 		LogoUrl:        b.LogoURL,
+		BannerUrl:      b.BannerURL,
 	}
 }
 
@@ -29,6 +30,7 @@ func mapDomainToPBDish(d domain.Dish) *pb.Dish {
 		Description:       d.Description,
 		Price:             d.Price,
 		ImageUrl:          d.ImageURL,
+		Section:           d.Section,
 	}
 }
 

@@ -19,7 +19,7 @@ func TestDishRepo_SearchDishes(t *testing.T) {
 	pattern := "%pizza%"
 	limit := 10
 	now := time.Now()
-	columns := []string{"id", "restaurant_brand_id", "name", "description", "image_url", "price", "created_at", "updated_at"}
+	columns := []string{"id", "restaurant_brand_id", "name", "description", "image_url", "price", "section", "created_at", "updated_at"}
 
 	type mockInit func(m pgxmock.PgxPoolIface)
 	tests := []struct {
@@ -34,7 +34,7 @@ func TestDishRepo_SearchDishes(t *testing.T) {
 				m.ExpectQuery(`WHERE name ILIKE \$1 OR description ILIKE \$1`).
 					WithArgs(pattern, limit).
 					WillReturnRows(pgxmock.NewRows(columns).
-						AddRow(int64(1), int64(10), "Pizza Margherita", ptrString("Cheese and tomato"), ptrString("url"), int64(500000000), now, now))
+						AddRow(int64(1), int64(10), "Pizza Margherita", ptrString("Cheese and tomato"), ptrString("url"), int64(500000000), ptrString("Пицца"), now, now))
 			},
 			expectedLen: 1,
 		},
@@ -79,7 +79,7 @@ func TestDishRepo_SearchDishesByBrand(t *testing.T) {
 	pattern := "%burger%"
 	limit := 5
 	now := time.Now()
-	columns := []string{"id", "restaurant_brand_id", "name", "description", "image_url", "price", "created_at", "updated_at"}
+	columns := []string{"id", "restaurant_brand_id", "name", "description", "image_url", "price", "section", "created_at", "updated_at"}
 
 	type mockInit func(m pgxmock.PgxPoolIface)
 	tests := []struct {
@@ -94,7 +94,7 @@ func TestDishRepo_SearchDishesByBrand(t *testing.T) {
 				m.ExpectQuery(`WHERE restaurant_brand_id = \$1\s+AND \(name ILIKE \$2 OR description ILIKE \$2\)`).
 					WithArgs(brandID, pattern, limit).
 					WillReturnRows(pgxmock.NewRows(columns).
-						AddRow(int64(1), brandID, "Cheese Burger", ptrString("Double meat"), nil, int64(600000000), now, now))
+						AddRow(int64(1), brandID, "Cheese Burger", ptrString("Double meat"), nil, int64(600000000), nil, now, now))
 			},
 			expectedLen: 1,
 		},
@@ -137,7 +137,7 @@ func TestDishRepo_GetDishesByRestaurantBrandID(t *testing.T) {
 	brandID := int64(15)
 	limit, offset := 20, 0
 	now := time.Now()
-	columns := []string{"id", "restaurant_brand_id", "name", "description", "image_url", "price", "created_at", "updated_at"}
+	columns := []string{"id", "restaurant_brand_id", "name", "description", "image_url", "price", "section", "created_at", "updated_at"}
 
 	type mockInit func(m pgxmock.PgxPoolIface)
 	tests := []struct {
@@ -152,8 +152,8 @@ func TestDishRepo_GetDishesByRestaurantBrandID(t *testing.T) {
 				m.ExpectQuery(`WHERE restaurant_brand_id = \$1\s+ORDER BY id ASC\s+LIMIT \$2 OFFSET \$3`).
 					WithArgs(brandID, limit, offset).
 					WillReturnRows(pgxmock.NewRows(columns).
-						AddRow(int64(101), brandID, "Sushi", nil, ptrString("img.png"), int64(800000000), now, now).
-						AddRow(int64(102), brandID, "Rolls", ptrString("Fresh"), nil, int64(700000000), now, now))
+						AddRow(int64(101), brandID, "Sushi", nil, ptrString("img.png"), int64(800000000), ptrString("Суши и роллы"), now, now).
+						AddRow(int64(102), brandID, "Rolls", ptrString("Fresh"), nil, int64(700000000), nil, now, now))
 			},
 			expectedLen: 2,
 		},
@@ -195,7 +195,7 @@ func TestDishRepo_GetDishByID(t *testing.T) {
 	ctx := context.Background()
 	var dishID int64 = 100
 	now := time.Now()
-	columns := []string{"id", "restaurant_brand_id", "name", "description", "image_url", "price", "created_at", "updated_at"}
+	columns := []string{"id", "restaurant_brand_id", "name", "description", "image_url", "price", "section", "created_at", "updated_at"}
 
 	type mockInit func(m pgxmock.PgxPoolIface)
 	tests := []struct {
@@ -210,7 +210,7 @@ func TestDishRepo_GetDishByID(t *testing.T) {
 				m.ExpectQuery(`FROM "dish"\s+WHERE id = \$1`).
 					WithArgs(dishID).
 					WillReturnRows(pgxmock.NewRows(columns).
-						AddRow(dishID, int64(1), "Burger", ptrString("Tasty"), ptrString("url"), int64(500000000), now, now))
+						AddRow(dishID, int64(1), "Burger", ptrString("Tasty"), ptrString("url"), int64(500000000), ptrString("Бургеры"), now, now))
 			},
 			expectedName: "Burger",
 		},
@@ -261,7 +261,7 @@ func TestDishRepo_GetDishesByIDs(t *testing.T) {
 	ctx := context.Background()
 	ids := []int64{1, 2, 3}
 	now := time.Now()
-	columns := []string{"id", "restaurant_brand_id", "name", "description", "image_url", "price", "created_at", "updated_at"}
+	columns := []string{"id", "restaurant_brand_id", "name", "description", "image_url", "price", "section", "created_at", "updated_at"}
 
 	type mockInit func(m pgxmock.PgxPoolIface)
 	tests := []struct {
@@ -276,8 +276,8 @@ func TestDishRepo_GetDishesByIDs(t *testing.T) {
 				m.ExpectQuery(`WHERE id=ANY\(\$1\)`).
 					WithArgs(ids).
 					WillReturnRows(pgxmock.NewRows(columns).
-						AddRow(int64(1), int64(10), "Dish 1", nil, nil, int64(100), now, now).
-						AddRow(int64(2), int64(10), "Dish 2", nil, nil, int64(200), now, now))
+						AddRow(int64(1), int64(10), "Dish 1", nil, nil, int64(100), nil, now, now).
+						AddRow(int64(2), int64(10), "Dish 2", nil, nil, int64(200), nil, now, now))
 			},
 			expectedLen: 2,
 		},

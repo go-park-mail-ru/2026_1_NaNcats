@@ -71,6 +71,7 @@ func (r *promoRepo) GetRestaurantPromocodes(ctx context.Context, brandID int64) 
 		FROM "promocode" p
 		WHERE p.restaurant_brand_id = $1
 		  AND p.expires_at > NOW()
+		  AND p.user_id IS NULL
 		ORDER BY p.created_at DESC
 	`
 	rows, err := r.pool.Query(ctx, query, brandID)

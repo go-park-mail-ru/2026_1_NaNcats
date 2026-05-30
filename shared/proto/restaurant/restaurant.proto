@@ -75,6 +75,7 @@ message RestaurantBrand {
   string description =  4;
   int32 promotion_tier = 5;
   string logo_url = 6;
+  string banner_url = 7;
 }
 
 message Dish {
@@ -84,6 +85,7 @@ message Dish {
   string description = 4;
   int64 price = 5;
   string image_url = 6;
+  string section = 7;
 }
 
 message GetRestaurantBrandsListRequest {
