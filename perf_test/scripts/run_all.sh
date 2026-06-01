@@ -24,6 +24,6 @@ bash explain.sh        opt
 WORKERS=20 bash 06_load_read.sh opt    # перезамер list (перезапишет opt)
 
 # --- Доп.: стоимость записи при наличии индексов ---
-N=5000 bash 05_load_create.sh withindex || true
+N=5000 bash 05_load_create.sh withindex
 
 echo ">> готово. Смотри perf_test/results/ и perf_test/README.md"
