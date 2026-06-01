@@ -27,7 +27,6 @@ RUN_DIR="$PERF_DIR/.run"          # pid/log запущенных сервисо�
 mkdir -p "$TARGETS_DIR" "$RESULTS_DIR" "$RUN_DIR"
 
 export PATH="$PATH:/usr/local/go/bin:$HOME/go/bin"
-export PGCLIENTENCODING=UTF8
 
 DOCKER="docker"
 if ! docker ps >/dev/null 2>&1; then DOCKER="sudo docker"; fi
