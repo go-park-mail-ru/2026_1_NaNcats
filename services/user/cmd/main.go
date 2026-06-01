@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/exaring/otelpgx"
 	userRabbit "github.com/go-park-mail-ru/2026_1_NaNcats/services/user/internal/delivery/rabbitmq"
@@ -52,6 +53,10 @@ func main() {
 	if err != nil {
 		appLogger.Fatal("database config parsing failed", err)
 	}
+	pgConfig.MaxConns = 15
+	pgConfig.MinConns = 2
+	pgConfig.MaxConnLifetime = time.Hour
+	pgConfig.MaxConnIdleTime = 30 * time.Minute
 	consoleTracer := postgres.NewDBTracer(appLogger)
 	otelOptions := []otelpgx.Option{
 		otelpgx.WithTracerAttributes(semconv.ServiceNameKey.String(cfg.OTEL.ServiceName)),
