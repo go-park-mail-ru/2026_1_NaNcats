@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="380" font-family="sans-serif">
+<rect width="720" height="380" fill="white"/>
+<text x="360.0" y="28" text-anchor="middle" font-size="18" font-weight="bold">Пропускная способность чтения (RPS, больше — лучше)</text>
+<text x="18" y="190.0" text-anchor="middle" font-size="12" transform="rotate(-90 18 190.0)">запросов/с</text>
+<line x1="70" y1="60" x2="70" y2="320" stroke="#888"/>
+<line x1="70" y1="320" x2="700" y2="320" stroke="#888"/>
+<rect x="148.8" y="294.4" width="73.5" height="25.6" fill="#d9534f"/>
+<text x="185.5" y="288.4" text-anchor="middle" font-size="12" font-weight="bold">3.7</text>
+<rect x="253.8" y="165.6" width="73.5" height="154.4" fill="#5cb85c"/>
+<text x="290.5" y="159.6" text-anchor="middle" font-size="12" font-weight="bold">22.5</text>
+<text x="227.5" y="342.0" text-anchor="middle" font-size="14">search</text>
+<rect x="463.8" y="294.8" width="73.5" height="25.2" fill="#d9534f"/>
+<text x="500.5" y="288.8" text-anchor="middle" font-size="12" font-weight="bold">3.7</text>
+<rect x="568.8" y="93.9" width="73.5" height="226.1" fill="#5cb85c"/>
+<text x="605.5" y="87.9" text-anchor="middle" font-size="12" font-weight="bold">33.0</text>
+<text x="542.5" y="342.0" text-anchor="middle" font-size="14">list</text>
+<rect x="80" y="58" width="14" height="14" fill="#d9534f"/>
+<text x="100" y="70" font-size="13">baseline</text>
+<rect x="210" y="58" width="14" height="14" fill="#5cb85c"/>
+<text x="230" y="70" font-size="13">optimized</text>
+</svg>

@@ -47,3 +47,8 @@ coverage*.out
 
 # Логи кликхауса
 infrastructure/clickhouse/logs/
+
+# perf_test
+perf_test/targets/*.json
+perf_test/results/*.bin
+.run/

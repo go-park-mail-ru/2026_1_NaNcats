@@ -1,0 +1,23 @@
+                                                                      QUERY PLAN                                                                       
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=5860.77..5863.10 rows=20 width=225) (actual time=183.420..190.254 rows=20.00 loops=1)
+   Buffers: shared hit=3217
+   ->  Gather Merge  (cost=5860.77..17507.53 rows=100001 width=225) (actual time=183.418..190.248 rows=20.00 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=3217
+         ->  Sort  (cost=4860.74..4964.91 rows=41667 width=225) (actual time=162.745..162.748 rows=20.00 loops=3)
+               Sort Key: promotion_tier DESC, id
+               Sort Method: top-N heapsort  Memory: 30kB
+               Buffers: shared hit=3217
+               Worker 0:  Sort Method: top-N heapsort  Memory: 31kB
+               Worker 1:  Sort Method: top-N heapsort  Memory: 31kB
+               ->  Parallel Seq Scan on restaurant_brand  (cost=0.00..3752.00 rows=41667 width=225) (actual time=0.018..112.888 rows=33333.33 loops=3)
+                     Filter: ((name ~~* '%perf%'::text) OR (description ~~* '%perf%'::text))
+                     Buffers: shared hit=3127
+ Planning:
+   Buffers: shared hit=218
+ Planning Time: 4.117 ms
+ Execution Time: 190.453 ms
+(19 rows)
+

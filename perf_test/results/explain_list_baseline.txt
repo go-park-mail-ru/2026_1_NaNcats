@@ -1,0 +1,22 @@
+                                                                      QUERY PLAN                                                                      
+------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=18124.75..18127.08 rows=20 width=225) (actual time=291.043..314.194 rows=20.00 loops=1)
+   Buffers: shared hit=3217, temp read=2081 written=2676
+   ->  Gather Merge  (cost=12301.43..23948.08 rows=100000 width=225) (actual time=236.794..311.232 rows=50020.00 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=3217, temp read=2081 written=2676
+         ->  Sort  (cost=11301.40..11405.57 rows=41667 width=225) (actual time=211.534..217.563 rows=16823.33 loops=3)
+               Sort Key: promotion_tier DESC, id
+               Sort Method: external merge  Disk: 8408kB
+               Buffers: shared hit=3217, temp read=2081 written=2676
+               Worker 0:  Sort Method: external merge  Disk: 6432kB
+               Worker 1:  Sort Method: external merge  Disk: 6520kB
+               ->  Parallel Seq Scan on restaurant_brand  (cost=0.00..3543.67 rows=41667 width=225) (actual time=0.009..38.442 rows=33333.33 loops=3)
+                     Buffers: shared hit=3127
+ Planning:
+   Buffers: shared hit=172
+ Planning Time: 1.495 ms
+ Execution Time: 316.831 ms
+(18 rows)
+
