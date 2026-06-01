@@ -28,8 +28,6 @@ import (
 	"os"
 )
 
-// target — структура цели в JSON-формате vegeta. Поле Body сериализуется в
-// base64 (стандартное поведение encoding/json для []byte), как и ожидает vegeta.
 type target struct {
 	Method string              `json:"method"`
 	URL    string              `json:"url"`
@@ -37,7 +35,7 @@ type target struct {
 	Header map[string][]string `json:"header,omitempty"`
 }
 
-const boundary = "PERFBOUNDARY7a9c1e" // фиксированная граница multipart -> постоянный Content-Type
+const boundary = "PERFBOUNDARY7a9c1e" // фиксированная граница multipart - постоянный Content-Type
 
 func main() {
 	mode := flag.String("mode", "create", "create|search|list")
@@ -89,10 +87,6 @@ func main() {
 			}
 		}
 	case "search":
-		// Набор поисковых токенов: и совпадающие с генерируемыми именами (perf, zeta),
-		// и «промахи». Любой ILIKE '%q%' заставляет планировщик сканировать всю таблицу.
-		// Токены длиной >= 3 символов — чтобы триграммный (pg_trgm) индекс мог
-		// быть задействован планировщиком после оптимизации.
 		tokens := []string{"perf", "rest", "zeta", "alpha", "burger", "pizza", "sushi",
 			"xyz", "qwer", "0007", "brand", "777", "abc", "kzx", "rop"}
 		for i := 0; i < *n; i++ {
@@ -125,8 +119,6 @@ func main() {
 	fmt.Fprintf(os.Stderr, "сгенерировано %d целей в %s\n", *n, *out)
 }
 
-// buildMultipart собирает тело multipart/form-data для одной заявки на создание
-// бренда. Имя уникально по индексу i (<= 60 символов), описание — случайное.
 func buildMultipart(i int, rng *rand.Rand) []byte {
 	var buf bytes.Buffer
 	mw := multipart.NewWriter(&buf)

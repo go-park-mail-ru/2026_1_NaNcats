@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Устанавливает инструменты, нужные для прогона: Go, vegeta, golang-migrate.
-# Идемпотентен: уже установленное пропускается. Требует sudo и доступ в интернет.
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 GO_VERSION=${GO_VERSION:-1.26.1}

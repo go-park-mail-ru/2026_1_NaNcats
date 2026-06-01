@@ -18,9 +18,6 @@
 | **READ: поиск** | `GET /api/restaurants/search?q=...` | `... WHERE name ILIKE '%q%' OR description ILIKE '%q%' ORDER BY promotion_tier DESC, id` |
 | **READ: листинг** | `GET /api/restaurants/brands?limit&offset` | `... ORDER BY promotion_tier DESC, id ASC LIMIT $1 OFFSET $2` |
 
-Весь SQL в репозитории написан вручную (`services/restaurant/internal/repository/postgres/`),
-без SQL-билдеров — как требует условие.
-
 Путь запроса (не упрощали, бьём настоящий публичный API):
 `vegeta → API Gateway (:8080, HTTP) → restaurant (gRPC :50053) → PostgreSQL`.
 Для CREATE добавляются проверки в `auth` (CheckSession + CSRF через Redis).

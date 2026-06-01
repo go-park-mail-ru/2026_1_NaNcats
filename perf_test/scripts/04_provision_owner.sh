@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# Готовит сессию владельца (owner) для нагрузки на создание ресторана:
-#   register -> UPDATE user_role='owner' в БД -> login (новая сессия с ролью owner).
-# Роль фиксируется в Redis-сессии в момент логина, поэтому повышаем роль ДО логина.
-# Кладёт session_id и CSRF-токен в perf_test/.run/creds.env.
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 EMAIL=${OWNER_EMAIL:-owner_perf@test.local}

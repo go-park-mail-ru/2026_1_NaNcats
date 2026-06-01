@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Поднимает изолированный стенд БД/брокера в Docker (отдельно от прод-деплоя)
-# и создаёт нужные базы данных. Образы и версии совпадают с docker-compose.yml.
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 $DOCKER network create "$DOCKER_NET" 2>/dev/null || true

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Останавливает Go-сервисы и удаляет контейнеры стенда. Данные не сохраняются.
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 for s in gateway restaurant user auth; do

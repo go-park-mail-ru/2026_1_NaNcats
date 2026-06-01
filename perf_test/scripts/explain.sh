@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Снимает EXPLAIN (ANALYZE, BUFFERS) для запросов чтения, которые реально
-# выполняет сервис restaurant (см. services/restaurant/internal/repository/postgres).
-# Аргумент-тег (baseline|opt) идёт в имена файлов results/explain_*_<tag>.txt.
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 TAG=${1:-baseline}
 

@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
-# Собирает и запускает 4 Go-сервиса, нужных тесту: auth, user, restaurant, gateway.
-# Каждый сервис ходит в свою БД (<service>_db). Логи и pid — в perf_test/.run/.
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 cd "$REPO_DIR"
 
 mkdir -p "$RUN_DIR/logs"
-# Переменные окружения сервисов (S3-креды, дефолтные URL, адреса gRPC) берём из .env.
 set -a; [ -f "$REPO_DIR/.env" ] && source "$REPO_DIR/.env"; set +a
 export REDIS_URL RABBITMQ_URL
 

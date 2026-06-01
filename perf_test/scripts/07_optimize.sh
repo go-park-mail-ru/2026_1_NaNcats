@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# Применяет оптимизации (миграции restaurant 000009 pg_trgm и 000010 btree)
-# пошагово через `migrate goto` и делает ANALYZE. Аргумент — целевая версия:
-#   ./07_optimize.sh 9    # только триграммные индексы (оптимизация поиска)
-#   ./07_optimize.sh 10   # + btree(promotion_tier DESC, id) (оптимизация листинга)
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 cd "$REPO_DIR"
 

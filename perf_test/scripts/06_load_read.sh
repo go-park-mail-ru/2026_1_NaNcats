@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
-# Нагрузочный тест эндпоинтов ЧТЕНИЯ основной сущности (публичные, без авторизации):
-#   search: GET /api/restaurants/search?q=...      (ILIKE-поиск)
-#   list:   GET /api/restaurants/brands?limit&offset (сортировка + deep offset)
-# Каждый прогон — 30с на максимальной скорости при WORKERS воркерах.
-# Тег результата задаётся 1-м аргументом (baseline | opt).
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 cd "$REPO_DIR"
 

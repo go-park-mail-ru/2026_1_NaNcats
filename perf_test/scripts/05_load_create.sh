@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# Нагрузочный тест эндпоинта СОЗДАНИЯ основной сущности:
-#   POST /api/owner/restaurants (multipart, owner + CSRF, уникальный Idempotency-Key).
-# Очищает restaurant_brand, генерирует N уникальных целей и заливает их vegeta.
-# По умолчанию N=100000. Тег результата задаётся 1-м аргументом (default: baseline).
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 cd "$REPO_DIR"
 
