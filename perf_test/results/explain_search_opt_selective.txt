@@ -1,0 +1,28 @@
+                                                                              QUERY PLAN                                                                               
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=110.21..110.26 rows=20 width=225) (actual time=1.261..1.265 rows=20.00 loops=1)
+   Buffers: shared hit=167
+   ->  Sort  (cost=110.21..110.26 rows=20 width=225) (actual time=1.259..1.261 rows=20.00 loops=1)
+         Sort Key: promotion_tier DESC, id
+         Sort Method: top-N heapsort  Memory: 30kB
+         Buffers: shared hit=167
+         ->  Bitmap Heap Scan on restaurant_brand  (cost=34.27..109.78 rows=20 width=225) (actual time=0.147..1.109 rows=155.00 loops=1)
+               Recheck Cond: ((name ~~* '%xyz%'::text) OR (description ~~* '%xyz%'::text))
+               Heap Blocks: exact=153
+               Buffers: shared hit=161
+               ->  BitmapOr  (cost=34.27..34.27 rows=20 width=0) (actual time=0.066..0.067 rows=0.00 loops=1)
+                     Buffers: shared hit=8
+                     ->  Bitmap Index Scan on idx_restaurant_brand_name_trgm  (cost=0.00..17.13 rows=10 width=0) (actual time=0.034..0.034 rows=19.00 loops=1)
+                           Index Cond: (name ~~* '%xyz%'::text)
+                           Index Searches: 1
+                           Buffers: shared hit=4
+                     ->  Bitmap Index Scan on idx_restaurant_brand_description_trgm  (cost=0.00..17.13 rows=10 width=0) (actual time=0.032..0.032 rows=136.00 loops=1)
+                           Index Cond: (description ~~* '%xyz%'::text)
+                           Index Searches: 1
+                           Buffers: shared hit=4
+ Planning:
+   Buffers: shared hit=218
+ Planning Time: 4.370 ms
+ Execution Time: 1.540 ms
+(24 rows)
+

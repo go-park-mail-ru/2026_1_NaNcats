@@ -1,0 +1,13 @@
+                                                                               QUERY PLAN                                                                               
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=5142.85..5144.91 rows=20 width=225) (actual time=35.530..35.540 rows=20.00 loops=1)
+   Buffers: shared hit=45994 read=194
+   ->  Index Scan using idx_restaurant_brand_tier_id on restaurant_brand  (cost=0.42..10285.29 rows=100000 width=225) (actual time=0.054..31.156 rows=50020.00 loops=1)
+         Index Searches: 1
+         Buffers: shared hit=45994 read=194
+ Planning:
+   Buffers: shared hit=216 read=1
+ Planning Time: 3.789 ms
+ Execution Time: 35.633 ms
+(9 rows)
+

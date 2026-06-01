@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="380" font-family="sans-serif">
+<rect width="720" height="380" fill="white"/>
+<text x="360.0" y="28" text-anchor="middle" font-size="18" font-weight="bold">Средняя задержка чтения (мс, меньше — лучше, лог-шкала)</text>
+<text x="18" y="190.0" text-anchor="middle" font-size="12" transform="rotate(-90 18 190.0)">мс (log)</text>
+<line x1="70" y1="60" x2="70" y2="320" stroke="#888"/>
+<line x1="70" y1="320" x2="700" y2="320" stroke="#888"/>
+<rect x="148.8" y="75.7" width="73.5" height="244.3" fill="#d9534f"/>
+<text x="185.5" y="69.7" text-anchor="middle" font-size="12" font-weight="bold">5279</text>
+<rect x="253.8" y="277.3" width="73.5" height="42.7" fill="#5cb85c"/>
+<text x="290.5" y="271.3" text-anchor="middle" font-size="12" font-weight="bold">873</text>
+<text x="227.5" y="342.0" text-anchor="middle" font-size="14">search</text>
+<rect x="463.8" y="80.3" width="73.5" height="239.7" fill="#d9534f"/>
+<text x="500.5" y="74.3" text-anchor="middle" font-size="12" font-weight="bold">5067</text>
+<rect x="568.8" y="320.0" width="73.5" height="0.0" fill="#5cb85c"/>
+<text x="605.5" y="314.0" text-anchor="middle" font-size="12" font-weight="bold">596</text>
+<text x="542.5" y="342.0" text-anchor="middle" font-size="14">list</text>
+<rect x="80" y="58" width="14" height="14" fill="#d9534f"/>
+<text x="100" y="70" font-size="13">baseline</text>
+<rect x="210" y="58" width="14" height="14" fill="#5cb85c"/>
+<text x="230" y="70" font-size="13">optimized</text>
+</svg>
